@@ -1,10 +1,16 @@
 import { defineConfig } from "vite";
 import { svelte } from "@sveltejs/vite-plugin-svelte";
 import sveltePreprocess from "svelte-preprocess";
+import UnoCSS from "unocss/vite";
+import extractorSvelte from "@unocss/extractor-svelte";
 
 // https://vitejs.dev/config/
 export default defineConfig(async () => ({
   plugins: [
+    UnoCSS({
+      extractors: [extractorSvelte()],
+      /* more options */
+    }),
     svelte({
       preprocess: [
         sveltePreprocess({
