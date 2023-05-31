@@ -34,12 +34,18 @@ export default defineConfig({
       bg: {
         primary: "#22272e",
         secondary: "#2d333b",
+        tertiary: "#323942",
+        button: "#373e47",
+        buttonHover: "#444c56",
       },
       border: {
         primary: "#444c56",
+        button: "#CDD9E5",
+        buttonHover: "#768390",
       },
       text: {
         primary: "#adbac7",
+        placeholder: "#636e7b",
         link: "#2e7cd5",
       },
     },

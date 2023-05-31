@@ -3,6 +3,7 @@ import { svelte } from "@sveltejs/vite-plugin-svelte";
 import sveltePreprocess from "svelte-preprocess";
 import UnoCSS from "unocss/vite";
 import extractorSvelte from "@unocss/extractor-svelte";
+import { fileURLToPath } from "node:url";
 
 // https://vitejs.dev/config/
 export default defineConfig(async () => ({
@@ -19,6 +20,13 @@ export default defineConfig(async () => ({
       ],
     }),
   ],
+
+  resolve: {
+    preserveSymlinks: true,
+    alias: {
+      "@": fileURLToPath(new URL("./src", import.meta.url)),
+    },
+  },
 
   // Vite options tailored for Tauri development and only applied in `tauri dev` or `tauri build`
   // prevent vite from obscuring rust errors
