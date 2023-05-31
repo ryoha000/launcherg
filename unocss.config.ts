@@ -38,6 +38,7 @@ export default defineConfig({
         button: "#373e47",
         buttonHover: "#444c56",
       },
+      ui: { tertiary: "#636e7b" },
       border: {
         primary: "#444c56",
         button: "#CDD9E5",
@@ -45,7 +46,6 @@ export default defineConfig({
       },
       text: {
         primary: "#adbac7",
-        placeholder: "#636e7b",
         link: "#2e7cd5",
       },
     },
