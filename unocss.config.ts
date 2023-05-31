@@ -46,6 +46,7 @@ export default defineConfig({
       },
       text: {
         primary: "#adbac7",
+        secondary: "#CDD9E5",
         link: "#2e7cd5",
       },
     },

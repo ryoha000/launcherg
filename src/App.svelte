@@ -1,7 +1,14 @@
 <script lang="ts">
-  import Greet from "./lib/Greet.svelte";
+  import { Router, Link, Route } from "svelte-routing";
+  import Layout from "@/layouts/Layout.svelte";
+
+  export let url = "/";
 </script>
 
-<main class="bg-(bg-primary) h-full">
-  <div class="text-(text-primary h1)">hoge</div>
+<main class="h-full w-full bg-(bg-primary) font-sans">
+  <Router {url}>
+    <Layout>
+      <div class="text-(h1 text-primary)">hoge</div>
+    </Layout>
+  </Router>
 </main>

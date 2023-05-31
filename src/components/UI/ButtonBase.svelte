@@ -22,11 +22,34 @@
       },
     };
   };
+
+  export let variant: Variant = "normal";
+
+  let buttonVariantClass = "";
+  $: {
+    switch (variant) {
+      case "normal":
+        buttonVariantClass =
+          "bg-bg-button border-(~ border-button opacity-10 solid) text-text-primary hover:(border-border-button-hover bg-bg-button-hover)";
+        break;
+      case "accent":
+        buttonVariantClass =
+          "bg-bg-button border-(~ border-button opacity-10 solid) text-accent-accent hover:(border-accent-accent bg-accent-accent text-text-secondary)";
+        break;
+      case "error":
+        buttonVariantClass =
+          "bg-bg-button border-(~ border-button opacity-10 solid) text-accent-error hover:(border-accent-error bg-accent-error text-text-secondary)";
+        break;
+      default:
+        const _: never = variant;
+        break;
+    }
+  }
 </script>
 
 <button
   use:tooltipAction
-  class={`border-(~ border-button opacity-10 solid) rounded bg-bg-button transition-all hover:(border-border-button-hover bg-bg-button-hover) ${appendClass}`}
+  class={`rounded transition-all ${buttonVariantClass} ${appendClass}`}
   on:click
 >
   <slot />

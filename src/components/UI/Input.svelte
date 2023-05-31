@@ -17,12 +17,12 @@
 </script>
 
 <div
-  class="w-full border-(2px solid transparent) focus-within:border-accent-accent rounded"
+  class="w-full border-(2px solid transparent) focus-within:border-accent-accent rounded transition-all"
 >
   <input
     bind:this={input}
     bind:value
     {placeholder}
-    class="w-full border border-(border-primary solid) rounded bg-bg-primary p-(x-3 y-1.5) text-(body2 text-primary) outline-0 focus:border-transparent placeholder-ui-tertiary"
+    class="w-full border border-(border-primary solid) rounded bg-bg-primary p-(x-3 y-1.5) text-(body2 text-primary) transition-all focus:border-transparent placeholder-ui-tertiary"
   />
 </div>
