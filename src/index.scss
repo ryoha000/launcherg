@@ -25,3 +25,11 @@ a:hover {
 * {
   outline: none;
 }
+
+.tippy-box[data-theme~='default'] {
+  > .tippy-arrow {
+    color: #636e7b;
+  }
+  background-color: #636e7b;
+  color: #c3cfdb;
+}

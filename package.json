@@ -13,7 +13,8 @@
   },
   "dependencies": {
     "@tauri-apps/api": "^1.3.0",
-    "@unocss/reset": "^0.52.5"
+    "@unocss/reset": "^0.52.5",
+    "tippy.js": "^6.3.7"
   },
   "devDependencies": {
     "@iconify-json/iconoir": "^1.1.28",
@@ -34,6 +35,7 @@
     "autoprefixer": "^10.4.14",
     "eslint": "^8.41.0",
     "eslint-plugin-svelte": "^2.29.0",
+    "sass": "^1.62.1",
     "svelte": "^3.54.0",
     "svelte-check": "^3.0.0",
     "svelte-preprocess": "^5.0.0",
