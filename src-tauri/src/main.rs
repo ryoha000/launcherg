@@ -1,15 +1,29 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-// Learn more about Tauri commands at https://tauri.app/v1/guides/features/command
-#[tauri::command]
-fn greet(name: &str) -> String {
-    format!("Hello, {}! You've been greeted from Rust!", name)
-}
+mod domain;
+mod infrastructure;
+mod interface;
+mod usecase;
+
+use std::sync::Arc;
+
+use interface::{command, module::Modules};
+use tauri::{async_runtime::block_on, Manager};
 
 fn main() {
+    let modules = Arc::new(block_on(Modules::new()));
+
     tauri::Builder::default()
-        .invoke_handler(tauri::generate_handler![greet])
+        .setup(|app| {
+            app.manage(modules);
+
+            Ok(())
+        })
+        .invoke_handler(tauri::generate_handler![
+            command::greet,
+            command::get_all_collections
+        ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
