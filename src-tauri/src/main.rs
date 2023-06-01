@@ -22,7 +22,7 @@ fn main() {
         })
         .invoke_handler(tauri::generate_handler![
             command::greet,
-            command::get_all_collections
+            command::get_all_collections,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
