@@ -22,6 +22,13 @@ async-trait = "0.1.57"
 sqlx = { version = "0.6", features = [ "runtime-tokio-rustls", "sqlite", "chrono" ] }
 chrono = { version = "0.4.26", features = ["serde"] }
 derive-new = "0.5.0"
+walkdir = "2"
+
+[dependencies.windows]
+version = "0.48"
+features = [
+    "Win32_System_Com", "Win32_Foundation", "Win32_System_Ole", "Win32_UI_Shell", "Win32_Storage_FileSystem"
+]
 
 [features]
 # this feature is used for production builds or when `devPath` points to the filesystem
