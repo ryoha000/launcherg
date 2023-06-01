@@ -3,21 +3,27 @@
   import Logo from "/logo.png";
   import Icon from "/icon.png";
   import { collections } from "@/store/collections";
-  import type { Collection } from "@/lib/types";
+  import type { Collection, CollectionElement } from "@/lib/types";
   import { onMount } from "svelte";
   import SearchInput from "@/components/Sidebar/SearchInput.svelte";
   import CollectionSelect from "@/components/Sidebar/CollectionSelect.svelte";
   import CollectionElements from "@/components/Sidebar/CollectionElements.svelte";
-
-  let selectedColection: Collection | null = null;
+  import { writable } from "svelte/store";
 
   onMount(() => collections.init());
 
   let query = "";
-  $: displayCollectionItems =
-    selectedColection?.elements.filter((v) =>
-      query ? v.gamename.toLowerCase().includes(query.toLowerCase()) : true
-    ) ?? [];
+
+  const selectedColection = writable<Collection | null>(null);
+  let selectedCollectionElements: CollectionElement[] = [];
+  selectedColection.subscribe(async (v) => {
+    await Promise.resolve();
+    selectedCollectionElements = [];
+  });
+
+  $: displayCollectionElements = selectedCollectionElements.filter((v) =>
+    query ? v.gamename.toLowerCase().includes(query.toLowerCase()) : true
+  );
 </script>
 
 <div class="p-(x-2 y-4)">
@@ -30,15 +36,15 @@
   <div class="mt-4 w-full">
     <CollectionSelect
       collections={$collections}
-      bind:value={selectedColection}
+      bind:value={$selectedColection}
     />
   </div>
   <div class="w-full mt-2">
     <SearchInput bind:value={query} placeholder="Filter by title" />
   </div>
   <div class="mt-1">
-    {#key displayCollectionItems}
-      <CollectionElements collectionElement={displayCollectionItems} />
+    {#key displayCollectionElements}
+      <CollectionElements collectionElement={displayCollectionElements} />
     {/key}
   </div>
 </div>

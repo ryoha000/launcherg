@@ -24,12 +24,10 @@ export type Creator = {
 export type Collection = {
   id: string;
   name: string;
-  elements: CollectionElement[];
 };
 
 export type CollectionElement = {
   id: number; // Work.id と同じ
   gamename: string;
   path: string;
-  iconPath: string;
 };

@@ -28,7 +28,6 @@
   <Select
     title="Select display collection"
     filterPlaceholder="Filter collections"
-    iconClass="i-material-symbols-collections-bookmark-outline-rounded color-text-primary"
     enableFilter
     bind:value={selectedCollectionId}
     options={collectionOptions}
