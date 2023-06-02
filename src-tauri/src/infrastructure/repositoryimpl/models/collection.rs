@@ -1,7 +1,10 @@
 use sqlx::types::chrono::NaiveDateTime;
 use sqlx::FromRow;
 
-use crate::domain::collection::{Collection, CollectionElement};
+use crate::domain::{
+    collection::{Collection, CollectionElement},
+    Id,
+};
 
 #[derive(FromRow)]
 pub struct CollectionTable {
@@ -15,7 +18,7 @@ impl TryFrom<CollectionTable> for Collection {
     type Error = anyhow::Error;
     fn try_from(st: CollectionTable) -> Result<Self, Self::Error> {
         Ok(Collection::new(
-            st.id.try_into()?,
+            Id::new(st.id),
             st.name,
             st.created_at,
             st.updated_at,
@@ -36,7 +39,7 @@ impl TryFrom<CollectionElementTable> for CollectionElement {
     type Error = anyhow::Error;
     fn try_from(st: CollectionElementTable) -> Result<Self, Self::Error> {
         Ok(CollectionElement::new(
-            st.id.try_into()?,
+            Id::new(st.id),
             st.gamename,
             st.path,
             st.created_at,

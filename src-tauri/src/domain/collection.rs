@@ -2,10 +2,11 @@ use derive_new::new;
 use serde::{Deserialize, Serialize};
 use sqlx::types::chrono::NaiveDateTime;
 
-pub type CollectionID = i32;
+use super::Id;
+
 #[derive(new, Debug, Serialize, Deserialize, Clone)]
 pub struct Collection {
-    pub id: CollectionID,
+    pub id: Id<Collection>,
     pub name: String,
     pub created_at: NaiveDateTime,
     pub updated_at: NaiveDateTime,
@@ -16,10 +17,9 @@ pub struct NewCollection {
     pub name: String,
 }
 
-pub type CollectionElementID = i32;
-#[derive(new, Debug, Serialize, Deserialize)]
+#[derive(new, Debug, Clone, Serialize, Deserialize)]
 pub struct CollectionElement {
-    pub id: CollectionElementID,
+    pub id: Id<CollectionElement>,
     pub gamename: String,
     pub path: String,
     pub created_at: NaiveDateTime,
@@ -28,7 +28,7 @@ pub struct CollectionElement {
 
 #[derive(new, Debug)]
 pub struct NewCollectionElement {
-    pub id: CollectionElementID,
+    pub id: Id<CollectionElement>,
     pub gamename: String,
     pub path: String,
 }

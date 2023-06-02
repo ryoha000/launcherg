@@ -5,9 +5,14 @@ export const commandGetAllCollections = async () => {
   return await invoke<Collection[]>("get_all_collections");
 };
 
-export const commandExplore = async (
+export const addCollectionElementsInPc = async (
   exploreDirPaths: string[],
-  withCache: boolean
+  withCache: boolean,
+  addingCollectionId: string | null
 ) => {
-  return await invoke<Collection[]>("explore", { exploreDirPaths, withCache });
+  await invoke("add_collection_elements_in_pc", {
+    exploreDirPaths,
+    withCache,
+    addingCollectionId,
+  });
 };

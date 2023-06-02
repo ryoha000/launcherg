@@ -1,4 +1,4 @@
-use std::{fs, path::Path, sync::Arc};
+use std::{fs, path::Path};
 
 use tauri::{api::path::app_config_dir, Config};
 

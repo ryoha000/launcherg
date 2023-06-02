@@ -9,6 +9,7 @@ use crate::{
         explorer::network::NetworkExplorer,
         file::{filter_game_path, get_file_paths_by_exts, get_lnk_source_paths, normalize},
         network::ErogamescapeIDNamePair,
+        Id,
     },
     infrastructure::explorerimpl::explorer::ExplorersExt,
 };
@@ -98,7 +99,7 @@ impl<R: ExplorersExt> FileUseCase<R> {
     pub async fn explore_without_lnk_cache(
         &self,
         explore_dir_paths: Vec<String>,
-    ) -> anyhow::Result<Vec<(ErogamescapeIDNamePair, String)>> {
+    ) -> anyhow::Result<Vec<NewCollectionElement>> {
         let start = Instant::now();
 
         let files = self.concurency_get_file_paths(explore_dir_paths).await?;
@@ -163,8 +164,8 @@ impl<R: ExplorersExt> FileUseCase<R> {
             .filter_map(|(id, path)| {
                 if let Some(gamename) = all_erogamescape_game_map.get(&id) {
                     return Some(NewCollectionElement {
-                        id,
-                        gamename: *gamename,
+                        id: Id::new(id),
+                        gamename: gamename.clone(),
                         path,
                     });
                 }
@@ -172,8 +173,6 @@ impl<R: ExplorersExt> FileUseCase<R> {
             })
             .collect();
 
-        // TODO: get icon
-
-        Ok(id_path_pairs)
+        Ok(collection_elements)
     }
 }

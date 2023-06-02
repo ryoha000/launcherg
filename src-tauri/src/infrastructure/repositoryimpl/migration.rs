@@ -72,8 +72,8 @@ CREATE TABLE IF NOT EXISTS collection_element_maps (
     collection_element_id INTEGER NOT NULL,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    foreign key(collection_id) references collections(id),
-    foreign key(collection_element_id) references collection_elements(id)
+    foreign key(collection_id) references collections(id) ON DELETE CASCADE,
+    foreign key(collection_element_id) references collection_elements(id) ON DELETE CASCADE
 );
     "
     .to_string();

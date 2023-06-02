@@ -75,6 +75,8 @@ fn remove_word(filename: &str) -> String {
     result
 }
 
+const IGNORE_GAME_ID: [i32; 1] = [2644];
+
 fn get_file_name_without_extension(file_path: &str) -> Option<String> {
     let path = Path::new(file_path);
     if let Some(file_name) = path.file_name() {
@@ -187,6 +189,16 @@ pub fn filter_game_path(
     let mut max_distance_value = 0.8;
     let mut max_distance_pair = None;
     for pair in id_name_pairs.iter() {
+        let mut is_ignore = false;
+        for ignore_id in IGNORE_GAME_ID {
+            if pair.id == ignore_id {
+                is_ignore = true;
+            }
+        }
+        if !is_ignore {
+            continue;
+        }
+
         let mut val: f32 = 0.0;
         if !is_skip_filename_check {
             val = val.max(get_comparable_distance(&filename, &pair.gamename));

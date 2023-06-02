@@ -2,13 +2,17 @@
   import { Router, Link, Route } from "svelte-routing";
   import Layout from "@/layouts/Layout.svelte";
   import Button from "@/components/UI/Button.svelte";
-  import { commandExplore } from "@/lib/command";
+  import { addCollectionElementsInPc } from "@/lib/command";
 
   export let url = "/";
 
   const exp = async () => {
     console.log(
-      await commandExplore(["C:\\Users\\ryoha\\Desktop\\既プレイゲーム"], false)
+      await addCollectionElementsInPc(
+        ["C:\\Users\\ryoha\\Desktop\\既プレイゲーム"],
+        false,
+        null
+      )
     );
   };
 </script>
