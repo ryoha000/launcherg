@@ -16,8 +16,6 @@ pub struct NewCollection {
     pub name: String,
 }
 
-pub type UpdateNameCollection = NewCollection;
-
 pub type CollectionElementID = i32;
 #[derive(new, Debug, Serialize, Deserialize)]
 pub struct CollectionElement {
@@ -26,4 +24,11 @@ pub struct CollectionElement {
     pub path: String,
     pub created_at: NaiveDateTime,
     pub updated_at: NaiveDateTime,
+}
+
+#[derive(new, Debug)]
+pub struct NewCollectionElement {
+    pub id: CollectionElementID,
+    pub gamename: String,
+    pub path: String,
 }

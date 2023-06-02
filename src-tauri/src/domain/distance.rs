@@ -68,6 +68,13 @@ impl Distance {
     }
 }
 
+pub fn get_comparable_distance(a: &str, b: &str) -> f32 {
+    let distance = Distance::new(&a, &b);
+    let distance_value = distance.onp();
+
+    1.0 - (distance_value as f32 / a.len().max(b.len()) as f32)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

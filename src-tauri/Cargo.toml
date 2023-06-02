@@ -24,6 +24,7 @@ chrono = { version = "0.4.26", features = ["serde"] }
 derive-new = "0.5.0"
 walkdir = "2"
 reqwest = { version = "0.11", features = ["json"] }
+futures = "0.3"
 
 [dependencies.windows]
 version = "0.48"
