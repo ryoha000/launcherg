@@ -70,7 +70,7 @@ impl CollectionRepository for RepositoryImpl<Collection> {
     }
     async fn upsert_collection_element(&self, new: &NewCollectionElement) -> Result<()> {
         let pool = self.pool.0.clone();
-        let _ = query("insert into collections (id, gamename, path) values (?, ?, ?) ON CONFLICT(id) DO UPDATE SET gamename = ?, path = ?")
+        let _ = query("insert into collection_elements (id, gamename, path) values (?, ?, ?) ON CONFLICT(id) DO UPDATE SET gamename = ?, path = ?")
             .bind(new.id.value)
             .bind(new.gamename.clone())
             .bind(new.path.clone())
@@ -122,11 +122,13 @@ impl CollectionRepository for RepositoryImpl<Collection> {
         collection_element_id: &Id<CollectionElement>,
     ) -> Result<()> {
         let pool = self.pool.0.clone();
-        let _ = query("delete collections where collection_id = ? AND collection_element_id = ?")
-            .bind(collection_id.value)
-            .bind(collection_element_id.value)
-            .execute(&*pool)
-            .await?;
+        let _ = query(
+            "delete collection_element_maps where collection_id = ? AND collection_element_id = ?",
+        )
+        .bind(collection_id.value)
+        .bind(collection_element_id.value)
+        .execute(&*pool)
+        .await?;
         Ok(())
     }
 }

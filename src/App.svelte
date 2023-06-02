@@ -2,7 +2,11 @@
   import { Router, Link, Route } from "svelte-routing";
   import Layout from "@/layouts/Layout.svelte";
   import Button from "@/components/UI/Button.svelte";
-  import { addCollectionElementsInPc } from "@/lib/command";
+  import {
+    addCollectionElementsInPc,
+    commandGetAllCollections,
+    commandGreet,
+  } from "@/lib/command";
 
   export let url = "/";
 

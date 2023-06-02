@@ -1,24 +1,45 @@
 pub struct File {}
+pub struct LnkMetadata {
+    pub path: String,
+    pub icon: String,
+}
 
-use std::path::Path;
+use std::{fs, io::Write, path::Path};
 
 use anyhow::Ok;
+use image::{ImageBuffer, Rgb, Rgba};
+use tauri::{
+    api::process::{Command, CommandEvent},
+    async_runtime::JoinHandle,
+};
 use walkdir::WalkDir;
 use windows::{
     core::{ComInterface, PCWSTR},
+    w,
     Win32::{
-        Storage::FileSystem::WIN32_FIND_DATAW,
+        Foundation::GetLastError,
+        Graphics::Gdi::{
+            GetBitmapBits, GetDC, GetDIBits, GetObjectW, BITMAP, BITMAPINFO, BITMAPINFOHEADER,
+            BI_RGB, DIB_RGB_COLORS,
+        },
+        Storage::FileSystem::{FILE_ATTRIBUTE_NORMAL, FILE_ATTRIBUTE_READONLY, WIN32_FIND_DATAW},
         System::Com::{CoCreateInstance, CoInitialize, CoUninitialize, CLSCTX_INPROC_SERVER},
         System::Com::{IPersistFile, STGM_READ},
-        UI::Shell::{IShellLinkW, ShellLink},
+        UI::{
+            Shell::{
+                ExtractIconExW, IShellLinkW, SHGetFileInfoW, ShellLink, SHFILEINFOA, SHFILEINFOW,
+                SHGFI_ICON,
+            },
+            WindowsAndMessaging::{GetForegroundWindow, GetIconInfoExW, HICON, ICONINFOEXW},
+        },
     },
 };
 
-use crate::domain::network::ErogamescapeIDNamePair;
+use crate::{domain::network::ErogamescapeIDNamePair, infrastructure::util::get_save_root_abs_dir};
 
-use super::distance::get_comparable_distance;
+use super::{distance::get_comparable_distance, Id};
 
-pub trait WString {
+trait WString {
     fn to_wide(&self) -> Vec<u16>;
     fn to_wide_null_terminated(&self) -> Vec<u16>;
 }
@@ -31,6 +52,10 @@ impl WString for &str {
     fn to_wide_null_terminated(&self) -> Vec<u16> {
         self.encode_utf16().chain(std::iter::once(0)).collect()
     }
+}
+
+fn to_pcwstr(str: &str) -> PCWSTR {
+    PCWSTR::from_raw(str.to_wide_null_terminated().as_ptr())
 }
 
 const NOT_GAME_TERMS: [&str; 12] = [
@@ -131,8 +156,8 @@ pub fn get_file_paths_by_exts(
     Ok(link_file_paths)
 }
 
-pub fn get_lnk_source_paths(lnk_file_paths: Vec<String>) -> anyhow::Result<Vec<String>> {
-    let mut source_paths = vec![];
+pub fn get_lnk_metadatas(lnk_file_paths: Vec<String>) -> anyhow::Result<Vec<LnkMetadata>> {
+    let mut metadatas = vec![];
 
     unsafe {
         CoInitialize(None)?;
@@ -154,13 +179,17 @@ pub fn get_lnk_source_paths(lnk_file_paths: Vec<String>) -> anyhow::Result<Vec<S
             let path = PCWSTR::from_raw(target_path_vec.as_mut_ptr())
                 .to_string()?
                 .clone();
+            shell_link.GetIconLocation(target_path_slice, &mut 0)?;
+            let icon = PCWSTR::from_raw(target_path_vec.as_mut_ptr())
+                .to_string()?
+                .clone();
 
-            source_paths.push(path);
+            metadatas.push(LnkMetadata { path, icon });
         }
 
         CoUninitialize();
     }
-    Ok(source_paths)
+    Ok(metadatas)
 }
 
 pub fn filter_game_path(
@@ -195,7 +224,7 @@ pub fn filter_game_path(
                 is_ignore = true;
             }
         }
-        if !is_ignore {
+        if is_ignore {
             continue;
         }
 
@@ -221,4 +250,90 @@ pub fn filter_game_path(
         }
     }
     Ok(None)
+}
+
+const ICONS_ROOT_DIR: &str = "game-icons";
+pub fn get_icon_path(collection_element_id: &Id<i32>) -> String {
+    let dir = Path::new(&get_save_root_abs_dir()).join(ICONS_ROOT_DIR);
+    fs::create_dir_all(dir).unwrap();
+    Path::new(&get_save_root_abs_dir())
+        .join(ICONS_ROOT_DIR)
+        .join(format!("{}.png", collection_element_id.value))
+        .to_string_lossy()
+        .to_string()
+}
+pub fn save_icon_to_png(
+    file_path: &str,
+    collection_element_id: &Id<i32>,
+) -> anyhow::Result<JoinHandle<anyhow::Result<()>>> {
+    let save_png_path = get_icon_path(collection_element_id);
+
+    let is_ico = file_path.to_lowercase().ends_with("ico");
+    let is_exe = file_path.to_lowercase().ends_with("exe");
+
+    if is_ico {
+        return save_ico_to_png(file_path, &save_png_path);
+    }
+    if is_exe {
+        return save_exe_file_png(file_path, &save_png_path);
+    }
+    return save_default_icon(&save_png_path);
+}
+
+pub fn save_default_icon(save_png_path: &str) -> anyhow::Result<JoinHandle<anyhow::Result<()>>> {
+    let save_p = save_png_path.to_string();
+    let handle = tauri::async_runtime::spawn(async move {
+        let default_icon = include_bytes!("..\\..\\icons\\notfound.png");
+        let mut file = std::fs::File::create(save_p)?;
+        file.write_all(default_icon)?;
+        return Ok(());
+    });
+
+    Ok(handle)
+}
+
+pub fn save_ico_to_png(
+    file_path: &str,
+    save_png_path: &str,
+) -> anyhow::Result<JoinHandle<anyhow::Result<()>>> {
+    assert!(file_path.to_lowercase().ends_with("ico"));
+
+    // image::io::Reader::open(file_path)?
+    //     .decode()?
+    //     .save(save_png_path)?;
+    // Ok(())
+
+    let p = file_path.to_string();
+    let save_p = save_png_path.to_string();
+    let handle = tauri::async_runtime::spawn(async move {
+        image::io::Reader::open(p)?.decode()?.save(save_p)?;
+        return Ok(());
+    });
+
+    Ok(handle)
+}
+
+pub fn save_exe_file_png(
+    file_path: &str,
+    save_png_path: &str,
+) -> anyhow::Result<JoinHandle<anyhow::Result<()>>> {
+    // Command::new_sidecar("extract-icon")?
+    //     .args(vec!["240", file_path, save_png_path])
+    //     .spawn()?;
+    // Ok(())
+
+    let (mut rx, _) = Command::new_sidecar("extract-icon")?
+        .args(vec!["240", file_path, save_png_path])
+        .spawn()?;
+
+    let handle: JoinHandle<anyhow::Result<()>> = tauri::async_runtime::spawn(async move {
+        while let Some(event) = rx.recv().await {
+            if let CommandEvent::Terminated(_) = event {
+                return Ok(());
+            }
+        }
+        Err(anyhow::anyhow!("extract-icon is not terminated"))
+    });
+
+    Ok(handle)
 }

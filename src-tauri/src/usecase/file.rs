@@ -7,7 +7,10 @@ use crate::{
         collection::NewCollectionElement,
         distance::get_comparable_distance,
         explorer::network::NetworkExplorer,
-        file::{filter_game_path, get_file_paths_by_exts, get_lnk_source_paths, normalize},
+        file::{
+            filter_game_path, get_file_paths_by_exts, get_lnk_metadatas, normalize,
+            save_icon_to_png,
+        },
         network::ErogamescapeIDNamePair,
         Id,
     },
@@ -110,6 +113,7 @@ impl<R: ExplorersExt> FileUseCase<R> {
             end.as_secs(),
             end.subsec_nanos() / 1_000_000
         );
+        println!("files: {:#?}", files);
 
         let all_erogamescape_games_vec = self.explorers.network_explorer().get_all_games().await?;
 
@@ -134,7 +138,7 @@ impl<R: ExplorersExt> FileUseCase<R> {
             end.subsec_nanos() / 1_000_000
         );
 
-        let (exe_id_path_vec, lnk_id_path_vec): (Vec<(i32, String)>, Vec<(i32, String)>) = self
+        let (lnk_id_path_vec, exe_id_path_vec): (Vec<(i32, String)>, Vec<(i32, String)>) = self
             .concurency_get_path_game_map(normalized_all_games, files)
             .await?
             .into_iter()
@@ -146,20 +150,50 @@ impl<R: ExplorersExt> FileUseCase<R> {
             end.as_secs(),
             end.subsec_nanos() / 1_000_000
         );
+        println!(
+            "exe_id_path_vec.len(): {}, lnk_id_path_vec.len(): {}",
+            exe_id_path_vec.len(),
+            lnk_id_path_vec.len()
+        );
+        println!(
+            "exe_id_path_vec: {:#?}, lnk_id_path_vec: {:#?}",
+            exe_id_path_vec, lnk_id_path_vec
+        );
 
         let (lnk_id_vec, lnk_path_vec): (Vec<ErogamescapeID>, Vec<String>) =
             lnk_id_path_vec.into_iter().unzip();
 
-        let lnk_source_path_vec = get_lnk_source_paths(lnk_path_vec)?;
-        if lnk_id_vec.len() != lnk_source_path_vec.len() {
+        let lnk_metadatas = get_lnk_metadatas(lnk_path_vec)?;
+        if lnk_id_vec.len() != lnk_metadatas.len() {
             return Err(anyhow::anyhow!(
                 "lnk ファイルの数と lnk のターゲットファイルの数が一致しません",
             ));
         }
 
+        let mut save_icon_tasks = vec![];
+        for icon_src_path in exe_id_path_vec.iter() {
+            let task = save_icon_to_png(&icon_src_path.1, &Id::new(icon_src_path.0))?;
+            save_icon_tasks.push(task);
+        }
+        for icon_src_path in lnk_id_vec.iter().zip(lnk_metadatas.iter().map(|v| &v.path)) {
+            let task = save_icon_to_png(icon_src_path.1, &Id::new(*icon_src_path.0))?;
+            save_icon_tasks.push(task);
+        }
+        futures::future::try_join_all(save_icon_tasks)
+            .await?
+            .into_iter()
+            .collect::<anyhow::Result<()>>()?;
+
+        let end = start.elapsed();
+        println!(
+            "icon の保存完了. {}.{:03}秒経過しました.",
+            end.as_secs(),
+            end.subsec_nanos() / 1_000_000
+        );
+
         let collection_elements: Vec<NewCollectionElement> = lnk_id_vec
             .into_iter()
-            .zip(lnk_source_path_vec)
+            .zip(lnk_metadatas.into_iter().map(|v| v.path))
             .chain(exe_id_path_vec)
             .filter_map(|(id, path)| {
                 if let Some(gamename) = all_erogamescape_game_map.get(&id) {

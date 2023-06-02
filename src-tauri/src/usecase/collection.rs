@@ -46,12 +46,12 @@ impl<R: RepositoriesExt> CollectionUseCase<R> {
         &self,
         source: &Vec<NewCollectionElement>,
     ) -> anyhow::Result<()> {
-        let tasks = source.into_iter().map(|v| {
+        for v in source.into_iter() {
             self.repositories
                 .collection_repository()
                 .upsert_collection_element(v)
-        });
-        futures::future::try_join_all(tasks).await?;
+                .await?
+        }
         Ok(())
     }
     pub async fn add_collection_elements(

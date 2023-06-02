@@ -6,12 +6,19 @@ use super::{
     module::{Modules, ModulesExt},
 };
 use crate::{
-    domain::{collection::Collection, network::ErogamescapeIDNamePair, Id},
+    domain::{collection::Collection, file::get_lnk_metadatas, Id},
     infrastructure::repositoryimpl::migration::ONEPIECE_COLLECTION_ID,
 };
 
 #[tauri::command]
-pub fn greet(name: &str) -> String {
+pub async fn greet(name: String) -> String {
+    // save_icon_to_png(
+    //     "C:\\Users\\ryoha\\Desktop\\ティンクル☆くるせいだーす Remaster\\KuruKuru.exe",
+    //     "F:\\workspace\\launcherg\\src-tauri\\image.png",
+    // )
+    // .unwrap()
+    // .await;
+    println!("terminated2");
     format!("Hello, {}! You've been greeted from Rust!", name)
 }
 
@@ -32,8 +39,6 @@ pub async fn explore(
         .file_use_case()
         .explore_without_lnk_cache(explore_dir_paths)
         .await?;
-
-    // TODO: icon
 
     modules
         .collection_use_case()
