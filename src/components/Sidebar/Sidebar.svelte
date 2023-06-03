@@ -9,6 +9,7 @@
   import CollectionSelect from "@/components/Sidebar/CollectionSelect.svelte";
   import CollectionElements from "@/components/Sidebar/CollectionElements.svelte";
   import { writable } from "svelte/store";
+  import { commandGetCollectionElements } from "@/lib/command";
 
   onMount(() => collections.init());
 
@@ -17,8 +18,11 @@
   const selectedColection = writable<Collection | null>(null);
   let selectedCollectionElements: CollectionElement[] = [];
   selectedColection.subscribe(async (v) => {
-    await Promise.resolve();
-    selectedCollectionElements = [];
+    if (!v) {
+      return;
+    }
+    selectedCollectionElements = await commandGetCollectionElements(v.id);
+    console.log(selectedCollectionElements);
   });
 
   $: displayCollectionElements = selectedCollectionElements.filter((v) =>

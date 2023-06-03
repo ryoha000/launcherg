@@ -22,6 +22,7 @@ fn main() {
         })
         .invoke_handler(tauri::generate_handler![
             command::get_all_collections,
+            command::get_collection_elements,
             command::add_collection_elements_in_pc,
         ])
         .run(tauri::generate_context!())

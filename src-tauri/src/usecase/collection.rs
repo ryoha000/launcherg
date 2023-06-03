@@ -59,10 +59,14 @@ impl<R: RepositoriesExt> CollectionUseCase<R> {
         collection_id: &Id<Collection>,
         collection_element_ids: &Vec<Id<CollectionElement>>,
     ) -> anyhow::Result<()> {
+        self.repositories
+            .collection_repository()
+            .add_elements_by_id(collection_id, collection_element_ids)
+            .await?;
         Ok(self
             .repositories
             .collection_repository()
-            .add_elements_by_id(collection_id, collection_element_ids)
+            .remove_conflict_maps()
             .await?)
     }
 

@@ -2,7 +2,7 @@ use async_trait::async_trait;
 use sqlx::QueryBuilder;
 
 use crate::domain::{
-    explored_cache::ExploredCache, repository::explored_cache::ExploredCacheRepository, Id,
+    explored_cache::ExploredCache, repository::explored_cache::ExploredCacheRepository,
 };
 
 use super::repository::RepositoryImpl;
@@ -17,6 +17,9 @@ impl ExploredCacheRepository for RepositoryImpl<ExploredCache> {
         Ok(paths.into_iter().map(|v| v.0).collect())
     }
     async fn add(&self, cache: ExploredCache) -> anyhow::Result<()> {
+        if cache.len() == 0 {
+            return Ok(());
+        }
         // ref: https://docs.rs/sqlx-core/latest/sqlx_core/query_builder/struct.QueryBuilder.html#method.push_values
         let mut query_builder = QueryBuilder::new("INSERT INTO explored_caches (path) ");
         query_builder.push_values(cache, |mut b, new| {

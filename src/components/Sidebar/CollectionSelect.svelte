@@ -5,7 +5,7 @@
 
   export let collections: Collection[] = [];
 
-  let selectedCollectionId = "";
+  let selectedCollectionId = 0;
   export let value: Collection | null = null;
 
   $: {

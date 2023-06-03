@@ -26,6 +26,5 @@ pub trait CollectionRepository {
         collection_id: &Id<Collection>,
         collection_element_id: &Id<CollectionElement>,
     ) -> Result<()>;
-    // async fn add_elements(&self, name: String) -> Result<Collection>;
-    // async fn remove_elements(&self, name: String) -> Result<Collection>;
+    async fn remove_conflict_maps(&self) -> Result<()>;
 }

@@ -22,7 +22,7 @@ export type Creator = {
 };
 
 export type Collection = {
-  id: string;
+  id: number;
   name: string;
 };
 
@@ -30,4 +30,5 @@ export type CollectionElement = {
   id: number; // Work.id と同じ
   gamename: string;
   path: string;
+  icon: string;
 };

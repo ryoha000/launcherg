@@ -1,18 +1,22 @@
-import type { Collection } from "@/lib/types";
+import type { Collection, CollectionElement } from "@/lib/types";
 import { invoke } from "@tauri-apps/api/tauri";
 
 export const commandGetAllCollections = async () => {
   return await invoke<Collection[]>("get_all_collections");
 };
 
+export const commandGetCollectionElements = async (id: number) => {
+  return await invoke<CollectionElement[]>("get_collection_elements", { id });
+};
+
 export const addCollectionElementsInPc = async (
   exploreDirPaths: string[],
-  withCache: boolean,
+  useCache: boolean,
   addingCollectionId: string | null
 ) => {
   await invoke("add_collection_elements_in_pc", {
     exploreDirPaths,
-    withCache,
+    useCache,
     addingCollectionId,
   });
 };

@@ -24,7 +24,7 @@ use windows::{
 
 use crate::{domain::network::ErogamescapeIDNamePair, infrastructure::util::get_save_root_abs_dir};
 
-use super::{distance::get_comparable_distance, Id};
+use super::{collection::CollectionElement, distance::get_comparable_distance, Id};
 
 trait WString {
     fn to_wide(&self) -> Vec<u16>;
@@ -240,7 +240,7 @@ pub fn filter_game_path(
 }
 
 const ICONS_ROOT_DIR: &str = "game-icons";
-pub fn get_icon_path(collection_element_id: &Id<i32>) -> String {
+pub fn get_icon_path(collection_element_id: &Id<CollectionElement>) -> String {
     let dir = Path::new(&get_save_root_abs_dir()).join(ICONS_ROOT_DIR);
     fs::create_dir_all(dir).unwrap();
     Path::new(&get_save_root_abs_dir())
@@ -251,7 +251,7 @@ pub fn get_icon_path(collection_element_id: &Id<i32>) -> String {
 }
 pub fn save_icon_to_png(
     file_path: &str,
-    collection_element_id: &Id<i32>,
+    collection_element_id: &Id<CollectionElement>,
 ) -> anyhow::Result<JoinHandle<anyhow::Result<()>>> {
     let save_png_path = get_icon_path(collection_element_id);
 

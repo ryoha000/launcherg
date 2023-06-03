@@ -3,10 +3,11 @@ use tauri::State;
 
 use super::{
     error::CommandError,
+    models::collection::{Collection, CollectionElement},
     module::{Modules, ModulesExt},
 };
 use crate::{
-    domain::{collection::Collection, Id},
+    domain::{file::get_icon_path, Id},
     infrastructure::repositoryimpl::migration::ONEPIECE_COLLECTION_ID,
 };
 
@@ -14,7 +15,38 @@ use crate::{
 pub async fn get_all_collections(
     modules: State<'_, Arc<Modules>>,
 ) -> anyhow::Result<Vec<Collection>, CommandError> {
-    Ok(modules.collection_use_case().get_all_collections().await?)
+    Ok(modules
+        .collection_use_case()
+        .get_all_collections()
+        .await?
+        .into_iter()
+        .map(|v| Collection {
+            id: v.id.value,
+            name: v.name,
+            created_at: v.created_at,
+            updated_at: v.updated_at,
+        })
+        .collect())
+}
+
+#[tauri::command]
+pub async fn get_collection_elements(
+    modules: State<'_, Arc<Modules>>,
+    id: i32,
+) -> anyhow::Result<Vec<CollectionElement>, CommandError> {
+    let id = Id::new(id);
+    Ok(modules
+        .collection_use_case()
+        .get_elements_by_id(&id)
+        .await?
+        .into_iter()
+        .map(|v| CollectionElement {
+            id: v.id.value,
+            gamename: v.gamename,
+            path: v.path,
+            icon: get_icon_path(&v.id),
+        })
+        .collect())
 }
 
 #[tauri::command]

@@ -84,6 +84,9 @@ impl CollectionRepository for RepositoryImpl<Collection> {
         &self,
         new_elements: Vec<NewCollectionElement>,
     ) -> Result<()> {
+        if new_elements.len() == 0 {
+            return Ok(());
+        }
         // ref: https://docs.rs/sqlx-core/latest/sqlx_core/query_builder/struct.QueryBuilder.html#method.push_values
         let mut query_builder =
             QueryBuilder::new("INSERT INTO collection_elements (id, gamename, path) ");
@@ -94,7 +97,7 @@ impl CollectionRepository for RepositoryImpl<Collection> {
         });
 
         let pool = self.pool.0.clone();
-        let mut query = query_builder.build();
+        let query = query_builder.build();
         query.execute(&*pool).await?;
         Ok(())
     }
@@ -103,6 +106,9 @@ impl CollectionRepository for RepositoryImpl<Collection> {
         collection_id: &Id<Collection>,
         collection_element_ids: &Vec<Id<CollectionElement>>,
     ) -> Result<()> {
+        if collection_element_ids.len() == 0 {
+            return Ok(());
+        }
         // ref: https://docs.rs/sqlx-core/latest/sqlx_core/query_builder/struct.QueryBuilder.html#method.push_values
         let mut query_builder = QueryBuilder::new(
             "INSERT INTO collection_element_maps (collection_id, collection_element_id) ",
@@ -112,7 +118,7 @@ impl CollectionRepository for RepositoryImpl<Collection> {
         });
 
         let pool = self.pool.0.clone();
-        let mut query = query_builder.build();
+        let query = query_builder.build();
         query.execute(&*pool).await?;
         Ok(())
     }
@@ -122,13 +128,36 @@ impl CollectionRepository for RepositoryImpl<Collection> {
         collection_element_id: &Id<CollectionElement>,
     ) -> Result<()> {
         let pool = self.pool.0.clone();
-        let _ = query(
-            "delete collection_element_maps where collection_id = ? AND collection_element_id = ?",
+        let _ =
+            query("delete collection_element_maps where collection_id = ? AND collection_id = ?")
+                .bind(collection_id.value)
+                .bind(collection_element_id.value)
+                .execute(&*pool)
+                .await?;
+        Ok(())
+    }
+    async fn remove_conflict_maps(&self) -> anyhow::Result<()> {
+        let pool = self.pool.0.clone();
+        let not_delete_ids: Vec<(i32,)> = sqlx::query_as(
+            "SELECT MIN(id) FROM collection_element_maps GROUP BY collection_id, collection_element_id",
         )
-        .bind(collection_id.value)
-        .bind(collection_element_id.value)
-        .execute(&*pool)
+        .fetch_all(&*pool)
         .await?;
+        let not_delete_ids: Vec<i32> = not_delete_ids.into_iter().map(|v| v.0).collect();
+
+        if not_delete_ids.len() == 0 {
+            return Ok(());
+        }
+        let mut builder = sqlx::query_builder::QueryBuilder::new(
+            "DELETE FROM collection_element_maps WHERE id NOT IN (",
+        );
+        let mut separated = builder.separated(", ");
+        for id in not_delete_ids.iter() {
+            separated.push_bind(id);
+        }
+        separated.push_unseparated(")");
+        let query = builder.build();
+        query.execute(&*pool).await?;
         Ok(())
     }
 }
