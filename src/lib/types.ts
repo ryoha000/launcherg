@@ -1,25 +1,42 @@
 export type Work = {
   id: number;
   name: string;
-  furigana: string;
   brandId: number;
   brandName: string;
   officialHomePage: string;
   sellday: string;
   imgUrl: string;
+  statistics: Statistics;
+  creators: Creators;
+};
+
+export type Statistics = {
   median: number;
   average: number;
   count: number;
-  gengas: Creator[];
-  sinarios: Creator[];
-  seiyus: Creator[];
-  createdAt: Date;
+};
+
+export type Creators = {
+  illustrators: Creator[];
+  writers: Creator[];
+  voiceActors: VoiceActor[];
 };
 
 export type Creator = {
   id: number;
   name: string;
 };
+
+export const VoiceActorImportance = {
+  Main: 0,
+  Sub: 1,
+  Mob: 2,
+} as const;
+
+export type VoiceActor = {
+  role: string;
+  importance: (typeof VoiceActorImportance)[keyof typeof VoiceActorImportance];
+} & Creator;
 
 export type Collection = {
   id: number;

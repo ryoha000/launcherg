@@ -20,6 +20,10 @@
       "protocol": {
         "asset": true,
         "assetScope": [ "**" ]
+      },
+      "http": {
+        "request": true,
+        "scope": ["https://erogamescape.dyndns.org/~ap2/ero/toukei_kaiseki/*"]
       }
     },
     "bundle": {

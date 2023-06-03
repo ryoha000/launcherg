@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { Link } from "svelte-routing";
   import Logo from "/logo.png";
   import Icon from "/icon.png";
   import { collections } from "@/store/collections";
@@ -11,6 +10,7 @@
   import { writable } from "svelte/store";
   import { sidebarCollectionElements } from "@/store/sidebarCollectionElements";
   import { createWritable } from "@/lib/utils";
+  import { link } from "svelte-spa-router";
 
   onMount(() => collections.init());
 
@@ -50,12 +50,12 @@
 <div
   class="min-h-0 grid-(~ rows-[min-content_min-content_min-content_1fr]) border-(r-1px solid border-primary)"
 >
-  <Link to="/">
+  <a href="/" use:link>
     <div class="flex items-center gap-2 p-(x-2 t-4)">
       <img src={Icon} alt="launcherg icon" class="h-8" />
       <img src={Logo} alt="launcherg logo" class="h-7" />
     </div>
-  </Link>
+  </a>
   <div class="mt-4 w-full px-2">
     <CollectionSelect
       collections={$collections}

@@ -3,7 +3,7 @@
   import type { CollectionElement } from "@/lib/types";
   import { convertFileSrc } from "@tauri-apps/api/tauri";
   import { createEventDispatcher } from "svelte";
-  import { Link } from "svelte-routing";
+  import { link } from "svelte-spa-router";
 
   export let collectionElement: CollectionElement;
   export let checked: boolean;
@@ -25,9 +25,10 @@
       on:update={(e) => dispather("check", { value: e.detail.value })}
     />
   </label>
-  <Link
-    to={`/works/${collectionElement.id}`}
-    class="flex-(~ 1) h-12 w-full items-center gap-4"
+  <a
+    href={`/works/${collectionElement.id}`}
+    class="flex-(~ 1) h-12 w-full items-center gap-2 pr-2"
+    use:link
   >
     <img
       alt="{collectionElement.gamename}_icon"
@@ -37,5 +38,5 @@
     <div class="text-(body text-primary) font-bold">
       {collectionElement.gamename}
     </div>
-  </Link>
+  </a>
 </div>
