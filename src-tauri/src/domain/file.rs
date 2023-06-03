@@ -7,7 +7,6 @@ pub struct LnkMetadata {
 use std::{fs, io::Write, path::Path};
 
 use anyhow::Ok;
-use image::{ImageBuffer, Rgb, Rgba};
 use tauri::{
     api::process::{Command, CommandEvent},
     async_runtime::JoinHandle,
@@ -15,23 +14,11 @@ use tauri::{
 use walkdir::WalkDir;
 use windows::{
     core::{ComInterface, PCWSTR},
-    w,
     Win32::{
-        Foundation::GetLastError,
-        Graphics::Gdi::{
-            GetBitmapBits, GetDC, GetDIBits, GetObjectW, BITMAP, BITMAPINFO, BITMAPINFOHEADER,
-            BI_RGB, DIB_RGB_COLORS,
-        },
-        Storage::FileSystem::{FILE_ATTRIBUTE_NORMAL, FILE_ATTRIBUTE_READONLY, WIN32_FIND_DATAW},
+        Storage::FileSystem::WIN32_FIND_DATAW,
         System::Com::{CoCreateInstance, CoInitialize, CoUninitialize, CLSCTX_INPROC_SERVER},
         System::Com::{IPersistFile, STGM_READ},
-        UI::{
-            Shell::{
-                ExtractIconExW, IShellLinkW, SHGetFileInfoW, ShellLink, SHFILEINFOA, SHFILEINFOW,
-                SHGFI_ICON,
-            },
-            WindowsAndMessaging::{GetForegroundWindow, GetIconInfoExW, HICON, ICONINFOEXW},
-        },
+        UI::Shell::{IShellLinkW, ShellLink},
     },
 };
 

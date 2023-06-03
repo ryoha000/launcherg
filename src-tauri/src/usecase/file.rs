@@ -6,6 +6,7 @@ use crate::{
     domain::{
         collection::NewCollectionElement,
         distance::get_comparable_distance,
+        explored_cache::ExploredCache,
         explorer::network::NetworkExplorer,
         file::{
             filter_game_path, get_file_paths_by_exts, get_lnk_metadatas, normalize,
@@ -29,9 +30,6 @@ type ErogamescapeID = i32;
 const IGNORE_WORD_WHEN_CONFLICT: [&str; 2] = ["設定", "チェック"];
 
 impl<R: ExplorersExt> FileUseCase<R> {
-    pub async fn explore(&self) -> anyhow::Result<Vec<ErogamescapeIDNamePair>> {
-        Ok(self.explorers.network_explorer().get_all_games().await?)
-    }
     pub async fn concurency_get_file_paths(
         &self,
         explore_dir_paths: Vec<String>,
@@ -99,21 +97,11 @@ impl<R: ExplorersExt> FileUseCase<R> {
         }
         Ok(id_path_map)
     }
-    pub async fn explore_without_lnk_cache(
+    pub async fn filter_files_to_collection_elements(
         &self,
-        explore_dir_paths: Vec<String>,
+        files: Vec<String>,
     ) -> anyhow::Result<Vec<NewCollectionElement>> {
         let start = Instant::now();
-
-        let files = self.concurency_get_file_paths(explore_dir_paths).await?;
-
-        let end = start.elapsed();
-        println!(
-            "exe,lnk の探索完了. {}.{:03}秒経過しました.",
-            end.as_secs(),
-            end.subsec_nanos() / 1_000_000
-        );
-        println!("files: {:#?}", files);
 
         let all_erogamescape_games_vec = self.explorers.network_explorer().get_all_games().await?;
 

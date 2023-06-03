@@ -5,6 +5,7 @@ use serde::{Deserialize, Serialize};
 
 pub mod collection;
 pub mod distance;
+pub mod explored_cache;
 pub mod file;
 pub mod network;
 

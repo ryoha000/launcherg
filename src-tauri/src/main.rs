@@ -21,7 +21,6 @@ fn main() {
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
-            command::greet,
             command::get_all_collections,
             command::add_collection_elements_in_pc,
         ])

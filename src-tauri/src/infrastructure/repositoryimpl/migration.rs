@@ -18,6 +18,7 @@ pub async fn drop_all_table() -> anyhow::Result<()> {
         "collections",
         "collection_element_maps",
         "collection_elements",
+        "explored_caches",
     ];
     let db = Db::new().await;
     let pool = db.0.clone();
@@ -78,6 +79,15 @@ CREATE TABLE IF NOT EXISTS collection_element_maps (
     "
     .to_string();
 
+    let explored_caches = "
+    CREATE TABLE IF NOT EXISTS explored_caches (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        path TEXT NOT NULL,
+        UNIQUE(path)
+    );
+        "
+    .to_string();
+
     let insert_onepiece_collection = format!(
         "
     INSERT OR IGNORE INTO collections(id, name) VALUES({}, \"{}\")
@@ -89,6 +99,7 @@ CREATE TABLE IF NOT EXISTS collection_element_maps (
         collection,
         collection_element,
         collection_element_maps,
+        explored_caches,
         insert_onepiece_collection,
     ];
 }

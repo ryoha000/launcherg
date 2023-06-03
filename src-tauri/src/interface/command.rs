@@ -6,21 +6,9 @@ use super::{
     module::{Modules, ModulesExt},
 };
 use crate::{
-    domain::{collection::Collection, file::get_lnk_metadatas, Id},
+    domain::{collection::Collection, Id},
     infrastructure::repositoryimpl::migration::ONEPIECE_COLLECTION_ID,
 };
-
-#[tauri::command]
-pub async fn greet(name: String) -> String {
-    // save_icon_to_png(
-    //     "C:\\Users\\ryoha\\Desktop\\ティンクル☆くるせいだーす Remaster\\KuruKuru.exe",
-    //     "F:\\workspace\\launcherg\\src-tauri\\image.png",
-    // )
-    // .unwrap()
-    // .await;
-    println!("terminated2");
-    format!("Hello, {}! You've been greeted from Rust!", name)
-}
 
 #[tauri::command]
 pub async fn get_all_collections(
@@ -30,37 +18,35 @@ pub async fn get_all_collections(
 }
 
 #[tauri::command]
-pub async fn explore(
-    modules: State<'_, Arc<Modules>>,
-    explore_dir_paths: Vec<String>,
-    with_cache: bool,
-) -> anyhow::Result<(), CommandError> {
-    let new_elements = modules
-        .file_use_case()
-        .explore_without_lnk_cache(explore_dir_paths)
-        .await?;
-
-    modules
-        .collection_use_case()
-        .upsert_collection_elements(&new_elements)
-        .await?;
-
-    Ok(())
-}
-
-#[tauri::command]
 pub async fn add_collection_elements_in_pc(
     modules: State<'_, Arc<Modules>>,
     explore_dir_paths: Vec<String>,
-    with_cache: bool,
+    use_cache: bool,
     adding_collection_id: Option<i32>,
 ) -> anyhow::Result<(), CommandError> {
+    let explored_caches = modules.explored_cache_use_case().get_cache().await?;
+    let explore_files: Vec<String> = modules
+        .file_use_case()
+        .concurency_get_file_paths(explore_dir_paths)
+        .await?
+        .into_iter()
+        .filter_map(|v| match use_cache && explored_caches.contains(&v) {
+            true => None,
+            false => Some(v),
+        })
+        .collect();
+
+    if explore_files.len() == 0 {
+        println!("all file is match to cache");
+        return Ok(());
+    }
+
+    // TODO: message end get lnk,exe
+
     let new_elements = modules
         .file_use_case()
-        .explore_without_lnk_cache(explore_dir_paths)
+        .filter_files_to_collection_elements(explore_files.clone())
         .await?;
-
-    // TODO: icon
 
     modules
         .collection_use_case()
@@ -79,6 +65,11 @@ pub async fn add_collection_elements_in_pc(
             .add_collection_elements(&Id::new(collection_id), &new_element_ids)
             .await?;
     }
+
+    modules
+        .explored_cache_use_case()
+        .add_cache(explore_files)
+        .await?;
 
     Ok(())
 }
