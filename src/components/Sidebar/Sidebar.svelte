@@ -48,7 +48,7 @@
 </script>
 
 <div
-  class="min-h-0 px-2 grid-(~ rows-[min-content_min-content_min-content_1fr])"
+  class="min-h-0 px-2 grid-(~ rows-[min-content_min-content_min-content_1fr]) border-(r-1px solid border-primary)"
 >
   <Link to="/">
     <div class="flex items-center gap-2 p-(x-2 t-4)">

@@ -3,8 +3,6 @@
   import Button from "@/components/UI/Button.svelte";
   import Checkbox from "@/components/UI/Checkbox.svelte";
   import type { CollectionElement as TCollectionElement } from "@/lib/types";
-  import { convertFileSrc } from "@tauri-apps/api/tauri";
-  import { Link } from "svelte-routing";
   import { writable } from "svelte/store";
   import { fade } from "svelte/transition";
 
@@ -13,8 +11,6 @@
   let checked: boolean[] = [];
   let isCheckAll = writable(false);
   isCheckAll.subscribe((val) => (checked = collectionElement.map(() => val)));
-
-  $: iconSrcs = collectionElement.map((v) => convertFileSrc(v.icon));
 </script>
 
 <div class="grid-(~ rows-[min-content_1fr]) h-full">
