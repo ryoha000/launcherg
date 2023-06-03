@@ -10,15 +10,6 @@ body {
   height: 100%;
   overflow: auto;
   /* scrollbar-gutter: stable; */
-  ::-webkit-scrollbar {
-    width: 0.6rem;
-  }
-  ::-webkit-scrollbar-thumb {
-    background-color: #CDD9E5;
-    height: 3rem;
-    border-radius: 999px;
-    cursor: pointer;
-  }
 }
 
 a {
@@ -43,8 +34,16 @@ a:hover {
   color: #c3cfdb;
 }
 
-@layer utilities {
-  .scrollbar-gutter {
-    scrollbar-gutter: stable; 
+.simplebar-vertical {
+  > .simplebar-scrollbar::before {
+    background-color: #CDD9E5;
+  }
+}
+
+.simplebar-horizontal {
+  height: 0.25rem !important;
+  > .simplebar-scrollbar::before {
+    background-color: #CDD9E5;
+    bottom: 0;
   }
 }

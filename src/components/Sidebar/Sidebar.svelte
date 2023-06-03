@@ -48,7 +48,7 @@
 </script>
 
 <div
-  class="min-h-0 px-2 grid-(~ rows-[min-content_min-content_min-content_1fr]) border-(r-1px solid border-primary)"
+  class="min-h-0 grid-(~ rows-[min-content_min-content_min-content_1fr]) border-(r-1px solid border-primary)"
 >
   <Link to="/">
     <div class="flex items-center gap-2 p-(x-2 t-4)">
@@ -56,13 +56,13 @@
       <img src={Logo} alt="launcherg logo" class="h-7" />
     </div>
   </Link>
-  <div class="mt-4 w-full">
+  <div class="mt-4 w-full px-2">
     <CollectionSelect
       collections={$collections}
       bind:value={$selectedColection}
     />
   </div>
-  <div class="w-full mt-2">
+  <div class="w-full mt-2 px-2">
     <SearchInput bind:value={$query} placeholder="Filter by title" />
   </div>
   <div class="mt-1 min-h-0">

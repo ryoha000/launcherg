@@ -35,6 +35,7 @@ export default defineConfig({
         primary: "#22272e",
         secondary: "#2d333b",
         tertiary: "#323942",
+        disabled: "#181818",
         button: "#373e47",
         buttonHover: "#444c56",
       },
@@ -47,6 +48,7 @@ export default defineConfig({
       text: {
         primary: "#adbac7",
         secondary: "#CDD9E5",
+        tertiary: "#768390",
         link: "#2e7cd5",
       },
     },
