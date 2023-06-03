@@ -285,36 +285,41 @@ pub fn save_ico_to_png(
 ) -> anyhow::Result<JoinHandle<anyhow::Result<()>>> {
     assert!(file_path.to_lowercase().ends_with("ico"));
 
-    // image::io::Reader::open(file_path)?
-    //     .decode()?
-    //     .save(save_png_path)?;
-    // Ok(())
-
     let p = file_path.to_string();
     let save_p = save_png_path.to_string();
     let handle = tauri::async_runtime::spawn(async move {
-        image::io::Reader::open(p)?.decode()?.save(save_p)?;
-        return Ok(());
+        match save_ico_to_png_sync(&p, &save_p) {
+            Err(_) => save_default_icon(&save_p)?.await?,
+            _ => Ok(()),
+        }
     });
 
     Ok(handle)
+}
+
+pub fn save_ico_to_png_sync(file_path: &str, save_png_path: &str) -> anyhow::Result<()> {
+    Ok(image::io::Reader::open(file_path)?
+        .decode()?
+        .save(save_png_path)?)
 }
 
 pub fn save_exe_file_png(
     file_path: &str,
     save_png_path: &str,
 ) -> anyhow::Result<JoinHandle<anyhow::Result<()>>> {
-    // Command::new_sidecar("extract-icon")?
-    //     .args(vec!["240", file_path, save_png_path])
-    //     .spawn()?;
-    // Ok(())
-
+    let save_png_path_cloned = save_png_path.to_string();
     let (mut rx, _) = Command::new_sidecar("extract-icon")?
-        .args(vec!["240", file_path, save_png_path])
+        .args(vec!["48", file_path, save_png_path])
         .spawn()?;
 
     let handle: JoinHandle<anyhow::Result<()>> = tauri::async_runtime::spawn(async move {
         while let Some(event) = rx.recv().await {
+            if let CommandEvent::Stdout(_) = event {
+                return save_default_icon(&save_png_path_cloned)?.await?;
+            }
+            if let CommandEvent::Stderr(_) = event {
+                return save_default_icon(&save_png_path_cloned)?.await?;
+            }
             if let CommandEvent::Terminated(_) = event {
                 return Ok(());
             }

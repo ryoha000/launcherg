@@ -1,19 +1,23 @@
 <script lang="ts">
+  import CollectionElement from "@/components/Sidebar/CollectionElement.svelte";
   import Button from "@/components/UI/Button.svelte";
   import Checkbox from "@/components/UI/Checkbox.svelte";
-  import type { CollectionElement } from "@/lib/types";
+  import type { CollectionElement as TCollectionElement } from "@/lib/types";
+  import { convertFileSrc } from "@tauri-apps/api/tauri";
   import { Link } from "svelte-routing";
   import { writable } from "svelte/store";
   import { fade } from "svelte/transition";
 
-  export let collectionElement: CollectionElement[];
+  export let collectionElement: TCollectionElement[];
 
   let checked: boolean[] = [];
   let isCheckAll = writable(false);
   isCheckAll.subscribe((val) => (checked = collectionElement.map(() => val)));
+
+  $: iconSrcs = collectionElement.map((v) => convertFileSrc(v.icon));
 </script>
 
-<div>
+<div class="grid-(~ rows-[min-content_1fr]) h-full">
   {#if collectionElement.length}
     <div class="flex items-center">
       <!-- svelte-ignore a11y-label-has-associated-control -->
@@ -48,30 +52,17 @@
         </div>
       {/if}
     </div>
-    {#each collectionElement as ele, i (ele.id)}
-      <div
-        class="flex items-center p-(r-4 y-1) rounded transition-all hover:bg-bg-secondary"
-      >
-        <!-- svelte-ignore a11y-label-has-associated-control -->
-        <label
-          class="w-12 h-12 flex-shrink-0 cursor-pointer flex items-center justify-center"
-        >
-          <Checkbox
-            value={checked[i]}
-            on:update={(e) => {
-              checked[i] = e.detail.value;
-              checked = checked;
-            }}
-          />
-        </label>
-        <Link
-          to={`/works/${ele.id}`}
-          class="flex-(~ 1) h-12 w-full items-center gap-4"
-        >
-          <img alt=" " src={undefined} class="h-10 w-10" />
-          <div class="text-(body text-primary) font-bold">{ele.gamename}</div>
-        </Link>
-      </div>
-    {/each}
+    <div class="flex-1 mt-2 scrollbar-gutter overflow-y-auto">
+      {#each collectionElement as ele, i (ele.id)}
+        <CollectionElement
+          checked={checked[i]}
+          on:check={(e) => {
+            checked[i] = e.detail.value;
+            checked = checked;
+          }}
+          collectionElement={ele}
+        />
+      {/each}
+    </div>
   {/if}
 </div>

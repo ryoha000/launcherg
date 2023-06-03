@@ -2,7 +2,9 @@
   import Sidebar from "@/components/Sidebar/Sidebar.svelte";
 </script>
 
-<div class="grid grid-cols-[300px_1fr]">
+<div class="grid grid-cols-[300px_1fr] overflow-hidden w-full h-full">
   <Sidebar />
-  <slot />
+  <div class="h-full">
+    <slot />
+  </div>
 </div>

@@ -10,6 +10,15 @@ body {
   height: 100%;
   overflow: auto;
   /* scrollbar-gutter: stable; */
+  ::-webkit-scrollbar {
+    width: 0.6rem;
+  }
+  ::-webkit-scrollbar-thumb {
+    background-color: #CDD9E5;
+    height: 3rem;
+    border-radius: 999px;
+    cursor: pointer;
+  }
 }
 
 a {
@@ -32,4 +41,10 @@ a:hover {
   }
   background-color: #636e7b;
   color: #c3cfdb;
+}
+
+@layer utilities {
+  .scrollbar-gutter {
+    scrollbar-gutter: stable; 
+  }
 }

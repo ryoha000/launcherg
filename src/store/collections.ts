@@ -7,7 +7,6 @@ function createCollections() {
 
   const init = async () => {
     const res = await commandGetAllCollections();
-    console.log("init", { res });
     set(res);
   };
 

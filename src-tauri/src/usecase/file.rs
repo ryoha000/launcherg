@@ -138,15 +138,6 @@ impl<R: ExplorersExt> FileUseCase<R> {
             end.as_secs(),
             end.subsec_nanos() / 1_000_000
         );
-        println!(
-            "exe_id_path_vec.len(): {}, lnk_id_path_vec.len(): {}",
-            exe_id_path_vec.len(),
-            lnk_id_path_vec.len()
-        );
-        println!(
-            "exe_id_path_vec: {:#?}, lnk_id_path_vec: {:#?}",
-            exe_id_path_vec, lnk_id_path_vec
-        );
 
         let (lnk_id_vec, lnk_path_vec): (Vec<ErogamescapeID>, Vec<String>) =
             lnk_id_path_vec.into_iter().unzip();

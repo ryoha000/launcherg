@@ -3,10 +3,8 @@
   import { Listbox, ListboxButton } from "@rgossiaux/svelte-headlessui";
   import type { Option } from "./select";
 
-  type T = $$Generic;
-
-  export let options: Option<T>[];
-  export let value: Option<T>["value"];
+  export let options: Option<string | number>[];
+  export let value: Option<string | number>["value"];
   export let iconClass: string = "";
   export let title: string | undefined = undefined;
   export let enableFilter: boolean = false;

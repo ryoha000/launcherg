@@ -4,7 +4,7 @@
   import { fly } from "svelte/transition";
   import type { Option } from "./select";
 
-  export let options: Option[];
+  export let options: Option<string | number>[];
   export let title: string | undefined = undefined;
   export let enableFilter: boolean = false;
   export let filterPlaceholder = "";
@@ -44,7 +44,7 @@
                   options.length - 1 !== i
                     ? "border-(b-1px solid border-primary)"
                     : ""
-                } w-full flex items-center gap-2 transition-all`}
+                } w-full flex items-center gap-2 transition-all cursor-pointer`}
           let:selected
         >
           {#if selected}
