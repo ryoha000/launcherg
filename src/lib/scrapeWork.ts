@@ -80,7 +80,7 @@ export const getWorkByScrape = async (id: number) => {
     brandName: softTitle?.getElementsByTagName("a")[0].innerHTML ?? "",
     sellday: softTitle?.getElementsByTagName("a")[1].innerHTML ?? "2030-01-01",
     imgUrl:
-      doc.getElementById("count")?.getElementsByTagName("td")[0].innerHTML ??
+      doc.getElementById("main_image")?.getElementsByTagName("img")[0].src ??
       "",
     officialHomePage:
       gameTitle?.getElementsByTagName("a")[0].getAttribute("href") ?? "",
@@ -90,8 +90,8 @@ export const getWorkByScrape = async (id: number) => {
         "0"
       ),
       count: +(
-        doc.getElementById("average")?.getElementsByTagName("td")[0]
-          .innerHTML ?? "0"
+        doc.getElementById("count")?.getElementsByTagName("td")[0].innerHTML ??
+        "0"
       ),
       average: +(
         doc.getElementById("average")?.getElementsByTagName("td")[0]

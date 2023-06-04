@@ -115,6 +115,7 @@ pub async fn get_nearest_key_and_distance(
     key: String,
     calculate_distance_kv: Vec<(String, String)>,
 ) -> anyhow::Result<(String, f32), CommandError> {
+    let key = normalize(&key);
     let normalized_kv = calculate_distance_kv
         .into_iter()
         .map(|v| (normalize(&v.0), normalize(&v.1)))

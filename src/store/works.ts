@@ -1,29 +1,15 @@
 import { getWorkByScrape } from "@/lib/scrapeWork";
 import type { Work } from "@/lib/types";
-import { createLocalStorageWritable } from "@/lib/utils";
+import { createLocalStorageCache } from "@/lib/utils";
 
 const createWorks = () => {
-  const [cache, getCache] = createLocalStorageWritable<Record<number, Work>>(
+  const getter = createLocalStorageCache<number, Work>(
     "works-cache",
-    {}
+    getWorkByScrape
   );
 
-  const get = async (id: number) => {
-    const cachedWork = getCache()[id];
-    if (cachedWork) {
-      return cachedWork;
-    }
-    const work = await getWorkByScrape(id);
-    cache.update((v) => {
-      v[id] = work;
-      return v;
-    });
-    return work;
-  };
-
   return {
-    subscribe: cache.subscribe,
-    get,
+    get: getter,
   };
 };
 

@@ -24,3 +24,32 @@ export const createLocalStorageWritable = <T>(key: string, initialValue: T) => {
   });
   return [store, () => _value] as const;
 };
+
+export type Cache<S extends string | number, U> = Record<
+  S,
+  { createdAt: number; value: U }
+>;
+
+export const createLocalStorageCache = <K extends string | number, T>(
+  key: string,
+  fetcher: (key: K) => Promise<T>,
+  invalidateMilliseconds = 1000 * 60 * 60 * 24
+) => {
+  const initialValue = {} as Cache<K, T>;
+  const [cache, getCache] = createLocalStorageWritable(key, initialValue);
+
+  const getter = async (key: K): Promise<T> => {
+    const now = new Date().getTime();
+    const cached = getCache()[key];
+    if (cached && now < cached.createdAt + invalidateMilliseconds) {
+      return cached.value;
+    }
+    const value = await fetcher(key);
+    cache.update((v) => {
+      v[key] = { value: value, createdAt: now };
+      return v;
+    });
+    return value;
+  };
+  return getter;
+};

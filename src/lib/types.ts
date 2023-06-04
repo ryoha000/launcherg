@@ -49,3 +49,5 @@ export type CollectionElement = {
   path: string;
   icon: string;
 };
+
+export type SeiyaDataPair = [string, string];
