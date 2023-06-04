@@ -1,8 +1,9 @@
 <script lang="ts">
-  import { Tab } from "@rgossiaux/svelte-headlessui";
-  import type { Tab as TTab } from "@/store/tabs";
+  import { deleteTab, type Tab } from "@/store/tabs";
+  import { push } from "svelte-spa-router";
 
-  export let tab: TTab;
+  export let tab: Tab;
+  export let selected: boolean;
 
   $: tabIcon =
     tab.type === "works"
@@ -12,7 +13,8 @@
       : "";
 </script>
 
-<Tab let:selected as="div">
+<!-- svelte-ignore a11y-click-events-have-key-events -->
+<div on:click={() => push(`/${tab.type}/${tab.workId}`)}>
   <div
     class="flex items-center gap-2 px-3 h-10 transition-all cursor-pointer border-(b-1px r-1px solid border-primary) group {selected
       ? 'bg-bg-primary border-b-transparent'
@@ -33,8 +35,8 @@
         class="group-hover:opacity-100 opacity-0 transition-all w-5 h-5 i-iconoir-cancel {selected
           ? 'color-text-secondary'
           : 'color-text-tertiary'}"
-        on:click|stopPropagation={() => {}}
+        on:click|stopPropagation={() => deleteTab(tab.id)}
       />
     </div>
   </div>
-</Tab>
+</div>

@@ -26,7 +26,7 @@
     />
   </label>
   <a
-    href={`/works/${collectionElement.id}`}
+    href={`/works/${collectionElement.id}?gamename=${collectionElement.gamename}`}
     class="flex-(~ 1) h-12 w-full items-center gap-2 pr-2"
     use:link
   >

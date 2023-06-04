@@ -1,7 +1,7 @@
 <script lang="ts">
   import ATab from "@/components/Tab/ATab.svelte";
-  import { tabs } from "@/store/tabs";
-  import { TabList } from "@rgossiaux/svelte-headlessui";
+  import { createLocalStorageWritable } from "@/lib/utils";
+  import { selected, tabs } from "@/store/tabs";
   import SimpleBar from "simplebar";
 
   let isHover = false;
@@ -25,7 +25,7 @@
   };
 </script>
 
-<TabList class="w-full">
+<div class="w-full">
   <div
     use:simplebar
     class="overflow-x-auto scroll-smooth"
@@ -33,9 +33,9 @@
     on:mouseleave={() => (isHover = false)}
   >
     <div class="grid-(~ cols-[min-content_1fr]) items-center">
-      <div class="flex items-center">
-        {#each $tabs as tab (tab.id)}
-          <ATab {tab} />
+      <div class="flex items-center h-10">
+        {#each $tabs as tab, i (tab.id)}
+          <ATab {tab} selected={$selected === i} />
         {/each}
       </div>
       <div
@@ -43,4 +43,4 @@
       />
     </div>
   </div>
-</TabList>
+</div>
