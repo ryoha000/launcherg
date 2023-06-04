@@ -8,7 +8,7 @@
     tab.type === "works"
       ? "i-material-symbols-computer-outline-rounded color-accent-accent"
       : tab.type === "memos"
-      ? "i-material-symbols-drive-file-rename-outline color-accent-success"
+      ? "i-material-symbols-drive-file-rename-outline color-accent-edit"
       : "";
 </script>
 

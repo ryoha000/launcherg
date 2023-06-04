@@ -29,6 +29,7 @@ export default defineConfig({
       accent: {
         accent: "#487AF9",
         success: "#5EB917",
+        edit: "#116329",
         error: "#EA4E60",
       },
       bg: {

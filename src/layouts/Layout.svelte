@@ -6,10 +6,14 @@
 
 <div class="grid grid-cols-[300px_1fr] overflow-hidden w-full h-full">
   <Sidebar />
-  <div class="h-full min-w-0">
+  <div
+    class="h-full min-w-0 min-h-0 grid-(~ rows-[min-content_1fr]) overflow-hidden"
+  >
     <TabGroup>
       <ATabList />
     </TabGroup>
-    <slot />
+    <div class="h-full min-h-0 w-full">
+      <slot />
+    </div>
   </div>
 </div>

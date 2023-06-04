@@ -3,6 +3,7 @@
   import { type Props as TippyOption } from "tippy.js";
 
   export let leftIcon = "";
+  export let appendClass = "";
   export let text = "";
   export let tooltip: Partial<TippyOption> | undefined = undefined;
   export let variant: Variant = "normal";
@@ -14,7 +15,7 @@
 </script>
 
 <ButtonBase
-  appendClass={`${buttonSizeClass} flex items-center`}
+  appendClass={`${appendClass} ${buttonSizeClass} flex items-center`}
   {variant}
   {tooltip}
   on:click

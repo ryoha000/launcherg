@@ -3,19 +3,25 @@
   import type { Work as TWork } from "@/lib/types";
   import { works } from "@/store/works";
   import Work from "@/components/Work/Work.svelte";
+  import { fade } from "svelte/transition";
 
   let work: TWork | null = null;
   export let params: { id: number };
 
   $: {
     (async () => {
-      work = await works.get(params.id);
+      let _work = await works.get(params.id);
+      if (work?.id !== _work.id) {
+        work = _work;
+      }
     })();
   }
 </script>
 
 {#if work}
-  <div class="w-full h-full">
-    <Work {work} />
-  </div>
+  {#key work.id}
+    <div class="w-full h-full" transition:fade={{ duration: 150 }}>
+      <Work {work} />
+    </div>
+  {/key}
 {/if}
