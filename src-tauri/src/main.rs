@@ -24,6 +24,7 @@ fn main() {
             command::get_all_collections,
             command::get_collection_elements,
             command::add_collection_elements_in_pc,
+            command::get_nearest_key_and_distance,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

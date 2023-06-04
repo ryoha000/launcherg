@@ -20,3 +20,13 @@ export const addCollectionElementsInPc = async (
     addingCollectionId,
   });
 };
+
+export const commandGetNearestKeyAndDistance = async (
+  key: string,
+  calculateDistanceKv: [string, string][]
+) => {
+  return await invoke<[string, number]>("get_nearest_key_and_distance", {
+    key,
+    calculateDistanceKv,
+  });
+};

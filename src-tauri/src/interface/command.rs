@@ -3,11 +3,15 @@ use tauri::State;
 
 use super::{
     error::CommandError,
-    models::collection::{Collection, CollectionElement},
+    models::collection::{CalculateDistanceKV, Collection, CollectionElement},
     module::{Modules, ModulesExt},
 };
 use crate::{
-    domain::{file::get_icon_path, Id},
+    domain::{
+        distance::{get_comparable_distance, Distance},
+        file::{get_icon_path, normalize},
+        Id,
+    },
     infrastructure::repositoryimpl::migration::ONEPIECE_COLLECTION_ID,
 };
 
@@ -104,4 +108,38 @@ pub async fn add_collection_elements_in_pc(
         .await?;
 
     Ok(())
+}
+
+#[tauri::command]
+pub async fn get_nearest_key_and_distance(
+    key: String,
+    calculate_distance_kv: Vec<(String, String)>,
+) -> anyhow::Result<(String, f32), CommandError> {
+    let normalized_kv = calculate_distance_kv
+        .into_iter()
+        .map(|v| (normalize(&v.0), normalize(&v.1)))
+        .collect::<Vec<(String, String)>>();
+
+    for (comp_key, comp_value) in normalized_kv.iter() {
+        if key == *comp_key {
+            return Ok((comp_value.to_string(), 1.0));
+        }
+    }
+
+    let mut max_distance = 0.0;
+    let mut max_distance_value = None;
+    for (comp_key, comp_value) in normalized_kv.into_iter() {
+        let distance = get_comparable_distance(&key, &comp_key);
+        if max_distance < distance {
+            max_distance = distance;
+            max_distance_value = Some(comp_value);
+        }
+    }
+
+    match max_distance_value {
+        Some(value) => Ok((value, max_distance)),
+        _ => Err(CommandError::Anyhow(anyhow::anyhow!(
+            "maybe calculate_distance_kv is empty."
+        ))),
+    }
 }

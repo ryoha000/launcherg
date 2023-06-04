@@ -16,3 +16,9 @@ pub struct CollectionElement {
     pub path: String,
     pub icon: String,
 }
+
+#[derive(Serialize, Deserialize)]
+pub struct CalculateDistanceKV {
+    pub key: String,
+    pub value: String,
+}
