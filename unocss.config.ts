@@ -56,6 +56,7 @@ export default defineConfig({
     fontSize: {
       body: ["1rem", "160%"],
       body2: [".875rem", "160%"],
+      body3: [".8rem", "160%"],
       h1: ["1.75rem", "145%"],
       h2: ["1.5rem", "145%"],
       h3: ["1.25rem", "145%"],

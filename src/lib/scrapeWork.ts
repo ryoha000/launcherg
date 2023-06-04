@@ -47,6 +47,21 @@ const getVoiceActors = (elm: HTMLElement) => {
   }
   return creators;
 };
+const getMusics = (elements: HTMLCollectionOf<HTMLTableCellElement>) => {
+  const musics: string[] = [];
+  for (const elm of elements) {
+    const aTag = elm.getElementsByTagName("a")[0];
+    if (!aTag) {
+      continue;
+    }
+    console.log(aTag.href);
+    if (aTag.href.includes("creater")) {
+      continue;
+    }
+    musics.push(aTag.innerHTML);
+  }
+  return musics;
+};
 
 export const getWorkByScrape = async (id: number) => {
   const response = await fetch<string>(
@@ -68,6 +83,10 @@ export const getWorkByScrape = async (id: number) => {
   const voiceActors = doc
     .getElementById("seiyu")
     ?.getElementsByTagName("td")[0];
+
+  const musics = doc
+    .getElementById("music_summary_main")
+    ?.getElementsByTagName("td");
   const work: Work = {
     id: id,
     name: gameTitle?.getElementsByTagName("a")[0].innerHTML ?? "",
@@ -103,6 +122,7 @@ export const getWorkByScrape = async (id: number) => {
       writers: writers ? getCreator(writers) : [],
       voiceActors: voiceActors ? getVoiceActors(voiceActors) : [],
     },
+    musics: musics ? getMusics(musics) : [],
   };
   return work;
 };

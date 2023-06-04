@@ -8,6 +8,7 @@ export type Work = {
   imgUrl: string;
   statistics: Statistics;
   creators: Creators;
+  musics: string[];
 };
 
 export type Statistics = {
