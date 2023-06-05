@@ -193,4 +193,7 @@ impl<R: ExplorersExt> FileUseCase<R> {
             .save_base64_image(&path, base64_image)?;
         Ok(path)
     }
+    pub async fn get_memo_path(&self, id: i32) -> anyhow::Result<String> {
+        Ok(self.explorers.file_explorer().get_md_path(id)?)
+    }
 }

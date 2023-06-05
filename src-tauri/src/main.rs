@@ -27,6 +27,7 @@ fn main() {
             command::add_collection_elements_in_pc,
             command::get_nearest_key_and_distance,
             command::upload_image,
+            command::get_memo_path,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

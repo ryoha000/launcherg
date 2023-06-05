@@ -32,8 +32,14 @@ export const commandGetNearestKeyAndDistance = async (
 };
 
 export const commandUploadImage = async (id: number, base64Image: string) => {
-  return await invoke<[string, number]>("upload_image", {
+  return await invoke<string>("upload_image", {
     id,
     base64Image,
+  });
+};
+
+export const commandGetMemoPath = async (id: number) => {
+  return await invoke<string>("get_memo_path", {
+    id,
   });
 };

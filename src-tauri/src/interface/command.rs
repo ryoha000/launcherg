@@ -3,12 +3,12 @@ use tauri::State;
 
 use super::{
     error::CommandError,
-    models::collection::{CalculateDistanceKV, Collection, CollectionElement},
+    models::collection::{Collection, CollectionElement},
     module::{Modules, ModulesExt},
 };
 use crate::{
     domain::{
-        distance::{get_comparable_distance, Distance},
+        distance::get_comparable_distance,
         file::{get_icon_path, normalize},
         Id,
     },
@@ -155,4 +155,12 @@ pub async fn upload_image(
         .file_use_case()
         .upload_image(id, base64_image)
         .await?)
+}
+
+#[tauri::command]
+pub async fn get_memo_path(
+    modules: State<'_, Arc<Modules>>,
+    id: i32,
+) -> anyhow::Result<String, CommandError> {
+    Ok(modules.file_use_case().get_memo_path(id).await?)
 }

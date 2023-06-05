@@ -1,16 +1,11 @@
 <script lang="ts">
   import EasyMDE from "easymde";
-  // import { readText } from "@tauri-apps/api/clipboard";
-  import {
-    writeText,
-    readText,
-    readImage,
-    writeImage,
-  } from "tauri-plugin-clipboard-api";
-  import { writeBinaryFile, BaseDirectory } from "@tauri-apps/api/fs";
+  import { readImage } from "tauri-plugin-clipboard-api";
   import { commandUploadImage } from "@/lib/command";
+  import { convertFileSrc } from "@tauri-apps/api/tauri";
 
   export let params: { id: string };
+  $: id = +params.id;
 
   let height: number;
 
@@ -33,33 +28,38 @@
         "link",
         "image",
       ],
-      imageUploadFunction: uploadImage,
+      imagesPreviewHandler: (imagePath) => convertFileSrc(imagePath),
     });
-    document.querySelector(".EasyMDEContainer")?.addEventListener(
-      "paste",
-      async (e) => {
-        console.log("paste");
-        try {
-          console.log(await readText());
-        } catch (e) {
-          console.warn("readText", e);
+    const onPaste = async () => {
+      try {
+        const base64Image = await readImage();
+        const imagePath = await commandUploadImage(id, base64Image);
+        const cursor = easyMDE.codemirror.getCursor();
+        const prev = easyMDE.value();
+        const lines = prev.split("\n");
+        const newLines: string[] = [];
+        for (let i = 0; i < lines.length; i++) {
+          newLines.push(lines[i]);
+          if (i === cursor.line) {
+            newLines.push(`![](${imagePath})`);
+            newLines.push("");
+          }
         }
-        try {
-          const base64Image = await readImage();
-          console.log(await commandUploadImage(+params.id, base64Image));
-          console.log(await readImage());
-        } catch (e) {
-          console.warn("readImage", e);
-        }
+        easyMDE.codemirror.setValue(newLines.join("\n"));
+        easyMDE.codemirror.setCursor({ line: cursor.line + 2, ch: 0 });
+      } catch {}
+    };
+    const ele = document.querySelector(".EasyMDEContainer");
+    ele?.addEventListener("paste", onPaste);
+
+    return {
+      destroy: () => {
+        ele?.removeEventListener("paste", onPaste);
       },
-      true
-    );
-  };
-  const uploadImage = (file, onSuccess, onError) => {
-    console.log(file);
+    };
   };
 </script>
 
-<div class="w-full h-full" bind:clientHeight={height}>
+<div class="w-full h-full min-w-0" bind:clientHeight={height}>
   <textarea id="mde" use:mde />
 </div>

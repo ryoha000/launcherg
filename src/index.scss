@@ -65,6 +65,9 @@ a:hover {
     display: flex;
     flex-direction: column;
     height: 100%;
+    max-width: 100%;
+    min-width: 0;
+    width: 100%;
   }
 }
 .EasyMDEContainer > .editor-toolbar {
@@ -77,8 +80,12 @@ a:hover {
   i.separator {
     border-left: 1px solid #444c56;
     border-right: 1px solid #444c56;
-}
+  }
   button:hover {
+    background-color: #2d333b;
+    border-color: #444c56;
+  }
+  button .active {
     background-color: #2d333b;
     border-color: #444c56;
   }
@@ -104,6 +111,13 @@ a:hover {
   }
   .cm-header-6 {
     font-size: 1.04rem;
+  }
+  .cm-image {
+    font-size: 0.5rem;
+  }
+  .cm-url {
+    font-size: 0.5rem;
+    line-height:  120%;
   }
 }
 .CodeMirror.cm-s-easymde.CodeMirror-wrap {

@@ -33,4 +33,14 @@ impl FileExplorer for ExplorerImpl<File> {
             .to_string_lossy()
             .to_string())
     }
+    fn get_md_path(&self, id: i32) -> anyhow::Result<String> {
+        let dir = Path::new(&get_save_root_abs_dir())
+            .join(MEMOS_ROOT_DIR)
+            .join(id.to_string());
+        fs::create_dir_all(&dir).unwrap();
+        Ok(Path::new(&dir)
+            .join("untitled.md")
+            .to_string_lossy()
+            .to_string())
+    }
 }
