@@ -8,6 +8,7 @@
     writeImage,
   } from "tauri-plugin-clipboard-api";
   import { writeBinaryFile, BaseDirectory } from "@tauri-apps/api/fs";
+  import { commandUploadImage } from "@/lib/command";
 
   export let params: { id: string };
 
@@ -45,15 +46,7 @@
         }
         try {
           const base64Image = await readImage();
-          await writeBinaryFile(
-            "hoge.png",
-            new Uint8Array(
-              atob(base64Image)
-                .split("")
-                .map((char) => char.charCodeAt(0))
-            ),
-            { dir: BaseDirectory.AppConfig }
-          );
+          console.log(await commandUploadImage(+params.id, base64Image));
           console.log(await readImage());
         } catch (e) {
           console.warn("readImage", e);

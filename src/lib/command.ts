@@ -30,3 +30,10 @@ export const commandGetNearestKeyAndDistance = async (
     calculateDistanceKv,
   });
 };
+
+export const commandUploadImage = async (id: number, base64Image: string) => {
+  return await invoke<[string, number]>("upload_image", {
+    id,
+    base64Image,
+  });
+};

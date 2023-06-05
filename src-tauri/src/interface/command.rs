@@ -144,3 +144,15 @@ pub async fn get_nearest_key_and_distance(
         ))),
     }
 }
+
+#[tauri::command]
+pub async fn upload_image(
+    modules: State<'_, Arc<Modules>>,
+    id: i32,
+    base64_image: String,
+) -> anyhow::Result<String, CommandError> {
+    Ok(modules
+        .file_use_case()
+        .upload_image(id, base64_image)
+        .await?)
+}

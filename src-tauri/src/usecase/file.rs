@@ -6,8 +6,7 @@ use crate::{
     domain::{
         collection::NewCollectionElement,
         distance::get_comparable_distance,
-        explored_cache::ExploredCache,
-        explorer::network::NetworkExplorer,
+        explorer::{file::FileExplorer, network::NetworkExplorer},
         file::{
             filter_game_path, get_file_paths_by_exts, get_lnk_metadatas, normalize,
             save_icon_to_png,
@@ -24,7 +23,6 @@ pub struct FileUseCase<R: ExplorersExt> {
 }
 
 type FilePathString = String;
-type Gamename = String;
 type ErogamescapeID = i32;
 
 const IGNORE_WORD_WHEN_CONFLICT: [&str; 2] = ["設定", "チェック"];
@@ -130,7 +128,7 @@ impl<R: ExplorersExt> FileUseCase<R> {
             .concurency_get_path_game_map(normalized_all_games, files)
             .await?
             .into_iter()
-            .partition(|(id, path)| path.to_lowercase().ends_with("lnk"));
+            .partition(|(_id, path)| path.to_lowercase().ends_with("lnk"));
 
         let end = start.elapsed();
         println!(
@@ -187,5 +185,12 @@ impl<R: ExplorersExt> FileUseCase<R> {
             .collect();
 
         Ok(collection_elements)
+    }
+    pub async fn upload_image(&self, id: i32, base64_image: String) -> anyhow::Result<String> {
+        let path = self.explorers.file_explorer().get_save_image_path(id)?;
+        self.explorers
+            .file_explorer()
+            .save_base64_image(&path, base64_image)?;
+        Ok(path)
     }
 }
