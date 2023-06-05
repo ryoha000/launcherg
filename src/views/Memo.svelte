@@ -16,6 +16,12 @@
       spellChecker: false,
       sideBySideFullscreen: false,
       previewImagesInEditor: true,
+      autofocus: true,
+      autosave: {
+        enabled: true,
+        delay: 1000,
+        uniqueId: `memo-${id}"`,
+      },
       toolbar: [
         "bold",
         "italic",
