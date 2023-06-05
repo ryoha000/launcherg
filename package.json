@@ -14,9 +14,11 @@
   "dependencies": {
     "@tauri-apps/api": "^1.3.0",
     "@unocss/reset": "^0.52.5",
+    "easymde": "^2.18.0",
     "encoding-japanese": "^2.0.0",
     "simplebar": "^6.2.5",
     "svelte-spa-router": "^3.3.0",
+    "tauri-plugin-clipboard-api": "^0.2.5",
     "tippy.js": "^6.3.7"
   },
   "devDependencies": {

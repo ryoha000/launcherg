@@ -20,6 +20,7 @@ fn main() {
 
             Ok(())
         })
+        .plugin(tauri_plugin_clipboard::init())
         .invoke_handler(tauri::generate_handler![
             command::get_all_collections,
             command::get_collection_elements,

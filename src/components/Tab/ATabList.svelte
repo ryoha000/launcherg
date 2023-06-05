@@ -7,13 +7,16 @@
   let isHover = false;
 
   const simplebar = (node: HTMLElement) => {
-    let simplebar = new SimpleBar(node, { scrollbarMinSize: 64 });
+    let simplebar = new SimpleBar(node, {
+      scrollbarMinSize: 64,
+      scrollbarMaxSize: 256,
+    });
 
     const onWheel = (e: WheelEvent) => {
       if (isHover) {
         simplebar
           .getScrollElement()
-          ?.scrollBy({ left: e.deltaY * 2, behavior: "smooth" });
+          ?.scrollBy({ left: e.deltaY * 5, behavior: "smooth" });
       }
     };
     window.addEventListener("wheel", onWheel);

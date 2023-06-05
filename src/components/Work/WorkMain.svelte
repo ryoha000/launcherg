@@ -18,7 +18,7 @@
 </script>
 
 <div class="space-y-4 max-w-full">
-  <Actions />
+  <Actions {...work} />
   <div class="flex items-center">
     <LinkButton href={work.officialHomePage} text="Official" withIcon />
     <LinkButton

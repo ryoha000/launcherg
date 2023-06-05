@@ -3,6 +3,7 @@ import "@unocss/reset/tailwind-compat.css";
 import "./index.scss";
 import "tippy.js/dist/tippy.css";
 import "simplebar/dist/simplebar.css";
+import "easymde/dist/easymde.min.css";
 import App from "./App.svelte";
 
 const app = new App({

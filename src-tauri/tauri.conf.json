@@ -24,6 +24,24 @@
       "http": {
         "request": true,
         "scope": ["https://erogamescape.dyndns.org/~ap2/ero/toukei_kaiseki/*", "https://seiya-saiga.com/game/*"]
+      },
+      "clipboard": {
+        "all": false,
+        "readText": true,
+        "writeText": false
+      },
+      "fs": {
+        "all": false,
+        "copyFile": false,
+        "createDir": true,
+        "exists": true,
+        "readDir": false,
+        "readFile": true,
+        "removeDir": false,
+        "removeFile": false,
+        "renameFile": false,
+        "scope": ["$APPDATA/*"],
+        "writeFile": true
       }
     },
     "bundle": {
