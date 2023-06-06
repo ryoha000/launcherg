@@ -1,4 +1,5 @@
 <script lang="ts">
+  import NewCollection from "@/components/Sidebar/NewCollection.svelte";
   import SortPopover from "@/components/Sidebar/SortPopover.svelte";
   import type { SortOrder } from "@/components/Sidebar/sort";
   import APopover from "@/components/UI/APopover.svelte";
@@ -26,6 +27,8 @@
     label: v.name,
     value: v.id,
   }));
+
+  let isOpenNewCollection = false;
 </script>
 
 <div class="grid items-center gap-2 grid-cols-[1fr_min-content]">
@@ -36,7 +39,7 @@
     bind:value={selectedCollectionId}
     options={collectionOptions}
     bottomAddButtonText="Add new collection"
-    on:add={() => console.log("hoge")}
+    on:add={() => (isOpenNewCollection = true)}
   />
   <div class="flex items-center relative">
     <ButtonBase
@@ -45,7 +48,6 @@
         content: "このコレクションにゲームを追加",
         placement: "bottom",
         theme: "default",
-        trigger: "click",
       }}
     >
       <div class="color-ui-tertiary w-5 h-5 i-iconoir-plus" />
@@ -79,3 +81,4 @@
     </APopover>
   </div>
 </div>
+<NewCollection bind:isOpen={isOpenNewCollection} />
