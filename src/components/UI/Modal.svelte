@@ -4,16 +4,21 @@
   import { createEventDispatcher } from "svelte";
 
   export let isOpen = false;
+  export let autofocusCloseButton = false;
+  export let maxWidth = "";
+  export let headerClass = "";
   export let title = "";
   export let confirmText = "";
+  export let withFooter = true;
+  export let withContentPadding = true;
 
   const dispatcher = createEventDispatcher<{ confirm: {}; cancel: {} }>();
 </script>
 
-<ModalBase bind:isOpen panelClass="max-w-160">
+<ModalBase bind:isOpen panelClass={maxWidth ? maxWidth : "max-w-160"}>
   <div>
     <div
-      class="flex items-center bg-bg-secondary border-(b-1px solid border-primary)"
+      class="flex items-center bg-bg-secondary border-(b-1px solid border-primary) {headerClass}"
     >
       <div class="px-4 text-(text-primary body) font-medium">
         {title}
@@ -21,23 +26,27 @@
       <button
         on:click={() => (isOpen = false)}
         class="ml-auto p-4 bg-transparent color-text-tertiary hover:color-text-primary transition-all"
-        tabindex={-1}
+        tabindex={autofocusCloseButton ? 0 : -1}
       >
         <div class="w-5 h-5 i-iconoir-cancel" />
       </button>
     </div>
-    <div class="p-4">
+    <div class:p-4={withContentPadding}>
       <slot />
     </div>
-    <div class="flex items-center p-4 border-(t-1px solid border-primary)">
-      <div class="flex items-center ml-auto gap-2">
-        <Button text="Cancel" on:click={() => (isOpen = false)} />
-        <Button
-          variant="success"
-          text={confirmText}
-          on:click={() => dispatcher("confirm")}
-        />
-      </div>
-    </div>
+    {#if withFooter}
+      <slot name="footer">
+        <div class="flex items-center p-4 border-(t-1px solid border-primary)">
+          <div class="flex items-center ml-auto gap-2">
+            <Button text="Cancel" on:click={() => (isOpen = false)} />
+            <Button
+              variant="success"
+              text={confirmText}
+              on:click={() => dispatcher("confirm")}
+            />
+          </div>
+        </div>
+      </slot>
+    {/if}
   </div>
 </ModalBase>

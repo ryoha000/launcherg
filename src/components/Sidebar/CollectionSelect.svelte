@@ -1,4 +1,7 @@
 <script lang="ts">
+  import ChangeCollectionName from "@/components/Sidebar/ChangeCollectionName.svelte";
+  import ChangePopover from "@/components/Sidebar/ChangePopover.svelte";
+  import DeleteCollection from "@/components/Sidebar/DeleteCollection.svelte";
   import NewCollection from "@/components/Sidebar/NewCollection.svelte";
   import SortPopover from "@/components/Sidebar/SortPopover.svelte";
   import type { SortOrder } from "@/components/Sidebar/sort";
@@ -29,6 +32,8 @@
   }));
 
   let isOpenNewCollection = false;
+  let isOpenChangeCollectionName = false;
+  let isOpenDeleteCollection = false;
 </script>
 
 <div class="grid items-center gap-2 grid-cols-[1fr_min-content]">
@@ -52,17 +57,36 @@
     >
       <div class="color-ui-tertiary w-5 h-5 i-iconoir-plus" />
     </ButtonBase>
-    <ButtonBase
-      appendClass="h-8 w-8 flex items-center justify-center border-x-transparent rounded-0"
-      tooltip={{
-        content: "このコレクションの名前を編集",
-        placement: "bottom",
-        theme: "default",
-      }}
-      on:click
-    >
-      <div class="color-ui-tertiary w-4 h-4 i-material-symbols-edit-rounded" />
-    </ButtonBase>
+    <APopover isRelativeRoot={false} panelClass="right-0" let:close>
+      <ButtonBase
+        appendClass="h-8 w-8 flex items-center justify-center border-x-transparent rounded-0"
+        tooltip={{
+          content: "このコレクションの変更",
+          placement: "bottom",
+          theme: "default",
+        }}
+        slot="button"
+      >
+        <div
+          class="color-ui-tertiary w-4 h-4 i-material-symbols-edit-rounded"
+        />
+      </ButtonBase>
+      <ChangePopover
+        showDelete={value?.id !== 1}
+        on:close={() => close(null)}
+        on:changeName={() => {
+          isOpenChangeCollectionName = true;
+          close(null);
+        }}
+        on:delete={() => {
+          if (value?.id === 1) {
+            return;
+          }
+          isOpenDeleteCollection = true;
+          close(null);
+        }}
+      />
+    </APopover>
     <APopover isRelativeRoot={false} panelClass="right-0" let:close>
       <ButtonBase
         appendClass="h-8 w-8 flex items-center justify-center rounded-l-0"
@@ -82,3 +106,8 @@
   </div>
 </div>
 <NewCollection bind:isOpen={isOpenNewCollection} />
+<ChangeCollectionName
+  bind:isOpen={isOpenChangeCollectionName}
+  collection={value}
+/>
+<DeleteCollection bind:isOpen={isOpenDeleteCollection} collection={value} />

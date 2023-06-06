@@ -5,8 +5,8 @@
 
 <div class="flex items-center min-w-0">
   <Button
-    appendClass="w-24 h-8 flex items-center rounded-r-0 group hover:color-accent-success transition-all"
-    leftIcon="i-material-symbols-power-rounded group-hover:color-accent-success transition-all"
+    appendClass="w-24 h-8 flex items-center rounded-r-0 group hover:text-bg-success-hover transition-all"
+    leftIcon="i-material-symbols-power-rounded group-hover:color-bg-success-hover transition-all"
     text="Play"
     on:click
   />

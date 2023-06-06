@@ -30,6 +30,7 @@ export default defineConfig({
         accent: "#487AF9",
         success: "#347d39",
         edit: "#116329",
+        warning: "#c69026",
         error: "#EA4E60",
       },
       bg: {
@@ -41,12 +42,14 @@ export default defineConfig({
         buttonHover: "#444c56",
         backdrop: "#1C2128",
         successHover: "#46954a",
+        warning: "#37332a",
       },
       ui: { tertiary: "#636e7b" },
       border: {
         primary: "#444c56",
         button: "#CDD9E5",
         buttonHover: "#768390",
+        warning: "#AE7C14",
       },
       text: {
         primary: "#adbac7",
