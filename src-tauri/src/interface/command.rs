@@ -8,6 +8,7 @@ use super::{
 };
 use crate::{
     domain::{
+        collection::{NewCollectionElement, UpdateCollection},
         distance::get_comparable_distance,
         file::{get_icon_path, normalize},
         Id,
@@ -176,4 +177,88 @@ pub async fn create_new_collection(
         .create_collection(CreateCollection::new(name))
         .await?
         .into())
+}
+
+#[tauri::command]
+pub async fn update_collection(
+    modules: State<'_, Arc<Modules>>,
+    id: i32,
+    name: String,
+) -> anyhow::Result<(), CommandError> {
+    Ok(modules
+        .collection_use_case()
+        .update_collection_by_id(UpdateCollection::new(Id::new(id), name))
+        .await?)
+}
+
+#[tauri::command]
+pub async fn delete_collection(
+    modules: State<'_, Arc<Modules>>,
+    id: i32,
+) -> anyhow::Result<(), CommandError> {
+    Ok(modules
+        .collection_use_case()
+        .delete_collection_by_id(&Id::new(id))
+        .await?)
+}
+
+#[tauri::command]
+pub async fn upsert_collection_element(
+    modules: State<'_, Arc<Modules>>,
+    id: i32,
+    gamename: String,
+    path: String,
+) -> anyhow::Result<(), CommandError> {
+    Ok(modules
+        .collection_use_case()
+        .upsert_collection_element(&NewCollectionElement::new(Id::new(id), gamename, path))
+        .await?)
+}
+
+#[tauri::command]
+pub async fn update_collection_element_icon(
+    modules: State<'_, Arc<Modules>>,
+    id: i32,
+    path: String,
+) -> anyhow::Result<(), CommandError> {
+    Ok(modules
+        .collection_use_case()
+        .update_collection_element_icon(&Id::new(id), path)
+        .await?)
+}
+
+#[tauri::command]
+pub async fn add_elements_to_collection(
+    modules: State<'_, Arc<Modules>>,
+    collection_id: i32,
+    collection_element_ids: Vec<i32>,
+) -> anyhow::Result<(), CommandError> {
+    Ok(modules
+        .collection_use_case()
+        .add_collection_elements(
+            &Id::new(collection_id),
+            &collection_element_ids
+                .into_iter()
+                .map(|v| Id::new(v))
+                .collect(),
+        )
+        .await?)
+}
+
+#[tauri::command]
+pub async fn remove_elements_from_collection(
+    modules: State<'_, Arc<Modules>>,
+    collection_id: i32,
+    collection_element_ids: Vec<i32>,
+) -> anyhow::Result<(), CommandError> {
+    Ok(modules
+        .collection_use_case()
+        .remove_collection_elements(
+            &Id::new(collection_id),
+            &collection_element_ids
+                .into_iter()
+                .map(|v| Id::new(v))
+                .collect(),
+        )
+        .await?)
 }

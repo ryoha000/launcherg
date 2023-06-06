@@ -1,15 +1,18 @@
-use std::sync::Arc;
+use std::{fs, sync::Arc};
 
 use derive_new::new;
 
 use super::{error::UseCaseError, models::collection::CreateCollection};
 use crate::{
     domain::{
-        collection::{Collection, CollectionElement, NewCollectionElement},
+        collection::{Collection, CollectionElement, NewCollectionElement, UpdateCollection},
+        file::get_icon_path,
         repository::collection::CollectionRepository,
         Id,
     },
-    infrastructure::repositoryimpl::repository::RepositoriesExt,
+    infrastructure::repositoryimpl::{
+        migration::ONEPIECE_COLLECTION_ID, repository::RepositoriesExt,
+    },
 };
 
 #[derive(new)]
@@ -32,6 +35,31 @@ impl<R: RepositoriesExt> CollectionUseCase<R> {
             .create(source.try_into()?)
             .await
     }
+    pub async fn update_collection_by_id(&self, src: UpdateCollection) -> anyhow::Result<()> {
+        let existed = self
+            .repositories
+            .collection_repository()
+            .get(&src.id)
+            .await?;
+        if existed.is_none() {
+            return Err(UseCaseError::CollectionIsNotFound.into());
+        }
+        Ok(self
+            .repositories
+            .collection_repository()
+            .update(src)
+            .await?)
+    }
+    pub async fn delete_collection_by_id(&self, id: &Id<Collection>) -> anyhow::Result<()> {
+        if id.value == ONEPIECE_COLLECTION_ID {
+            return Err(UseCaseError::CollectionNotPermittedToDelete.into());
+        }
+        let existed = self.repositories.collection_repository().get(id).await?;
+        if existed.is_none() {
+            return Err(UseCaseError::CollectionIsNotFound.into());
+        }
+        Ok(self.repositories.collection_repository().delete(id).await?)
+    }
     pub async fn create_collection_elements(
         &self,
         source: Vec<NewCollectionElement>,
@@ -41,6 +69,16 @@ impl<R: RepositoriesExt> CollectionUseCase<R> {
             .collection_repository()
             .create_collection_elements(source)
             .await?)
+    }
+    pub async fn upsert_collection_element(
+        &self,
+        source: &NewCollectionElement,
+    ) -> anyhow::Result<()> {
+        self.repositories
+            .collection_repository()
+            .upsert_collection_element(source)
+            .await?;
+        Ok(())
     }
     pub async fn upsert_collection_elements(
         &self,
@@ -70,6 +108,18 @@ impl<R: RepositoriesExt> CollectionUseCase<R> {
             .await?)
     }
 
+    pub async fn remove_collection_elements(
+        &self,
+        collection_id: &Id<Collection>,
+        collection_element_ids: &Vec<Id<CollectionElement>>,
+    ) -> anyhow::Result<()> {
+        Ok(self
+            .repositories
+            .collection_repository()
+            .remove_elements_by_id(collection_id, collection_element_ids)
+            .await?)
+    }
+
     pub async fn get_all_collections(&self) -> anyhow::Result<Vec<Collection>> {
         self.repositories.collection_repository().get_all().await
     }
@@ -82,5 +132,15 @@ impl<R: RepositoriesExt> CollectionUseCase<R> {
             .collection_repository()
             .get_elements_by_id(id)
             .await
+    }
+
+    pub async fn update_collection_element_icon(
+        &self,
+        id: &Id<CollectionElement>,
+        path: String,
+    ) -> anyhow::Result<()> {
+        let save_icon_path = get_icon_path(id);
+        fs::copy(path, save_icon_path)?;
+        Ok(())
     }
 }

@@ -7,13 +7,31 @@ use super::{
     repository::RepositoryImpl,
 };
 use crate::domain::{
-    collection::{Collection, CollectionElement, NewCollection, NewCollectionElement},
+    collection::{
+        Collection, CollectionElement, NewCollection, NewCollectionElement, UpdateCollection,
+    },
     repository::collection::CollectionRepository,
     Id,
 };
 
 #[async_trait]
 impl CollectionRepository for RepositoryImpl<Collection> {
+    async fn get(&self, id: &Id<Collection>) -> Result<Option<Collection>> {
+        let pool = self.pool.0.clone();
+        let collection = query_as::<_, CollectionTable>("select * from collections where id = ?")
+            .bind(id.value)
+            .fetch_all(&*pool)
+            .await?
+            .into_iter()
+            .filter_map(|v| v.try_into().ok())
+            .collect::<Vec<Collection>>();
+        if collection.len() == 0 {
+            Ok(None)
+        } else {
+            let v = collection[0].clone();
+            Ok(Some(v))
+        }
+    }
     async fn get_by_name(&self, name: String) -> Result<Option<Collection>> {
         let pool = self.pool.0.clone();
         let collection = query_as::<_, CollectionTable>("select * from collections where name = ?")
@@ -70,6 +88,23 @@ impl CollectionRepository for RepositoryImpl<Collection> {
                 .try_into()?,
         )
     }
+    async fn update(&self, src: UpdateCollection) -> Result<()> {
+        let pool = self.pool.0.clone();
+        query("update collections set name = ? where id = ?")
+            .bind(src.name)
+            .bind(src.id.value)
+            .execute(&*pool)
+            .await?;
+        Ok(())
+    }
+    async fn delete(&self, id: &Id<Collection>) -> Result<()> {
+        let pool = self.pool.0.clone();
+        query("delete from collections where id = ?")
+            .bind(id.value)
+            .execute(&*pool)
+            .await?;
+        Ok(())
+    }
     async fn upsert_collection_element(&self, new: &NewCollectionElement) -> Result<()> {
         let pool = self.pool.0.clone();
         let _ = query("insert into collection_elements (id, gamename, path) values (?, ?, ?) ON CONFLICT(id) DO UPDATE SET gamename = ?, path = ?")
@@ -124,18 +159,24 @@ impl CollectionRepository for RepositoryImpl<Collection> {
         query.execute(&*pool).await?;
         Ok(())
     }
-    async fn remove_element_by_id(
+    async fn remove_elements_by_id(
         &self,
         collection_id: &Id<Collection>,
-        collection_element_id: &Id<CollectionElement>,
+        collection_element_ids: &Vec<Id<CollectionElement>>,
     ) -> Result<()> {
         let pool = self.pool.0.clone();
-        let _ =
-            query("delete collection_element_maps where collection_id = ? AND collection_id = ?")
-                .bind(collection_id.value)
-                .bind(collection_element_id.value)
-                .execute(&*pool)
-                .await?;
+        let mut builder = sqlx::query_builder::QueryBuilder::new(
+            "DELETE FROM collection_element_maps WHERE collection_id = ",
+        );
+        builder.push_bind(collection_id.value);
+        builder.push(" AND collection_element_id IN ( ");
+        let mut separated = builder.separated(", ");
+        for id in collection_element_ids.iter() {
+            separated.push_bind(id.value);
+        }
+        separated.push_unseparated(")");
+        let query = builder.build();
+        query.execute(&*pool).await?;
         Ok(())
     }
     async fn remove_conflict_maps(&self) -> anyhow::Result<()> {

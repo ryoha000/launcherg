@@ -17,6 +17,12 @@ pub struct NewCollection {
     pub name: String,
 }
 
+#[derive(new, Debug)]
+pub struct UpdateCollection {
+    pub id: Id<Collection>,
+    pub name: String,
+}
+
 #[derive(new, Debug, Clone, Serialize, Deserialize)]
 pub struct CollectionElement {
     pub id: Id<CollectionElement>,

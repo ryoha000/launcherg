@@ -47,3 +47,53 @@ export const commandGetMemoPath = async (id: number) => {
 export const commandCreateNewCollection = async (name: string) => {
   return await invoke<Collection>("create_new_collection", { name });
 };
+
+export const commandUpdateCollection = async (id: number, name: string) => {
+  return await invoke<void>("update_collection", { id, name });
+};
+
+export const commandDeleteCollection = async (id: number) => {
+  return await invoke<void>("delete_collection", { id });
+};
+
+export const commandUpsertCollectionElement = async (
+  id: number,
+  gamename: string,
+  path: string
+) => {
+  return await invoke<void>("upsert_collection_element", {
+    id,
+    gamename,
+    path,
+  });
+};
+
+export const commandUpdateCollectionElementIcon = async (
+  id: number,
+  path: string
+) => {
+  return await invoke<void>("update_collection_element_icon", {
+    id,
+    path,
+  });
+};
+
+export const commandAddElementsToCollection = async (
+  collectionId: number,
+  collectionElementIds: number[]
+) => {
+  return await invoke<void>("add_elements_to_collection", {
+    collectionId,
+    collectionElementIds,
+  });
+};
+
+export const commandRemoveElementsFromCollection = async (
+  collectionId: number,
+  collectionElementIds: number[]
+) => {
+  return await invoke<void>("remove_elements_from_collection", {
+    collectionId,
+    collectionElementIds,
+  });
+};
