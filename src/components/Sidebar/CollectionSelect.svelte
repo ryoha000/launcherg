@@ -1,9 +1,13 @@
 <script lang="ts">
+  import SortPopover from "@/components/Sidebar/SortPopover.svelte";
+  import type { SortOrder } from "@/components/Sidebar/sort";
+  import APopover from "@/components/UI/APopover.svelte";
   import ButtonBase from "@/components/UI/ButtonBase.svelte";
   import Select from "@/components/UI/Select.svelte";
   import type { Collection } from "@/lib/types";
 
   export let collections: Collection[] = [];
+  export let order: SortOrder;
 
   let selectedCollectionId = 0;
   export let value: Collection | null = null;
@@ -32,15 +36,15 @@
     bind:value={selectedCollectionId}
     options={collectionOptions}
   />
-  <div class="flex items-center">
+  <div class="flex items-center relative">
     <ButtonBase
       appendClass="h-8 w-8 flex items-center justify-center rounded-r-0"
       tooltip={{
         content: "このコレクションにゲームを追加",
         placement: "bottom",
         theme: "default",
+        trigger: "click",
       }}
-      on:click
     >
       <div class="color-ui-tertiary w-5 h-5 i-iconoir-plus" />
     </ButtonBase>
@@ -55,16 +59,21 @@
     >
       <div class="color-ui-tertiary w-4 h-4 i-material-symbols-edit-rounded" />
     </ButtonBase>
-    <ButtonBase
-      appendClass="h-8 w-8 flex items-center justify-center rounded-l-0"
-      tooltip={{
-        content: "ゲームの並べ替え",
-        placement: "bottom",
-        theme: "default",
-      }}
-      on:click
-    >
-      <div class="color-ui-tertiary w-5 h-5 i-material-symbols-sort-rounded" />
-    </ButtonBase>
+    <APopover isRelativeRoot={false} panelClass="right-0" let:close>
+      <ButtonBase
+        appendClass="h-8 w-8 flex items-center justify-center rounded-l-0"
+        tooltip={{
+          content: "ゲームの並べ替え",
+          placement: "bottom",
+          theme: "default",
+        }}
+        slot="button"
+      >
+        <div
+          class="color-ui-tertiary w-5 h-5 i-material-symbols-sort-rounded"
+        />
+      </ButtonBase>
+      <SortPopover bind:value={order} on:close={() => close(null)} />
+    </APopover>
   </div>
 </div>

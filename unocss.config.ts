@@ -39,6 +39,7 @@ export default defineConfig({
         disabled: "#181818",
         button: "#373e47",
         buttonHover: "#444c56",
+        backdrop: "#1C2128",
       },
       ui: { tertiary: "#636e7b" },
       border: {

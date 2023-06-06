@@ -11,6 +11,7 @@
   import { sidebarCollectionElements } from "@/store/sidebarCollectionElements";
   import { createWritable } from "@/lib/utils";
   import { link } from "svelte-spa-router";
+  import type { SortOrder } from "@/components/Sidebar/sort";
 
   onMount(() => collections.init());
 
@@ -23,26 +24,31 @@
 
   let displayCollectionElements: CollectionElement[] = [];
   const filterAndSort = () => {
-    displayCollectionElements = sidebarCollectionElements
+    const filteredTemp = sidebarCollectionElements
       .value()
-      .filter((v) => v.gamename.includes(getQuery()))
-      .sort((a, b) => {
-        if (getOrder() === "gamename") {
-          return a.gamename.localeCompare(b.gamename, "ja");
-        }
-        return 1;
-      });
+      .filter((v) => v.gamename.includes(getQuery()));
+
+    const isGamename = getOrder().includes("gamename");
+    const isAsc = getOrder().includes("asc");
+    const multiplyer = isAsc ? 1 : -1;
+
+    displayCollectionElements = [...filteredTemp].sort((a, b) => {
+      if (isGamename) {
+        return a.gamename.localeCompare(b.gamename, "ja") * multiplyer;
+      }
+      return 1;
+    });
   };
 
   let [query, getQuery] = createWritable("");
-  let [order, getOrder] = createWritable<"gamename">("gamename");
+  let [order, getOrder] = createWritable<SortOrder>("gamename-asc");
 
   query.subscribe(() => filterAndSort());
   order.subscribe(() => filterAndSort());
 
   sidebarCollectionElements.subscribe(() => {
     query.set("");
-    order.set("gamename");
+    order.set("gamename-asc");
     filterAndSort();
   });
 </script>
@@ -60,13 +66,14 @@
     <CollectionSelect
       collections={$collections}
       bind:value={$selectedColection}
+      bind:order={$order}
     />
   </div>
   <div class="w-full mt-2 px-2">
     <SearchInput bind:value={$query} placeholder="Filter by title" />
   </div>
   <div class="mt-1 min-h-0">
-    {#key $sidebarCollectionElements}
+    {#key displayCollectionElements}
       <CollectionElements collectionElement={displayCollectionElements} />
     {/key}
   </div>

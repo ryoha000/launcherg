@@ -3,6 +3,7 @@
   import { type Props as TippyOption } from "tippy.js";
 
   export let leftIcon = "";
+  export let rightIcon = "";
   export let appendClass = "";
   export let text = "";
   export let tooltip: Partial<TippyOption> | undefined = undefined;
@@ -24,6 +25,9 @@
     <div class={`${iconVarinatClass} ${iconSizeClass} ${leftIcon}`} />
   {/if}
   {#if text}
-    <div class="text-body2 font-medium">{text}</div>
+    <div class="text-body2 font-medium whitespace-nowrap">{text}</div>
+  {/if}
+  {#if rightIcon}
+    <div class={`${iconVarinatClass} ${iconSizeClass} ${rightIcon}`} />
   {/if}
 </ButtonBase>
