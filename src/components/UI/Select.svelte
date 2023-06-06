@@ -10,11 +10,11 @@
   export let title: string | undefined = undefined;
   export let enableFilter: boolean = false;
   export let filterPlaceholder = "";
-  export let bottomAddButtonText = "";
+  export let bottomCreateButtonText = "";
 
   $: selectedLabel = options.find((v) => v.value === value)?.label ?? "";
 
-  const dispather = createEventDispatcher<{ add: {} }>();
+  const dispather = createEventDispatcher<{ create: {} }>();
 </script>
 
 <APopover let:open let:close>
@@ -36,11 +36,12 @@
     {enableFilter}
     {filterPlaceholder}
     {options}
-    {bottomAddButtonText}
-    selectedValue={value}
-    on:add={() => {
+    {bottomCreateButtonText}
+    bind:value
+    on:create={() => {
       close(null);
-      dispather("add");
+      dispather("create");
     }}
+    on:close={() => close(null)}
   />
 </APopover>

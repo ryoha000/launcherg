@@ -57,16 +57,18 @@ impl CollectionRepository for RepositoryImpl<Collection> {
         }
 
         let pool = self.pool.0.clone();
-        let _ = query("insert into collections (name) values (?)")
+        let id = query("insert into collections (name) values (?)")
             .bind(new.name)
             .execute(&*pool)
-            .await?;
-        Ok(query_as::<_, CollectionTable>(
-            "select * from collections where id = last_insert_rowid()",
+            .await?
+            .last_insert_rowid();
+        Ok(
+            query_as::<_, CollectionTable>("select * from collections where id = ?")
+                .bind(id)
+                .fetch_one(&*pool)
+                .await?
+                .try_into()?,
         )
-        .fetch_one(&*pool)
-        .await?
-        .try_into()?)
     }
     async fn upsert_collection_element(&self, new: &NewCollectionElement) -> Result<()> {
         let pool = self.pool.0.clone();

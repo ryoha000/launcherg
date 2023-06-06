@@ -13,6 +13,7 @@ use crate::{
         Id,
     },
     infrastructure::repositoryimpl::migration::ONEPIECE_COLLECTION_ID,
+    usecase::models::collection::CreateCollection,
 };
 
 #[tauri::command]
@@ -163,4 +164,16 @@ pub async fn get_memo_path(
     id: i32,
 ) -> anyhow::Result<String, CommandError> {
     Ok(modules.file_use_case().get_memo_path(id).await?)
+}
+
+#[tauri::command]
+pub async fn create_new_collection(
+    modules: State<'_, Arc<Modules>>,
+    name: String,
+) -> anyhow::Result<Collection, CommandError> {
+    Ok(modules
+        .collection_use_case()
+        .create_collection(CreateCollection::new(name))
+        .await?
+        .into())
 }

@@ -38,8 +38,8 @@
     enableFilter
     bind:value={selectedCollectionId}
     options={collectionOptions}
-    bottomAddButtonText="Add new collection"
-    on:add={() => (isOpenNewCollection = true)}
+    bottomCreateButtonText="Create new collection"
+    on:create={() => (isOpenNewCollection = true)}
   />
   <div class="flex items-center relative">
     <ButtonBase

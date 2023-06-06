@@ -43,3 +43,7 @@ export const commandGetMemoPath = async (id: number) => {
     id,
   });
 };
+
+export const commandCreateNewCollection = async (name: string) => {
+  return await invoke<Collection>("create_new_collection", { name });
+};

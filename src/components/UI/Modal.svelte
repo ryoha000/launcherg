@@ -1,10 +1,13 @@
 <script lang="ts">
   import Button from "@/components/UI/Button.svelte";
   import ModalBase from "@/components/UI/ModalBase.svelte";
+  import { createEventDispatcher } from "svelte";
 
   export let isOpen = false;
   export let title = "";
   export let confirmText = "";
+
+  const dispatcher = createEventDispatcher<{ confirm: {}; cancel: {} }>();
 </script>
 
 <ModalBase bind:isOpen panelClass="max-w-160">
@@ -28,8 +31,12 @@
     </div>
     <div class="flex items-center p-4 border-(t-1px solid border-primary)">
       <div class="flex items-center ml-auto gap-2">
-        <Button text="Cancel" />
-        <Button variant="success" text={confirmText} />
+        <Button text="Cancel" on:click={() => (isOpen = false)} />
+        <Button
+          variant="success"
+          text={confirmText}
+          on:click={() => dispatcher("confirm")}
+        />
       </div>
     </div>
   </div>
