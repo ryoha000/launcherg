@@ -1,6 +1,7 @@
 <script lang="ts">
+  import Button from "@/components/UI/Button.svelte";
   import PlayButton from "@/components/Work/PlayButton.svelte";
-  import { link } from "svelte-spa-router";
+  import { push } from "svelte-spa-router";
 
   export let name: string;
   export let id: number;
@@ -8,16 +9,12 @@
 
 <div class="flex items-center gap-4 flex-wrap w-full min-w-0">
   <PlayButton />
-  <a
-    href="/memos/{id}?gamename={name}"
-    use:link
-    class="bg-accent-edit min-w-0 rounded transition-all hover:bg-opacity-80 flex items-center h-8 px-4 gap-2"
-  >
-    <div
-      class="w-4 h-4 color-text-secondary i-material-symbols-drive-file-rename-outline"
-    />
-    <div class="text-(text-secondary body2) font-medium">Memo</div>
-  </a>
+  <Button
+    variant="success"
+    leftIcon="color-text-white i-material-symbols-drive-file-rename-outline"
+    text="Memo"
+    on:click={() => push(`/memos/${id}?gamename=${name}`)}
+  />
   <div class="flex ml-auto items-end gap-2 h-8 min-w-0">
     <div class="text-(text-primary body2) whitespace-nowrap">Time</div>
     <div class="text-(text-primary body)">03:22</div>

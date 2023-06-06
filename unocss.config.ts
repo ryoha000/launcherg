@@ -28,7 +28,7 @@ export default defineConfig({
     colors: {
       accent: {
         accent: "#487AF9",
-        success: "#5EB917",
+        success: "#347d39",
         edit: "#116329",
         error: "#EA4E60",
       },
@@ -40,6 +40,7 @@ export default defineConfig({
         button: "#373e47",
         buttonHover: "#444c56",
         backdrop: "#1C2128",
+        successHover: "#46954a",
       },
       ui: { tertiary: "#636e7b" },
       border: {
@@ -52,6 +53,7 @@ export default defineConfig({
         secondary: "#CDD9E5",
         tertiary: "#768390",
         link: "#2e7cd5",
+        white: "#FFFFFF",
       },
     },
     fontSize: {

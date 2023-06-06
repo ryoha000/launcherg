@@ -13,6 +13,11 @@
   let iconSizeClass = "w-4 h-4";
 
   let iconVarinatClass = "color-ui-tertiary";
+  $: {
+    if (variant === "success") {
+      iconVarinatClass = "color-text-white";
+    }
+  }
 </script>
 
 <ButtonBase

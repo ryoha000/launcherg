@@ -40,6 +40,10 @@
         buttonVariantClass =
           "bg-bg-button border-(~ border-button opacity-10 solid) text-accent-error hover:(border-accent-error bg-accent-error text-text-secondary)";
         break;
+      case "success":
+        buttonVariantClass =
+          "bg-accent-success border-(~ solid accent-success) text-text-white hover:bg-bg-success-hover";
+        break;
       default:
         const _: never = variant;
         break;
