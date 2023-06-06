@@ -1,6 +1,7 @@
 <script lang="ts">
   import Input from "@/components/UI/Input.svelte";
   import Modal from "@/components/UI/Modal.svelte";
+  import { commandUpdateCollection } from "@/lib/command";
   import type { Collection } from "@/lib/types";
   import { collections } from "@/store/collections";
 
@@ -9,7 +10,10 @@
   let name = "";
 
   const update = async () => {
-    // TODO: update name
+    if (!collection) {
+      return;
+    }
+    await commandUpdateCollection(collection.id, name);
     await collections.init();
     isOpen = false;
   };
@@ -23,7 +27,11 @@
     on:confirm={update}
   >
     <div>
-      <Input bind:value={name} label="Name" />
+      <Input
+        value={collection.name}
+        label="Name"
+        on:update={(e) => (name = e.detail.value)}
+      />
     </div>
   </Modal>
 {/if}

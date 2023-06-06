@@ -1,6 +1,7 @@
 <script lang="ts">
   import Button from "@/components/UI/Button.svelte";
   import Modal from "@/components/UI/Modal.svelte";
+  import { commandDeleteCollection } from "@/lib/command";
   import type { Collection } from "@/lib/types";
   import { collections } from "@/store/collections";
 
@@ -8,9 +9,12 @@
   export let collection: Collection | null;
 
   const deleteCollection = async () => {
-    // TODO: commandDeleteCollection
-    await collections.init();
+    if (!collection) {
+      return;
+    }
+    await commandDeleteCollection(collection.id);
     isOpen = false;
+    await collections.init();
   };
 </script>
 

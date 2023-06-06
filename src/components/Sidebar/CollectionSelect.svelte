@@ -17,8 +17,10 @@
   export let value: Collection | null = null;
 
   $: {
-    if (!selectedCollectionId && collections.length) {
-      selectedCollectionId = collections[0].id;
+    if (collections.length) {
+      if (collections.findIndex((v) => v.id === selectedCollectionId) === -1) {
+        selectedCollectionId = collections[0].id;
+      }
     }
   }
 

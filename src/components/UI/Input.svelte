@@ -1,10 +1,12 @@
 <script lang="ts">
-  import { onMount, tick } from "svelte";
+  import { createEventDispatcher, onMount, tick } from "svelte";
 
   export let label = "";
   export let value: string;
   export let placeholder: string = "";
   export let autofocus = false;
+
+  const dispatcher = createEventDispatcher<{ update: { value: string } }>();
 
   let input: HTMLInputElement | null = null;
 
@@ -27,6 +29,7 @@
     <input
       bind:this={input}
       bind:value
+      on:change={(e) => dispatcher("update", { value: e.currentTarget.value })}
       {placeholder}
       class="w-full border border-(border-primary solid) rounded bg-bg-primary p-(x-3 y-1) text-(input text-primary) transition-all focus:border-transparent placeholder-ui-tertiary"
     />
