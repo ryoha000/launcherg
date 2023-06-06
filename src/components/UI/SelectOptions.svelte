@@ -1,5 +1,5 @@
 <script lang="ts">
-  import FilterInput from "@/components/UI/FilterInput.svelte";
+  import Input from "@/components/UI/Input.svelte";
   import type { Option } from "./select";
   import { createEventDispatcher } from "svelte";
 
@@ -30,11 +30,7 @@
   {/if}
   {#if enableFilter}
     <div class="p-2 border-(b-1px border-primary solid)">
-      <FilterInput
-        bind:value={query}
-        placeholder={filterPlaceholder}
-        autofocus
-      />
+      <Input bind:value={query} placeholder={filterPlaceholder} autofocus />
     </div>
   {/if}
   <div class="flex flex-(col)">

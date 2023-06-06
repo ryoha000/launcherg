@@ -65,6 +65,7 @@ export default defineConfig({
       h3: ["1.25rem", "145%"],
       h4: ["1.125rem", "145%"],
       caption: [".75rem", "142%"],
+      input: [".875rem", "100%"],
     },
   },
 });
