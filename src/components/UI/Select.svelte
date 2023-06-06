@@ -9,6 +9,7 @@
   export let title: string | undefined = undefined;
   export let enableFilter: boolean = false;
   export let filterPlaceholder = "";
+  export let bottomAddButtonText = "";
 
   $: selectedLabel = options.find((v) => v.value === value)?.label ?? "";
 </script>
@@ -32,6 +33,13 @@
     />
   </ListboxButton>
   {#if open}
-    <SelectOptions {title} {enableFilter} {filterPlaceholder} {options} />
+    <SelectOptions
+      {title}
+      {enableFilter}
+      {filterPlaceholder}
+      {options}
+      {bottomAddButtonText}
+      on:add
+    />
   {/if}
 </Listbox>

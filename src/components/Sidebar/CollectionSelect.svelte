@@ -35,6 +35,8 @@
     enableFilter
     bind:value={selectedCollectionId}
     options={collectionOptions}
+    bottomAddButtonText="Add new collection"
+    on:add={() => console.log("hoge")}
   />
   <div class="flex items-center relative">
     <ButtonBase
