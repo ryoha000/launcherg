@@ -61,6 +61,7 @@
           content: "このコレクションにゲームを追加",
           placement: "bottom",
           theme: "default",
+          delay: 1000,
         }}
         slot="button"
       >
@@ -85,6 +86,7 @@
           content: "このコレクションの変更",
           placement: "bottom",
           theme: "default",
+          delay: 1000,
         }}
         slot="button"
       >
@@ -115,6 +117,7 @@
           content: "ゲームの並べ替え",
           placement: "bottom",
           theme: "default",
+          delay: 1000,
         }}
         slot="button"
       >

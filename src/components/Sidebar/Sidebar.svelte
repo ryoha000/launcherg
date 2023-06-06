@@ -74,8 +74,13 @@
     <SearchInput bind:value={$query} placeholder="Filter by title" />
   </div>
   <div class="mt-1 min-h-0">
-    {#key displayCollectionElements}
-      <CollectionElements collectionElement={displayCollectionElements} />
-    {/key}
+    {#if $selectedColection}
+      {#key displayCollectionElements}
+        <CollectionElements
+          collection={$selectedColection}
+          collectionElement={displayCollectionElements}
+        />
+      {/key}
+    {/if}
   </div>
 </div>

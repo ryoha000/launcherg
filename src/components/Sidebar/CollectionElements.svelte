@@ -2,12 +2,23 @@
   import CollectionElement from "@/components/Sidebar/CollectionElement.svelte";
   import Button from "@/components/UI/Button.svelte";
   import Checkbox from "@/components/UI/Checkbox.svelte";
-  import type { CollectionElement as TCollectionElement } from "@/lib/types";
+  import type {
+    Collection,
+    CollectionElement as TCollectionElement,
+  } from "@/lib/types";
   import { writable } from "svelte/store";
   import { fade } from "svelte/transition";
   import SimpleBar from "simplebar";
+  import Select from "@/components/UI/Select.svelte";
+  import { collections } from "@/store/collections";
+  import { commandAddElementsToCollection } from "@/lib/command";
+  import RemoveElements from "@/components/Sidebar/RemoveElements.svelte";
+  import { showInfoToast } from "@/lib/toast";
 
+  export let collection: Collection;
   export let collectionElement: TCollectionElement[];
+
+  $: selectedElements = collectionElement.filter((_, i) => checked[i]);
 
   let checked: boolean[] = [];
   let isCheckAll = writable(false);
@@ -16,6 +27,22 @@
   const simplebar = (node: HTMLElement) => {
     new SimpleBar(node, { scrollbarMinSize: 64 });
   };
+
+  let copyDestinationCollectionId = 0;
+  const copyElements = async () => {
+    await commandAddElementsToCollection(
+      copyDestinationCollectionId,
+      selectedElements.map((v) => v.id)
+    );
+    showInfoToast(
+      `${
+        $collections.find((v) => v.id === copyDestinationCollectionId)?.name
+      }へのゲーム追加が完了しました`
+    );
+    copyDestinationCollectionId = 0;
+  };
+
+  let isOpenRemoveElements = false;
 </script>
 
 <div class="grid-(~ rows-[min-content_1fr]) h-full overflow-y-hidden">
@@ -32,15 +59,26 @@
           transition:fade={{ duration: 150 }}
           class="flex items-center gap-2"
         >
-          <Button
-            variant="accent"
-            text="Forward"
-            tooltip={{
-              content: "他のコレクションに選択したゲームを追加",
-              theme: "default",
-              placement: "bottom",
-            }}
-          />
+          <Select
+            title="Select copy destination"
+            filterPlaceholder="Filter collections"
+            enableFilter
+            bind:value={copyDestinationCollectionId}
+            options={$collections.map((v) => ({ label: v.name, value: v.id }))}
+            showSelectedCheck={false}
+            on:select={copyElements}
+          >
+            <Button
+              variant="accent"
+              text="Copy"
+              tooltip={{
+                content: "他のコレクションに選択したゲームを追加",
+                theme: "default",
+                placement: "bottom",
+                delay: 1000,
+              }}
+            />
+          </Select>
           <Button
             variant="error"
             text="Remove"
@@ -48,7 +86,9 @@
               content: "選択したゲームをこのコレクションから削除",
               theme: "default",
               placement: "bottom",
+              delay: 1000,
             }}
+            on:click={() => (isOpenRemoveElements = true)}
           />
         </div>
       {/if}
@@ -69,3 +109,8 @@
     </div>
   {/if}
 </div>
+<RemoveElements
+  bind:isOpen={isOpenRemoveElements}
+  {collection}
+  removeElements={selectedElements}
+/>

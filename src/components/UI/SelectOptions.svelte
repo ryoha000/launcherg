@@ -6,6 +6,7 @@
   export let options: Option<string | number>[];
   export let title: string | undefined = undefined;
   export let enableFilter: boolean = false;
+  export let showSelectedCheck = true;
   export let filterPlaceholder = "";
   export let bottomCreateButtonText = "";
   export let value: string | number;
@@ -15,7 +16,11 @@
     query ? v.label.toLowerCase().includes(query.toLowerCase()) : true
   );
 
-  const dispatcher = createEventDispatcher<{ create: {}; close: {} }>();
+  const dispatcher = createEventDispatcher<{
+    select: { value: string | number };
+    create: {};
+    close: {};
+  }>();
 </script>
 
 <div>
@@ -44,13 +49,17 @@
                 } hover:bg-bg-tertiary w-full flex items-center gap-2 transition-all cursor-pointer`}
         on:click={() => {
           value = option.value;
+          dispatcher("select", { value: option.value });
           dispatcher("close");
         }}
       >
-        <div
-          class="h-5 w-5 color-text-primary"
-          class:i-material-symbols-check-small-rounded={value === option.value}
-        />
+        {#if showSelectedCheck}
+          <div
+            class="h-5 w-5 color-text-primary"
+            class:i-material-symbols-check-small-rounded={value ===
+              option.value}
+          />
+        {/if}
         <div class="text-(body2 text-primary) font-medium">
           {option.label}
         </div>
