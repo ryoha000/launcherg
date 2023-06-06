@@ -7,6 +7,7 @@
     commandAddCollectionElementsInPc,
     commandGetDefaultImportDirs,
   } from "@/lib/command";
+  import { showInfoToast } from "@/lib/toast";
   import type { Collection } from "@/lib/types";
   import { createLocalStorageWritable } from "@/lib/utils";
   import { onMount } from "svelte";
@@ -59,7 +60,14 @@
       useCache,
       collection?.id || null
     );
-    console.log(res);
+
+    const text = res.length
+      ? `「${res[0]}」${
+          res.length === 1 ? "が" : `、他${res.length}件`
+        }追加されました`
+      : "新しく追加されたゲームはありません";
+
+    showInfoToast(text);
     isOpen = false;
   };
 
