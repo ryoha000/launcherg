@@ -6,6 +6,7 @@
   export let rightIcon = "";
   export let appendClass = "";
   export let text = "";
+  export let type: "button" | "submit" | undefined = undefined;
   export let tooltip: Partial<TippyOption> | undefined = undefined;
   export let variant: Variant = "normal";
 
@@ -23,6 +24,7 @@
 <ButtonBase
   appendClass={`${appendClass} ${buttonSizeClass} flex items-center`}
   {variant}
+  {type}
   {tooltip}
   on:click
 >

@@ -20,7 +20,7 @@
       autosave: {
         enabled: true,
         delay: 1000,
-        uniqueId: `memo-${id}"`,
+        uniqueId: `memo-${id}`,
       },
       toolbar: [
         "bold",

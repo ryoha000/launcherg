@@ -29,7 +29,8 @@
     <input
       bind:this={input}
       bind:value
-      on:change={(e) => dispatcher("update", { value: e.currentTarget.value })}
+      type="text"
+      on:input={(e) => dispatcher("update", { value: e.currentTarget.value })}
       {placeholder}
       class="w-full border border-(border-primary solid) rounded bg-bg-primary p-(x-3 y-1) text-(input text-primary) transition-all focus:border-transparent placeholder-ui-tertiary"
     />

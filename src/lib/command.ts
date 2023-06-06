@@ -9,12 +9,12 @@ export const commandGetCollectionElements = async (id: number) => {
   return await invoke<CollectionElement[]>("get_collection_elements", { id });
 };
 
-export const addCollectionElementsInPc = async (
+export const commandAddCollectionElementsInPc = async (
   exploreDirPaths: string[],
   useCache: boolean,
-  addingCollectionId: string | null
+  addingCollectionId: number | null
 ) => {
-  await invoke("add_collection_elements_in_pc", {
+  return await invoke<string[]>("add_collection_elements_in_pc", {
     exploreDirPaths,
     useCache,
     addingCollectionId,
@@ -96,4 +96,8 @@ export const commandRemoveElementsFromCollection = async (
     collectionId,
     collectionElementIds,
   });
+};
+
+export const commandGetDefaultImportDirs = async () => {
+  return await invoke<string[]>("get_default_import_dirs", {});
 };

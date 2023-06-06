@@ -34,7 +34,8 @@ fn main() {
             command::upsert_collection_element,
             command::update_collection_element_icon,
             command::add_elements_to_collection,
-            command::remove_elements_from_collection
+            command::remove_elements_from_collection,
+            command::get_default_import_dirs
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

@@ -1,6 +1,7 @@
 <script lang="ts">
   import tippy, { type Props as TippyOption } from "tippy.js";
   export let appendClass = "";
+  export let type: "button" | "submit" | undefined = undefined;
   export let tooltip: Partial<TippyOption> | undefined = undefined;
 
   const tooltipAction = (node: HTMLElement) => {
@@ -53,6 +54,7 @@
 
 <button
   use:tooltipAction
+  {type}
   class={`rounded transition-all ${buttonVariantClass} ${appendClass}`}
   on:click
 >

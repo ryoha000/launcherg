@@ -1,4 +1,7 @@
 <script lang="ts">
+  import AddGameExplore from "@/components/Sidebar/AddGameExplore.svelte";
+  import AddGameManual from "@/components/Sidebar/AddGameManual.svelte";
+  import AddGamePopover from "@/components/Sidebar/AddGamePopover.svelte";
   import ChangeCollectionName from "@/components/Sidebar/ChangeCollectionName.svelte";
   import ChangePopover from "@/components/Sidebar/ChangePopover.svelte";
   import DeleteCollection from "@/components/Sidebar/DeleteCollection.svelte";
@@ -36,6 +39,8 @@
   let isOpenNewCollection = false;
   let isOpenChangeCollectionName = false;
   let isOpenDeleteCollection = false;
+  let isOpenAddGameExplore = false;
+  let isOpenAddGameManual = false;
 </script>
 
 <div class="grid items-center gap-2 grid-cols-[1fr_min-content]">
@@ -49,16 +54,30 @@
     on:create={() => (isOpenNewCollection = true)}
   />
   <div class="flex items-center relative">
-    <ButtonBase
-      appendClass="h-8 w-8 flex items-center justify-center rounded-r-0"
-      tooltip={{
-        content: "このコレクションにゲームを追加",
-        placement: "bottom",
-        theme: "default",
-      }}
-    >
-      <div class="color-ui-tertiary w-5 h-5 i-iconoir-plus" />
-    </ButtonBase>
+    <APopover isRelativeRoot={false} panelClass="right-0" let:close>
+      <ButtonBase
+        appendClass="h-8 w-8 flex items-center justify-center rounded-r-0"
+        tooltip={{
+          content: "このコレクションにゲームを追加",
+          placement: "bottom",
+          theme: "default",
+        }}
+        slot="button"
+      >
+        <div class="color-ui-tertiary w-5 h-5 i-iconoir-plus" />
+      </ButtonBase>
+      <AddGamePopover
+        on:close={() => close(null)}
+        on:explore={() => {
+          isOpenAddGameExplore = true;
+          close(null);
+        }}
+        on:manual={() => {
+          isOpenAddGameManual = true;
+          close(null);
+        }}
+      />
+    </APopover>
     <APopover isRelativeRoot={false} panelClass="right-0" let:close>
       <ButtonBase
         appendClass="h-8 w-8 flex items-center justify-center border-x-transparent rounded-0"
@@ -113,3 +132,5 @@
   collection={value}
 />
 <DeleteCollection bind:isOpen={isOpenDeleteCollection} collection={value} />
+<AddGameExplore bind:isOpen={isOpenAddGameExplore} collection={value} />
+<AddGameManual bind:isOpen={isOpenAddGameManual} collection={value} />

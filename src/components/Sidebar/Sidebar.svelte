@@ -43,6 +43,7 @@
   let [query, getQuery] = createWritable("");
   let [order, getOrder] = createWritable<SortOrder>("gamename-asc");
 
+  collections.subscribe(() => filterAndSort());
   query.subscribe(() => filterAndSort());
   order.subscribe(() => filterAndSort());
 

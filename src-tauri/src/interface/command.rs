@@ -61,7 +61,7 @@ pub async fn add_collection_elements_in_pc(
     explore_dir_paths: Vec<String>,
     use_cache: bool,
     adding_collection_id: Option<i32>,
-) -> anyhow::Result<(), CommandError> {
+) -> anyhow::Result<Vec<String>, CommandError> {
     let explored_caches = modules.explored_cache_use_case().get_cache().await?;
     let explore_files: Vec<String> = modules
         .file_use_case()
@@ -76,7 +76,7 @@ pub async fn add_collection_elements_in_pc(
 
     if explore_files.len() == 0 {
         println!("all file is match to cache");
-        return Ok(());
+        return Ok(vec![]);
     }
 
     // TODO: message end get lnk,exe
@@ -109,7 +109,7 @@ pub async fn add_collection_elements_in_pc(
         .add_cache(explore_files)
         .await?;
 
-    Ok(())
+    Ok(new_elements.into_iter().map(|v| v.gamename).collect())
 }
 
 #[tauri::command]
@@ -209,9 +209,13 @@ pub async fn upsert_collection_element(
     gamename: String,
     path: String,
 ) -> anyhow::Result<(), CommandError> {
-    Ok(modules
+    modules
         .collection_use_case()
         .upsert_collection_element(&NewCollectionElement::new(Id::new(id), gamename, path))
+        .await?;
+    Ok(modules
+        .collection_use_case()
+        .add_collection_elements(&Id::new(ONEPIECE_COLLECTION_ID), &vec![Id::new(id)])
         .await?)
 }
 
@@ -261,4 +265,22 @@ pub async fn remove_elements_from_collection(
                 .collect(),
         )
         .await?)
+}
+
+#[tauri::command]
+pub async fn get_default_import_dirs() -> anyhow::Result<Vec<String>, CommandError> {
+    let user_menu = dirs::home_dir()
+        .ok_or(anyhow::anyhow!("cannot got home dir"))?
+        .join("AppData")
+        .join("Roaming")
+        .join("Microsoft")
+        .join("Windows")
+        .join("Start Menu")
+        .join("Programs")
+        .to_string_lossy()
+        .to_string();
+
+    let system_menu = "C:\\ProgramData\\Microsoft\\Windows\\Start Menu\\Programs";
+
+    Ok(vec![user_menu, system_menu.to_string()])
 }
