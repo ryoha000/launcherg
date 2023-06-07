@@ -11,7 +11,12 @@
   import APopover from "@/components/UI/APopover.svelte";
   import ButtonBase from "@/components/UI/ButtonBase.svelte";
   import Select from "@/components/UI/Select.svelte";
+  import {
+    commandAddElementsToCollection,
+    commandUpsertCollectionElement,
+  } from "@/lib/command";
   import type { Collection } from "@/lib/types";
+  import { sidebarCollectionElements } from "@/store/sidebarCollectionElements";
 
   export let collections: Collection[] = [];
   export let order: SortOrder;
@@ -41,6 +46,16 @@
   let isOpenDeleteCollection = false;
   let isOpenAddGameExplore = false;
   let isOpenAddGameManual = false;
+
+  const addGameManually = async (arg: {
+    id: number;
+    gamename: string;
+    path: string;
+  }) => {
+    await commandUpsertCollectionElement(arg.id, arg.gamename, arg.path);
+    await commandAddElementsToCollection(selectedCollectionId, [arg.id]);
+    await sidebarCollectionElements.refetch();
+  };
 </script>
 
 <div class="grid items-center gap-2 grid-cols-[1fr_min-content]">
@@ -136,4 +151,7 @@
 />
 <DeleteCollection bind:isOpen={isOpenDeleteCollection} collection={value} />
 <AddGameExplore bind:isOpen={isOpenAddGameExplore} collection={value} />
-<AddGameManual bind:isOpen={isOpenAddGameManual} collection={value} />
+<AddGameManual
+  bind:isOpen={isOpenAddGameManual}
+  on:add={(e) => addGameManually(e.detail)}
+/>

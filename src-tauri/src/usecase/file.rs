@@ -221,6 +221,12 @@ impl<R: ExplorersExt> FileUseCase<R> {
         collection_element_id: &Id<CollectionElement>,
     ) -> anyhow::Result<f32> {
         let path = get_play_history_path(collection_element_id);
+
+        let exist = std::path::Path::new(&path).exists();
+        if !exist {
+            return Ok(0.0);
+        }
+
         let file = std::fs::File::open(&path)?;
         let reader = std::io::BufReader::new(file);
 

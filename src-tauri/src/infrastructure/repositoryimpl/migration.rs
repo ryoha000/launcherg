@@ -44,6 +44,8 @@ pub fn migration_sync(db: Db) {
 }
 
 fn get_migration_sqls() -> Vec<String> {
+    let enable_foreign_key = "PRAGMA foreign_keys = ON".to_string();
+
     let collection = "
 CREATE TABLE IF NOT EXISTS collections (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -96,6 +98,7 @@ CREATE TABLE IF NOT EXISTS collection_element_maps (
     );
 
     return vec![
+        enable_foreign_key,
         collection,
         collection_element,
         collection_element_maps,

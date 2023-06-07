@@ -114,3 +114,19 @@ export const commandGetPlayTomeMinutes = async (
 ) => {
   return await invoke<number>("get_play_time_minutes", { collectionElementId });
 };
+
+export const commandGetCollectionElement = async (
+  collectionElementId: number
+) => {
+  return await invoke<CollectionElement>("get_collection_element", {
+    collectionElementId,
+  });
+};
+
+export const commandDeleteCollectionElement = async (
+  collectionElementId: number
+) => {
+  return await invoke<void>("delete_collection_element", {
+    collectionElementId,
+  });
+};

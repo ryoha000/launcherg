@@ -4,13 +4,32 @@
   import { push } from "svelte-spa-router";
   import { commandGetPlayTomeMinutes, commandPlayGame } from "@/lib/command";
   import { showErrorToast } from "@/lib/toast";
+  import { localStorageWritable } from "@/lib/utils";
 
   export let name: string;
   export let id: number;
 
-  const play = async () => {
+  const isAdminRecord = localStorageWritable<Record<number, boolean>>(
+    "play-admin-cache",
+    {}
+  );
+
+  const play = async (isAdmin: boolean | undefined) => {
+    if (isAdmin !== undefined) {
+      isAdminRecord.update((v) => {
+        v[id] = isAdmin;
+        return v;
+      });
+    }
+    let _isAdmin: boolean = isAdmin ?? false;
+    if (isAdmin === undefined) {
+      const cache = $isAdminRecord[id];
+      if (cache) {
+        _isAdmin = cache;
+      }
+    }
     try {
-      await commandPlayGame(id, false);
+      await commandPlayGame(id, _isAdmin);
     } catch (e) {
       showErrorToast(e as string);
     }
@@ -20,7 +39,7 @@
 </script>
 
 <div class="flex items-center gap-4 flex-wrap w-full min-w-0">
-  <PlayButton on:play={play} />
+  <PlayButton {id} on:play={(e) => play(e.detail.isAdmin)} />
   <Button
     variant="success"
     leftIcon="color-text-white i-material-symbols-drive-file-rename-outline"

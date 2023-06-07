@@ -6,7 +6,7 @@ use super::{error::UseCaseError, models::collection::CreateCollection};
 use crate::{
     domain::{
         collection::{Collection, CollectionElement, NewCollectionElement, UpdateCollection},
-        file::get_icon_path,
+        file::{get_icon_path, save_icon_to_png},
         repository::collection::CollectionRepository,
         Id,
     },
@@ -154,5 +154,32 @@ impl<R: RepositoriesExt> CollectionUseCase<R> {
         let save_icon_path = get_icon_path(id);
         fs::copy(path, save_icon_path)?;
         Ok(())
+    }
+
+    pub async fn save_element_icon(
+        &self,
+        path: &str,
+        id: &Id<CollectionElement>,
+    ) -> anyhow::Result<()> {
+        Ok(save_icon_to_png(path, id)?.await??)
+    }
+
+    pub async fn delete_collection_element_by_id(
+        &self,
+        id: &Id<CollectionElement>,
+    ) -> anyhow::Result<()> {
+        let existed = self
+            .repositories
+            .collection_repository()
+            .get_element_by_element_id(id)
+            .await?;
+        if existed.is_none() {
+            return Err(UseCaseError::CollectionElementIsNotFound.into());
+        }
+        Ok(self
+            .repositories
+            .collection_repository()
+            .delete_collection_element(id)
+            .await?)
     }
 }

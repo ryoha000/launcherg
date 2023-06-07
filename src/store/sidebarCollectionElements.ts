@@ -5,8 +5,18 @@ import { createWritable } from "@/lib/utils";
 function createSidebarCollectionElements() {
   const [{ subscribe, set }, value] = createWritable<CollectionElement[]>([]);
 
+  let _id = 0;
   const init = async (id: number) => {
     const res = await commandGetCollectionElements(id);
+    set(res);
+    _id = id;
+  };
+
+  const refetch = async () => {
+    if (!_id) {
+      return;
+    }
+    const res = await commandGetCollectionElements(_id);
     set(res);
   };
 
@@ -14,6 +24,7 @@ function createSidebarCollectionElements() {
     subscribe,
     init,
     value,
+    refetch,
   };
 }
 

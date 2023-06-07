@@ -2,19 +2,19 @@
   import Button from "@/components/UI/Button.svelte";
   import Input from "@/components/UI/Input.svelte";
   import Modal from "@/components/UI/Modal.svelte";
-  import {
-    commandAddElementsToCollection,
-    commandUpsertCollectionElement,
-  } from "@/lib/command";
   import { scrapeSql } from "@/lib/scrapeSql";
   import { showErrorToast } from "@/lib/toast";
-  import type { Collection } from "@/lib/types";
   import { open } from "@tauri-apps/api/dialog";
+  import { createEventDispatcher } from "svelte";
 
   export let isOpen: boolean;
-  export let collection: Collection | null;
+  export let withInputPath = true;
   let idInput = "";
   let path = "";
+
+  const dispather = createEventDispatcher<{
+    add: { id: number; gamename: string; path: string };
+  }>();
 
   const getIdNumber = (value: string) => {
     {
@@ -40,9 +40,6 @@
     }
   };
   const confirm = async () => {
-    if (!collection) {
-      return;
-    }
     const id = getIdNumber(idInput);
     if (!id) {
       return showErrorToast("ErogameScape の id として解釈できませんでした");
@@ -58,8 +55,7 @@
     }
     const gamename = gamenames[0][0];
 
-    await commandUpsertCollectionElement(id, gamename, path);
-    await commandAddElementsToCollection(collection.id, [id]);
+    dispather("add", { id, gamename, path });
   };
   const openDialog = async () => {
     const selected = await open({
@@ -78,20 +74,20 @@
   };
 </script>
 
-{#if collection}
-  <Modal
-    bind:isOpen
-    title="Manually import game"
-    confirmText="Import"
-    on:confirm={confirm}
-  >
-    <div class="space-y-4">
-      <Input
-        bind:value={idInput}
-        label="ErogameScape ID or URL"
-        placeholder="17909 or https://erogamescape.dyndns.org/~ap2/ero/toukei_kaiseki/game.php?game=17909"
-        on:update={(e) => (idInput = e.detail.value)}
-      />
+<Modal
+  bind:isOpen
+  title="Manually import game"
+  confirmText="Import"
+  on:confirm={confirm}
+>
+  <div class="space-y-4">
+    <Input
+      bind:value={idInput}
+      label="ErogameScape ID or URL"
+      placeholder="17909 or https://erogamescape.dyndns.org/~ap2/ero/toukei_kaiseki/game.php?game=17909"
+      on:update={(e) => (idInput = e.detail.value)}
+    />
+    {#if withInputPath}
       <div class="flex gap-2 items-end">
         <div class="flex-1">
           <Input
@@ -106,6 +102,6 @@
           on:click={openDialog}
         />
       </div>
-    </div>
-  </Modal>
-{/if}
+    {/if}
+  </div>
+</Modal>

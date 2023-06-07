@@ -223,4 +223,12 @@ impl CollectionRepository for RepositoryImpl<Collection> {
         query.execute(&*pool).await?;
         Ok(())
     }
+    async fn delete_collection_element(&self, element_id: &Id<CollectionElement>) -> Result<()> {
+        let pool = self.pool.0.clone();
+        query("delete from collection_elements where id = ?")
+            .bind(element_id.value)
+            .execute(&*pool)
+            .await?;
+        Ok(())
+    }
 }

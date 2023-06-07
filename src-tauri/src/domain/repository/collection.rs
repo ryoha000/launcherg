@@ -36,4 +36,5 @@ pub trait CollectionRepository {
         collection_element_ids: &Vec<Id<CollectionElement>>,
     ) -> Result<()>;
     async fn remove_conflict_maps(&self) -> Result<()>;
+    async fn delete_collection_element(&self, element_id: &Id<CollectionElement>) -> Result<()>;
 }

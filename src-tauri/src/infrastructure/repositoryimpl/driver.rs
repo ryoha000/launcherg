@@ -1,6 +1,9 @@
-use std::{path::Path, sync::Arc};
+use std::{path::Path, str::FromStr, sync::Arc};
 
-use sqlx::{sqlite::SqlitePoolOptions, Pool, Sqlite};
+use sqlx::{
+    sqlite::{SqliteConnectOptions, SqlitePoolOptions},
+    Pool, Sqlite,
+};
 
 use crate::infrastructure::util::get_save_root_abs_dir;
 
@@ -20,7 +23,11 @@ impl Db {
             .to_string();
         let pool = SqlitePoolOptions::new()
             .max_connections(256)
-            .connect(&format!("sqlite://{}?mode=rwc", db_filename))
+            .connect_with(
+                SqliteConnectOptions::from_str(&format!("sqlite://{}?mode=rwc", db_filename))
+                    .unwrap()
+                    .foreign_keys(true),
+            )
             .await
             .map_err(|err| format!("{}\nfile: {}", err.to_string(), db_filename))
             .unwrap();

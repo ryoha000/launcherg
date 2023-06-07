@@ -10,6 +10,7 @@
   import { showInfoToast } from "@/lib/toast";
   import type { Collection } from "@/lib/types";
   import { createLocalStorageWritable } from "@/lib/utils";
+  import { sidebarCollectionElements } from "@/store/sidebarCollectionElements";
   import { onMount } from "svelte";
 
   export let isOpen: boolean;
@@ -60,6 +61,7 @@
       useCache,
       collection?.id || null
     );
+    await sidebarCollectionElements.refetch();
 
     const text = res.length
       ? `「${res[0]}」${

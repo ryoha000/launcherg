@@ -10,7 +10,7 @@ use crate::{
     domain::{
         collection::{NewCollectionElement, UpdateCollection},
         distance::get_comparable_distance,
-        file::{get_icon_path, normalize},
+        file::{get_icon_path, normalize, save_icon_to_png},
         Id,
     },
     infrastructure::repositoryimpl::migration::ONEPIECE_COLLECTION_ID,
@@ -209,9 +209,14 @@ pub async fn upsert_collection_element(
     gamename: String,
     path: String,
 ) -> anyhow::Result<(), CommandError> {
+    let new_element = NewCollectionElement::new(Id::new(id), gamename, path);
     modules
         .collection_use_case()
-        .upsert_collection_element(&NewCollectionElement::new(Id::new(id), gamename, path))
+        .upsert_collection_element(&new_element)
+        .await?;
+    modules
+        .collection_use_case()
+        .save_element_icon(&new_element.path, &new_element.id)
         .await?;
     Ok(modules
         .collection_use_case()
@@ -308,4 +313,34 @@ pub async fn get_play_time_minutes(
     Ok(modules
         .file_use_case()
         .get_play_time_minutes(&Id::new(collection_element_id))?)
+}
+
+#[tauri::command]
+pub async fn get_collection_element(
+    modules: State<'_, Arc<Modules>>,
+    collection_element_id: i32,
+) -> anyhow::Result<CollectionElement, CommandError> {
+    Ok(modules
+        .collection_use_case()
+        .get_element_by_element_id(&Id::new(collection_element_id))
+        .await
+        .and_then(|v| {
+            Ok(CollectionElement {
+                id: v.id.value,
+                gamename: v.gamename,
+                path: v.path,
+                icon: get_icon_path(&v.id),
+            })
+        })?)
+}
+
+#[tauri::command]
+pub async fn delete_collection_element(
+    modules: State<'_, Arc<Modules>>,
+    collection_element_id: i32,
+) -> anyhow::Result<(), CommandError> {
+    Ok(modules
+        .collection_use_case()
+        .delete_collection_element_by_id(&Id::new(collection_element_id))
+        .await?)
 }
