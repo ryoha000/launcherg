@@ -8,13 +8,13 @@ use super::{
 };
 use crate::{
     domain::{
-        collection::{NewCollectionElement, UpdateCollection},
+        collection::{NewCollectionElement, NewCollectionElementDetail, UpdateCollection},
         distance::get_comparable_distance,
-        file::{get_icon_path, normalize, save_icon_to_png},
+        file::{get_icon_path, normalize},
         Id,
     },
     infrastructure::repositoryimpl::migration::ONEPIECE_COLLECTION_ID,
-    usecase::models::collection::CreateCollection,
+    usecase::models::collection::{CreateCollection, CreateCollectionElementDetail},
 };
 
 #[tauri::command]
@@ -46,12 +46,7 @@ pub async fn get_collection_elements(
         .get_elements_by_id(&id)
         .await?
         .into_iter()
-        .map(|v| CollectionElement {
-            id: v.id.value,
-            gamename: v.gamename,
-            path: v.path,
-            icon: get_icon_path(&v.id),
-        })
+        .map(|v| v.into())
         .collect())
 }
 
@@ -324,14 +319,7 @@ pub async fn get_collection_element(
         .collection_use_case()
         .get_element_by_element_id(&Id::new(collection_element_id))
         .await
-        .and_then(|v| {
-            Ok(CollectionElement {
-                id: v.id.value,
-                gamename: v.gamename,
-                path: v.path,
-                icon: get_icon_path(&v.id),
-            })
-        })?)
+        .and_then(|v| Ok(v.into()))?)
 }
 
 #[tauri::command]
@@ -342,5 +330,29 @@ pub async fn delete_collection_element(
     Ok(modules
         .collection_use_case()
         .delete_collection_element_by_id(&Id::new(collection_element_id))
+        .await?)
+}
+
+#[tauri::command]
+pub async fn get_not_registered_detail_element_ids(
+    modules: State<'_, Arc<Modules>>,
+) -> anyhow::Result<Vec<i32>, CommandError> {
+    Ok(modules
+        .collection_use_case()
+        .get_not_registered_detail_element_ids()
+        .await?
+        .into_iter()
+        .map(|v| v.value)
+        .collect())
+}
+
+#[tauri::command]
+pub async fn create_element_details(
+    modules: State<'_, Arc<Modules>>,
+    details: Vec<CreateCollectionElementDetail>,
+) -> anyhow::Result<(), CommandError> {
+    Ok(modules
+        .collection_use_case()
+        .create_element_details(details.into_iter().map(|v| v.into()).collect())
         .await?)
 }

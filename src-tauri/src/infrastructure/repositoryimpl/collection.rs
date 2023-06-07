@@ -8,7 +8,8 @@ use super::{
 };
 use crate::domain::{
     collection::{
-        Collection, CollectionElement, NewCollection, NewCollectionElement, UpdateCollection,
+        Collection, CollectionElement, NewCollection, NewCollectionElement,
+        NewCollectionElementDetail, UpdateCollection,
     },
     repository::collection::CollectionRepository,
     Id,
@@ -60,7 +61,7 @@ impl CollectionRepository for RepositoryImpl<Collection> {
     async fn get_elements_by_id(&self, id: &Id<Collection>) -> Result<Vec<CollectionElement>> {
         let pool = self.pool.0.clone();
         Ok(query_as::<_, CollectionElementTable>(
-            "select collection_elements.* from collection_element_maps inner join collection_elements on collection_elements.id = collection_element_id where collection_id = ?",
+            "select collection_elements.*, cde.collection_element_id, cde.gamename_ruby, cde.sellday, cde.is_nukige, cde.brandname, cde.brandname_ruby from collection_element_maps cem inner join collection_elements on collection_elements.id = cem.collection_element_id inner join collection_element_details cde on cde.collection_element_id = collection_elements.id where collection_id = ?",
         )
         .bind(id.value)
         .fetch_all(&*pool)
@@ -75,7 +76,7 @@ impl CollectionRepository for RepositoryImpl<Collection> {
     ) -> Result<Option<CollectionElement>> {
         let pool = self.pool.0.clone();
         let elements =
-            query_as::<_, CollectionElementTable>("select * from collection_elements where id = ?")
+            query_as::<_, CollectionElementTable>("select collection_elements.*, cde.collection_element_id, cde.gamename_ruby, cde.sellday, cde.is_nukige, cde.brandname, cde.brandname_ruby from collection_elements inner join collection_element_details cde on cde.collection_element_id = collection_elements.id where id = ?")
                 .bind(id.value)
                 .fetch_all(&*pool)
                 .await?
@@ -229,6 +230,49 @@ impl CollectionRepository for RepositoryImpl<Collection> {
             .bind(element_id.value)
             .execute(&*pool)
             .await?;
+        Ok(())
+    }
+
+    async fn get_not_registered_detail_element_ids(&self) -> Result<Vec<Id<CollectionElement>>> {
+        let pool = self.pool.0.clone();
+        let not_registered_ids: Vec<(i32,)> = sqlx::query_as(
+            "SELECT ce.id
+            FROM collection_elements ce
+            LEFT JOIN collection_element_details ced
+            ON ce.id = ced.collection_element_id
+            WHERE ced.collection_element_id IS NULL",
+        )
+        .fetch_all(&*pool)
+        .await?;
+        Ok(not_registered_ids
+            .into_iter()
+            .map(|v| Id::new(v.0))
+            .collect())
+    }
+    async fn create_element_details(&self, details: Vec<NewCollectionElementDetail>) -> Result<()> {
+        if details.len() == 0 {
+            return Ok(());
+        }
+        // ref: https://docs.rs/sqlx-core/latest/sqlx_core/query_builder/struct.QueryBuilder.html#method.push_values
+        let mut query_builder = QueryBuilder::new(
+            "INSERT INTO collection_element_details (collection_element_id, gamename_ruby, sellday, is_nukige, brandname, brandname_ruby) ",
+        );
+        query_builder.push_values(details, |mut b, new| {
+            let is_nukige = match new.is_nukige {
+                true => 1,
+                false => 0,
+            };
+            b.push_bind(new.collection_element_id.value)
+                .push_bind(new.gamename_ruby)
+                .push_bind(new.sellday)
+                .push_bind(is_nukige)
+                .push_bind(new.brandname)
+                .push_bind(new.brandname_ruby);
+        });
+
+        let pool = self.pool.0.clone();
+        let query = query_builder.build();
+        query.execute(&*pool).await?;
         Ok(())
     }
 }

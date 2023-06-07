@@ -1,4 +1,8 @@
-import type { Collection, CollectionElement } from "@/lib/types";
+import type {
+  Collection,
+  CollectionElement,
+  CollectionElementDetail,
+} from "@/lib/types";
 import { invoke } from "@tauri-apps/api/tauri";
 
 export const commandGetAllCollections = async () => {
@@ -128,5 +132,17 @@ export const commandDeleteCollectionElement = async (
 ) => {
   return await invoke<void>("delete_collection_element", {
     collectionElementId,
+  });
+};
+
+export const commandGetNotRegisterdDetailElementIds = async () => {
+  return await invoke<number[]>("get_not_registered_detail_element_ids", {});
+};
+
+export const commandCreateElementDetails = async (
+  details: CollectionElementDetail[]
+) => {
+  return await invoke<void>("create_element_details", {
+    details,
   });
 };

@@ -24,9 +24,15 @@ pub struct UpdateCollection {
 }
 
 #[derive(new, Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct CollectionElement {
     pub id: Id<CollectionElement>,
     pub gamename: String,
+    pub gamename_ruby: String,
+    pub brandname: String,
+    pub brandname_ruby: String,
+    pub sellday: String,
+    pub is_nukige: bool,
     pub path: String,
     pub created_at: NaiveDateTime,
     pub updated_at: NaiveDateTime,
@@ -37,4 +43,14 @@ pub struct NewCollectionElement {
     pub id: Id<CollectionElement>,
     pub gamename: String,
     pub path: String,
+}
+
+#[derive(new, Debug, Clone, Serialize, Deserialize)]
+pub struct NewCollectionElementDetail {
+    pub collection_element_id: Id<CollectionElement>,
+    pub gamename_ruby: String,
+    pub brandname: String,
+    pub brandname_ruby: String,
+    pub sellday: String,
+    pub is_nukige: bool,
 }

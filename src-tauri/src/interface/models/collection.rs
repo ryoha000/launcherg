@@ -1,9 +1,10 @@
 use chrono::NaiveDateTime;
+use derive_new::new;
 use serde::{Deserialize, Serialize};
 
-use crate::domain;
+use crate::domain::{self, file::get_icon_path};
 
-#[derive(derive_new::new, Debug, Serialize, Deserialize, Clone)]
+#[derive(new, Debug, Serialize, Deserialize, Clone)]
 pub struct Collection {
     pub id: i32,
     pub name: String,
@@ -17,12 +18,34 @@ impl From<domain::collection::Collection> for Collection {
     }
 }
 
-#[derive(Serialize)]
+#[derive(new, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct CollectionElement {
     pub id: i32,
     pub gamename: String,
+    pub gamename_ruby: String,
+    pub brandname: String,
+    pub brandname_ruby: String,
+    pub sellday: String,
+    pub is_nukige: bool,
     pub path: String,
     pub icon: String,
+}
+
+impl From<domain::collection::CollectionElement> for CollectionElement {
+    fn from(st: domain::collection::CollectionElement) -> Self {
+        CollectionElement::new(
+            st.id.value,
+            st.gamename,
+            st.gamename_ruby,
+            st.brandname,
+            st.brandname_ruby,
+            st.sellday,
+            st.is_nukige,
+            st.path,
+            get_icon_path(&st.id),
+        )
+    }
 }
 
 #[derive(Serialize, Deserialize)]

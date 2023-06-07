@@ -47,8 +47,22 @@ export type Collection = {
 export type CollectionElement = {
   id: number; // Work.id と同じ
   gamename: string;
+  gamenameRuby: string;
+  brandname: string;
+  brandnameRuby: string;
+  sellday: string;
+  isNukige: boolean;
   path: string;
   icon: string;
 };
 
 export type SeiyaDataPair = [string, string];
+
+export type CollectionElementDetail = {
+  collectionElementId: number;
+  gamenameRuby: string;
+  brandname: string;
+  brandnameRuby: string;
+  sellday: string;
+  isNukige: boolean;
+};

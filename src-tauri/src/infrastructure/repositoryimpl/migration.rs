@@ -44,8 +44,6 @@ pub fn migration_sync(db: Db) {
 }
 
 fn get_migration_sqls() -> Vec<String> {
-    let enable_foreign_key = "PRAGMA foreign_keys = ON".to_string();
-
     let collection = "
 CREATE TABLE IF NOT EXISTS collections (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -90,6 +88,20 @@ CREATE TABLE IF NOT EXISTS collection_element_maps (
         "
     .to_string();
 
+    let collection_element_details = "
+    CREATE TABLE IF NOT EXISTS collection_element_details (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        collection_element_id INTEGER NOT NULL,
+        gamename_ruby TEXT NOT NULL,
+        sellday TEXT NOT NULL,
+        is_nukige INTEGER NOT NULL,
+        brandname TEXT NOT NULL,
+        brandname_ruby TEXT NOT NULL,
+        foreign key(collection_element_id) references collection_elements(id) ON DELETE CASCADE
+    );
+        "
+    .to_string();
+
     let insert_onepiece_collection = format!(
         "
     INSERT OR IGNORE INTO collections(id, name) VALUES({}, \"{}\")
@@ -98,11 +110,11 @@ CREATE TABLE IF NOT EXISTS collection_element_maps (
     );
 
     return vec![
-        enable_foreign_key,
         collection,
         collection_element,
         collection_element_maps,
         explored_caches,
+        collection_element_details,
         insert_onepiece_collection,
     ];
 }

@@ -5,7 +5,10 @@ use derive_new::new;
 use super::{error::UseCaseError, models::collection::CreateCollection};
 use crate::{
     domain::{
-        collection::{Collection, CollectionElement, NewCollectionElement, UpdateCollection},
+        collection::{
+            Collection, CollectionElement, NewCollectionElement, NewCollectionElementDetail,
+            UpdateCollection,
+        },
         file::{get_icon_path, save_icon_to_png},
         repository::collection::CollectionRepository,
         Id,
@@ -181,5 +184,24 @@ impl<R: RepositoriesExt> CollectionUseCase<R> {
             .collection_repository()
             .delete_collection_element(id)
             .await?)
+    }
+
+    pub async fn get_not_registered_detail_element_ids(
+        &self,
+    ) -> anyhow::Result<Vec<Id<CollectionElement>>> {
+        self.repositories
+            .collection_repository()
+            .get_not_registered_detail_element_ids()
+            .await
+    }
+
+    pub async fn create_element_details(
+        &self,
+        details: Vec<NewCollectionElementDetail>,
+    ) -> anyhow::Result<()> {
+        self.repositories
+            .collection_repository()
+            .create_element_details(details)
+            .await
     }
 }

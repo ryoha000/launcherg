@@ -1,6 +1,7 @@
 use crate::domain::{
     collection::{
-        Collection, CollectionElement, NewCollection, NewCollectionElement, UpdateCollection,
+        Collection, CollectionElement, NewCollection, NewCollectionElement,
+        NewCollectionElementDetail, UpdateCollection,
     },
     Id,
 };
@@ -37,4 +38,7 @@ pub trait CollectionRepository {
     ) -> Result<()>;
     async fn remove_conflict_maps(&self) -> Result<()>;
     async fn delete_collection_element(&self, element_id: &Id<CollectionElement>) -> Result<()>;
+
+    async fn get_not_registered_detail_element_ids(&self) -> Result<Vec<Id<CollectionElement>>>;
+    async fn create_element_details(&self, details: Vec<NewCollectionElementDetail>) -> Result<()>;
 }

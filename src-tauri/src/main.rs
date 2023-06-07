@@ -39,7 +39,9 @@ fn main() {
             command::play_game,
             command::get_play_time_minutes,
             command::get_collection_element,
-            command::delete_collection_element
+            command::delete_collection_element,
+            command::get_not_registered_detail_element_ids,
+            command::create_element_details
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

@@ -30,6 +30,11 @@ impl TryFrom<CollectionTable> for Collection {
 pub struct CollectionElementTable {
     pub id: i32,
     pub gamename: String,
+    pub gamename_ruby: String,
+    pub brandname: String,
+    pub brandname_ruby: String,
+    pub sellday: String,
+    pub is_nukige: i32,
     pub path: String,
     pub created_at: NaiveDateTime,
     pub updated_at: NaiveDateTime,
@@ -41,6 +46,11 @@ impl TryFrom<CollectionElementTable> for CollectionElement {
         Ok(CollectionElement::new(
             Id::new(st.id),
             st.gamename,
+            st.gamename_ruby,
+            st.brandname,
+            st.brandname_ruby,
+            st.sellday,
+            st.is_nukige != 0,
             st.path,
             st.created_at,
             st.updated_at,
