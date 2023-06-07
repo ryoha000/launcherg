@@ -53,3 +53,9 @@ export const createLocalStorageCache = <K extends string | number, T>(
   };
   return getter;
 };
+
+export const convertSpecialCharacters = (str: string) => {
+  var tempElement = document.createElement("textarea");
+  tempElement.innerHTML = str;
+  return tempElement.value;
+};

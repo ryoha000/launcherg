@@ -1,3 +1,4 @@
+import { convertSpecialCharacters } from "@/lib/utils";
 import { ResponseType, fetch, Body } from "@tauri-apps/api/http";
 
 export const scrapeSql = async (query: string, colNums: number) => {
@@ -32,7 +33,7 @@ export const scrapeSql = async (query: string, colNums: number) => {
           isSkip = true;
           break;
         }
-        row.push(col.innerHTML);
+        row.push(convertSpecialCharacters(col.innerHTML));
       }
       if (isSkip) {
         return;

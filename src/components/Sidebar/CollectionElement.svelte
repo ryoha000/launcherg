@@ -35,7 +35,7 @@
       src={iconSrc}
       class="h-10 w-10"
     />
-    <div class="text-(body text-primary) font-bold">
+    <div class="text-(body text-primary) font-bold max-h-full">
       {collectionElement.gamename}
     </div>
   </a>
