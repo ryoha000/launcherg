@@ -95,6 +95,7 @@
     bind:isOpen
     title="Automatically import game"
     confirmText="Start import"
+    fullmodal
     on:confirm={confirm}
   >
     <div class="space-y-8">

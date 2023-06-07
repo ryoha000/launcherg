@@ -11,12 +11,17 @@
   export let confirmText = "";
   export let withFooter = true;
   export let withContentPadding = true;
+  export let fullmodal = false;
 
   const dispatcher = createEventDispatcher<{ confirm: {}; cancel: {} }>();
 </script>
 
-<ModalBase bind:isOpen panelClass={maxWidth ? maxWidth : "max-w-160"}>
-  <div>
+<ModalBase
+  bind:isOpen
+  panelClass={maxWidth ? maxWidth : "max-w-160"}
+  {fullmodal}
+>
+  <div class="grid grid-rows-[min-content_1fr_min-content] h-full">
     <div
       class="flex items-center bg-bg-secondary border-(b-1px solid border-primary) {headerClass}"
     >
@@ -31,7 +36,7 @@
         <div class="w-5 h-5 i-iconoir-cancel" />
       </button>
     </div>
-    <div class:p-4={withContentPadding}>
+    <div class:p-4={withContentPadding} class="overflow-y-auto">
       <slot />
     </div>
     {#if withFooter}

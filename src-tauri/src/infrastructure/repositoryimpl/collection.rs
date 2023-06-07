@@ -76,7 +76,7 @@ impl CollectionRepository for RepositoryImpl<Collection> {
     ) -> Result<Option<CollectionElement>> {
         let pool = self.pool.0.clone();
         let elements =
-            query_as::<_, CollectionElementTable>("select collection_elements.*, cde.collection_element_id, cde.gamename_ruby, cde.sellday, cde.is_nukige, cde.brandname, cde.brandname_ruby from collection_elements inner join collection_element_details cde on cde.collection_element_id = collection_elements.id where id = ?")
+            query_as::<_, CollectionElementTable>("select collection_elements.*, cde.collection_element_id, cde.gamename_ruby, cde.sellday, cde.is_nukige, cde.brandname, cde.brandname_ruby from collection_elements inner join collection_element_details cde on cde.collection_element_id = collection_elements.id where collection_elements.id = ?")
                 .bind(id.value)
                 .fetch_all(&*pool)
                 .await?

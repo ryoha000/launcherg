@@ -22,14 +22,16 @@
   <div slot="button">
     <slot>
       <button
-        class="h-8 w-full flex items-center gap-2 border border-(border-button opacity-10 solid) rounded bg-bg-button px-3 transition-all hover:(border-border-button-hover bg-bg-button-hover)"
+        class="h-8 w-full flex items-center gap-2 border border-(border-button opacity-10 solid) rounded bg-bg-button px-3 transition-all hover:(border-border-button-hover bg-bg-button-hover) overflow-hidden"
       >
         {#if iconClass}
           <div class={`${iconClass} w-4 h-4`} />
         {/if}
-        <div class="text-(body text-primary) font-bold">{selectedLabel}</div>
+        <div class="text-(body text-primary) font-bold max-h-full">
+          {selectedLabel}
+        </div>
         <div
-          class="i-material-symbols-arrow-drop-down ml-auto h-4 w-4 color-text-primary transition-all"
+          class="i-material-symbols-arrow-drop-down ml-auto h-4 w-4 color-text-primary transition-all flex-shrink-0"
           class:rotate-180={open}
         />
       </button>

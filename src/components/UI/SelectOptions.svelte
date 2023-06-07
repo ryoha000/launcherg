@@ -26,7 +26,7 @@
   }>();
 </script>
 
-<div>
+<div class="max-h-60 overflow-hidden flex-(~ col)">
   {#if title}
     <div class="flex items-center gap-8 border-(b-1px border-primary solid)">
       <div
@@ -41,7 +41,7 @@
       <Input bind:value={$query} placeholder={filterPlaceholder} autofocus />
     </div>
   {/if}
-  <div class="flex flex-(col)">
+  <div class="flex flex-(col) overflow-y-auto min-h-full">
     {#each $filtered as option, i (option)}
       <button
         class={`${value === option.value ? "bg-bg-tertiary" : "bg-transparent"}

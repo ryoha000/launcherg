@@ -41,7 +41,7 @@
     value: v.id,
   }));
 
-  let isOpenNewCollection = false;
+  let isOpenNewCollection = true;
   let isOpenChangeCollectionName = false;
   let isOpenDeleteCollection = false;
   let isOpenAddGameExplore = false;

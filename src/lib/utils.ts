@@ -65,3 +65,5 @@ export const isNotNullOrUndefined = <T>(
 ): src is T => {
   return src !== null && src !== undefined;
 };
+
+export const rand = (max = 100000) => Math.floor(Math.random() * max);
