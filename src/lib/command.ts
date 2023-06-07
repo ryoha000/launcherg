@@ -101,3 +101,16 @@ export const commandRemoveElementsFromCollection = async (
 export const commandGetDefaultImportDirs = async () => {
   return await invoke<string[]>("get_default_import_dirs", {});
 };
+
+export const commandPlayGame = async (
+  collectionElementId: number,
+  isRunAsAdmin: boolean
+) => {
+  return await invoke<void>("play_game", { collectionElementId, isRunAsAdmin });
+};
+
+export const commandGetPlayTomeMinutes = async (
+  collectionElementId: number
+) => {
+  return await invoke<number>("get_play_time_minutes", { collectionElementId });
+};

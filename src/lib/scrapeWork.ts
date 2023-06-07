@@ -54,7 +54,6 @@ const getMusics = (elements: HTMLCollectionOf<HTMLTableCellElement>) => {
     if (!aTag) {
       continue;
     }
-    console.log(aTag.href);
     if (aTag.href.includes("creater")) {
       continue;
     }

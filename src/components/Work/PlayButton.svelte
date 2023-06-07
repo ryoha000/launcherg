@@ -1,6 +1,9 @@
 <script lang="ts">
   import Button from "@/components/UI/Button.svelte";
   import ButtonBase from "@/components/UI/ButtonBase.svelte";
+  import { createEventDispatcher } from "svelte";
+
+  const dispather = createEventDispatcher<{ play: {} }>();
 </script>
 
 <div class="flex items-center min-w-0">
@@ -8,7 +11,7 @@
     appendClass="w-24 h-8 flex items-center rounded-r-0 group hover:text-bg-success-hover transition-all"
     leftIcon="i-material-symbols-power-rounded group-hover:color-bg-success-hover transition-all"
     text="Play"
-    on:click
+    on:click={() => dispather("play")}
   />
   <ButtonBase
     appendClass="h-8 w-8 flex items-center justify-center rounded-l-0"

@@ -284,3 +284,28 @@ pub async fn get_default_import_dirs() -> anyhow::Result<Vec<String>, CommandErr
 
     Ok(vec![user_menu, system_menu.to_string()])
 }
+
+#[tauri::command]
+pub async fn play_game(
+    modules: State<'_, Arc<Modules>>,
+    collection_element_id: i32,
+    is_run_as_admin: bool,
+) -> anyhow::Result<(), CommandError> {
+    let element = modules
+        .collection_use_case()
+        .get_element_by_element_id(&Id::new(collection_element_id))
+        .await?;
+    Ok(modules
+        .file_use_case()
+        .start_game(element, is_run_as_admin)?)
+}
+
+#[tauri::command]
+pub async fn get_play_time_minutes(
+    modules: State<'_, Arc<Modules>>,
+    collection_element_id: i32,
+) -> anyhow::Result<f32, CommandError> {
+    Ok(modules
+        .file_use_case()
+        .get_play_time_minutes(&Id::new(collection_element_id))?)
+}

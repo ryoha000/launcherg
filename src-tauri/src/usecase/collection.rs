@@ -134,6 +134,18 @@ impl<R: RepositoriesExt> CollectionUseCase<R> {
             .await
     }
 
+    pub async fn get_element_by_element_id(
+        &self,
+        id: &Id<CollectionElement>,
+    ) -> anyhow::Result<CollectionElement> {
+        Ok(self
+            .repositories
+            .collection_repository()
+            .get_element_by_element_id(id)
+            .await?
+            .ok_or(UseCaseError::CollectionElementIsNotFound)?)
+    }
+
     pub async fn update_collection_element_icon(
         &self,
         id: &Id<CollectionElement>,

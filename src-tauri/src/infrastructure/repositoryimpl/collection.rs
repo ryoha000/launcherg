@@ -69,6 +69,26 @@ impl CollectionRepository for RepositoryImpl<Collection> {
         .filter_map(|v| v.try_into().ok())
         .collect())
     }
+    async fn get_element_by_element_id(
+        &self,
+        id: &Id<CollectionElement>,
+    ) -> Result<Option<CollectionElement>> {
+        let pool = self.pool.0.clone();
+        let elements =
+            query_as::<_, CollectionElementTable>("select * from collection_elements where id = ?")
+                .bind(id.value)
+                .fetch_all(&*pool)
+                .await?
+                .into_iter()
+                .filter_map(|v| v.try_into().ok())
+                .collect::<Vec<CollectionElement>>();
+        if elements.len() == 0 {
+            Ok(None)
+        } else {
+            let v = elements[0].clone();
+            Ok(Some(v))
+        }
+    }
     async fn create(&self, new: NewCollection) -> Result<Collection> {
         if new.name.len() == 0 {
             anyhow::bail!("name is required");

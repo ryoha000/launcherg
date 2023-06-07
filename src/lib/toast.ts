@@ -18,7 +18,7 @@ export const showInfoToast = (text: string) => {
 export const showErrorToast = (text: string) => {
   Toastify({
     text,
-    duration: 3000,
+    duration: 10000,
     gravity: "bottom", // `top` or `bottom`
     position: "right", // `left`, `center` or `right`
     stopOnFocus: true, // Prevents dismissing of toast on hover

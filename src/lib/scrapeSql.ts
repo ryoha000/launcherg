@@ -28,7 +28,6 @@ export const scrapeSql = async (query: string, colNums: number) => {
       for (let index = 0; index < colNums; index++) {
         const scrapeIndex = index + 1;
         const col = tr.querySelector(`td:nth-child(${scrapeIndex})`);
-        console.log({ scrapeIndex, col });
         if (!col) {
           isSkip = true;
           break;

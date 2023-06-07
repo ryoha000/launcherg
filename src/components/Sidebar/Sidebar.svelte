@@ -55,7 +55,7 @@
 </script>
 
 <div
-  class="min-h-0 grid-(~ rows-[min-content_min-content_min-content_1fr]) border-(r-1px solid border-primary)"
+  class="min-h-0 max-w-full grid-(~ rows-[min-content_min-content_min-content_1fr]) border-(r-1px solid border-primary)"
 >
   <a href="/" use:link>
     <div class="flex items-center gap-2 p-(x-2 t-4)">

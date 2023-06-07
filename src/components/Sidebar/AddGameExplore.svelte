@@ -85,7 +85,6 @@
       }
       return [...appendPaths, ...v];
     });
-    console.log(defaultPaths);
   });
 </script>
 

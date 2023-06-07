@@ -35,7 +35,9 @@ fn main() {
             command::update_collection_element_icon,
             command::add_elements_to_collection,
             command::remove_elements_from_collection,
-            command::get_default_import_dirs
+            command::get_default_import_dirs,
+            command::play_game,
+            command::get_play_time_minutes
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

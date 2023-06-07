@@ -13,6 +13,10 @@ pub trait CollectionRepository {
     async fn get_by_name(&self, name: String) -> Result<Option<Collection>>;
     async fn get_all(&self) -> Result<Vec<Collection>>;
     async fn get_elements_by_id(&self, id: &Id<Collection>) -> Result<Vec<CollectionElement>>;
+    async fn get_element_by_element_id(
+        &self,
+        id: &Id<CollectionElement>,
+    ) -> Result<Option<CollectionElement>>;
     async fn create(&self, new: NewCollection) -> Result<Collection>;
     async fn update(&self, src: UpdateCollection) -> Result<()>;
     async fn delete(&self, id: &Id<Collection>) -> Result<()>;

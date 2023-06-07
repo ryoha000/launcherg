@@ -1,21 +1,25 @@
+use std::io::prelude::*;
 use std::{collections::HashMap, sync::Arc, time::Instant};
 
 use derive_new::new;
 
+use crate::domain::file::PlayHistory;
 use crate::{
     domain::{
-        collection::NewCollectionElement,
+        collection::{CollectionElement, NewCollectionElement},
         distance::get_comparable_distance,
         explorer::{file::FileExplorer, network::NetworkExplorer},
         file::{
-            filter_game_path, get_file_paths_by_exts, get_lnk_metadatas, normalize,
-            save_icon_to_png,
+            filter_game_path, get_file_paths_by_exts, get_lnk_metadatas, get_play_history_path,
+            normalize, save_icon_to_png, start_process,
         },
         network::ErogamescapeIDNamePair,
         Id,
     },
     infrastructure::explorerimpl::explorer::ExplorersExt,
 };
+
+use super::error::UseCaseError;
 
 #[derive(new)]
 pub struct FileUseCase<R: ExplorersExt> {
@@ -195,5 +199,40 @@ impl<R: ExplorersExt> FileUseCase<R> {
     }
     pub async fn get_memo_path(&self, id: i32) -> anyhow::Result<String> {
         Ok(self.explorers.file_explorer().get_md_path(id)?)
+    }
+    pub fn start_game(
+        &self,
+        collection_element: CollectionElement,
+        is_run_as_admin: bool,
+    ) -> anyhow::Result<()> {
+        let exist = std::path::Path::new(&collection_element.path).exists();
+        if !exist {
+            return Err(UseCaseError::IsNotValidPath(collection_element.path).into());
+        }
+        let play_history_path = get_play_history_path(&collection_element.id);
+        Ok(start_process(
+            is_run_as_admin,
+            &collection_element.path,
+            &play_history_path,
+        )?)
+    }
+    pub fn get_play_time_minutes(
+        &self,
+        collection_element_id: &Id<CollectionElement>,
+    ) -> anyhow::Result<f32> {
+        let path = get_play_history_path(collection_element_id);
+        let file = std::fs::File::open(&path)?;
+        let reader = std::io::BufReader::new(file);
+
+        let mut histories = vec![];
+        for line in reader.lines() {
+            if let Ok(line) = line {
+                if let Ok(history) = serde_json::from_str::<PlayHistory>(&line) {
+                    histories.push(history)
+                }
+            }
+        }
+
+        Ok(histories.into_iter().map(|v| v.minutes).sum())
     }
 }

@@ -10,7 +10,6 @@
   let height: number;
 
   const mde = (node: HTMLElement) => {
-    console.log(params.id);
     const easyMDE = new EasyMDE({
       element: node,
       spellChecker: false,

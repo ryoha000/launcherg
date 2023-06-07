@@ -8,4 +8,8 @@ pub enum UseCaseError {
     CollectionNotPermittedToDelete,
     #[error("コレクションはすでに存在しています")]
     CollectionIsAlreadyExist,
+    #[error("コレクションエレメントが存在しません")]
+    CollectionElementIsNotFound,
+    #[error("`{0}`に有効な実行ファイルが存在しません")]
+    IsNotValidPath(String),
 }

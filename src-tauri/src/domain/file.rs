@@ -7,6 +7,7 @@ pub struct LnkMetadata {
 use std::{fs, io::Write, path::Path};
 
 use anyhow::Ok;
+use serde::{Deserialize, Serialize};
 use tauri::{
     api::process::{Command, CommandEvent},
     async_runtime::JoinHandle,
@@ -328,4 +329,55 @@ pub fn save_exe_file_png(
     });
 
     Ok(handle)
+}
+
+const PLAY_HISTORIES_ROOT_DIR: &str = "play-histories";
+pub fn get_play_history_path(collection_element_id: &Id<CollectionElement>) -> String {
+    let dir = Path::new(&get_save_root_abs_dir()).join(PLAY_HISTORIES_ROOT_DIR);
+    fs::create_dir_all(dir).unwrap();
+    Path::new(&get_save_root_abs_dir())
+        .join(PLAY_HISTORIES_ROOT_DIR)
+        .join(format!("{}.jsonl", collection_element_id.value))
+        .to_string_lossy()
+        .to_string()
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct PlayHistory {
+    pub minutes: f32,
+    pub start_date: String,
+}
+
+pub fn start_process(
+    is_run_as_admin: bool,
+    path: &str,
+    play_history_path: &str,
+) -> anyhow::Result<()> {
+    let verb = match is_run_as_admin {
+        true => "-Verb RunAs",
+        false => "",
+    };
+
+    let script = format!(
+        r#"
+    $startDate = Get-Date -Format "yyyy/MM/dd HH:mm:ss"
+    $executionTime = Measure-Command {{ Start-Process "{}" {} -Wait }}
+    $totalMinutes = $executionTime.TotalMinutes
+    $jsonObject = New-Object PSObject -Property @{{
+        minutes = $totalMinutes
+        startDate = $startDate
+    }}
+    $json = $jsonObject | ConvertTo-Json -Compress
+    Add-Content -Path "{}" -Value $json
+    "#,
+        path, verb, play_history_path
+    );
+
+    std::process::Command::new("powershell.exe")
+        .arg("-Command")
+        .arg(&script)
+        .spawn()?;
+
+    Ok(())
 }
