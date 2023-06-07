@@ -59,3 +59,9 @@ export const convertSpecialCharacters = (str: string) => {
   tempElement.innerHTML = str;
   return tempElement.value;
 };
+
+export const isNotNullOrUndefined = <T>(
+  src: T | null | undefined
+): src is T => {
+  return src !== null && src !== undefined;
+};

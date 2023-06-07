@@ -12,6 +12,11 @@
   import { createWritable } from "@/lib/utils";
   import { link } from "svelte-spa-router";
   import type { SortOrder } from "@/components/Sidebar/sort";
+  import {
+    useTrieFilter,
+    type Option,
+    collectionElementsToOptions,
+  } from "@/lib/trieFilter";
 
   onMount(() => collections.init());
 
@@ -22,29 +27,39 @@
     }
   });
 
+  const [elementOptions, getElementOptions] = createWritable<Option<number>[]>(
+    []
+  );
+  sidebarCollectionElements.subscribe((v) =>
+    elementOptions.set(collectionElementsToOptions(v))
+  );
+
+  const { query, filtered } = useTrieFilter(elementOptions, getElementOptions);
+  let [order, getOrder] = createWritable<SortOrder>("gamename-asc");
+
   let displayCollectionElements: CollectionElement[] = [];
   const filterAndSort = () => {
-    const filteredTemp = sidebarCollectionElements
-      .value()
-      .filter((v) => v.gamename.includes(getQuery()));
-
+    const filteredElements = $sidebarCollectionElements.filter(
+      (element) =>
+        $filtered.findIndex((option) => option.value === element.id) !== -1
+    );
     const isGamename = getOrder().includes("gamename");
     const isAsc = getOrder().includes("asc");
     const multiplyer = isAsc ? 1 : -1;
 
-    displayCollectionElements = [...filteredTemp].sort((a, b) => {
+    displayCollectionElements = [...filteredElements].sort((a, b) => {
       if (isGamename) {
-        return a.gamename.localeCompare(b.gamename, "ja") * multiplyer;
+        if (!a.gamenameRuby || !b.gamenameRuby) {
+          return 1;
+        }
+        return a.gamenameRuby.localeCompare(b.gamenameRuby, "ja") * multiplyer;
       }
       return 1;
     });
   };
 
-  let [query, getQuery] = createWritable("");
-  let [order, getOrder] = createWritable<SortOrder>("gamename-asc");
-
   collections.subscribe(() => filterAndSort());
-  query.subscribe(() => filterAndSort());
+  filtered.subscribe(() => filterAndSort());
   order.subscribe(() => filterAndSort());
 
   sidebarCollectionElements.subscribe(() => {

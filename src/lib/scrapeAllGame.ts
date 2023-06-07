@@ -8,7 +8,7 @@ export const scrapeAllGame = async (idCursor = 0) => {
   for (let i = 0; i < MAX_SCRAPE_COUNT; i++) {
     const query = `SELECT id, gamename FROM gamelist WHERE id >= ${idCursor} AND id < ${
       idCursor + STEP
-    };`;
+    } AND model = 'PC';`;
     const rows = await scrapeSql(query, 2);
     if (!rows.length) {
       console.log(
@@ -21,5 +21,5 @@ export const scrapeAllGame = async (idCursor = 0) => {
     idCursor += STEP;
   }
 
-  console.log(idGameNamePairs);
+  console.log(JSON.stringify(idGameNamePairs));
 };

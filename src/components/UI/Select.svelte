@@ -1,8 +1,8 @@
 <script lang="ts">
   import SelectOptions from "@/components/UI/SelectOptions.svelte";
-  import type { Option } from "./select";
   import APopover from "@/components/UI/APopover.svelte";
   import { createEventDispatcher } from "svelte";
+  import { type Option } from "@/lib/trieFilter";
 
   export let options: Option<string | number>[];
   export let value: Option<string | number>["value"];

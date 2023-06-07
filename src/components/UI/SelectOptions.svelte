@@ -1,6 +1,7 @@
 <script lang="ts">
   import Input from "@/components/UI/Input.svelte";
-  import type { Option } from "./select";
+  import { useTrieFilter, type Option } from "@/lib/trieFilter";
+  import { createWritable } from "@/lib/utils";
   import { createEventDispatcher } from "svelte";
 
   export let options: Option<string | number>[];
@@ -11,10 +12,12 @@
   export let bottomCreateButtonText = "";
   export let value: string | number;
 
-  let query = "";
-  $: filteredOptions = options.filter((v) =>
-    query ? v.label.toLowerCase().includes(query.toLowerCase()) : true
-  );
+  const [writableOptions, getOptions] = createWritable(options);
+  $: {
+    writableOptions.set(options);
+  }
+
+  const { query, filtered } = useTrieFilter(writableOptions, getOptions);
 
   const dispatcher = createEventDispatcher<{
     select: { value: string | number };
@@ -35,11 +38,11 @@
   {/if}
   {#if enableFilter}
     <div class="p-2 border-(b-1px border-primary solid)">
-      <Input bind:value={query} placeholder={filterPlaceholder} autofocus />
+      <Input bind:value={$query} placeholder={filterPlaceholder} autofocus />
     </div>
   {/if}
   <div class="flex flex-(col)">
-    {#each filteredOptions as option, i (option)}
+    {#each $filtered as option, i (option)}
       <button
         class={`${value === option.value ? "bg-bg-tertiary" : "bg-transparent"}
                 p-(x-4 y-1) ${
