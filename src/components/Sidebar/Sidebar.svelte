@@ -2,7 +2,11 @@
   import Logo from "/logo.png";
   import Icon from "/icon.png";
   import { collections } from "@/store/collections";
-  import type { Collection, CollectionElement } from "@/lib/types";
+  import type {
+    Collection,
+    CollectionElement,
+    CollectionElementsWithLabel,
+  } from "@/lib/types";
   import { onMount } from "svelte";
   import SearchInput from "@/components/Sidebar/SearchInput.svelte";
   import CollectionSelect from "@/components/Sidebar/CollectionSelect.svelte";
@@ -11,7 +15,7 @@
   import { sidebarCollectionElements } from "@/store/sidebarCollectionElements";
   import { createWritable } from "@/lib/utils";
   import { link } from "svelte-spa-router";
-  import type { SortOrder } from "@/components/Sidebar/sort";
+  import { filterAndSort, type SortOrder } from "@/components/Sidebar/sort";
   import {
     useTrieFilter,
     type Option,
@@ -35,37 +39,24 @@
   );
 
   const { query, filtered } = useTrieFilter(elementOptions, getElementOptions);
-  let [order, getOrder] = createWritable<SortOrder>("gamename-asc");
+  let order = writable<SortOrder>("gamename-asc");
 
-  let displayCollectionElements: CollectionElement[] = [];
-  const filterAndSort = () => {
-    const filteredElements = $sidebarCollectionElements.filter(
-      (element) =>
-        $filtered.findIndex((option) => option.value === element.id) !== -1
-    );
-    const isGamename = getOrder().includes("gamename");
-    const isAsc = getOrder().includes("asc");
-    const multiplyer = isAsc ? 1 : -1;
+  let displayCollectionElements: CollectionElementsWithLabel[] = [];
 
-    displayCollectionElements = [...filteredElements].sort((a, b) => {
-      if (isGamename) {
-        if (!a.gamenameRuby || !b.gamenameRuby) {
-          return 1;
-        }
-        return a.gamenameRuby.localeCompare(b.gamenameRuby, "ja") * multiplyer;
-      }
-      return 1;
-    });
-  };
-
-  collections.subscribe(() => filterAndSort());
-  filtered.subscribe(() => filterAndSort());
-  order.subscribe(() => filterAndSort());
+  collections.subscribe(
+    () => (displayCollectionElements = filterAndSort($filtered, $order))
+  );
+  filtered.subscribe(
+    () => (displayCollectionElements = filterAndSort($filtered, $order))
+  );
+  order.subscribe(
+    () => (displayCollectionElements = filterAndSort($filtered, $order))
+  );
 
   sidebarCollectionElements.subscribe(() => {
     query.set("");
     order.set("gamename-asc");
-    filterAndSort();
+    displayCollectionElements = filterAndSort($filtered, $order);
   });
 </script>
 

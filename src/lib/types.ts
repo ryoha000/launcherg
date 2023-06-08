@@ -56,6 +56,11 @@ export type CollectionElement = {
   icon: string;
 };
 
+export type CollectionElementsWithLabel = {
+  label: string;
+  elements: CollectionElement[];
+};
+
 export type SeiyaDataPair = [string, string];
 
 export type CollectionElementDetail = {

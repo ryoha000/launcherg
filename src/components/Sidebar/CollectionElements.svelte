@@ -2,10 +2,7 @@
   import CollectionElement from "@/components/Sidebar/CollectionElement.svelte";
   import Button from "@/components/UI/Button.svelte";
   import Checkbox from "@/components/UI/Checkbox.svelte";
-  import type {
-    Collection,
-    CollectionElement as TCollectionElement,
-  } from "@/lib/types";
+  import type { Collection, CollectionElementsWithLabel } from "@/lib/types";
   import { writable } from "svelte/store";
   import { fade } from "svelte/transition";
   import SimpleBar from "simplebar";
@@ -14,15 +11,21 @@
   import { commandAddElementsToCollection } from "@/lib/command";
   import RemoveElements from "@/components/Sidebar/RemoveElements.svelte";
   import { showInfoToast } from "@/lib/toast";
+  import ADisclosure from "@/components/UI/ADisclosure.svelte";
 
   export let collection: Collection;
-  export let collectionElement: TCollectionElement[];
+  export let collectionElement: CollectionElementsWithLabel[];
 
-  $: selectedElements = collectionElement.filter((_, i) => checked[i]);
+  $: selectedElements = collectionElement
+    .flatMap((v) => v.elements)
+    .filter((_, i) => checked[i]);
 
   let checked: boolean[] = [];
   let isCheckAll = writable(false);
-  isCheckAll.subscribe((val) => (checked = collectionElement.map(() => val)));
+  isCheckAll.subscribe(
+    (val) =>
+      (checked = collectionElement.flatMap((v) => v.elements).map(() => val))
+  );
 
   const simplebar = (node: HTMLElement) => {
     new SimpleBar(node, { scrollbarMinSize: 64 });
@@ -95,16 +98,33 @@
     </div>
     <div class="flex-1 mt-2 min-h-0">
       <div use:simplebar class="h-full overflow-y-auto">
-        {#each collectionElement as ele, i (ele.id)}
-          <CollectionElement
-            checked={checked[i]}
-            on:check={(e) => {
-              checked[i] = e.detail.value;
-              checked = checked;
-            }}
-            collectionElement={ele}
-          />
-        {/each}
+        {#if collectionElement.length === 1}
+          {#each collectionElement[0].elements as ele, i (ele.id)}
+            <CollectionElement
+              checked={checked[i]}
+              on:check={(e) => {
+                checked[i] = e.detail.value;
+                checked = checked;
+              }}
+              collectionElement={ele}
+            />
+          {/each}
+        {:else}
+          {#each collectionElement as { label, elements } (label)}
+            <ADisclosure {label}>
+              {#each elements as ele, i (ele.id)}
+                <CollectionElement
+                  checked={checked[i]}
+                  on:check={(e) => {
+                    checked[i] = e.detail.value;
+                    checked = checked;
+                  }}
+                  collectionElement={ele}
+                />
+              {/each}
+            </ADisclosure>
+          {/each}
+        {/if}
       </div>
     </div>
   {/if}
