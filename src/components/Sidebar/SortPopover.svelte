@@ -11,6 +11,8 @@
     "gamename-desc",
     "sellyear-asc",
     "sellyear-desc",
+    "brandname-asc",
+    "brandname-desc",
   ];
 </script>
 

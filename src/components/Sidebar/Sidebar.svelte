@@ -55,7 +55,6 @@
 
   sidebarCollectionElements.subscribe(() => {
     query.set("");
-    order.set("gamename-asc");
     displayCollectionElements = filterAndSort($filtered, $order);
   });
 </script>
