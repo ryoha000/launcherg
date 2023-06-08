@@ -4,9 +4,10 @@ pub struct LnkMetadata {
     pub icon: String,
 }
 
-use std::{fs, io::Write, path::Path};
+use std::{fs, io::Write, path::Path, time::SystemTime};
 
 use anyhow::Ok;
+use chrono::{DateTime, Local, TimeZone};
 use serde::{Deserialize, Serialize};
 use tauri::{
     api::process::{Command, CommandEvent},
@@ -380,4 +381,18 @@ pub fn start_process(
         .spawn()?;
 
     Ok(())
+}
+
+pub fn get_file_created_at_sync(path: &str) -> Option<DateTime<Local>> {
+    let metadata = fs::metadata(path).ok();
+    metadata.and_then(|meta| {
+        meta.created()
+            .ok()
+            .and_then(|time| Some(DateTime::from(time)))
+    })
+}
+
+pub fn get_file_created_at(path: &str) -> JoinHandle<Option<DateTime<Local>>> {
+    let path = path.to_string();
+    tauri::async_runtime::spawn(async move { get_file_created_at_sync(&path) })
 }

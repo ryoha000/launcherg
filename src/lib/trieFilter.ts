@@ -1,7 +1,7 @@
 export type Option<T> = { label: string; value: T; otherLabels?: string[] };
 import type { CollectionElement } from "@/lib/types";
 import { isNotNullOrUndefined } from "@/lib/utils";
-import { readable, writable, type Readable } from "svelte/store";
+import { writable, type Readable } from "svelte/store";
 import TrieSearch from "trie-search";
 import { toHiragana, toRomaji } from "wanakana";
 

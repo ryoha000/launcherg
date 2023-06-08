@@ -61,7 +61,11 @@
       useCache,
       collection?.id || null
     );
-    await sidebarCollectionElements.refetch();
+    if (collection) {
+      await sidebarCollectionElements.init(collection.id);
+    } else {
+      await sidebarCollectionElements.refetch();
+    }
 
     const text = res.length
       ? `「${res[0]}」${

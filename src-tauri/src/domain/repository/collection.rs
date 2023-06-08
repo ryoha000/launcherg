@@ -7,6 +7,7 @@ use crate::domain::{
 };
 use anyhow::Result;
 use async_trait::async_trait;
+use chrono::{DateTime, Local};
 
 #[async_trait]
 pub trait CollectionRepository {
@@ -56,4 +57,10 @@ pub trait CollectionRepository {
         since: &str,
         until: &str,
     ) -> Result<Vec<Id<CollectionElement>>>;
+
+    async fn update_element_last_play_at_by_id(
+        &self,
+        id: &Id<CollectionElement>,
+        last_play_at: DateTime<Local>,
+    ) -> Result<()>;
 }

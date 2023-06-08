@@ -30,6 +30,8 @@ pub struct CollectionElement {
     pub is_nukige: bool,
     pub path: String,
     pub icon: String,
+    pub install_at: Option<String>,
+    pub last_play_at: Option<String>,
 }
 
 impl From<domain::collection::CollectionElement> for CollectionElement {
@@ -44,6 +46,8 @@ impl From<domain::collection::CollectionElement> for CollectionElement {
             st.is_nukige,
             st.path,
             get_icon_path(&st.id),
+            st.install_at.and_then(|v| Some(v.to_string())),
+            st.last_play_at.and_then(|v| Some(v.to_string())),
         )
     }
 }

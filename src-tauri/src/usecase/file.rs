@@ -3,7 +3,7 @@ use std::{collections::HashMap, sync::Arc, time::Instant};
 
 use derive_new::new;
 
-use crate::domain::file::PlayHistory;
+use crate::domain::file::{get_file_created_at_sync, PlayHistory};
 use crate::{
     domain::{
         collection::{CollectionElement, NewCollectionElement},
@@ -178,10 +178,12 @@ impl<R: ExplorersExt> FileUseCase<R> {
             .chain(exe_id_path_vec)
             .filter_map(|(id, path)| {
                 if let Some(gamename) = all_erogamescape_game_map.get(&id) {
+                    let install_at = get_file_created_at_sync(&path);
                     return Some(NewCollectionElement {
                         id: Id::new(id),
                         gamename: gamename.clone(),
                         path,
+                        install_at,
                     });
                 }
                 None

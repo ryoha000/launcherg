@@ -60,6 +60,8 @@ CREATE TABLE IF NOT EXISTS collection_elements (
     id INTEGER PRIMARY KEY,
     gamename TEXT NOT NULL,
     path TEXT NOT NULL,
+    install_at DATETIME,
+    last_play_at DATETIME,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );

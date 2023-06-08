@@ -1,5 +1,6 @@
 use std::{collections::HashSet, fs, sync::Arc};
 
+use chrono::Local;
 use derive_new::new;
 
 use super::{error::UseCaseError, models::collection::CreateCollection};
@@ -279,5 +280,15 @@ impl<R: RepositoriesExt> CollectionUseCase<R> {
             .into_iter()
             .map(|v| Id::new(v))
             .collect())
+    }
+    pub async fn update_element_last_play_at(
+        &self,
+        id: &Id<CollectionElement>,
+    ) -> anyhow::Result<()> {
+        self.repositories
+            .collection_repository()
+            .update_element_last_play_at_by_id(id, Local::now())
+            .await?;
+        Ok(())
     }
 }

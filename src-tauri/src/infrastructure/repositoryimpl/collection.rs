@@ -1,5 +1,6 @@
 use anyhow::Result;
 use async_trait::async_trait;
+use chrono::{DateTime, Local};
 use sqlx::{query, query_as, QueryBuilder, Row};
 
 use super::{
@@ -128,12 +129,14 @@ impl CollectionRepository for RepositoryImpl<Collection> {
     }
     async fn upsert_collection_element(&self, new: &NewCollectionElement) -> Result<()> {
         let pool = self.pool.0.clone();
-        let _ = query("insert into collection_elements (id, gamename, path) values (?, ?, ?) ON CONFLICT(id) DO UPDATE SET gamename = ?, path = ?")
+        let _ = query("insert into collection_elements (id, gamename, path, install_at) values (?, ?, ?, ?) ON CONFLICT(id) DO UPDATE SET gamename = ?, path = ?, install_at = ?")
             .bind(new.id.value)
             .bind(new.gamename.clone())
             .bind(new.path.clone())
+            .bind(new.install_at)
             .bind(new.gamename.clone())
             .bind(new.path.clone())
+            .bind(new.install_at)
             .execute(&*pool)
             .await?;
         Ok(())
@@ -147,16 +150,18 @@ impl CollectionRepository for RepositoryImpl<Collection> {
         }
         // ref: https://docs.rs/sqlx-core/latest/sqlx_core/query_builder/struct.QueryBuilder.html#method.push_values
         let mut query_builder =
-            QueryBuilder::new("INSERT INTO collection_elements (id, gamename, path) ");
+            QueryBuilder::new("INSERT INTO collection_elements (id, gamename, path, install_at) ");
         query_builder.push_values(new_elements, |mut b, new| {
             b.push_bind(new.id.value)
                 .push_bind(new.gamename)
-                .push_bind(new.path);
+                .push_bind(new.path)
+                .push_bind(new.install_at.and_then(|v| Some(v.naive_utc())));
         });
 
         let pool = self.pool.0.clone();
         let query = query_builder.build();
         query.execute(&*pool).await?;
+        println!("end insrt elements");
         Ok(())
     }
     async fn add_elements_by_id(
@@ -340,5 +345,18 @@ impl CollectionRepository for RepositoryImpl<Collection> {
         .fetch_all(&*pool)
         .await?;
         Ok(ids.into_iter().map(|v| Id::new(v.0)).collect())
+    }
+    async fn update_element_last_play_at_by_id(
+        &self,
+        id: &Id<CollectionElement>,
+        last_play_at: DateTime<Local>,
+    ) -> Result<()> {
+        let pool = self.pool.0.clone();
+        query("update collection_elements set last_play_at = ? where id = ?")
+            .bind(last_play_at.naive_utc())
+            .bind(id.value)
+            .execute(&*pool)
+            .await?;
+        Ok(())
     }
 }

@@ -8,9 +8,9 @@ use super::{
 };
 use crate::{
     domain::{
-        collection::{NewCollectionElement, NewCollectionElementDetail, UpdateCollection},
+        collection::{NewCollectionElement, UpdateCollection},
         distance::get_comparable_distance,
-        file::{get_icon_path, normalize},
+        file::{get_file_created_at_sync, normalize},
         Id,
     },
     infrastructure::repositoryimpl::migration::ONEPIECE_COLLECTION_ID,
@@ -57,6 +57,7 @@ pub async fn add_collection_elements_in_pc(
     use_cache: bool,
     adding_collection_id: Option<i32>,
 ) -> anyhow::Result<Vec<String>, CommandError> {
+    println!("fire command");
     let explored_caches = modules.explored_cache_use_case().get_cache().await?;
     let explore_files: Vec<String> = modules
         .file_use_case()
@@ -69,6 +70,7 @@ pub async fn add_collection_elements_in_pc(
         })
         .collect();
 
+    println!("探索する path の取得完了");
     if explore_files.len() == 0 {
         println!("all file is match to cache");
         return Ok(vec![]);
@@ -204,7 +206,8 @@ pub async fn upsert_collection_element(
     gamename: String,
     path: String,
 ) -> anyhow::Result<(), CommandError> {
-    let new_element = NewCollectionElement::new(Id::new(id), gamename, path);
+    let install_at = get_file_created_at_sync(&path);
+    let new_element = NewCollectionElement::new(Id::new(id), gamename, path, install_at);
     modules
         .collection_use_case()
         .upsert_collection_element(&new_element)
@@ -295,9 +298,13 @@ pub async fn play_game(
         .collection_use_case()
         .get_element_by_element_id(&Id::new(collection_element_id))
         .await?;
-    Ok(modules
+    modules
         .file_use_case()
-        .start_game(element, is_run_as_admin)?)
+        .start_game(element, is_run_as_admin)?;
+    Ok(modules
+        .collection_use_case()
+        .update_element_last_play_at(&Id::new(collection_element_id))
+        .await?)
 }
 
 #[tauri::command]

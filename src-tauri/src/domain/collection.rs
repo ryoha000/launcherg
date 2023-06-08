@@ -1,3 +1,4 @@
+use chrono::{DateTime, Local};
 use derive_new::new;
 use serde::{Deserialize, Serialize};
 use sqlx::types::chrono::NaiveDateTime;
@@ -34,8 +35,10 @@ pub struct CollectionElement {
     pub sellday: String,
     pub is_nukige: bool,
     pub path: String,
-    pub created_at: NaiveDateTime,
-    pub updated_at: NaiveDateTime,
+    pub install_at: Option<DateTime<Local>>,
+    pub last_play_at: Option<DateTime<Local>>,
+    pub created_at: DateTime<Local>,
+    pub updated_at: DateTime<Local>,
 }
 
 #[derive(new, Debug)]
@@ -43,6 +46,7 @@ pub struct NewCollectionElement {
     pub id: Id<CollectionElement>,
     pub gamename: String,
     pub path: String,
+    pub install_at: Option<DateTime<Local>>,
 }
 
 #[derive(new, Debug, Clone, Serialize, Deserialize)]
