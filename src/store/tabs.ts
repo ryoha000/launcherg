@@ -37,7 +37,7 @@ const createTabs = () => {
   const routeLoaded = (event: RouteLoadedEvent) => {
     const isHome = event.detail.location === "/";
     if (isHome) {
-      console.warn("route change to home"); // TODO: 今度考える
+      selected.set(-1);
       return;
     }
 
@@ -121,6 +121,25 @@ const createTabs = () => {
       return;
     }
   };
+  const initialize = () => {
+    const _tabs = getTabs();
+    const index = getSelected();
+    if (_tabs.length - 1 < index) {
+      console.error("_tabs.length - 1 < index", {
+        tabs: getTabs(),
+        selected: getSelected(),
+      });
+      selected.set(-1);
+      push("/");
+      return;
+    }
+    if (index < 0) {
+      push("/");
+      return;
+    }
+    const tab = _tabs[index];
+    push(`/${tab.type}/${tab.id}`);
+  };
   return {
     tabs,
     selected: {
@@ -128,7 +147,9 @@ const createTabs = () => {
     },
     routeLoaded,
     deleteTab,
+    initialize,
   };
 };
 
-export const { tabs, selected, routeLoaded, deleteTab } = createTabs();
+export const { tabs, selected, routeLoaded, deleteTab, initialize } =
+  createTabs();

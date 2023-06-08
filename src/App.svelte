@@ -2,10 +2,13 @@
   import Router from "svelte-spa-router";
   import Layout from "@/layouts/Layout.svelte";
   import { routes } from "@/router/route";
-  import { routeLoaded } from "@/store/tabs";
+  import { initialize, routeLoaded } from "@/store/tabs";
   import { registerCollectionElementDetails } from "@/lib/registerCollectionElementDetails";
+  import { onMount } from "svelte";
 
   $: setDetailPromise = registerCollectionElementDetails();
+
+  onMount(initialize);
 </script>
 
 <main class="h-full w-full bg-(bg-primary) font-sans">
