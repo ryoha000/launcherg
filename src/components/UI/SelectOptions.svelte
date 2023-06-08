@@ -1,6 +1,7 @@
 <script lang="ts">
   import Input from "@/components/UI/Input.svelte";
-  import { useTrieFilter, type Option } from "@/lib/trieFilter";
+  import { useFilter } from "@/lib/filter";
+  import { type Option } from "@/lib/trieFilter";
   import { createWritable } from "@/lib/utils";
   import { createEventDispatcher } from "svelte";
 
@@ -17,7 +18,7 @@
     writableOptions.set(options);
   }
 
-  const { query, filtered } = useTrieFilter(writableOptions, getOptions);
+  const { query, filtered } = useFilter(writableOptions, getOptions);
 
   const dispatcher = createEventDispatcher<{
     select: { value: string | number };

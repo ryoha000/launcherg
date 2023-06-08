@@ -15,17 +15,25 @@ export const SORT_LABELS: { [key in SortOrder]: string } = {
   "sellyear-desc": "発売年で並び替え",
   "brandname-asc": "ブランド名で並び替え(昇順)",
   "brandname-desc": "ブランド名で並び替え(降順)",
+  "install-asc": "インストールした年で並び替え(昇順)",
+  "install-desc": "インストールした年で並び替え",
+  "last_play-asc": "最後に起動した年で並び替え(昇順)",
+  "last_play-desc": "最後に起動した年で並び替え",
 } as const;
 
 export const SORT_ORDER_TYPES = {
   GAMENAME: "gamename",
   SELLYEAR: "sellyear",
   BRANDNAME: "brandname",
+  INSTALL: "install",
+  LAST_PLAY: "last_play",
 } as const;
 export const SORT_ORDER_BY = {
   ASC: "asc",
   DESC: "desc",
 } as const;
+
+const NULL_DATE = "不明";
 
 export const filterAndSort = (
   filteredOption: Option<number>[],
@@ -40,6 +48,8 @@ export const filterAndSort = (
   const isGamename = order.includes(SORT_ORDER_TYPES.GAMENAME);
   const isSellyear = order.includes(SORT_ORDER_TYPES.SELLYEAR);
   const isBrandname = order.includes(SORT_ORDER_TYPES.BRANDNAME);
+  const isInstall = order.includes(SORT_ORDER_TYPES.INSTALL);
+  const isLastPlay = order.includes(SORT_ORDER_TYPES.LAST_PLAY);
   const isAsc = order.includes(SORT_ORDER_BY.ASC);
   const multiplyer = isAsc ? 1 : -1;
 
@@ -51,6 +61,12 @@ export const filterAndSort = (
   }
   if (isBrandname) {
     return sortByBrandname(filteredElements, multiplyer);
+  }
+  if (isInstall) {
+    return sortByInstall(filteredElements, multiplyer);
+  }
+  if (isLastPlay) {
+    return sortByLastPlay(filteredElements, multiplyer);
   }
   return [
     {
@@ -123,3 +139,33 @@ const createCompareDay = (multiplyer: number) => (a: string, b: string) => {
   const dateB = new Date(b);
   return (dateA.getTime() - dateB.getTime()) * multiplyer;
 };
+
+const createSortByNullableDate =
+  (key: "installAt" | "lastPlayAt") =>
+  (elements: CollectionElement[], multiplyer: number) =>
+    elements
+      .reduce((acc, cur) => {
+        const value = cur[key];
+        const year = value ? value.split("-")[0] : NULL_DATE;
+        const index = acc.findIndex((v) => v.label === year);
+        if (index !== -1) {
+          acc[index].elements.push(cur);
+        } else {
+          acc.push({ label: year, elements: [cur] });
+        }
+        return acc;
+      }, [] as CollectionElementsWithLabel[])
+      .sort((a, b) =>
+        a.label === NULL_DATE || b.label === NULL_DATE
+          ? 1
+          : createCompareDay(multiplyer)(a.label, b.label)
+      )
+      .map((v) => ({
+        ...v,
+        elements: v.elements.sort((a, b) =>
+          createCompareDay(multiplyer)(a.sellday, b.sellday)
+        ),
+      }));
+
+const sortByInstall = createSortByNullableDate("installAt");
+const sortByLastPlay = createSortByNullableDate("lastPlayAt");

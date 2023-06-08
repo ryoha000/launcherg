@@ -16,11 +16,8 @@
   import { createWritable } from "@/lib/utils";
   import { link } from "svelte-spa-router";
   import { filterAndSort, type SortOrder } from "@/components/Sidebar/sort";
-  import {
-    useTrieFilter,
-    type Option,
-    collectionElementsToOptions,
-  } from "@/lib/trieFilter";
+  import { type Option, collectionElementsToOptions } from "@/lib/trieFilter";
+  import { useFilter } from "@/lib/filter";
 
   onMount(() => collections.init());
 
@@ -38,7 +35,7 @@
     elementOptions.set(collectionElementsToOptions(v))
   );
 
-  const { query, filtered } = useTrieFilter(elementOptions, getElementOptions);
+  const { query, filtered } = useFilter(elementOptions, getElementOptions);
   let order = writable<SortOrder>("gamename-asc");
 
   let displayCollectionElements: CollectionElementsWithLabel[] = [];

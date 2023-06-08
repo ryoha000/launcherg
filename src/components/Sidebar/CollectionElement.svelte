@@ -34,6 +34,7 @@
       alt="{collectionElement.gamename}_icon"
       src={iconSrc}
       class="h-10 w-10"
+      loading="lazy"
     />
     <div class="text-(body text-primary) font-bold max-h-full">
       {collectionElement.gamename}
