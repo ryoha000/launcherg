@@ -239,10 +239,10 @@ impl<R: RepositoriesExt> CollectionUseCase<R> {
                 .map(|v| v.value)
                 .collect::<HashSet<i32>>(),
         );
-        let exist_path_set = is_exist_path.then_some(
+        let exist_path_set = (is_exist_path).then_some(
             self.repositories
                 .collection_repository()
-                .get_element_ids_by_install_at_null()
+                .get_element_ids_by_install_at_not_null()
                 .await?
                 .into_iter()
                 .map(|v| v.value)

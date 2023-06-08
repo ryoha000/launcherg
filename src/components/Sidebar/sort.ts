@@ -156,8 +156,10 @@ const createSortByNullableDate =
         return acc;
       }, [] as CollectionElementsWithLabel[])
       .sort((a, b) =>
-        a.label === NULL_DATE || b.label === NULL_DATE
+        a.label === NULL_DATE
           ? 1
+          : b.label === NULL_DATE
+          ? -1
           : createCompareDay(multiplyer)(a.label, b.label)
       )
       .map((v) => ({

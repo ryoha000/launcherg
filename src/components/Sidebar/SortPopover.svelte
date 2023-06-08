@@ -10,6 +10,8 @@
     "gamename-asc",
     "gamename-desc",
     "sellyear-desc",
+    "install-desc",
+    "last_play-desc",
     "brandname-asc",
     "brandname-desc",
   ];
