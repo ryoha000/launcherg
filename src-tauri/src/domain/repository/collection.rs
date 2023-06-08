@@ -48,6 +48,7 @@ pub trait CollectionRepository {
         &self,
         is_nukige: bool,
     ) -> Result<Vec<Id<CollectionElement>>>;
+    async fn get_element_ids_by_install_at_null(&self) -> Result<Vec<Id<CollectionElement>>>;
     async fn get_element_ids_by_brandnames(
         &self,
         brandnames: &Vec<String>,

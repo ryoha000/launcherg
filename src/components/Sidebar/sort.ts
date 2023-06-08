@@ -12,7 +12,7 @@ export const SORT_LABELS: { [key in SortOrder]: string } = {
   "gamename-asc": "タイトルで並び替え(昇順)",
   "gamename-desc": "タイトルで並び替え(降順)",
   "sellyear-asc": "発売年で並び替え(昇順)",
-  "sellyear-desc": "発売年で並び替え(降順)",
+  "sellyear-desc": "発売年で並び替え",
   "brandname-asc": "ブランド名で並び替え(昇順)",
   "brandname-desc": "ブランド名で並び替え(降順)",
 } as const;

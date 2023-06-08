@@ -217,6 +217,7 @@ impl<R: RepositoriesExt> CollectionUseCase<R> {
         &self,
         is_nukige: bool,
         not_nukige: bool,
+        is_exist_path: bool,
         brandnames: &Option<Vec<String>>,
         between: &Option<(String, String)>,
     ) -> anyhow::Result<Vec<Id<CollectionElement>>> {
@@ -233,6 +234,15 @@ impl<R: RepositoriesExt> CollectionUseCase<R> {
             self.repositories
                 .collection_repository()
                 .get_element_ids_by_is_nukige(false)
+                .await?
+                .into_iter()
+                .map(|v| v.value)
+                .collect::<HashSet<i32>>(),
+        );
+        let exist_path_set = is_exist_path.then_some(
+            self.repositories
+                .collection_repository()
+                .get_element_ids_by_install_at_null()
                 .await?
                 .into_iter()
                 .map(|v| v.value)
@@ -263,9 +273,15 @@ impl<R: RepositoriesExt> CollectionUseCase<R> {
             None => None,
         };
 
-        let mut hashset_iter = vec![is_nukige_set, not_nukige_set, brandnames_set, betwern_set]
-            .into_iter()
-            .filter_map(|v| v);
+        let mut hashset_iter = vec![
+            is_nukige_set,
+            not_nukige_set,
+            exist_path_set,
+            brandnames_set,
+            betwern_set,
+        ]
+        .into_iter()
+        .filter_map(|v| v);
 
         let first = match hashset_iter.next() {
             Some(set) => set,

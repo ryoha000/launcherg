@@ -308,6 +308,16 @@ impl CollectionRepository for RepositoryImpl<Collection> {
         };
         Ok(ids.into_iter().map(|v| Id::new(v.0)).collect())
     }
+    async fn get_element_ids_by_install_at_null(&self) -> Result<Vec<Id<CollectionElement>>> {
+        let pool = self.pool.0.clone();
+        let ids: Vec<(i32,)> = sqlx::query_as(
+            "SELECT collection_element_id from collection_element_details where install_at is null",
+        )
+        .fetch_all(&*pool)
+        .await?;
+
+        Ok(ids.into_iter().map(|v| Id::new(v.0)).collect())
+    }
     async fn get_element_ids_by_brandnames(
         &self,
         brandnames: &Vec<String>,

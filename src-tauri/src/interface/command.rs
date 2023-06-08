@@ -380,12 +380,19 @@ pub async fn add_collection_elements_by_option(
     collection_id: i32,
     is_nukige: bool,
     not_nukige: bool,
+    is_exist_path: bool,
     brandnames: Option<Vec<String>>,
     between: Option<(String, String)>,
 ) -> anyhow::Result<(), CommandError> {
     let ids = modules
         .collection_use_case()
-        .get_collection_element_ids_by_option(is_nukige, not_nukige, &brandnames, &between)
+        .get_collection_element_ids_by_option(
+            is_nukige,
+            not_nukige,
+            is_exist_path,
+            &brandnames,
+            &between,
+        )
         .await?;
     // uniq
     let ids = ids

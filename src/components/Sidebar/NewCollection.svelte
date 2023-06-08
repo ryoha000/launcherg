@@ -36,6 +36,7 @@
       newCollection.id,
       isNukige,
       isNotNukige,
+      isExistPath,
       isFilterBrandname ? filterBrandnames : null,
       isFilterSellday
         ? [filterSellday.since ?? "", filterSellday.until ?? ""]

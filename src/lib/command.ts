@@ -155,6 +155,7 @@ export const commandAddCollectionElementsByOption = async (
   collectionId: number,
   isNukige: boolean,
   notNukige: boolean,
+  isExistPath: boolean,
   brandnames: string[] | null,
   between: [string, string] | null
 ) => {
@@ -162,6 +163,7 @@ export const commandAddCollectionElementsByOption = async (
     collectionId,
     isNukige,
     notNukige,
+    isExistPath,
     brandnames,
     between,
   });

@@ -9,7 +9,6 @@
   const sortOrders: SortOrder[] = [
     "gamename-asc",
     "gamename-desc",
-    "sellyear-asc",
     "sellyear-desc",
     "brandname-asc",
     "brandname-desc",
