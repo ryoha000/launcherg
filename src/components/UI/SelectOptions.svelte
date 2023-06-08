@@ -3,6 +3,7 @@
   import { useFilter } from "@/lib/filter";
   import { type Option } from "@/lib/trieFilter";
   import { createWritable } from "@/lib/utils";
+  import SimpleBar from "simplebar";
   import { createEventDispatcher } from "svelte";
 
   export let options: Option<string | number>[];
@@ -25,9 +26,13 @@
     create: {};
     close: {};
   }>();
+
+  const simplebar = (node: HTMLElement) => {
+    new SimpleBar(node, { scrollbarMinSize: 64 });
+  };
 </script>
 
-<div class="max-h-60 overflow-hidden flex-(~ col)">
+<div class="max-h-80 overflow-hidden flex-(~ col)">
   {#if title}
     <div class="flex items-center gap-8 border-(b-1px border-primary solid)">
       <div
@@ -42,7 +47,7 @@
       <Input bind:value={$query} placeholder={filterPlaceholder} autofocus />
     </div>
   {/if}
-  <div class="flex flex-(col) overflow-y-auto min-h-full">
+  <div class="flex flex-(col) overflow-y-auto min-h-full" use:simplebar>
     {#each $filtered as option, i (option)}
       <button
         class={`${value === option.value ? "bg-bg-tertiary" : "bg-transparent"}
@@ -72,11 +77,11 @@
   </div>
   {#if bottomCreateButtonText}
     <button
-      class="bg-transparent hover:bg-bg-tertiary transition-all w-full p-(x-4 y-1) flex items-center gap-2 border-(t-1px solid border-primary)"
+      class="bg-transparent hover:bg-bg-tertiary transition-all w-full p-(l-4 r-5 y-2) flex items-center border-(t-1px solid border-primary)"
       on:click={() => dispatcher("create")}
     >
       <div class="w-5 h-5 i-iconoir-plus color-text-primary" />
-      <div class="text-(text-primary body2 left) whitespace-nowrap">
+      <div class="text-(text-primary body2 left) font-bold whitespace-nowrap">
         {bottomCreateButtonText}
       </div>
     </button>

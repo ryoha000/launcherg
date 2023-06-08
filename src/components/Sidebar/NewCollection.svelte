@@ -25,13 +25,12 @@
   };
 
   $: confirmDisabled =
-    isFilterSellday && (!filterSellday.since || !filterSellday.until);
+    (isFilterSellday && (!filterSellday.since || !filterSellday.until)) ||
+    !name;
 
   const createNewCollection = async () => {
     const newCollection = await commandCreateNewCollection(name);
-    console.log("end create new collection");
     await collections.init();
-    console.log("end collections init");
     await commandAddCollectionElementsByOption(
       newCollection.id,
       isNukige,

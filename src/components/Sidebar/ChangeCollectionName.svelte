@@ -24,6 +24,7 @@
     bind:isOpen
     title={`Change "${collection.name}"`}
     confirmText="Change"
+    confirmDisabled={!name}
     on:confirm={update}
   >
     <div>

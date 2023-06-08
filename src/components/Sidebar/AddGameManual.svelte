@@ -78,6 +78,7 @@
   bind:isOpen
   title="Manually import game"
   confirmText="Import"
+  confirmDisabled={!idInput || !path}
   on:confirm={confirm}
 >
   <div class="space-y-4">

@@ -100,6 +100,7 @@
     title="Automatically import game"
     confirmText="Start import"
     fullmodal
+    confirmDisabled={!$paths.length || !$paths.some((v) => v.path)}
     on:confirm={confirm}
   >
     <div class="space-y-8">
@@ -143,7 +144,7 @@
           <Checkbox bind:value={useCache} />
           <div>
             <div class="text-(text-primary body) font-medium">
-              前回から追加されたファイルのみを追加する
+              前回から追加されたファイルのみを対象にする
             </div>
             <div class="text-(text-tertiary body2)">
               自動追加が初回の場合このオプションは意味を持ちません。このオプションがオフの場合、自動追加は2分程度かかる場合があります。

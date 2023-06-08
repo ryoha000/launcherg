@@ -80,5 +80,4 @@
     withInputPath={false}
     on:add={(e) => onChangeGame(e.detail.id, e.detail.gamename, element.path)}
   />
-  <div>{JSON.stringify(element)}</div>
 {/await}
