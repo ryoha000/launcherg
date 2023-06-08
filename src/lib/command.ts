@@ -146,3 +146,23 @@ export const commandCreateElementDetails = async (
     details,
   });
 };
+
+export const commandGetBrandnameAndRubies = async () => {
+  return await invoke<[string, string][]>("get_brandname_and_rubies", {});
+};
+
+export const commandAddCollectionElementsByOption = async (
+  collectionId: number,
+  isNukige: boolean,
+  notNukige: boolean,
+  brandnames: string[] | null,
+  between: [string, string] | null
+) => {
+  return await invoke<void>("add_collection_elements_by_option", {
+    collectionId,
+    isNukige,
+    notNukige,
+    brandnames,
+    between,
+  });
+};

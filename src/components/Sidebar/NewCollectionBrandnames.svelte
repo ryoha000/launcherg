@@ -3,6 +3,7 @@
   import NewCollectionOption from "@/components/Sidebar/NewCollectionOption.svelte";
   import Button from "@/components/UI/Button.svelte";
   import ButtonCancel from "@/components/UI/ButtonCancel.svelte";
+  import { commandGetBrandnameAndRubies } from "@/lib/command";
   import { rand } from "@/lib/utils";
   import { writable } from "svelte/store";
   import { fly } from "svelte/transition";
@@ -15,14 +16,7 @@
     (v) => (filterBrandnames = v.map((v) => v.value))
   );
 
-  const brandnames = [
-    "ゆずソフト",
-    "Purple Software",
-    "hoy",
-    "adfah",
-    "hiuagehrs",
-    "hgaiugh",
-  ];
+  const brandnameAndRubiesPromise = commandGetBrandnameAndRubies();
 
   const onChangeFilterBrandname = (index: number, value: string) => {
     _filterBrandnames.update((v) => {
@@ -53,31 +47,33 @@
     bind:value={isFilterBrandname}
     label="ブランド名が一致する"
   />
-  {#if isFilterBrandname}
-    <div class="space-y-4 pl-8 max-w-120">
-      <div class="space-y-1" transition:fly={{ y: -40, duration: 150 }}>
-        {#each $_filterBrandnames as brandname, i (brandname.id)}
-          <div
-            transition:fly={{ y: -40, duration: 150 }}
-            class="flex gap-4 items-center"
-          >
-            <div class="flex-1">
-              <NewCollectionBrandname
-                {brandnames}
-                value={brandname.value}
-                on:change={(e) => onChangeFilterBrandname(i, e.detail.value)}
-              />
+  {#await brandnameAndRubiesPromise then brandnameAndRubies}
+    {#if isFilterBrandname}
+      <div class="space-y-4 pl-8 max-w-120">
+        <div class="space-y-1" transition:fly={{ y: -40, duration: 150 }}>
+          {#each $_filterBrandnames as brandname, i (brandname.id)}
+            <div
+              transition:fly={{ y: -40, duration: 150 }}
+              class="flex gap-4 items-center"
+            >
+              <div class="flex-1">
+                <NewCollectionBrandname
+                  {brandnameAndRubies}
+                  value={brandname.value}
+                  on:change={(e) => onChangeFilterBrandname(i, e.detail.value)}
+                />
+              </div>
+              <ButtonCancel on:click={() => removeFilterBrandname(i)} />
             </div>
-            <ButtonCancel on:click={() => removeFilterBrandname(i)} />
-          </div>
-        {/each}
+          {/each}
+        </div>
+        <Button
+          appendClass="m-auto mt-4"
+          leftIcon="i-iconoir-plus"
+          text="Add folder path"
+          on:click={addFilterBrandname}
+        />
       </div>
-      <Button
-        appendClass="m-auto mt-4"
-        leftIcon="i-iconoir-plus"
-        text="Add folder path"
-        on:click={addFilterBrandname}
-      />
-    </div>
-  {/if}
+    {/if}
+  {/await}
 </div>

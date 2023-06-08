@@ -41,7 +41,7 @@
     value: v.id,
   }));
 
-  let isOpenNewCollection = true;
+  let isOpenNewCollection = false;
   let isOpenChangeCollectionName = false;
   let isOpenDeleteCollection = false;
   let isOpenAddGameExplore = false;
@@ -144,14 +144,24 @@
     </APopover>
   </div>
 </div>
-<NewCollection bind:isOpen={isOpenNewCollection} />
-<ChangeCollectionName
-  bind:isOpen={isOpenChangeCollectionName}
-  collection={value}
-/>
-<DeleteCollection bind:isOpen={isOpenDeleteCollection} collection={value} />
-<AddGameExplore bind:isOpen={isOpenAddGameExplore} collection={value} />
-<AddGameManual
-  bind:isOpen={isOpenAddGameManual}
-  on:add={(e) => addGameManually(e.detail)}
-/>
+{#if isOpenNewCollection}
+  <NewCollection bind:isOpen={isOpenNewCollection} />
+{/if}
+{#if isOpenChangeCollectionName}
+  <ChangeCollectionName
+    bind:isOpen={isOpenChangeCollectionName}
+    collection={value}
+  />
+{/if}
+{#if isOpenDeleteCollection}
+  <DeleteCollection bind:isOpen={isOpenDeleteCollection} collection={value} />
+{/if}
+{#if isOpenAddGameExplore}
+  <AddGameExplore bind:isOpen={isOpenAddGameExplore} collection={value} />
+{/if}
+{#if isOpenAddGameManual}
+  <AddGameManual
+    bind:isOpen={isOpenAddGameManual}
+    on:add={(e) => addGameManually(e.detail)}
+  />
+{/if}

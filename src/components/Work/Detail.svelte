@@ -59,8 +59,8 @@
     {#if work.musics.length}
       <DetailRow label="楽曲">
         <div class="flex flex-wrap gap-4">
-          {#each work.musics as title (title)}
-            <div class="flex gap-1 items-center">
+          {#each work.musics as title, i (`${title}-${i}`)}
+            <div class="flex gap-1 items-center max-w-full">
               <LinkText
                 href={encodeURI(
                   `https://www.youtube.com/results?search_query=${work.name}+${title}`

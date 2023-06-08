@@ -3,6 +3,7 @@
   export let appendClass = "";
   export let type: "button" | "submit" | undefined = undefined;
   export let tooltip: Partial<TippyOption> | undefined = undefined;
+  export let disabled = false;
 
   const tooltipAction = (node: HTMLElement) => {
     if (!tooltip) {
@@ -42,8 +43,9 @@
           "bg-bg-button border-(~ border-button opacity-10 solid) text-accent-error hover:(border-accent-error bg-accent-error text-text-secondary)";
         break;
       case "success":
-        buttonVariantClass =
-          "bg-accent-success border-(~ solid accent-success) text-text-white hover:bg-bg-success-hover";
+        buttonVariantClass = disabled
+          ? "bg-bg-success-disabled border-(~ solid border-success-disabled) text-text-success-disabled"
+          : "bg-accent-success border-(~ solid accent-success) text-text-white hover:bg-bg-success-hover";
         break;
       default:
         const _: never = variant;
@@ -55,6 +57,7 @@
 <button
   use:tooltipAction
   {type}
+  {disabled}
   class={`rounded transition-all ${buttonVariantClass} ${appendClass}`}
   on:click
 >

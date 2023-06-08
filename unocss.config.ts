@@ -41,6 +41,7 @@ export default defineConfig({
         button: "#373e47",
         buttonHover: "#444c56",
         backdrop: "#1C2128",
+        successDisabled: "rgba(35,134,54,0.6)",
         successHover: "#46954a",
         warning: "#37332a",
       },
@@ -50,6 +51,7 @@ export default defineConfig({
         button: "#CDD9E5",
         buttonHover: "#768390",
         warning: "#AE7C14",
+        successDisabled: "rgba(35,134,54,0.6)",
       },
       text: {
         primary: "#adbac7",
@@ -57,6 +59,8 @@ export default defineConfig({
         tertiary: "#768390",
         link: "#2e7cd5",
         white: "#FFFFFF",
+        disabled: "#484f58",
+        successDisabled: "rgba(255,255,255,0.5)",
       },
     },
     fontSize: {

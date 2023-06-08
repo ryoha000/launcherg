@@ -1,6 +1,6 @@
 use anyhow::Result;
 use async_trait::async_trait;
-use sqlx::{query, query_as, QueryBuilder};
+use sqlx::{query, query_as, QueryBuilder, Row};
 
 use super::{
     models::collection::{CollectionElementTable, CollectionTable},
@@ -274,5 +274,71 @@ impl CollectionRepository for RepositoryImpl<Collection> {
         let query = query_builder.build();
         query.execute(&*pool).await?;
         Ok(())
+    }
+    async fn get_brandname_and_rubies(&self) -> Result<Vec<(String, String)>> {
+        let pool = self.pool.0.clone();
+        Ok(sqlx::query_as(
+            "SELECT DISTINCT brandname, brandname_ruby FROM collection_element_details",
+        )
+        .fetch_all(&*pool)
+        .await?)
+    }
+
+    async fn get_element_ids_by_is_nukige(
+        &self,
+        is_nukige: bool,
+    ) -> Result<Vec<Id<CollectionElement>>> {
+        let pool = self.pool.0.clone();
+        let ids: Vec<(i32,)> = match is_nukige {
+            true => sqlx::query_as(
+                "SELECT collection_element_id from collection_element_details where is_nukige != 0",
+            )
+            .fetch_all(&*pool)
+            .await?,
+            false => sqlx::query_as(
+                "SELECT collection_element_id from collection_element_details where is_nukige = 0",
+            )
+            .fetch_all(&*pool)
+            .await?,
+        };
+        Ok(ids.into_iter().map(|v| Id::new(v.0)).collect())
+    }
+    async fn get_element_ids_by_brandnames(
+        &self,
+        brandnames: &Vec<String>,
+    ) -> Result<Vec<Id<CollectionElement>>> {
+        let pool = self.pool.0.clone();
+        let mut builder = sqlx::query_builder::QueryBuilder::new(
+            "SELECT collection_element_id from collection_element_details where brandname IN (",
+        );
+        let mut separated = builder.separated(", ");
+        for name in brandnames.iter() {
+            separated.push_bind(name);
+        }
+        separated.push_unseparated(")");
+        let query = builder.build();
+        let ids: Vec<i32> = query
+            .fetch_all(&*pool)
+            .await?
+            .into_iter()
+            .map(|v| v.get(0)) // TODO: try_get filter_map
+            .collect();
+
+        Ok(ids.into_iter().map(|v| Id::new(v)).collect())
+    }
+    async fn get_element_ids_by_sellday(
+        &self,
+        since: &str,
+        until: &str,
+    ) -> Result<Vec<Id<CollectionElement>>> {
+        let pool = self.pool.0.clone();
+        let ids: Vec<(i32,)> = sqlx::query_as(
+            "SELECT collection_element_id FROM collection_element_details WHERE DATE(sellday) BETWEEN ? AND ?;",
+        )
+        .bind(since)
+        .bind(until)
+        .fetch_all(&*pool)
+        .await?;
+        Ok(ids.into_iter().map(|v| Id::new(v.0)).collect())
     }
 }

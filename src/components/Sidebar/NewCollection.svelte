@@ -4,7 +4,10 @@
   import NewCollectionSellday from "@/components/Sidebar/NewCollectionSellday.svelte";
   import Input from "@/components/UI/Input.svelte";
   import Modal from "@/components/UI/Modal.svelte";
-  import { commandCreateNewCollection } from "@/lib/command";
+  import {
+    commandAddCollectionElementsByOption,
+    commandCreateNewCollection,
+  } from "@/lib/command";
   import { collections } from "@/store/collections";
 
   export let isOpen: boolean;
@@ -15,23 +18,29 @@
   let isFilterBrandname = false;
   let isFilterSellday = false;
 
-  const brandnames = [
-    "ゆずソフト",
-    "Purple Software",
-    "hoy",
-    "adfah",
-    "hiuagehrs",
-    "hgaiugh",
-  ];
   let filterBrandnames = [""];
   let filterSellday = {
-    since: { year: "", month: "" },
-    until: { year: "", month: "" },
+    since: undefined,
+    until: undefined,
   };
 
+  $: confirmDisabled =
+    isFilterSellday && (!filterSellday.since || !filterSellday.until);
+
   const createNewCollection = async () => {
-    await commandCreateNewCollection(name);
+    const newCollection = await commandCreateNewCollection(name);
+    console.log("end create new collection");
     await collections.init();
+    console.log("end collections init");
+    await commandAddCollectionElementsByOption(
+      newCollection.id,
+      isNukige,
+      isNotNukige,
+      isFilterBrandname ? filterBrandnames : null,
+      isFilterSellday
+        ? [filterSellday.since ?? "", filterSellday.until ?? ""]
+        : null
+    );
     name = "";
     isOpen = false;
   };
@@ -42,6 +51,7 @@
   title="Create new collection"
   confirmText="Create"
   fullmodal
+  {confirmDisabled}
   on:confirm={createNewCollection}
 >
   <div class="space-y-4">
@@ -52,7 +62,7 @@
       </div>
       <div class="text-text-tertiary pl-2 space-y-1">
         <div class="text-(text-primary body2)">
-          有効にした項目のいずれかを満たすゲームは他の項目を満たさない場合でも追加されます
+          追加されるのは有効にした項目の全てを満たすゲームです。一部の項目のみを満たすゲームは追加されません。
         </div>
         <NewCollectionOption bind:value={isNukige} label="抜きゲー" />
         <NewCollectionOption bind:value={isNotNukige} label="非抜きゲー" />
@@ -61,7 +71,7 @@
           label="ゲームの実行ファイルが存在する"
         />
         <NewCollectionBrandnames bind:filterBrandnames bind:isFilterBrandname />
-        <NewCollectionSellday bind:filterSellday {isFilterSellday} />
+        <NewCollectionSellday bind:filterSellday bind:isFilterSellday />
       </div>
     </div>
   </div>

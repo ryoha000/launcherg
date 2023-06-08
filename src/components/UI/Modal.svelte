@@ -12,6 +12,7 @@
   export let withFooter = true;
   export let withContentPadding = true;
   export let fullmodal = false;
+  export let confirmDisabled = false;
 
   const dispatcher = createEventDispatcher<{ confirm: {}; cancel: {} }>();
 </script>
@@ -46,6 +47,7 @@
             <Button text="Cancel" on:click={() => (isOpen = false)} />
             <Button
               variant="success"
+              disabled={confirmDisabled}
               text={confirmText}
               on:click={() => dispatcher("confirm")}
             />

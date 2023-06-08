@@ -9,6 +9,7 @@
   export let type: "button" | "submit" | undefined = undefined;
   export let tooltip: Partial<TippyOption> | undefined = undefined;
   export let variant: Variant = "normal";
+  export let disabled = false;
 
   let buttonSizeClass = "h-8 px-3 gap-2";
   let iconSizeClass = "w-4 h-4";
@@ -26,6 +27,7 @@
   {variant}
   {type}
   {tooltip}
+  {disabled}
   on:click
 >
   {#if leftIcon}

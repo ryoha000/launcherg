@@ -41,7 +41,9 @@ fn main() {
             command::get_collection_element,
             command::delete_collection_element,
             command::get_not_registered_detail_element_ids,
-            command::create_element_details
+            command::create_element_details,
+            command::get_brandname_and_rubies,
+            command::add_collection_elements_by_option
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::{collections::HashSet, sync::Arc};
 use tauri::State;
 
 use super::{
@@ -354,5 +354,42 @@ pub async fn create_element_details(
     Ok(modules
         .collection_use_case()
         .create_element_details(details.into_iter().map(|v| v.into()).collect())
+        .await?)
+}
+
+#[tauri::command]
+pub async fn get_brandname_and_rubies(
+    modules: State<'_, Arc<Modules>>,
+) -> anyhow::Result<Vec<(String, String)>, CommandError> {
+    Ok(modules
+        .collection_use_case()
+        .get_brandname_and_rubies()
+        .await?)
+}
+
+#[tauri::command]
+pub async fn add_collection_elements_by_option(
+    modules: State<'_, Arc<Modules>>,
+    collection_id: i32,
+    is_nukige: bool,
+    not_nukige: bool,
+    brandnames: Option<Vec<String>>,
+    between: Option<(String, String)>,
+) -> anyhow::Result<(), CommandError> {
+    let ids = modules
+        .collection_use_case()
+        .get_collection_element_ids_by_option(is_nukige, not_nukige, &brandnames, &between)
+        .await?;
+    // uniq
+    let ids = ids
+        .into_iter()
+        .map(|v| v.value)
+        .collect::<HashSet<i32>>()
+        .into_iter()
+        .map(|v| Id::new(v))
+        .collect();
+    Ok(modules
+        .collection_use_case()
+        .add_collection_elements(&Id::new(collection_id), &ids)
         .await?)
 }

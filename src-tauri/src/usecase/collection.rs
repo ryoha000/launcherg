@@ -1,4 +1,4 @@
-use std::{fs, sync::Arc};
+use std::{collections::HashSet, fs, sync::Arc};
 
 use derive_new::new;
 
@@ -203,5 +203,81 @@ impl<R: RepositoriesExt> CollectionUseCase<R> {
             .collection_repository()
             .create_element_details(details)
             .await
+    }
+
+    pub async fn get_brandname_and_rubies(&self) -> anyhow::Result<Vec<(String, String)>> {
+        self.repositories
+            .collection_repository()
+            .get_brandname_and_rubies()
+            .await
+    }
+
+    pub async fn get_collection_element_ids_by_option(
+        &self,
+        is_nukige: bool,
+        not_nukige: bool,
+        brandnames: &Option<Vec<String>>,
+        between: &Option<(String, String)>,
+    ) -> anyhow::Result<Vec<Id<CollectionElement>>> {
+        let is_nukige_set = is_nukige.then_some(
+            self.repositories
+                .collection_repository()
+                .get_element_ids_by_is_nukige(true)
+                .await?
+                .into_iter()
+                .map(|v| v.value)
+                .collect::<HashSet<i32>>(),
+        );
+        let not_nukige_set = not_nukige.then_some(
+            self.repositories
+                .collection_repository()
+                .get_element_ids_by_is_nukige(false)
+                .await?
+                .into_iter()
+                .map(|v| v.value)
+                .collect::<HashSet<i32>>(),
+        );
+        let brandnames_set = match brandnames {
+            Some(brandnames) => Some(
+                self.repositories
+                    .collection_repository()
+                    .get_element_ids_by_brandnames(brandnames)
+                    .await?
+                    .into_iter()
+                    .map(|v| v.value)
+                    .collect::<HashSet<i32>>(),
+            ),
+            None => None,
+        };
+        let betwern_set = match between {
+            Some((since, until)) => Some(
+                self.repositories
+                    .collection_repository()
+                    .get_element_ids_by_sellday(since, until)
+                    .await?
+                    .into_iter()
+                    .map(|v| v.value)
+                    .collect::<HashSet<i32>>(),
+            ),
+            None => None,
+        };
+
+        let mut hashset_iter = vec![is_nukige_set, not_nukige_set, brandnames_set, betwern_set]
+            .into_iter()
+            .filter_map(|v| v);
+
+        let first = match hashset_iter.next() {
+            Some(set) => set,
+            None => return Ok(vec![]),
+        };
+
+        Ok(hashset_iter
+            .fold(first, |acc, set| {
+                // Find the intersection with the accumulated set and the current set
+                HashSet::from_iter(acc.intersection(&set).cloned())
+            })
+            .into_iter()
+            .map(|v| Id::new(v))
+            .collect())
     }
 }

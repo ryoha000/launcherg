@@ -41,4 +41,19 @@ pub trait CollectionRepository {
 
     async fn get_not_registered_detail_element_ids(&self) -> Result<Vec<Id<CollectionElement>>>;
     async fn create_element_details(&self, details: Vec<NewCollectionElementDetail>) -> Result<()>;
+    async fn get_brandname_and_rubies(&self) -> Result<Vec<(String, String)>>;
+
+    async fn get_element_ids_by_is_nukige(
+        &self,
+        is_nukige: bool,
+    ) -> Result<Vec<Id<CollectionElement>>>;
+    async fn get_element_ids_by_brandnames(
+        &self,
+        brandnames: &Vec<String>,
+    ) -> Result<Vec<Id<CollectionElement>>>;
+    async fn get_element_ids_by_sellday(
+        &self,
+        since: &str,
+        until: &str,
+    ) -> Result<Vec<Id<CollectionElement>>>;
 }
