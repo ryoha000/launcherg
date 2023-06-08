@@ -334,7 +334,8 @@ impl CollectionRepository for RepositoryImpl<Collection> {
             .fetch_all(&*pool)
             .await?
             .into_iter()
-            .map(|v| v.get(0)) // TODO: try_get filter_map
+            .map(|v| v.try_get(0))
+            .filter_map(|v| v.ok())
             .collect();
 
         Ok(ids.into_iter().map(|v| Id::new(v)).collect())
