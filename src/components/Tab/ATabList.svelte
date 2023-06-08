@@ -1,6 +1,5 @@
 <script lang="ts">
   import ATab from "@/components/Tab/ATab.svelte";
-  import { createLocalStorageWritable } from "@/lib/utils";
   import { selected, tabs } from "@/store/tabs";
   import SimpleBar from "simplebar";
 
@@ -9,7 +8,6 @@
   const simplebar = (node: HTMLElement) => {
     let simplebar = new SimpleBar(node, {
       scrollbarMinSize: 64,
-      scrollbarMaxSize: 256,
     });
 
     const onWheel = (e: WheelEvent) => {
