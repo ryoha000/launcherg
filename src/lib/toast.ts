@@ -1,9 +1,9 @@
 import Toastify from "toastify-js";
 
-export const showInfoToast = (text: string) => {
+export const showInfoToast = (text: string, duration = 3000) => {
   Toastify({
     text,
-    duration: 3000,
+    duration: duration,
     gravity: "bottom", // `top` or `bottom`
     position: "right", // `left`, `center` or `right`
     stopOnFocus: true, // Prevents dismissing of toast on hover

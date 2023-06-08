@@ -4,6 +4,7 @@ use std::{collections::HashMap, sync::Arc, time::Instant};
 use derive_new::new;
 
 use crate::domain::file::{get_file_created_at_sync, PlayHistory};
+use crate::interface::models::collection::ProgressLivePayload;
 use crate::{
     domain::{
         collection::{CollectionElement, NewCollectionElement},
@@ -52,10 +53,18 @@ impl<R: ExplorersExt> FileUseCase<R> {
         &self,
         normalized_all_games: Arc<Vec<ErogamescapeIDNamePair>>,
         files: Vec<String>,
+        window: Arc<tauri::window::Window>,
     ) -> anyhow::Result<HashMap<ErogamescapeID, FilePathString>> {
         let get_game_id_tasks = files.into_iter().map(|path| {
             let all = normalized_all_games.clone();
-            tauri::async_runtime::spawn(async move { filter_game_path(&all, path) })
+            let w = Arc::clone(&window);
+            tauri::async_runtime::spawn(async move {
+                let res = filter_game_path(&all, path)?;
+                if let Err(e) = w.emit("progresslive", ProgressLivePayload::new(None)) {
+                    return Err(anyhow::anyhow!(e.to_string()));
+                };
+                Ok(res)
+            })
         });
 
         let id_path_pairs: Vec<(ErogamescapeIDNamePair, String)> =
@@ -102,6 +111,8 @@ impl<R: ExplorersExt> FileUseCase<R> {
     pub async fn filter_files_to_collection_elements(
         &self,
         files: Vec<String>,
+        emit_progress: impl Fn(String) -> anyhow::Result<()>,
+        window: Arc<tauri::window::Window>,
     ) -> anyhow::Result<Vec<NewCollectionElement>> {
         let start = Instant::now();
 
@@ -122,24 +133,24 @@ impl<R: ExplorersExt> FileUseCase<R> {
             .collect();
 
         let end = start.elapsed();
-        println!(
-            "all_games の取得完了. {}.{:03}秒経過しました.",
+        emit_progress(format!(
+            "突合させるための全てのゲームの取得が完了しました。累計{}.{:03}秒経過しました.",
             end.as_secs(),
             end.subsec_nanos() / 1_000_000
-        );
+        ))?;
 
         let (lnk_id_path_vec, exe_id_path_vec): (Vec<(i32, String)>, Vec<(i32, String)>) = self
-            .concurency_get_path_game_map(normalized_all_games, files)
+            .concurency_get_path_game_map(normalized_all_games, files, window)
             .await?
             .into_iter()
             .partition(|(_id, path)| path.to_lowercase().ends_with("lnk"));
 
         let end = start.elapsed();
-        println!(
-            "id との紐づけ 完了. {}.{:03}秒経過しました.",
+        emit_progress(format!(
+            ".lnk, .exe ファイルのゲームとの紐づけが完了しました。累計{}.{:03}秒経過しました.",
             end.as_secs(),
             end.subsec_nanos() / 1_000_000
-        );
+        ))?;
 
         let (lnk_id_vec, lnk_path_vec): (Vec<ErogamescapeID>, Vec<String>) =
             lnk_id_path_vec.into_iter().unzip();
@@ -166,11 +177,11 @@ impl<R: ExplorersExt> FileUseCase<R> {
             .collect::<anyhow::Result<()>>()?;
 
         let end = start.elapsed();
-        println!(
-            "icon の保存完了. {}.{:03}秒経過しました.",
+        emit_progress(format!(
+            "icon の保存が完了しました。累計{}.{:03}秒経過しました.",
             end.as_secs(),
             end.subsec_nanos() / 1_000_000
-        );
+        ))?;
 
         let collection_elements: Vec<NewCollectionElement> = lnk_id_vec
             .into_iter()

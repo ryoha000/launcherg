@@ -12,6 +12,10 @@
   import { createLocalStorageWritable } from "@/lib/utils";
   import { sidebarCollectionElements } from "@/store/sidebarCollectionElements";
   import { onMount } from "svelte";
+  import { listen } from "@tauri-apps/api/event";
+  import { message } from "@tauri-apps/api/dialog";
+  import ModalBase from "@/components/UI/ModalBase.svelte";
+  import { fade } from "svelte/transition";
 
   export let isOpen: boolean;
   export let collection: Collection | null = null;
@@ -55,7 +59,9 @@
       }
     }
   };
+  let isLoading = false;
   const confirm = async () => {
+    isLoading = true;
     const res = await commandAddCollectionElementsInPc(
       getPaths().map((v) => v.path),
       useCache,
@@ -66,6 +72,7 @@
     } else {
       await sidebarCollectionElements.refetch();
     }
+    isLoading = false;
 
     const text = res.length
       ? `「${res[0]}」${
@@ -76,6 +83,9 @@
     showInfoToast(text);
     isOpen = false;
   };
+
+  let processFileNums = 0;
+  let processedFileNums = 0;
 
   onMount(async () => {
     const defaultPaths = await commandGetDefaultImportDirs();
@@ -91,16 +101,36 @@
       }
       return [...appendPaths, ...v];
     });
+    const unlistenProgress = await listen<{ message: string }>(
+      "progress",
+      (event) => {
+        showInfoToast(event.payload.message, 10000);
+      }
+    );
+    const unlistenProgressLive = await listen<{ max: number | null }>(
+      "progresslive",
+      (event) => {
+        if (event.payload.max) {
+          processFileNums = event.payload.max;
+        } else {
+          processedFileNums = processedFileNums + 1;
+        }
+      }
+    );
+    return async () => {
+      unlistenProgress();
+      unlistenProgressLive();
+    };
   });
 </script>
 
-{#if collection}
+{#if collection && !isLoading}
   <Modal
     bind:isOpen
     title="Automatically import game"
     confirmText="Start import"
     fullmodal
-    confirmDisabled={!$paths.length || !$paths.some((v) => v.path)}
+    confirmDisabled={!$paths.length || !$paths.some((v) => v.path) || isLoading}
     on:confirm={confirm}
   >
     <div class="space-y-8">
@@ -154,4 +184,20 @@
       </div>
     </div>
   </Modal>
+{:else if isLoading}
+  <div transition:fade={{ delay: 150 }}>
+    <ModalBase isOpen={true} panelClass="max-w-82">
+      <div class="flex-(~ col) items-center justify-center gap-5 w-full p-12">
+        <div
+          class="w-20 h-20 border-(12px solid #D9D9D9 t-#2D2D2D t-rounded) rounded-full animate-spin"
+        />
+        <div class="text-(text-primary h3) font-bold">通信中</div>
+        {#if processFileNums}
+          <div class="text-(text-primary body) font-medium">
+            処理したファイル: {processedFileNums}/{processFileNums}
+          </div>
+        {/if}
+      </div>
+    </ModalBase>
+  </div>
 {/if}

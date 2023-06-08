@@ -59,3 +59,14 @@ pub struct CalculateDistanceKV {
     pub key: String,
     pub value: String,
 }
+
+// the payload type must implement `Serialize` and `Clone`.
+#[derive(new, Clone, serde::Serialize)]
+pub struct ProgressPayload {
+    pub message: String,
+}
+
+#[derive(new, Clone, serde::Serialize)]
+pub struct ProgressLivePayload {
+    pub max: Option<i32>,
+}

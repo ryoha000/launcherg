@@ -1,11 +1,14 @@
 use std::{collections::HashSet, sync::Arc};
 use tauri::State;
+use tauri::Window;
 
+use super::models::collection::ProgressLivePayload;
 use super::{
     error::CommandError,
     models::collection::{Collection, CollectionElement},
     module::{Modules, ModulesExt},
 };
+use crate::interface::models::collection::ProgressPayload;
 use crate::{
     domain::{
         collection::{NewCollectionElement, UpdateCollection},
@@ -53,11 +56,19 @@ pub async fn get_collection_elements(
 #[tauri::command]
 pub async fn add_collection_elements_in_pc(
     modules: State<'_, Arc<Modules>>,
+    window: Window,
     explore_dir_paths: Vec<String>,
     use_cache: bool,
     adding_collection_id: Option<i32>,
 ) -> anyhow::Result<Vec<String>, CommandError> {
-    println!("fire command");
+    let window = Arc::new(window);
+    let emit_progress = |message| {
+        if let Err(e) = window.emit("progress", ProgressPayload::new(message)) {
+            return Err(anyhow::anyhow!(e.to_string()));
+        }
+        Ok(())
+    };
+
     let explored_caches = modules.explored_cache_use_case().get_cache().await?;
     let explore_files: Vec<String> = modules
         .file_use_case()
@@ -70,17 +81,20 @@ pub async fn add_collection_elements_in_pc(
         })
         .collect();
 
-    println!("探索する path の取得完了");
-    if explore_files.len() == 0 {
-        println!("all file is match to cache");
-        return Ok(vec![]);
+    emit_progress(format!(
+        "指定したフォルダの .lnk .exe ファイルを取得しました。ファイル数: {}",
+        explore_files.len()
+    ))?;
+    if let Err(e) = window.emit(
+        "progresslive",
+        ProgressLivePayload::new(Some(explore_files.len() as i32)),
+    ) {
+        return Err(CommandError::Anyhow(anyhow::anyhow!(e.to_string())));
     }
-
-    // TODO: message end get lnk,exe
 
     let new_elements = modules
         .file_use_case()
-        .filter_files_to_collection_elements(explore_files.clone())
+        .filter_files_to_collection_elements(explore_files.clone(), emit_progress, window.clone())
         .await?;
 
     modules

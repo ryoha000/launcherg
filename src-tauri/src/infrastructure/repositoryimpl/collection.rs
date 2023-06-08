@@ -161,7 +161,6 @@ impl CollectionRepository for RepositoryImpl<Collection> {
         let pool = self.pool.0.clone();
         let query = query_builder.build();
         query.execute(&*pool).await?;
-        println!("end insrt elements");
         Ok(())
     }
     async fn add_elements_by_id(
