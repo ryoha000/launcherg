@@ -1,14 +1,8 @@
 <script lang="ts">
   import Button from "@/components/UI/Button.svelte";
   import Modal from "@/components/UI/Modal.svelte";
-  import {
-    commandDeleteCollection,
-    commandRemoveElementsFromCollection,
-  } from "@/lib/command";
-  import { showInfoToast } from "@/lib/toast";
   import type { Collection, CollectionElement } from "@/lib/types";
-  import { collections } from "@/store/collections";
-  import { sidebarCollectionElements } from "@/store/sidebarCollectionElements";
+  import { createEventDispatcher } from "svelte";
 
   export let isOpen: boolean;
   export let collection: Collection | null;
@@ -23,18 +17,7 @@
     removeElements.length > 5 ? `他${removeElements.length - 5}件` : ""
   }です。`;
 
-  const remove = async () => {
-    if (!collection) {
-      return;
-    }
-    await commandRemoveElementsFromCollection(
-      collection.id,
-      removeElements.map((v) => v.id)
-    );
-    await sidebarCollectionElements.init(collection.id);
-    showInfoToast("コレクションからの削除が完了しました");
-    isOpen = false;
-  };
+  const dispather = createEventDispatcher<{ confirmRemove: {} }>();
 </script>
 
 {#if collection && removeElements.length}
@@ -68,7 +51,7 @@
         text="コレクションから削除する"
         variant="error"
         appendClass="w-full justify-center"
-        on:click={remove}
+        on:click={() => dispather("confirmRemove")}
       />
     </div>
   </Modal>

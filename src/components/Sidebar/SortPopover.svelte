@@ -28,7 +28,10 @@
   </div>
   {#each sortOrders as sortOrder (sortOrder)}
     <OptionButton
-      on:click={() => (value = sortOrder)}
+      on:click={() => {
+        value = sortOrder;
+        dispatcher("close");
+      }}
       selected={value === sortOrder}
       text={SORT_LABELS[sortOrder]}
       showIcon

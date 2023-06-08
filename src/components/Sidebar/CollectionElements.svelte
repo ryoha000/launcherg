@@ -8,24 +8,34 @@
   import SimpleBar from "simplebar";
   import Select from "@/components/UI/Select.svelte";
   import { collections } from "@/store/collections";
-  import { commandAddElementsToCollection } from "@/lib/command";
+  import {
+    commandAddElementsToCollection,
+    commandRemoveElementsFromCollection,
+  } from "@/lib/command";
   import RemoveElements from "@/components/Sidebar/RemoveElements.svelte";
   import { showInfoToast } from "@/lib/toast";
   import ADisclosure from "@/components/UI/ADisclosure.svelte";
+  import { sidebarCollectionElements } from "@/store/sidebarCollectionElements";
 
   export let collection: Collection;
   export let collectionElement: CollectionElementsWithLabel[];
 
   $: selectedElements = collectionElement
     .flatMap((v) => v.elements)
-    .filter((_, i) => checked[i]);
+    .filter((v) => checked[v.id]);
 
-  let checked: boolean[] = [];
+  let checked: Record<number, boolean> = {};
   let isCheckAll = writable(false);
   isCheckAll.subscribe(
     (val) =>
-      (checked = collectionElement.flatMap((v) => v.elements).map(() => val))
+      (checked = collectionElement
+        .flatMap((v) => v.elements)
+        .reduce((acc, cur) => {
+          acc[cur.id] = val;
+          return acc;
+        }, {} as Record<number, boolean>))
   );
+  $: isCheckedAnyOne = Object.entries(checked).some(([id, val]) => val);
 
   const simplebar = (node: HTMLElement) => {
     new SimpleBar(node, { scrollbarMinSize: 64 });
@@ -43,6 +53,17 @@
       }へのゲーム追加が完了しました`
     );
     copyDestinationCollectionId = 0;
+    checked = {};
+  };
+
+  const removeElements = async () => {
+    await commandRemoveElementsFromCollection(
+      collection.id,
+      selectedElements.map((v) => v.id)
+    );
+    await sidebarCollectionElements.init(collection.id);
+    showInfoToast("コレクションからの削除が完了しました");
+    isOpenRemoveElements = false;
   };
 
   let isOpenRemoveElements = false;
@@ -57,7 +78,7 @@
       >
         <Checkbox bind:value={$isCheckAll} />
       </label>
-      {#if checked.some((v) => v)}
+      {#if isCheckedAnyOne}
         <div
           transition:fade={{ duration: 150 }}
           class="flex items-center gap-2"
@@ -99,11 +120,11 @@
     <div class="flex-1 mt-2 min-h-0">
       <div use:simplebar class="h-full overflow-y-auto">
         {#if collectionElement.length === 1}
-          {#each collectionElement[0].elements as ele, i (ele.id)}
+          {#each collectionElement[0].elements as ele (ele.id)}
             <CollectionElement
-              checked={checked[i]}
+              checked={checked[ele.id]}
               on:check={(e) => {
-                checked[i] = e.detail.value;
+                checked[ele.id] = e.detail.value;
                 checked = checked;
               }}
               collectionElement={ele}
@@ -112,11 +133,11 @@
         {:else}
           {#each collectionElement as { label, elements } (label)}
             <ADisclosure {label}>
-              {#each elements as ele, i (ele.id)}
+              {#each elements as ele (ele.id)}
                 <CollectionElement
-                  checked={checked[i]}
+                  checked={checked[ele.id]}
                   on:check={(e) => {
-                    checked[i] = e.detail.value;
+                    checked[ele.id] = e.detail.value;
                     checked = checked;
                   }}
                   collectionElement={ele}
@@ -133,4 +154,5 @@
   bind:isOpen={isOpenRemoveElements}
   {collection}
   removeElements={selectedElements}
+  on:confirmRemove={removeElements}
 />
