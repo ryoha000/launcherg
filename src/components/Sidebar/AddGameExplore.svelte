@@ -13,11 +13,15 @@
   import { sidebarCollectionElements } from "@/store/sidebarCollectionElements";
   import { onMount } from "svelte";
   import { listen } from "@tauri-apps/api/event";
-  import { message } from "@tauri-apps/api/dialog";
   import ModalBase from "@/components/UI/ModalBase.svelte";
   import { fade } from "svelte/transition";
+  import { registerCollectionElementDetails } from "@/lib/registerCollectionElementDetails";
+  import { writable } from "svelte/store";
+
+  let isLoading = false;
 
   export let isOpen: boolean;
+
   export let collection: Collection | null = null;
 
   let inputContainer: HTMLDivElement | null = null;
@@ -59,7 +63,6 @@
       }
     }
   };
-  let isLoading = false;
   const confirm = async () => {
     isLoading = true;
     const res = await commandAddCollectionElementsInPc(
@@ -67,11 +70,13 @@
       useCache,
       collection?.id || null
     );
+    await registerCollectionElementDetails();
     if (collection) {
       await sidebarCollectionElements.init(collection.id);
     } else {
       await sidebarCollectionElements.refetch();
     }
+
     isLoading = false;
 
     const text = res.length
@@ -126,7 +131,12 @@
 
 {#if collection && !isLoading}
   <Modal
-    bind:isOpen
+    {isOpen}
+    on:close={() => {
+      if (!isLoading) {
+        isOpen = false;
+      }
+    }}
     title="Automatically import game"
     confirmText="Start import"
     fullmodal
@@ -191,7 +201,7 @@
         <div
           class="w-20 h-20 border-(12px solid #D9D9D9 t-#2D2D2D t-rounded) rounded-full animate-spin"
         />
-        <div class="text-(text-primary h3) font-bold">通信中</div>
+        <div class="text-(text-primary h3) font-bold">処理中</div>
         {#if processFileNums}
           <div class="text-(text-primary body) font-medium">
             処理したファイル: {processedFileNums}/{processFileNums}

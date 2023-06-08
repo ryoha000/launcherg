@@ -21,7 +21,8 @@
 
 {#if collection}
   <Modal
-    bind:isOpen
+    {isOpen}
+    on:close={() => (isOpen = false)}
     title={`Change "${collection.name}"`}
     confirmText="Change"
     confirmDisabled={!name}

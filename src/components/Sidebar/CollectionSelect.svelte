@@ -15,6 +15,7 @@
     commandAddElementsToCollection,
     commandUpsertCollectionElement,
   } from "@/lib/command";
+  import { registerCollectionElementDetails } from "@/lib/registerCollectionElementDetails";
   import type { Collection } from "@/lib/types";
   import { sidebarCollectionElements } from "@/store/sidebarCollectionElements";
 
@@ -54,6 +55,7 @@
   }) => {
     await commandUpsertCollectionElement(arg.id, arg.gamename, arg.path);
     await commandAddElementsToCollection(selectedCollectionId, [arg.id]);
+    await registerCollectionElementDetails();
     await sidebarCollectionElements.refetch();
   };
 </script>

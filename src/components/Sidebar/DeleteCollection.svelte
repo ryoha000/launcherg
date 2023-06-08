@@ -20,7 +20,8 @@
 
 {#if collection}
   <Modal
-    bind:isOpen
+    {isOpen}
+    on:close={() => (isOpen = false)}
     title={`Delete collection`}
     withContentPadding={false}
     autofocusCloseButton

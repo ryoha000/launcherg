@@ -75,7 +75,8 @@
 </script>
 
 <Modal
-  bind:isOpen
+  {isOpen}
+  on:close={() => (isOpen = false)}
   title="Manually import game"
   confirmText="Import"
   confirmDisabled={!idInput || !path}

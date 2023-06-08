@@ -26,7 +26,7 @@
   };
 </script>
 
-<div class="w-full">
+<div class="w-full min-w-0">
   <div
     use:simplebar
     class="overflow-x-auto scroll-smooth"

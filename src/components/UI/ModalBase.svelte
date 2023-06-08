@@ -1,17 +1,22 @@
-<script>
+<script lang="ts">
   import {
     Dialog,
     DialogOverlay,
     Transition,
     TransitionChild,
   } from "@rgossiaux/svelte-headlessui";
+  import { createEventDispatcher } from "svelte";
   export let isOpen = true;
   export let panelClass = "";
   export let fullmodal = false;
+
+  const dispatcher = createEventDispatcher<{
+    close: {};
+  }>();
 </script>
 
 <Transition show={isOpen}>
-  <Dialog on:close={() => (isOpen = false)}>
+  <Dialog on:close={() => dispatcher("close")}>
     <TransitionChild
       enter="ease-out duration-150 fixed inset-0"
       enterFrom="opacity-0 scale-95"

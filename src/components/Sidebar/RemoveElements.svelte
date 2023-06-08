@@ -22,7 +22,8 @@
 
 {#if collection && removeElements.length}
   <Modal
-    bind:isOpen
+    {isOpen}
+    on:close={() => (isOpen = false)}
     title={`Remove games from collection`}
     withContentPadding={false}
     autofocusCloseButton

@@ -13,7 +13,6 @@
   const dispatcher = createEventDispatcher<{ change: { value: string } }>();
 
   $: {
-    console.log("diaptch change", value);
     dispatcher("change", { value });
   }
 </script>

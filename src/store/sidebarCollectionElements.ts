@@ -8,7 +8,6 @@ function createSidebarCollectionElements() {
   let _id = 0;
   const init = async (id: number) => {
     const res = await commandGetCollectionElements(id);
-    console.log("init", res);
     set(res);
     _id = id;
   };
@@ -18,7 +17,6 @@ function createSidebarCollectionElements() {
       return;
     }
     const res = await commandGetCollectionElements(_id);
-    console.log("refetch", res);
     set(res);
   };
 

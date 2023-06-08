@@ -26,7 +26,6 @@
         { year: END_YEAR, month: END_MONTH, day: getEndDayByMonth }
       ),
     };
-    console.log({ filterSellday });
   }
 
   const START_YEAR = 1970;
@@ -55,20 +54,20 @@
     const inputs = [inputYear, inputMonth];
 
     if (inputs.some((input) => isNaN(input))) {
-      console.error("Invalid date string", inputs);
+      console.warn("Invalid date string", inputs);
       return;
     }
     if ((inputYear && inputYear < 1970) || inputYear > 2050) {
-      console.error("year is invalid", inputs);
+      console.warn("year is invalid", inputs);
       return;
     }
     if ((inputMonth && inputMonth < 1) || inputMonth > 12) {
-      console.error("month is invalid", inputs);
+      console.warn("month is invalid", inputs);
       return;
     }
 
     if (!inputYear && inputMonth) {
-      console.error("year is 0 but month is not 0", inputs);
+      console.warn("year is 0 but month is not 0", inputs);
       return;
     }
 

@@ -14,13 +14,18 @@
   export let fullmodal = false;
   export let confirmDisabled = false;
 
-  const dispatcher = createEventDispatcher<{ confirm: {}; cancel: {} }>();
+  const dispatcher = createEventDispatcher<{
+    confirm: {};
+    cancel: {};
+    close: {};
+  }>();
 </script>
 
 <ModalBase
-  bind:isOpen
+  {isOpen}
   panelClass={maxWidth ? maxWidth : "max-w-160"}
   {fullmodal}
+  on:close
 >
   <div class="grid grid-rows-[min-content_1fr_min-content] h-full">
     <div
@@ -30,7 +35,7 @@
         {title}
       </div>
       <button
-        on:click={() => (isOpen = false)}
+        on:click={() => dispatcher("close")}
         class="ml-auto p-4 bg-transparent color-text-tertiary hover:color-text-primary transition-all"
         tabindex={autofocusCloseButton ? 0 : -1}
       >
@@ -44,7 +49,7 @@
       <slot name="footer">
         <div class="flex items-center p-4 border-(t-1px solid border-primary)">
           <div class="flex items-center ml-auto gap-2">
-            <Button text="Cancel" on:click={() => (isOpen = false)} />
+            <Button text="Cancel" on:click={() => dispatcher("close")} />
             <Button
               variant="success"
               disabled={confirmDisabled}

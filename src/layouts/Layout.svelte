@@ -15,9 +15,7 @@
   <div
     class="h-full min-w-0 min-h-0 grid-(~ rows-[min-content_1fr]) overflow-hidden"
   >
-    <TabGroup>
-      <ATabList />
-    </TabGroup>
+    <ATabList />
     <div class="h-full min-h-0 min-w-0 w-full">
       <slot />
     </div>

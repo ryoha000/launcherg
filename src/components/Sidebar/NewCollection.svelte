@@ -47,7 +47,8 @@
 </script>
 
 <Modal
-  bind:isOpen
+  {isOpen}
+  on:close={() => (isOpen = false)}
   title="Create new collection"
   confirmText="Create"
   fullmodal

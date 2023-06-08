@@ -7,7 +7,6 @@ import { scrapeSql } from "@/lib/scrapeSql";
 export const registerCollectionElementDetails = async () => {
   const ids = await commandGetNotRegisterdDetailElementIds();
   if (!ids.length) {
-    console.log("not found not registered");
     return;
   }
 
