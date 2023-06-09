@@ -15,6 +15,7 @@ export type Statistics = {
   median: number;
   average: number;
   count: number;
+  playTime: string;
 };
 
 export type Creators = {

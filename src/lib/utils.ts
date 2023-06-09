@@ -55,9 +55,11 @@ export const createLocalStorageCache = <K extends string | number, T>(
 };
 
 export const convertSpecialCharacters = (str: string) => {
-  var tempElement = document.createElement("textarea");
+  const tempElement = document.createElement("textarea");
   tempElement.innerHTML = str;
-  return tempElement.value;
+  const val = tempElement.value;
+  tempElement.remove();
+  return val;
 };
 
 export const isNotNullOrUndefined = <T>(

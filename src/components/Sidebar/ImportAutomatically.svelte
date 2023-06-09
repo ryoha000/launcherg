@@ -15,6 +15,7 @@
   import ModalBase from "@/components/UI/ModalBase.svelte";
   import { fade } from "svelte/transition";
   import { registerCollectionElementDetails } from "@/lib/registerCollectionElementDetails";
+  import InputPath from "@/components/UI/InputPath.svelte";
 
   let isLoading = false;
 
@@ -144,10 +145,12 @@
           on:submit|preventDefault={addEmptyPath}
         >
           {#each $paths as path, i (path.id)}
-            <div class="flex items-center gap-8" bind:this={inputContainer}>
+            <div class="flex items-end gap-8" bind:this={inputContainer}>
               <div class="flex-1">
-                <Input
-                  value={path.path}
+                <InputPath
+                  label=""
+                  placeholder="C:\Program Files (x86)"
+                  path={path.path}
                   on:update={(e) => updatePath(i, e.detail.value)}
                 />
               </div>
@@ -155,8 +158,12 @@
                 on:click={() => removePath(i)}
                 type="button"
                 tabindex={-1}
-                class="ml-auto w-5 h-5 i-iconoir-cancel color-text-tertiary hover:color-text-primary transition-all"
-              />
+                class="ml-auto p-2 bg-transparent"
+              >
+                <div
+                  class="w-5 h-5 i-iconoir-cancel color-text-tertiary hover:color-text-primary transition-all"
+                />
+              </button>
             </div>
           {/each}
           <Button

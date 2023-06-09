@@ -11,8 +11,8 @@
   $: summaryValue = [
     { label: "ブランド", value: work.brandName },
     { label: "発売日", value: work.sellday },
+    { label: "平均プレイ時間", value: `${work.statistics.playTime}` },
     { label: "中央値", value: `${work.statistics.median}` },
-    { label: "平均値", value: `${work.statistics.average}` },
     { label: "データ数", value: `${work.statistics.count}` },
   ];
 </script>

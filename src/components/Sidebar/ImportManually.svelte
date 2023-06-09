@@ -1,10 +1,9 @@
 <script lang="ts">
-  import Button from "@/components/UI/Button.svelte";
   import Input from "@/components/UI/Input.svelte";
+  import InputPath from "@/components/UI/InputPath.svelte";
   import Modal from "@/components/UI/Modal.svelte";
   import { scrapeSql } from "@/lib/scrapeSql";
   import { showErrorToast } from "@/lib/toast";
-  import { open } from "@tauri-apps/api/dialog";
   import { createEventDispatcher } from "svelte";
 
   export let isOpen: boolean;
@@ -58,21 +57,6 @@
 
     dispather("confirm", { id, gamename, path });
   };
-  const openDialog = async () => {
-    const selected = await open({
-      multiple: false,
-      filters: [
-        {
-          name: "exe",
-          extensions: ["exe", "EXE"],
-        },
-      ],
-    });
-    if (selected === null || Array.isArray(selected)) {
-      return;
-    }
-    path = selected;
-  };
 </script>
 
 <Modal
@@ -80,7 +64,7 @@
   on:close={() => (isOpen = false)}
   title="Manually import game"
   confirmText="Import"
-  confirmDisabled={!idInput || !path}
+  confirmDisabled={!idInput || (!path && withInputPath)}
   on:confirm={confirm}
 >
   <div class="space-y-4">
@@ -91,20 +75,12 @@
       on:update={(e) => (idInput = e.detail.value)}
     />
     {#if withInputPath}
-      <div class="flex gap-2 items-end">
-        <div class="flex-1">
-          <Input
-            bind:value={path}
-            label="Exe file path"
-            placeholder="C:\game\Monkeys!!\Monkeys!!.exe"
-            on:update={(e) => (path = e.detail.value)}
-          />
-        </div>
-        <Button
-          leftIcon="i-material-symbols-folder-outline-rounded"
-          on:click={openDialog}
-        />
-      </div>
+      <InputPath
+        {path}
+        label="Exe file path"
+        placeholder="C:\game\Monkeys!!\Monkeys!!.exe"
+        on:update={(e) => (path = e.detail.value)}
+      />
     {/if}
   </div>
 </Modal>

@@ -15,13 +15,15 @@
   {#if collectionElement.length}
     <div class="flex-1 mt-2 min-h-0">
       <div use:simplebar class="h-full overflow-y-auto">
-        {#each collectionElement as { label, elements } (label)}
-          <ADisclosure {label} defaultOpen={collectionElement.length === 1}>
-            {#each elements as ele (ele.id)}
-              <CollectionElement collectionElement={ele} />
-            {/each}
-          </ADisclosure>
-        {/each}
+        <div class="w-full">
+          {#each collectionElement as { label, elements } (label)}
+            <ADisclosure {label} defaultOpen={collectionElement.length === 1}>
+              {#each elements as ele (ele.id)}
+                <CollectionElement collectionElement={ele} />
+              {/each}
+            </ADisclosure>
+          {/each}
+        </div>
       </div>
     </div>
   {/if}

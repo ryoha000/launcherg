@@ -1,4 +1,5 @@
 import type { Creator, VoiceActor, Work } from "@/lib/types";
+import { convertSpecialCharacters } from "@/lib/utils";
 import { ResponseType, fetch } from "@tauri-apps/api/http";
 
 const BASE_REQUEST_PATH =
@@ -13,7 +14,7 @@ const getCreator = (elm: HTMLElement) => {
       id: +(
         aTag.getAttribute("href")?.replace("creater.php?creater=", "") ?? "0"
       ),
-      name: aTag.innerHTML,
+      name: convertSpecialCharacters(aTag.innerHTML),
     };
     creators.push(creator);
   }
@@ -29,13 +30,13 @@ const getVoiceActors = (elm: HTMLElement) => {
       id: +(
         aTag.getAttribute("href")?.replace("creater.php?creater=", "") ?? "0"
       ),
-      name: aTag.innerHTML,
+      name: convertSpecialCharacters(aTag.innerHTML),
     };
     if (spanTags.length > i) {
       const color = spanTags[i].getAttribute("style");
       const voiceActor: VoiceActor = {
         ...creator,
-        role: spanTags[i].innerHTML,
+        role: convertSpecialCharacters(spanTags[i].innerHTML),
         importance: color?.includes("bold")
           ? 0
           : color?.includes("black")
@@ -88,14 +89,18 @@ export const getWorkByScrape = async (id: number) => {
     ?.getElementsByTagName("td");
   const work: Work = {
     id: id,
-    name: gameTitle?.getElementsByTagName("a")[0].innerHTML ?? "",
+    name: convertSpecialCharacters(
+      gameTitle?.getElementsByTagName("a")[0].innerHTML ?? ""
+    ),
     brandId: +(
       softTitle
         ?.getElementsByTagName("a")[0]
         ?.getAttribute("href")
         ?.replace("brand.php?brand=", "") ?? "0"
     ),
-    brandName: softTitle?.getElementsByTagName("a")[0].innerHTML ?? "",
+    brandName: convertSpecialCharacters(
+      softTitle?.getElementsByTagName("a")[0].innerHTML ?? ""
+    ),
     sellday: softTitle?.getElementsByTagName("a")[1].innerHTML ?? "2030-01-01",
     imgUrl:
       doc.getElementById("main_image")?.getElementsByTagName("img")[0].src ??
@@ -115,6 +120,9 @@ export const getWorkByScrape = async (id: number) => {
         doc.getElementById("average")?.getElementsByTagName("td")[0]
           .innerHTML ?? "0"
       ),
+      playTime:
+        doc.getElementById("play_time")?.getElementsByTagName("td")[0]
+          .innerHTML ?? "0時間",
     },
     creators: {
       illustrators: illustrators ? getCreator(illustrators) : [],
