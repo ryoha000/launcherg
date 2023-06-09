@@ -65,4 +65,9 @@ pub trait CollectionRepository {
         id: &Id<CollectionElement>,
         last_play_at: DateTime<Local>,
     ) -> Result<()>;
+    async fn update_element_like_at_by_id(
+        &self,
+        id: &Id<CollectionElement>,
+        like_at: Option<DateTime<Local>>,
+    ) -> Result<()>;
 }

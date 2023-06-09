@@ -35,7 +35,8 @@ fn main() {
             command::delete_collection_element,
             command::get_not_registered_detail_element_ids,
             command::create_element_details,
-            command::get_all_elements
+            command::get_all_elements,
+            command::update_element_like
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

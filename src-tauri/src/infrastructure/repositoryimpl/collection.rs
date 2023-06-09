@@ -144,10 +144,10 @@ impl CollectionRepository for RepositoryImpl<Collection> {
             .bind(new.id.value)
             .bind(new.gamename.clone())
             .bind(new.path.clone())
-            .bind(new.install_at)
+            .bind(new.install_at.and_then(|v| Some(v.naive_utc()))) // TODO: naive_utc いるか確認
             .bind(new.gamename.clone())
             .bind(new.path.clone())
-            .bind(new.install_at)
+            .bind(new.install_at.and_then(|v| Some(v.naive_utc()))) // TODO: naive_utc いるか確認
             .execute(&*pool)
             .await?;
         Ok(())
@@ -373,7 +373,20 @@ impl CollectionRepository for RepositoryImpl<Collection> {
     ) -> Result<()> {
         let pool = self.pool.0.clone();
         query("update collection_elements set last_play_at = ? where id = ?")
-            .bind(last_play_at.naive_utc())
+            .bind(last_play_at.naive_utc()) // TODO: naive_utc いるか確認
+            .bind(id.value)
+            .execute(&*pool)
+            .await?;
+        Ok(())
+    }
+    async fn update_element_like_at_by_id(
+        &self,
+        id: &Id<CollectionElement>,
+        like_at: Option<DateTime<Local>>,
+    ) -> Result<()> {
+        let pool = self.pool.0.clone();
+        query("update collection_elements set like_at = ? where id = ?")
+            .bind(like_at.and_then(|v| Some(v.naive_utc()))) // TODO: naive_utc いるか確認
             .bind(id.value)
             .execute(&*pool)
             .await?;

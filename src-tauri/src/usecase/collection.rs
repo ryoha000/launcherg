@@ -307,6 +307,17 @@ impl<R: RepositoriesExt> CollectionUseCase<R> {
             .await?;
         Ok(())
     }
+    pub async fn update_element_like_at(
+        &self,
+        id: &Id<CollectionElement>,
+        is_like: bool,
+    ) -> anyhow::Result<()> {
+        self.repositories
+            .collection_repository()
+            .update_element_like_at_by_id(id, is_like.then_some(Local::now()))
+            .await?;
+        Ok(())
+    }
     pub async fn get_all_elements(&self) -> anyhow::Result<Vec<CollectionElement>> {
         self.repositories
             .collection_repository()
