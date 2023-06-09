@@ -1,11 +1,25 @@
 <script lang="ts">
   import ImportAutomatically from "@/components/Sidebar/ImportAutomatically.svelte";
+  import ImportManually from "@/components/Sidebar/ImportManually.svelte";
   import ImportPopover from "@/components/Sidebar/ImportPopover.svelte";
   import APopover from "@/components/UI/APopover.svelte";
   import Button from "@/components/UI/Button.svelte";
+  import { commandUpsertCollectionElement } from "@/lib/command";
+  import { registerCollectionElementDetails } from "@/lib/registerCollectionElementDetails";
+  import { sidebarCollectionElements } from "@/store/sidebarCollectionElements";
 
   let isOpenImportAutomatically = false;
   let isOpenImportManually = false;
+
+  const importManually = async (arg: {
+    id: number;
+    gamename: string;
+    path: string;
+  }) => {
+    await commandUpsertCollectionElement(arg.id, arg.gamename, arg.path);
+    await registerCollectionElementDetails();
+    await sidebarCollectionElements.refetch();
+  };
 </script>
 
 <div class="mt-4 w-full px-2 flex items-center">
@@ -27,4 +41,12 @@
     />
   </APopover>
 </div>
-<ImportAutomatically bind:isOpen={isOpenImportAutomatically} />
+{#if isOpenImportAutomatically}
+  <ImportAutomatically bind:isOpen={isOpenImportAutomatically} />
+{/if}
+{#if isOpenImportManually}
+  <ImportManually
+    bind:isOpen={isOpenImportManually}
+    on:confirm={(e) => importManually(e.detail)}
+  />
+{/if}

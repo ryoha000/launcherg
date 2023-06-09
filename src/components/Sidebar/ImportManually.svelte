@@ -9,11 +9,12 @@
 
   export let isOpen: boolean;
   export let withInputPath = true;
+
   let idInput = "";
   let path = "";
 
   const dispather = createEventDispatcher<{
-    add: { id: number; gamename: string; path: string };
+    confirm: { id: number; gamename: string; path: string };
   }>();
 
   const getIdNumber = (value: string) => {
@@ -55,7 +56,7 @@
     }
     const gamename = gamenames[0][0];
 
-    dispather("add", { id, gamename, path });
+    dispather("confirm", { id, gamename, path });
   };
   const openDialog = async () => {
     const selected = await open({

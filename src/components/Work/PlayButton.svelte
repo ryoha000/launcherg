@@ -75,7 +75,8 @@
     <ImportManually
       bind:isOpen={isOpenChangeId}
       withInputPath={false}
-      on:add={(e) => onChangeGame(e.detail.id, e.detail.gamename, element.path)}
+      on:confirm={(e) =>
+        onChangeGame(e.detail.id, e.detail.gamename, element.path)}
     />
   {/await}
 </div>
