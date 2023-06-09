@@ -6,11 +6,7 @@
 </script>
 
 <div class="grid grid-cols-[min-content_1fr] overflow-hidden w-full h-full">
-  {#if $showSidebar}
-    <Sidebar />
-  {:else}
-    <MinimalSidebar />
-  {/if}
+  <Sidebar />
   <div
     class="h-full min-w-0 min-h-0 grid-(~ rows-[min-content_1fr]) overflow-hidden"
   >

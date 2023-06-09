@@ -3,12 +3,10 @@
   import ButtonBase from "@/components/UI/ButtonBase.svelte";
 </script>
 
-<div
-  class="p-(x-2 y-4) border-(border-primary r-1px solid) flex flex-col items-center gap-4"
->
+<div class="flex flex-col h-full w-full items-center gap-4 py-4">
   <ButtonBase
     on:click={() => showSidebar.set(true)}
-    appendClass="ml-auto border-0px p-1 bg-transparent"
+    appendClass="border-0px p-1 bg-transparent"
     tooltip={{
       content: "サイドバーを開く",
       placement: "bottom",
