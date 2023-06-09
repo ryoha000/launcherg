@@ -80,14 +80,39 @@ const sortByGamename = (elements: CollectionElement[], multiplyer: number) => [
   {
     label: "すべて",
     elements: [...elements].sort((a, b) =>
-      createCompareString(multiplyer)(a.gamenameRuby, b.gamenameRuby)
+      createCompareNameAndRuby(multiplyer, {
+        name: "gamename",
+        ruby: "gamenameRuby",
+      })(a, b)
     ),
   },
 ];
 
-const createCompareString = (multiplyer: number) => (a: string, b: string) => {
-  return a.localeCompare(b, "ja") * multiplyer;
-};
+const createCompareNameAndRuby =
+  (
+    multiplyer: number,
+    prop:
+      | { name: "gamename"; ruby: "gamenameRuby" }
+      | { name: "brandname"; ruby: "brandnameRuby" }
+  ) =>
+  (a: CollectionElement, b: CollectionElement) => {
+    const aCode = a[prop.name].charCodeAt(0);
+    const bCode = b[prop.name].charCodeAt(0);
+
+    if (aCode < 128 && bCode < 128) {
+      // ASCII characters
+      return a[prop.name].localeCompare(b[prop.name]) * multiplyer;
+    } else if (aCode < 128) {
+      // a is ASCII, b is non-ASCII
+      return -1 * multiplyer;
+    } else if (bCode < 128) {
+      // a is non-ASCII, b is ASCII
+      return 1 * multiplyer;
+    } else {
+      // both non-ASCII
+      return a[prop.ruby].localeCompare(b[prop.ruby], "ja") * multiplyer;
+    }
+  };
 
 const sortBySellyear = (elements: CollectionElement[], multiplyer: number) =>
   elements
@@ -122,10 +147,10 @@ const sortByBrandname = (elements: CollectionElement[], multiplyer: number) =>
       return acc;
     }, [] as CollectionElementsWithLabel[])
     .sort((a, b) =>
-      createCompareString(multiplyer)(
-        a.elements[0].brandnameRuby,
-        b.elements[0].brandnameRuby
-      )
+      createCompareNameAndRuby(multiplyer, {
+        name: "brandname",
+        ruby: "brandnameRuby",
+      })(a.elements[0], b.elements[0])
     )
     .map((v) => ({
       ...v,
