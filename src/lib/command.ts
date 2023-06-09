@@ -5,14 +5,6 @@ import type {
 } from "@/lib/types";
 import { invoke } from "@tauri-apps/api/tauri";
 
-export const commandGetAllCollections = async () => {
-  return await invoke<Collection[]>("get_all_collections");
-};
-
-export const commandGetCollectionElements = async (id: number) => {
-  return await invoke<CollectionElement[]>("get_collection_elements", { id });
-};
-
 export const commandCreateElementsInPc = async (
   exploreDirPaths: string[],
   useCache: boolean
@@ -40,24 +32,6 @@ export const commandUploadImage = async (id: number, base64Image: string) => {
   });
 };
 
-export const commandGetMemoPath = async (id: number) => {
-  return await invoke<string>("get_memo_path", {
-    id,
-  });
-};
-
-export const commandCreateNewCollection = async (name: string) => {
-  return await invoke<Collection>("create_new_collection", { name });
-};
-
-export const commandUpdateCollection = async (id: number, name: string) => {
-  return await invoke<void>("update_collection", { id, name });
-};
-
-export const commandDeleteCollection = async (id: number) => {
-  return await invoke<void>("delete_collection", { id });
-};
-
 export const commandUpsertCollectionElement = async (
   id: number,
   gamename: string,
@@ -77,26 +51,6 @@ export const commandUpdateCollectionElementIcon = async (
   return await invoke<void>("update_collection_element_icon", {
     id,
     path,
-  });
-};
-
-export const commandAddElementsToCollection = async (
-  collectionId: number,
-  collectionElementIds: number[]
-) => {
-  return await invoke<void>("add_elements_to_collection", {
-    collectionId,
-    collectionElementIds,
-  });
-};
-
-export const commandRemoveElementsFromCollection = async (
-  collectionId: number,
-  collectionElementIds: number[]
-) => {
-  return await invoke<void>("remove_elements_from_collection", {
-    collectionId,
-    collectionElementIds,
   });
 };
 
@@ -142,28 +96,6 @@ export const commandCreateElementDetails = async (
 ) => {
   return await invoke<void>("create_element_details", {
     details,
-  });
-};
-
-export const commandGetBrandnameAndRubies = async () => {
-  return await invoke<[string, string][]>("get_brandname_and_rubies", {});
-};
-
-export const commandAddCollectionElementsByOption = async (
-  collectionId: number,
-  isNukige: boolean,
-  notNukige: boolean,
-  isExistPath: boolean,
-  brandnames: string[] | null,
-  between: [string, string] | null
-) => {
-  return await invoke<void>("add_collection_elements_by_option", {
-    collectionId,
-    isNukige,
-    notNukige,
-    isExistPath,
-    brandnames,
-    between,
   });
 };
 

@@ -1,57 +1,24 @@
-use std::{collections::HashSet, sync::Arc};
+use std::sync::Arc;
 use tauri::State;
 use tauri::Window;
 
 use super::models::collection::ProgressLivePayload;
 use super::{
     error::CommandError,
-    models::collection::{Collection, CollectionElement},
+    models::collection::CollectionElement,
     module::{Modules, ModulesExt},
 };
 use crate::interface::models::collection::ProgressPayload;
 use crate::{
     domain::{
-        collection::{NewCollectionElement, UpdateCollection},
+        collection::NewCollectionElement,
         distance::get_comparable_distance,
         file::{get_file_created_at_sync, normalize},
         Id,
     },
     infrastructure::repositoryimpl::migration::ONEPIECE_COLLECTION_ID,
-    usecase::models::collection::{CreateCollection, CreateCollectionElementDetail},
+    usecase::models::collection::CreateCollectionElementDetail,
 };
-
-#[tauri::command]
-pub async fn get_all_collections(
-    modules: State<'_, Arc<Modules>>,
-) -> anyhow::Result<Vec<Collection>, CommandError> {
-    Ok(modules
-        .collection_use_case()
-        .get_all_collections()
-        .await?
-        .into_iter()
-        .map(|v| Collection {
-            id: v.id.value,
-            name: v.name,
-            created_at: v.created_at,
-            updated_at: v.updated_at,
-        })
-        .collect())
-}
-
-#[tauri::command]
-pub async fn get_collection_elements(
-    modules: State<'_, Arc<Modules>>,
-    id: i32,
-) -> anyhow::Result<Vec<CollectionElement>, CommandError> {
-    let id = Id::new(id);
-    Ok(modules
-        .collection_use_case()
-        .get_elements_by_id(&id)
-        .await?
-        .into_iter()
-        .map(|v| v.into())
-        .collect())
-}
 
 #[tauri::command]
 pub async fn create_elements_in_pc(
@@ -157,49 +124,6 @@ pub async fn upload_image(
 }
 
 #[tauri::command]
-pub async fn get_memo_path(
-    modules: State<'_, Arc<Modules>>,
-    id: i32,
-) -> anyhow::Result<String, CommandError> {
-    Ok(modules.file_use_case().get_memo_path(id).await?)
-}
-
-#[tauri::command]
-pub async fn create_new_collection(
-    modules: State<'_, Arc<Modules>>,
-    name: String,
-) -> anyhow::Result<Collection, CommandError> {
-    Ok(modules
-        .collection_use_case()
-        .create_collection(CreateCollection::new(name))
-        .await?
-        .into())
-}
-
-#[tauri::command]
-pub async fn update_collection(
-    modules: State<'_, Arc<Modules>>,
-    id: i32,
-    name: String,
-) -> anyhow::Result<(), CommandError> {
-    Ok(modules
-        .collection_use_case()
-        .update_collection_by_id(UpdateCollection::new(Id::new(id), name))
-        .await?)
-}
-
-#[tauri::command]
-pub async fn delete_collection(
-    modules: State<'_, Arc<Modules>>,
-    id: i32,
-) -> anyhow::Result<(), CommandError> {
-    Ok(modules
-        .collection_use_case()
-        .delete_collection_by_id(&Id::new(id))
-        .await?)
-}
-
-#[tauri::command]
 pub async fn upsert_collection_element(
     modules: State<'_, Arc<Modules>>,
     id: i32,
@@ -231,24 +155,6 @@ pub async fn update_collection_element_icon(
     Ok(modules
         .collection_use_case()
         .update_collection_element_icon(&Id::new(id), path)
-        .await?)
-}
-
-#[tauri::command]
-pub async fn add_elements_to_collection(
-    modules: State<'_, Arc<Modules>>,
-    collection_id: i32,
-    collection_element_ids: Vec<i32>,
-) -> anyhow::Result<(), CommandError> {
-    Ok(modules
-        .collection_use_case()
-        .add_collection_elements(
-            &Id::new(collection_id),
-            &collection_element_ids
-                .into_iter()
-                .map(|v| Id::new(v))
-                .collect(),
-        )
         .await?)
 }
 
@@ -361,50 +267,6 @@ pub async fn create_element_details(
     Ok(modules
         .collection_use_case()
         .create_element_details(details.into_iter().map(|v| v.into()).collect())
-        .await?)
-}
-
-#[tauri::command]
-pub async fn get_brandname_and_rubies(
-    modules: State<'_, Arc<Modules>>,
-) -> anyhow::Result<Vec<(String, String)>, CommandError> {
-    Ok(modules
-        .collection_use_case()
-        .get_brandname_and_rubies()
-        .await?)
-}
-
-#[tauri::command]
-pub async fn add_collection_elements_by_option(
-    modules: State<'_, Arc<Modules>>,
-    collection_id: i32,
-    is_nukige: bool,
-    not_nukige: bool,
-    is_exist_path: bool,
-    brandnames: Option<Vec<String>>,
-    between: Option<(String, String)>,
-) -> anyhow::Result<(), CommandError> {
-    let ids = modules
-        .collection_use_case()
-        .get_collection_element_ids_by_option(
-            is_nukige,
-            not_nukige,
-            is_exist_path,
-            &brandnames,
-            &between,
-        )
-        .await?;
-    // uniq
-    let ids = ids
-        .into_iter()
-        .map(|v| v.value)
-        .collect::<HashSet<i32>>()
-        .into_iter()
-        .map(|v| Id::new(v))
-        .collect();
-    Ok(modules
-        .collection_use_case()
-        .add_collection_elements(&Id::new(collection_id), &ids)
         .await?)
 }
 

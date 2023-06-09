@@ -22,18 +22,11 @@ fn main() {
         })
         .plugin(tauri_plugin_clipboard::init())
         .invoke_handler(tauri::generate_handler![
-            command::get_all_collections,
-            command::get_collection_elements,
             command::create_elements_in_pc,
             command::get_nearest_key_and_distance,
             command::upload_image,
-            command::get_memo_path,
-            command::create_new_collection,
-            command::delete_collection,
-            command::update_collection,
             command::upsert_collection_element,
             command::update_collection_element_icon,
-            command::add_elements_to_collection,
             command::remove_elements_from_collection,
             command::get_default_import_dirs,
             command::play_game,
@@ -42,8 +35,6 @@ fn main() {
             command::delete_collection_element,
             command::get_not_registered_detail_element_ids,
             command::create_element_details,
-            command::get_brandname_and_rubies,
-            command::add_collection_elements_by_option,
             command::get_all_elements
         ])
         .run(tauri::generate_context!())

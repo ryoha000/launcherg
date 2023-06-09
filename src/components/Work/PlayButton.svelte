@@ -5,7 +5,6 @@
   import ButtonBase from "@/components/UI/ButtonBase.svelte";
   import ChangeGamePopover from "@/components/Work/ChangeGamePopover.svelte";
   import {
-    commandAddElementsToCollection,
     commandDeleteCollectionElement,
     commandGetCollectionElement,
     commandUpsertCollectionElement,
@@ -29,7 +28,6 @@
   ) => {
     await commandDeleteCollectionElement(id);
     await commandUpsertCollectionElement(elementId, gamename, path);
-    await commandAddElementsToCollection(1, [elementId]);
     await sidebarCollectionElements.refetch();
     deleteTab($tabs[$selected].id);
   };
