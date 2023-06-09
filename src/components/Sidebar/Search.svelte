@@ -11,9 +11,12 @@
 
 <div class="flex items-center gap-4">
   <div class="flex-1">
-    <SearchInput bind:value={query} placeholder="Filter by title" />
+    <SearchInput
+      bind:value={query}
+      placeholder="Filter by title, brand and more"
+    />
   </div>
-  <APopover isRelativeRoot={false} panelClass="right-0" let:close>
+  <APopover panelClass="right-0" let:close>
     <ButtonBase
       appendClass="h-8 w-8 flex items-center justify-center rounded-l-0"
       tooltip={{
