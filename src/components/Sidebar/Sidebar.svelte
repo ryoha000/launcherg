@@ -1,11 +1,9 @@
 <script lang="ts">
   import Logo from "/logo.png";
   import Icon from "/icon.png";
-  import { collections } from "@/store/collections";
-  import type { Collection, CollectionElementsWithLabel } from "@/lib/types";
+  import type { CollectionElementsWithLabel } from "@/lib/types";
   import { onMount } from "svelte";
   import SearchInput from "@/components/Sidebar/SearchInput.svelte";
-  import CollectionSelect from "@/components/Sidebar/CollectionSelect.svelte";
   import CollectionElements from "@/components/Sidebar/CollectionElements.svelte";
   import { writable } from "svelte/store";
   import { sidebarCollectionElements } from "@/store/sidebarCollectionElements";
@@ -16,14 +14,11 @@
   import { useFilter } from "@/lib/filter";
   import { showSidebar } from "@/store/showSidebar";
   import ButtonBase from "@/components/UI/ButtonBase.svelte";
+  import Button from "@/components/UI/Button.svelte";
+  import Search from "@/components/Sidebar/Search.svelte";
 
-  onMount(() => collections.init());
-
-  const selectedColection = writable<Collection | null>(null);
-  selectedColection.subscribe(async (v) => {
-    if (v) {
-      sidebarCollectionElements.init(v.id);
-    }
+  onMount(async () => {
+    await sidebarCollectionElements.refetch();
   });
 
   const [elementOptions, getElementOptions] = createWritable<Option<number>[]>(
@@ -38,9 +33,6 @@
 
   let displayCollectionElements: CollectionElementsWithLabel[] = [];
 
-  collections.subscribe(
-    () => (displayCollectionElements = filterAndSort($filtered, $order))
-  );
   filtered.subscribe(
     () => (displayCollectionElements = filterAndSort($filtered, $order))
   );
@@ -79,24 +71,21 @@
       />
     </ButtonBase>
   </div>
-  <div class="mt-4 w-full px-2">
-    <CollectionSelect
-      collections={$collections}
-      bind:value={$selectedColection}
-      bind:order={$order}
+  <div class="mt-4 w-full px-2 flex items-center">
+    <div class="text-(text-primary body) font-bold pl-2">登録したゲーム</div>
+    <Button
+      text="Add"
+      leftIcon="i-material-symbols-computer-outline-rounded"
+      variant="success"
+      appendClass="ml-auto"
     />
   </div>
   <div class="w-full mt-2 px-2">
-    <SearchInput bind:value={$query} placeholder="Filter by title" />
+    <Search bind:query={$query} bind:order={$order} />
   </div>
   <div class="mt-1 min-h-0">
-    {#if $selectedColection}
-      {#key displayCollectionElements}
-        <CollectionElements
-          collection={$selectedColection}
-          collectionElement={displayCollectionElements}
-        />
-      {/key}
-    {/if}
+    {#key displayCollectionElements}
+      <CollectionElements collectionElement={displayCollectionElements} />
+    {/key}
   </div>
 </div>

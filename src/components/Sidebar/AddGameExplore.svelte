@@ -16,7 +16,6 @@
   import ModalBase from "@/components/UI/ModalBase.svelte";
   import { fade } from "svelte/transition";
   import { registerCollectionElementDetails } from "@/lib/registerCollectionElementDetails";
-  import { writable } from "svelte/store";
 
   let isLoading = false;
 
@@ -71,11 +70,7 @@
       collection?.id || null
     );
     await registerCollectionElementDetails();
-    if (collection) {
-      await sidebarCollectionElements.init(collection.id);
-    } else {
-      await sidebarCollectionElements.refetch();
-    }
+    await sidebarCollectionElements.refetch();
 
     isLoading = false;
 

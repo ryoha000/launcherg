@@ -307,4 +307,10 @@ impl<R: RepositoriesExt> CollectionUseCase<R> {
             .await?;
         Ok(())
     }
+    pub async fn get_all_elements(&self) -> anyhow::Result<Vec<CollectionElement>> {
+        self.repositories
+            .collection_repository()
+            .get_all_elements()
+            .await
+    }
 }

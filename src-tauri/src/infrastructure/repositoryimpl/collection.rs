@@ -59,6 +59,17 @@ impl CollectionRepository for RepositoryImpl<Collection> {
             .filter_map(|v| v.try_into().ok())
             .collect())
     }
+    async fn get_all_elements(&self) -> Result<Vec<CollectionElement>> {
+        let pool = self.pool.0.clone();
+        Ok(query_as::<_, CollectionElementTable>(
+            "select ce.*, cde.collection_element_id, cde.gamename_ruby, cde.sellday, cde.is_nukige, cde.brandname, cde.brandname_ruby from collection_elements ce inner join collection_element_details cde on cde.collection_element_id = ce.id",
+        )
+        .fetch_all(&*pool)
+        .await?
+        .into_iter()
+        .filter_map(|v| v.try_into().ok())
+        .collect())
+    }
     async fn get_elements_by_id(&self, id: &Id<Collection>) -> Result<Vec<CollectionElement>> {
         let pool = self.pool.0.clone();
         Ok(query_as::<_, CollectionElementTable>(

@@ -421,3 +421,16 @@ pub async fn add_collection_elements_by_option(
         .add_collection_elements(&Id::new(collection_id), &ids)
         .await?)
 }
+
+#[tauri::command]
+pub async fn get_all_elements(
+    modules: State<'_, Arc<Modules>>,
+) -> anyhow::Result<Vec<CollectionElement>, CommandError> {
+    Ok(modules
+        .collection_use_case()
+        .get_all_elements()
+        .await?
+        .into_iter()
+        .map(|v| v.into())
+        .collect())
+}

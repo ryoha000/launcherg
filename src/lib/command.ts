@@ -168,3 +168,7 @@ export const commandAddCollectionElementsByOption = async (
     between,
   });
 };
+
+export const commandGetAllElements = async () => {
+  return await invoke<CollectionElement[]>("get_all_elements", {});
+};

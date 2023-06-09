@@ -14,6 +14,7 @@ pub trait CollectionRepository {
     async fn get(&self, id: &Id<Collection>) -> Result<Option<Collection>>;
     async fn get_by_name(&self, name: String) -> Result<Option<Collection>>;
     async fn get_all(&self) -> Result<Vec<Collection>>;
+    async fn get_all_elements(&self) -> Result<Vec<CollectionElement>>;
     async fn get_elements_by_id(&self, id: &Id<Collection>) -> Result<Vec<CollectionElement>>;
     async fn get_element_by_element_id(
         &self,
