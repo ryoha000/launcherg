@@ -1,9 +1,7 @@
-import type { Option } from "@/lib/trieFilter";
 import type {
   CollectionElement,
   CollectionElementsWithLabel,
 } from "@/lib/types";
-import { sidebarCollectionElements } from "@/store/sidebarCollectionElements";
 
 export type SortOrder =
   `${(typeof SORT_ORDER_TYPES)[keyof typeof SORT_ORDER_TYPES]}-${(typeof SORT_ORDER_BY)[keyof typeof SORT_ORDER_BY]}`;
@@ -35,16 +33,10 @@ export const SORT_ORDER_BY = {
 
 const NULL_DATE = "不明";
 
-export const filterAndSort = (
-  filteredOption: Option<number>[],
+export const sort = (
+  filteredElements: CollectionElement[],
   order: SortOrder
 ): CollectionElementsWithLabel[] => {
-  const filteredElements = sidebarCollectionElements
-    .value()
-    .filter(
-      (element) =>
-        filteredOption.findIndex((option) => option.value === element.id) !== -1
-    );
   const isGamename = order.includes(SORT_ORDER_TYPES.GAMENAME);
   const isSellyear = order.includes(SORT_ORDER_TYPES.SELLYEAR);
   const isBrandname = order.includes(SORT_ORDER_TYPES.BRANDNAME);

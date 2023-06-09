@@ -54,6 +54,7 @@ export type CollectionElement = {
   isNukige: boolean;
   installAt: string | null; // yyyy-MM-dd
   lastPlayAt: string | null; // yyyy-MM-dd
+  likeAt: string | null; // yyyy-MM-dd
   path: string;
   icon: string;
 };

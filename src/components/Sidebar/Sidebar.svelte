@@ -5,7 +5,7 @@
   import { writable } from "svelte/store";
   import { sidebarCollectionElements } from "@/store/sidebarCollectionElements";
   import { createWritable } from "@/lib/utils";
-  import { filterAndSort, type SortOrder } from "@/components/Sidebar/sort";
+  import { type SortOrder } from "@/components/Sidebar/sort";
   import { type Option, collectionElementsToOptions } from "@/lib/trieFilter";
   import { useFilter } from "@/lib/filter";
   import Search from "@/components/Sidebar/Search.svelte";
@@ -14,6 +14,8 @@
   import MinimalSidebar from "@/components/Sidebar/MinimalSidebar.svelte";
   import { fly } from "svelte/transition";
   import SubHeader from "@/components/Sidebar/SubHeader.svelte";
+  import { searchAttributes } from "@/components/Sidebar/searchAttributes";
+  import { search } from "@/components/Sidebar/search";
 
   onMount(async () => {
     await sidebarCollectionElements.refetch();
@@ -28,19 +30,23 @@
 
   const { query, filtered } = useFilter(elementOptions, getElementOptions);
   let order = writable<SortOrder>("gamename-asc");
+  const { attributes, toggleEnable } = searchAttributes();
 
   let displayCollectionElements: CollectionElementsWithLabel[] = [];
 
   filtered.subscribe(
-    () => (displayCollectionElements = filterAndSort($filtered, $order))
+    () => (displayCollectionElements = search($filtered, $attributes, $order))
+  );
+  attributes.subscribe(
+    () => (displayCollectionElements = search($filtered, $attributes, $order))
   );
   order.subscribe(
-    () => (displayCollectionElements = filterAndSort($filtered, $order))
+    () => (displayCollectionElements = search($filtered, $attributes, $order))
   );
 
   sidebarCollectionElements.subscribe(() => {
     query.set("");
-    displayCollectionElements = filterAndSort($filtered, $order);
+    displayCollectionElements = search($filtered, $attributes, $order);
   });
 </script>
 
@@ -57,7 +63,12 @@
         <Header />
         <SubHeader />
         <div class="w-full mt-2 px-2">
-          <Search bind:query={$query} bind:order={$order} />
+          <Search
+            bind:query={$query}
+            bind:order={$order}
+            attributes={$attributes}
+            on:toggleAttributeEnabled={(e) => toggleEnable(e.detail.key)}
+          />
         </div>
         <div class="mt-1 min-h-0">
           {#key displayCollectionElements}
