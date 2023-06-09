@@ -5,7 +5,6 @@
   const dispatcher = createEventDispatcher<{
     playAdmin: {};
     play: {};
-    changeGame: {};
     close: {};
   }>();
 </script>
@@ -22,14 +21,16 @@
   </div>
   <OptionButton
     text="管理者権限で起動"
-    on:click={() => dispatcher("playAdmin")}
+    on:click={() => {
+      dispatcher("close");
+      dispatcher("playAdmin");
+    }}
   />
   <OptionButton
     text="現在のユーザーで起動"
-    on:click={() => dispatcher("play")}
-  />
-  <OptionButton
-    text="違うゲームに変更する"
-    on:click={() => dispatcher("changeGame")}
+    on:click={() => {
+      dispatcher("close");
+      dispatcher("play");
+    }}
   />
 </div>

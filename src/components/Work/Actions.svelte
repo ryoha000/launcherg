@@ -3,16 +3,24 @@
   import PlayButton from "@/components/Work/PlayButton.svelte";
   import { push } from "svelte-spa-router";
   import {
+    commandDeleteCollectionElement,
     commandGetCollectionElement,
     commandGetPlayTomeMinutes,
     commandPlayGame,
     commandUpdateElementLike,
+    commandUpsertCollectionElement,
   } from "@/lib/command";
   import { showErrorToast } from "@/lib/toast";
   import { localStorageWritable } from "@/lib/utils";
   import ButtonIcon from "@/components/UI/ButtonIcon.svelte";
   import ButtonCancel from "@/components/UI/ButtonCancel.svelte";
   import { sidebarCollectionElements } from "@/store/sidebarCollectionElements";
+  import APopover from "@/components/UI/APopover.svelte";
+  import SettingPopover from "@/components/Work/SettingPopover.svelte";
+  import ImportManually from "@/components/Sidebar/ImportManually.svelte";
+  import { deleteTab, tabs, selected } from "@/store/tabs";
+  import path from "path";
+  import DeleteElement from "@/components/Work/DeleteElement.svelte";
 
   export let name: string;
   export let id: number;
@@ -57,15 +65,25 @@
     isLike = !!element.likeAt;
     return element;
   })();
+
+  let isOpenImportManually = false;
+  const onChangeGame = async (
+    elementId: number,
+    gamename: string,
+    path: string
+  ) => {
+    await commandDeleteCollectionElement(id);
+    await commandUpsertCollectionElement(elementId, gamename, path);
+    await sidebarCollectionElements.refetch();
+    deleteTab($tabs[$selected].id);
+  };
+
+  let isOpenDelete = false;
 </script>
 
 {#await elementPromise then element}
   <div class="flex items-center gap-4 flex-wrap w-full min-w-0">
-    <PlayButton
-      {id}
-      path={element.path}
-      on:play={(e) => play(e.detail.isAdmin)}
-    />
+    <PlayButton on:play={(e) => play(e.detail.isAdmin)} />
     <Button
       leftIcon="i-material-symbols-drive-file-rename-outline"
       text="Memo"
@@ -88,7 +106,21 @@
           : "i-material-symbols-favorite-outline-rounded"}
         on:click={toggleLike}
       />
-      <ButtonIcon icon="i-material-symbols-menu-rounded" />
+      <APopover let:close panelClass="right-0">
+        <ButtonIcon icon="i-material-symbols-menu-rounded" slot="button" />
+        <SettingPopover
+          on:close={() => close(null)}
+          on:selectChange={() => (isOpenImportManually = true)}
+          on:selectDelete={() => (isOpenDelete = true)}
+        />
+      </APopover>
     </div>
   </div>
+  <ImportManually
+    bind:isOpen={isOpenImportManually}
+    withInputPath={false}
+    on:confirm={(e) =>
+      onChangeGame(e.detail.id, e.detail.gamename, element.path)}
+  />
+  <DeleteElement bind:isOpen={isOpenDelete} {element} />
 {/await}

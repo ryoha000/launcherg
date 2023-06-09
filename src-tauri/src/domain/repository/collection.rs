@@ -70,4 +70,6 @@ pub trait CollectionRepository {
         id: &Id<CollectionElement>,
         like_at: Option<DateTime<Local>>,
     ) -> Result<()>;
+
+    async fn delete_element_by_id(&self, id: &Id<CollectionElement>) -> Result<()>;
 }
