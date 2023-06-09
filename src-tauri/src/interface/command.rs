@@ -54,12 +54,11 @@ pub async fn get_collection_elements(
 }
 
 #[tauri::command]
-pub async fn add_collection_elements_in_pc(
+pub async fn create_elements_in_pc(
     modules: State<'_, Arc<Modules>>,
     window: Window,
     explore_dir_paths: Vec<String>,
     use_cache: bool,
-    adding_collection_id: Option<i32>,
 ) -> anyhow::Result<Vec<String>, CommandError> {
     let window = Arc::new(window);
     let emit_progress = |message| {
@@ -101,19 +100,6 @@ pub async fn add_collection_elements_in_pc(
         .collection_use_case()
         .upsert_collection_elements(&new_elements)
         .await?;
-
-    let new_element_ids = new_elements.iter().map(|v| v.id.clone()).collect();
-
-    modules
-        .collection_use_case()
-        .add_collection_elements(&Id::new(ONEPIECE_COLLECTION_ID), &new_element_ids)
-        .await?;
-    if let Some(collection_id) = adding_collection_id {
-        modules
-            .collection_use_case()
-            .add_collection_elements(&Id::new(collection_id), &new_element_ids)
-            .await?;
-    }
 
     modules
         .explored_cache_use_case()

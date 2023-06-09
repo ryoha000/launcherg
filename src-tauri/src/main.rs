@@ -24,7 +24,7 @@ fn main() {
         .invoke_handler(tauri::generate_handler![
             command::get_all_collections,
             command::get_collection_elements,
-            command::add_collection_elements_in_pc,
+            command::create_elements_in_pc,
             command::get_nearest_key_and_distance,
             command::upload_image,
             command::get_memo_path,

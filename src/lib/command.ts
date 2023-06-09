@@ -13,15 +13,13 @@ export const commandGetCollectionElements = async (id: number) => {
   return await invoke<CollectionElement[]>("get_collection_elements", { id });
 };
 
-export const commandAddCollectionElementsInPc = async (
+export const commandCreateElementsInPc = async (
   exploreDirPaths: string[],
-  useCache: boolean,
-  addingCollectionId: number | null
+  useCache: boolean
 ) => {
-  return await invoke<string[]>("add_collection_elements_in_pc", {
+  return await invoke<string[]>("create_elements_in_pc", {
     exploreDirPaths,
     useCache,
-    addingCollectionId,
   });
 };
 

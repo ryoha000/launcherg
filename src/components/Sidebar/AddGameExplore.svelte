@@ -4,7 +4,7 @@
   import Input from "@/components/UI/Input.svelte";
   import Modal from "@/components/UI/Modal.svelte";
   import {
-    commandAddCollectionElementsInPc,
+    commandCreateElementsInPc,
     commandGetDefaultImportDirs,
   } from "@/lib/command";
   import { showInfoToast } from "@/lib/toast";
@@ -20,8 +20,6 @@
   let isLoading = false;
 
   export let isOpen: boolean;
-
-  export let collection: Collection | null = null;
 
   let inputContainer: HTMLDivElement | null = null;
 
@@ -64,10 +62,9 @@
   };
   const confirm = async () => {
     isLoading = true;
-    const res = await commandAddCollectionElementsInPc(
+    const res = await commandCreateElementsInPc(
       getPaths().map((v) => v.path),
-      useCache,
-      collection?.id || null
+      useCache
     );
     await registerCollectionElementDetails();
     await sidebarCollectionElements.refetch();
@@ -124,7 +121,7 @@
   });
 </script>
 
-{#if collection && !isLoading}
+{#if !isLoading}
   <Modal
     {isOpen}
     on:close={() => {

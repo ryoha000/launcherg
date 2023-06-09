@@ -159,7 +159,7 @@
   <DeleteCollection bind:isOpen={isOpenDeleteCollection} collection={value} />
 {/if}
 {#if isOpenAddGameExplore}
-  <AddGameExplore bind:isOpen={isOpenAddGameExplore} collection={value} />
+  <AddGameExplore bind:isOpen={isOpenAddGameExplore} />
 {/if}
 {#if isOpenAddGameManual}
   <AddGameManual
