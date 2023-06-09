@@ -6,7 +6,6 @@
   import ChangeGamePopover from "@/components/Work/ChangeGamePopover.svelte";
   import {
     commandDeleteCollectionElement,
-    commandGetCollectionElement,
     commandUpsertCollectionElement,
   } from "@/lib/command";
   import { sidebarCollectionElements } from "@/store/sidebarCollectionElements";
@@ -14,8 +13,7 @@
   import { createEventDispatcher } from "svelte";
 
   export let id: number;
-
-  $: collectionElementPromise = commandGetCollectionElement(id);
+  export let path: string;
 
   const dispather = createEventDispatcher<{
     play: { isAdmin: boolean | undefined };
@@ -37,12 +35,13 @@
 
 <div class="flex items-center min-w-0">
   <Button
-    appendClass="w-24 h-8 flex items-center rounded-r-0 group hover:text-bg-success-hover transition-all"
-    leftIcon="i-material-symbols-power-rounded group-hover:color-bg-success-hover transition-all"
+    appendClass="rounded-r-0"
+    leftIcon="i-material-symbols-power-rounded"
     text="Play"
+    variant="success"
     on:click={() => dispather("play", { isAdmin: undefined })}
   />
-  <APopover let:close>
+  <APopover let:open let:close>
     <ButtonBase
       appendClass="h-8 w-8 flex items-center justify-center rounded-l-0"
       tooltip={{
@@ -51,9 +50,13 @@
         theme: "default",
         delay: 1000,
       }}
+      variant="success"
       slot="button"
     >
-      <div class="color-ui-tertiary w-5 h-5 i-material-symbols-tune" />
+      <div
+        class="color-text-white w-5 h-5 i-material-symbols-arrow-drop-down"
+        class:rotate-180={open}
+      />
     </ButtonBase>
     <ChangeGamePopover
       on:close={() => close(null)}
@@ -71,12 +74,9 @@
       }}
     />
   </APopover>
-  {#await collectionElementPromise then element}
-    <ImportManually
-      bind:isOpen={isOpenChangeId}
-      withInputPath={false}
-      on:confirm={(e) =>
-        onChangeGame(e.detail.id, e.detail.gamename, element.path)}
-    />
-  {/await}
+  <ImportManually
+    bind:isOpen={isOpenChangeId}
+    withInputPath={false}
+    on:confirm={(e) => onChangeGame(e.detail.id, e.detail.gamename, path)}
+  />
 </div>

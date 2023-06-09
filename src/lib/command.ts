@@ -102,3 +102,7 @@ export const commandCreateElementDetails = async (
 export const commandGetAllElements = async () => {
   return await invoke<CollectionElement[]>("get_all_elements", {});
 };
+
+export const commandUpdateElementLike = async (id: number, isLike: boolean) => {
+  return await invoke<void>("update_element_like", { id, isLike });
+};
