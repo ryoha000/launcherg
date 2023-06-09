@@ -70,7 +70,7 @@ export const filterAndSort = (
   }
   return [
     {
-      label: "single label",
+      label: "すべて",
       elements: filteredElements,
     },
   ];
@@ -78,7 +78,7 @@ export const filterAndSort = (
 
 const sortByGamename = (elements: CollectionElement[], multiplyer: number) => [
   {
-    label: "single label",
+    label: "すべて",
     elements: [...elements].sort((a, b) =>
       createCompareString(multiplyer)(a.gamenameRuby, b.gamenameRuby)
     ),

@@ -18,7 +18,7 @@
       case VoiceActorImportance.Sub:
         return "text-(body3 text-primary)";
       case VoiceActorImportance.Mob:
-        return "text-(caption text-tertiary)";
+        return "text-(body3 text-tertiary)";
       default:
         const _: never = importance;
         break;

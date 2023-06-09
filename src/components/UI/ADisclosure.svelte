@@ -7,9 +7,10 @@
   import { fly } from "svelte/transition";
 
   export let label: string;
+  export let defaultOpen = false;
 </script>
 
-<Disclosure let:open>
+<Disclosure let:open {defaultOpen}>
   <DisclosureButton
     class="bg-transparent rounded transition-all hover:bg-bg-button-hover w-full"
   >

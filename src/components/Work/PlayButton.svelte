@@ -73,11 +73,11 @@
       }}
     />
   </APopover>
+  {#await collectionElementPromise then element}
+    <AddGameManual
+      bind:isOpen={isOpenChangeId}
+      withInputPath={false}
+      on:add={(e) => onChangeGame(e.detail.id, e.detail.gamename, element.path)}
+    />
+  {/await}
 </div>
-{#await collectionElementPromise then element}
-  <AddGameManual
-    bind:isOpen={isOpenChangeId}
-    withInputPath={false}
-    on:add={(e) => onChangeGame(e.detail.id, e.detail.gamename, element.path)}
-  />
-{/await}

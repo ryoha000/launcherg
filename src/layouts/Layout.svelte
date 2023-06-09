@@ -3,7 +3,6 @@
   import Sidebar from "@/components/Sidebar/Sidebar.svelte";
   import ATabList from "@/components/Tab/ATabList.svelte";
   import { showSidebar } from "@/store/showSidebar";
-  import { TabGroup } from "@rgossiaux/svelte-headlessui";
 </script>
 
 <div class="grid grid-cols-[min-content_1fr] overflow-hidden w-full h-full">

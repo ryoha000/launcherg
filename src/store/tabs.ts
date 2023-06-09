@@ -138,7 +138,7 @@ const createTabs = () => {
       return;
     }
     const tab = _tabs[index];
-    push(`/${tab.type}/${tab.id}`);
+    push(`/${tab.type}/${tab.workId}`);
   };
   return {
     tabs,

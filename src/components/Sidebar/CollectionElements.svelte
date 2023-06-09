@@ -119,33 +119,20 @@
     </div>
     <div class="flex-1 mt-2 min-h-0">
       <div use:simplebar class="h-full overflow-y-auto">
-        {#if collectionElement.length === 1}
-          {#each collectionElement[0].elements as ele (ele.id)}
-            <CollectionElement
-              checked={checked[ele.id]}
-              on:check={(e) => {
-                checked[ele.id] = e.detail.value;
-                checked = checked;
-              }}
-              collectionElement={ele}
-            />
-          {/each}
-        {:else}
-          {#each collectionElement as { label, elements } (label)}
-            <ADisclosure {label}>
-              {#each elements as ele (ele.id)}
-                <CollectionElement
-                  checked={checked[ele.id]}
-                  on:check={(e) => {
-                    checked[ele.id] = e.detail.value;
-                    checked = checked;
-                  }}
-                  collectionElement={ele}
-                />
-              {/each}
-            </ADisclosure>
-          {/each}
-        {/if}
+        {#each collectionElement as { label, elements } (label)}
+          <ADisclosure {label} defaultOpen={collectionElement.length === 1}>
+            {#each elements as ele (ele.id)}
+              <CollectionElement
+                checked={checked[ele.id]}
+                on:check={(e) => {
+                  checked[ele.id] = e.detail.value;
+                  checked = checked;
+                }}
+                collectionElement={ele}
+              />
+            {/each}
+          </ADisclosure>
+        {/each}
       </div>
     </div>
   {/if}

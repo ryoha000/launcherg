@@ -65,8 +65,11 @@
         <div class="text-(text-primary body2)">
           追加されるのは有効にした項目の全てを満たすゲームです。一部の項目のみを満たすゲームは追加されません。
         </div>
-        <NewCollectionOption bind:value={isNukige} label="抜きゲー" />
-        <NewCollectionOption bind:value={isNotNukige} label="非抜きゲー" />
+        <NewCollectionOption bind:value={isNukige} label="すべて抜きゲー" />
+        <NewCollectionOption
+          bind:value={isNotNukige}
+          label="すべて非抜きゲー"
+        />
         <NewCollectionOption
           bind:value={isExistPath}
           label="ゲームの実行ファイルが存在する"
