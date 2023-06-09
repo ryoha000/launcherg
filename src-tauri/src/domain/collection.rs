@@ -37,6 +37,7 @@ pub struct CollectionElement {
     pub path: String,
     pub install_at: Option<DateTime<Local>>,
     pub last_play_at: Option<DateTime<Local>>,
+    pub like_at: Option<DateTime<Local>>,
     pub created_at: DateTime<Local>,
     pub updated_at: DateTime<Local>,
 }

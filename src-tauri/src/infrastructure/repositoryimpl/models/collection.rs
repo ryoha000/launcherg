@@ -39,6 +39,7 @@ pub struct CollectionElementTable {
     pub path: String,
     pub install_at: Option<NaiveDateTime>,
     pub last_play_at: Option<NaiveDateTime>,
+    pub like_at: Option<NaiveDateTime>,
     pub created_at: NaiveDateTime,
     pub updated_at: NaiveDateTime,
 }
@@ -58,6 +59,8 @@ impl TryFrom<CollectionElementTable> for CollectionElement {
             st.install_at
                 .and_then(|v| Some(v.and_utc().with_timezone(&Local))),
             st.last_play_at
+                .and_then(|v| Some(v.and_utc().with_timezone(&Local))),
+            st.like_at
                 .and_then(|v| Some(v.and_utc().with_timezone(&Local))),
             st.created_at.and_utc().with_timezone(&Local),
             st.updated_at.and_utc().with_timezone(&Local),

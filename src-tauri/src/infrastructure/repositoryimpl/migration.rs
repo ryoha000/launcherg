@@ -62,6 +62,7 @@ CREATE TABLE IF NOT EXISTS collection_elements (
     path TEXT NOT NULL,
     install_at DATETIME,
     last_play_at DATETIME,
+    like_at DATETIME,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
