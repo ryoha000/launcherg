@@ -1,5 +1,5 @@
 <script lang="ts">
-  import AddGameManual from "@/components/Sidebar/AddGameManual.svelte";
+  import ImportManually from "@/components/Sidebar/ImportManually.svelte";
   import APopover from "@/components/UI/APopover.svelte";
   import Button from "@/components/UI/Button.svelte";
   import ButtonBase from "@/components/UI/ButtonBase.svelte";
@@ -72,7 +72,7 @@
     />
   </APopover>
   {#await collectionElementPromise then element}
-    <AddGameManual
+    <ImportManually
       bind:isOpen={isOpenChangeId}
       withInputPath={false}
       on:add={(e) => onChangeGame(e.detail.id, e.detail.gamename, element.path)}

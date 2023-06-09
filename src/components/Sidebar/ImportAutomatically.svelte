@@ -8,7 +8,6 @@
     commandGetDefaultImportDirs,
   } from "@/lib/command";
   import { showInfoToast } from "@/lib/toast";
-  import type { Collection } from "@/lib/types";
   import { createLocalStorageWritable } from "@/lib/utils";
   import { sidebarCollectionElements } from "@/store/sidebarCollectionElements";
   import { onMount } from "svelte";
@@ -114,7 +113,7 @@
         }
       }
     );
-    return async () => {
+    return () => {
       unlistenProgress();
       unlistenProgressLive();
     };

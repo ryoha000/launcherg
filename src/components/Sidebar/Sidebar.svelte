@@ -8,12 +8,12 @@
   import { filterAndSort, type SortOrder } from "@/components/Sidebar/sort";
   import { type Option, collectionElementsToOptions } from "@/lib/trieFilter";
   import { useFilter } from "@/lib/filter";
-  import Button from "@/components/UI/Button.svelte";
   import Search from "@/components/Sidebar/Search.svelte";
   import Header from "@/components/Sidebar/Header.svelte";
   import { showSidebar } from "@/store/showSidebar";
   import MinimalSidebar from "@/components/Sidebar/MinimalSidebar.svelte";
   import { fly } from "svelte/transition";
+  import SubHeader from "@/components/Sidebar/SubHeader.svelte";
 
   onMount(async () => {
     await sidebarCollectionElements.refetch();
@@ -55,17 +55,7 @@
         class="min-h-0 relative w-full h-full grid-(~ rows-[min-content_min-content_min-content_1fr])"
       >
         <Header />
-        <div class="mt-4 w-full px-2 flex items-center">
-          <div class="text-(text-primary body) font-bold pl-2">
-            登録したゲーム
-          </div>
-          <Button
-            text="Add"
-            leftIcon="i-material-symbols-computer-outline-rounded"
-            variant="success"
-            appendClass="ml-auto"
-          />
-        </div>
+        <SubHeader />
         <div class="w-full mt-2 px-2">
           <Search bind:query={$query} bind:order={$order} />
         </div>

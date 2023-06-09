@@ -4,8 +4,8 @@
 
   const dispatcher = createEventDispatcher<{
     close: {};
-    explore: {};
-    manual: {};
+    startAuto: {};
+    startManual: {};
   }>();
 </script>
 
@@ -21,7 +21,16 @@
   </div>
   <OptionButton
     text="自動でフォルダから追加"
-    on:click={() => dispatcher("explore")}
+    on:click={() => {
+      dispatcher("close");
+      dispatcher("startAuto");
+    }}
   />
-  <OptionButton text="手動で追加" on:click={() => dispatcher("manual")} />
+  <OptionButton
+    text="手動で追加"
+    on:click={() => {
+      dispatcher("close");
+      dispatcher("startManual");
+    }}
+  />
 </div>
