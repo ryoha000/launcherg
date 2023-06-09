@@ -9,7 +9,7 @@
   export let order: SortOrder;
 </script>
 
-<div class="flex items-center gap-4">
+<div class="flex items-center gap-2">
   <div class="flex-1">
     <SearchInput
       bind:value={query}
@@ -18,7 +18,7 @@
   </div>
   <APopover panelClass="right-0" let:close>
     <ButtonBase
-      appendClass="h-8 w-8 flex items-center justify-center rounded-l-0"
+      appendClass="h-8 w-8 flex items-center justify-center"
       tooltip={{
         content: "ゲームの並べ替え",
         placement: "bottom",

@@ -1,14 +1,8 @@
 export type Option<T> = { label: string; value: T; otherLabels?: string[] };
-import type { CollectionElement } from "@/lib/types";
-import { isNotNullOrUndefined } from "@/lib/utils";
-import { writable, type Readable } from "svelte/store";
-import TrieSearch from "trie-search";
-import { toHiragana, toRomaji } from "wanakana";
 
-type KeyValue<T> = {
-  key: string;
-  value: T;
-};
+import type { CollectionElement } from "@/lib/types";
+import { writable, type Readable } from "svelte/store";
+import { toHiragana, toRomaji } from "wanakana";
 
 export const collectionElementsToOptions = (elements: CollectionElement[]) =>
   elements.map((v) => ({
