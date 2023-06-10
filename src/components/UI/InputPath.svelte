@@ -2,25 +2,34 @@
   import Button from "@/components/UI/Button.svelte";
   import Input from "@/components/UI/Input.svelte";
   import { open } from "@tauri-apps/api/dialog";
+  import { createEventDispatcher } from "svelte";
 
   export let path: string;
   export let label: string;
   export let placeholder: string = "";
+  export let withFilter = true;
+  export let directory = false;
+
+  const dispatcher = createEventDispatcher<{ update: { value: string } }>();
 
   const openDialog = async () => {
     const selected = await open({
       multiple: false,
-      filters: [
-        {
-          name: "exe",
-          extensions: ["exe", "EXE"],
-        },
-      ],
+      filters: withFilter
+        ? [
+            {
+              name: "exe",
+              extensions: ["exe", "EXE"],
+            },
+          ]
+        : [],
+      directory,
     });
     if (selected === null || Array.isArray(selected)) {
       return;
     }
     path = selected;
+    dispatcher("update", { value: selected });
   };
 </script>
 

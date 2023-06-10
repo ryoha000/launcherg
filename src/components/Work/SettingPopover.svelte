@@ -5,6 +5,7 @@
   const dispatcher = createEventDispatcher<{
     selectChange: {};
     selectDelete: {};
+    selectOpen: {};
     close: {};
   }>();
 </script>
@@ -31,6 +32,13 @@
     on:click={() => {
       dispatcher("close");
       dispatcher("selectDelete");
+    }}
+  />
+  <OptionButton
+    text="ゲームのフォルダーを開く"
+    on:click={() => {
+      dispatcher("close");
+      dispatcher("selectOpen");
     }}
   />
 </div>

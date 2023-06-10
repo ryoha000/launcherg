@@ -294,3 +294,23 @@ pub async fn update_element_like(
         .update_element_like_at(&Id::new(id), is_like)
         .await?)
 }
+
+#[tauri::command]
+pub fn open_folder(path: String) -> anyhow::Result<(), CommandError> {
+    let p = std::path::Path::new(&path);
+    let path = match p.is_file() {
+        true => p
+            .parent()
+            .ok_or(anyhow::anyhow!("parent not found"))?
+            .to_string_lossy()
+            .to_string(),
+        false => path,
+    };
+    let err_msg = anyhow::anyhow!("Failed to open folder at path: {}", path);
+    std::process::Command::new("explorer")
+        .arg(path)
+        .output()
+        .map_err(|_| err_msg)?;
+
+    Ok(())
+}

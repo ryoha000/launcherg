@@ -6,6 +6,7 @@
     commandDeleteCollectionElement,
     commandGetCollectionElement,
     commandGetPlayTomeMinutes,
+    commandOpenFolder,
     commandPlayGame,
     commandUpdateElementLike,
     commandUpsertCollectionElement,
@@ -112,6 +113,7 @@
           on:close={() => close(null)}
           on:selectChange={() => (isOpenImportManually = true)}
           on:selectDelete={() => (isOpenDelete = true)}
+          on:selectOpen={() => commandOpenFolder(element.path)}
         />
       </APopover>
     </div>

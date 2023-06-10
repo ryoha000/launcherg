@@ -30,7 +30,15 @@ pub struct FileUseCase<R: ExplorersExt> {
 type FilePathString = String;
 type ErogamescapeID = i32;
 
-const IGNORE_WORD_WHEN_CONFLICT: [&str; 2] = ["設定", "チェック"];
+const IGNORE_WORD_WHEN_CONFLICT: [&str; 7] = [
+    "設定",
+    "チェック",
+    "アンインスト",
+    "削除",
+    "ファイル",
+    "ください",
+    "マニュアル",
+];
 
 impl<R: ExplorersExt> FileUseCase<R> {
     pub async fn concurency_get_file_paths(
@@ -55,6 +63,7 @@ impl<R: ExplorersExt> FileUseCase<R> {
         files: Vec<String>,
         window: Arc<tauri::window::Window>,
     ) -> anyhow::Result<HashMap<ErogamescapeID, FilePathString>> {
+        println!("{:#?}", files);
         let get_game_id_tasks = files.into_iter().map(|path| {
             let all = normalized_all_games.clone();
             let w = Arc::clone(&window);
@@ -95,8 +104,8 @@ impl<R: ExplorersExt> FileUseCase<R> {
                         id_path_map.insert(pair.0.id, pair.1);
                     } else if !not_must_update {
                         let before_distance = get_comparable_distance(&before, &pair.0.gamename);
-                        let distance = get_comparable_distance(&before, &pair.0.gamename);
-                        if before_distance < distance {
+                        let after_distance = get_comparable_distance(&pair.1, &pair.0.gamename);
+                        if before_distance < after_distance {
                             id_path_map.insert(pair.0.id, pair.1);
                         }
                     }

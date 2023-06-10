@@ -106,3 +106,7 @@ export const commandGetAllElements = async () => {
 export const commandUpdateElementLike = async (id: number, isLike: boolean) => {
   return await invoke<void>("update_element_like", { id, isLike });
 };
+
+export const commandOpenFolder = async (path: string) => {
+  return await invoke<void>("open_folder", { path });
+};

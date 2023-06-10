@@ -151,6 +151,8 @@
                   label=""
                   placeholder="C:\Program Files (x86)"
                   path={path.path}
+                  directory
+                  withFilter={false}
                   on:update={(e) => updatePath(i, e.detail.value)}
                 />
               </div>

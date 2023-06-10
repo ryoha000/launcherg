@@ -22,7 +22,7 @@
     <img src={Logo} alt="launcherg logo" class="h-12" />
     <div class="text-(text-tertiary h3) font-bold">Hgame laucher</div>
   </div>
-  {#if $sidebarCollectionElements.length !== 0 && isOpenGettingStarted}
+  {#if $sidebarCollectionElements.length === 0 && isOpenGettingStarted}
     <div
       class="space-y-2 p-4 border-(border-primary solid ~) rounded max-w-120"
     >

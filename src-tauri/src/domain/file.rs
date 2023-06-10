@@ -4,10 +4,10 @@ pub struct LnkMetadata {
     pub icon: String,
 }
 
-use std::{fs, io::Write, path::Path, time::SystemTime};
+use std::{fs, io::Write, path::Path};
 
 use anyhow::Ok;
-use chrono::{DateTime, Local, TimeZone};
+use chrono::{DateTime, Local};
 use serde::{Deserialize, Serialize};
 use tauri::{
     api::process::{Command, CommandEvent},
@@ -343,6 +343,17 @@ pub fn get_play_history_path(collection_element_id: &Id<CollectionElement>) -> S
         .to_string()
 }
 
+// const TEMP_SCRIPTS_ROOT_DIR: &str = "temp-scripts";
+// pub fn get_temp_script_dir_path() -> String {
+//     let dir = Path::new(&get_save_root_abs_dir()).join(TEMP_SCRIPTS_ROOT_DIR);
+//     fs::create_dir_all(dir).unwrap();
+//     Path::new(&get_save_root_abs_dir())
+//         .join(PLAY_HISTORIES_ROOT_DIR)
+//         .join(format!("{}.jsonl", collection_element_id.value))
+//         .to_string_lossy()
+//         .to_string()
+// }
+
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct PlayHistory {
@@ -355,30 +366,45 @@ pub fn start_process(
     path: &str,
     play_history_path: &str,
 ) -> anyhow::Result<()> {
-    let verb = match is_run_as_admin {
-        true => "-Verb RunAs",
-        false => "",
-    };
+    let path = path.to_string();
+    let play_history_path = play_history_path.to_string();
+    std::thread::spawn(move || {
+        let start = std::time::Instant::now();
+        let start_date = Local::now().format("%Y/%m/%d %H:%M:%S").to_string();
+        let mut child = match is_run_as_admin {
+            true => std::process::Command::new("powershell")
+                .args(&[
+                    "-Command",
+                    &format!(r#"Start-Process "{}" -Verb RunAs"#, path),
+                ])
+                .spawn()
+                .unwrap(),
+            false => std::process::Command::new(&path).spawn().unwrap(),
+        };
+        child.wait().unwrap();
 
-    let script = format!(
-        r#"
-    $startDate = Get-Date -Format "yyyy/MM/dd HH:mm:ss"
-    $executionTime = Measure-Command {{ Start-Process "{}" {} -Wait }}
-    $totalMinutes = $executionTime.TotalMinutes
-    $jsonObject = New-Object PSObject -Property @{{
-        minutes = $totalMinutes
-        startDate = $startDate
-    }}
-    $json = $jsonObject | ConvertTo-Json -Compress
-    Add-Content -Path "{}" -Value $json
-    "#,
-        path, verb, play_history_path
-    );
+        let duration = start.elapsed();
+        let minutes = duration.as_secs_f64() / 60.0;
 
-    std::process::Command::new("powershell.exe")
-        .arg("-Command")
-        .arg(&script)
-        .spawn()?;
+        let history = PlayHistory {
+            minutes: minutes as f32,
+            start_date,
+        };
+
+        // JSONにシリアライズ
+        let serialized = serde_json::to_string(&history).unwrap();
+
+        // ファイルに追記
+        let mut file = std::fs::OpenOptions::new()
+            .write(true)
+            .append(true)
+            .open(play_history_path)
+            .unwrap();
+
+        if let Err(e) = writeln!(file, "{}", serialized) {
+            eprintln!("Couldn't write to file: {}", e);
+        }
+    });
 
     Ok(())
 }
