@@ -30,7 +30,6 @@
     <Button
       text="Add"
       leftIcon="i-material-symbols-computer-outline-rounded"
-      variant="success"
       appendClass="ml-auto"
       slot="button"
     />
