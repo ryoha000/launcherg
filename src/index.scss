@@ -60,6 +60,12 @@ a:hover {
   }
 }
 
+.hide-scrollbar {
+  .simplebar-horizontal {
+    height: 0 !important;
+  }
+}
+
 #app {
   .EasyMDEContainer {
     display: flex;

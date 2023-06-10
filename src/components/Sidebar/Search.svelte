@@ -1,5 +1,6 @@
 <script lang="ts">
   import SearchAttribute from "@/components/Sidebar/SearchAttribute.svelte";
+  import SearchAttrributeControl from "@/components/Sidebar/SearchAttrributeControl.svelte";
   import SearchInput from "@/components/Sidebar/SearchInput.svelte";
   import SortPopover from "@/components/Sidebar/SortPopover.svelte";
   import {
@@ -10,7 +11,7 @@
   import APopover from "@/components/UI/APopover.svelte";
   import ButtonBase from "@/components/UI/ButtonBase.svelte";
   import ScrollableHorizontal from "@/components/UI/ScrollableHorizontal.svelte";
-  import { createEventDispatcher } from "svelte";
+  import { createEventDispatcher, type SvelteComponent } from "svelte";
 
   export let query: string;
   export let order: SortOrder;
@@ -19,6 +20,22 @@
   const dispatcher = createEventDispatcher<{
     toggleAttributeEnabled: { key: AttributeKey };
   }>();
+
+  let isShowBack = false;
+  let isShowForward = true;
+  const onScroll = (e: Event) => {
+    const element = e.target as HTMLElement;
+    const rect = element.getBoundingClientRect();
+    const width = element.scrollWidth;
+
+    const left = element.scrollLeft;
+    const right = width - rect.width - left;
+
+    isShowBack = left > 0;
+    isShowForward = right > 0;
+  };
+
+  let scrollable: SvelteComponent;
 </script>
 
 <div class="space-y-1 w-full">
@@ -47,15 +64,31 @@
       <SortPopover bind:value={order} on:close={() => close(null)} />
     </APopover>
   </div>
-  <ScrollableHorizontal>
-    <div class="flex items-center gap-2 pb-1">
-      {#each attributes as attribute (attribute.key)}
-        <SearchAttribute
-          {attribute}
-          on:click={() =>
-            dispatcher("toggleAttributeEnabled", { key: attribute.key })}
-        />
-      {/each}
-    </div>
-  </ScrollableHorizontal>
+  <div class="relative hide-scrollbar">
+    <ScrollableHorizontal
+      on:scroll={(e) => onScroll(e.detail.event)}
+      bind:this={scrollable}
+    >
+      <div class="flex items-center gap-2 pb-1">
+        {#each attributes as attribute (attribute.key)}
+          <SearchAttribute
+            {attribute}
+            on:click={() =>
+              dispatcher("toggleAttributeEnabled", { key: attribute.key })}
+          />
+        {/each}
+      </div>
+    </ScrollableHorizontal>
+    <SearchAttrributeControl
+      appendClass="left-0"
+      back
+      show={isShowBack}
+      on:click={() => scrollable.scrollBy({ left: -100, behavior: "smooth" })}
+    />
+    <SearchAttrributeControl
+      appendClass="right-0"
+      show={isShowForward}
+      on:click={() => scrollable.scrollBy({ left: 100, behavior: "smooth" })}
+    />
+  </div>
 </div>
