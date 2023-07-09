@@ -1,6 +1,6 @@
 <script lang="ts">
   import { commandGetCollectionElement } from "@/lib/command";
-  import Logo from "/logo.png";
+  import Icon from "/icon.png";
   import { link } from "svelte-spa-router";
   import LinkText from "@/components/UI/LinkText.svelte";
   import { sidebarCollectionElements } from "@/store/sidebarCollectionElements";
@@ -19,8 +19,11 @@
 
 <div class="p-8 space-y-8">
   <div>
-    <img src={Logo} alt="launcherg logo" class="h-12" />
-    <div class="text-(text-tertiary h3) font-bold">Hgame laucher</div>
+    <div class="flex items-center gap-2 w-full">
+      <img src={Icon} alt="launcherg icon" class="h-8" />
+      <div class="font-logo text-(h2 text-primary)">Launcherg</div>
+    </div>
+    <div class="text-(text-tertiary h4) font-bold">エロゲランチャー</div>
   </div>
   {#if $sidebarCollectionElements.length === 0 && isOpenGettingStarted}
     <div

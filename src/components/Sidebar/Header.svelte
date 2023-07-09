@@ -1,5 +1,4 @@
 <script lang="ts">
-  import Logo from "/logo.png";
   import Icon from "/icon.png";
   import { link } from "svelte-spa-router";
   import { showSidebar } from "@/store/showSidebar";
@@ -10,7 +9,7 @@
   <a href="/" use:link>
     <div class="flex items-center gap-2 w-full">
       <img src={Icon} alt="launcherg icon" class="h-8" />
-      <img src={Logo} alt="launcherg logo" class="h-7" />
+      <div class="font-logo text-(h3 text-primary)">Launcherg</div>
     </div>
   </a>
   <ButtonBase

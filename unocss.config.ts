@@ -20,6 +20,12 @@ export default defineConfig({
             weights: ["400", "500", "700"],
           },
         ],
+        logo: [
+          {
+            name: "Space Mono",
+            weights: ["400"],
+          },
+        ],
       },
     }),
   ],
