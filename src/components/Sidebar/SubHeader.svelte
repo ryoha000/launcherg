@@ -19,6 +19,7 @@
     await commandUpsertCollectionElement(arg.id, arg.gamename, arg.path);
     await registerCollectionElementDetails();
     await sidebarCollectionElements.refetch();
+    isOpenImportManually = false;
   };
 </script>
 
