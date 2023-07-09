@@ -2,9 +2,8 @@
   import type { CollectionElementsWithLabel } from "@/lib/types";
   import { onMount } from "svelte";
   import CollectionElements from "@/components/Sidebar/CollectionElements.svelte";
-  import { writable } from "svelte/store";
   import { sidebarCollectionElements } from "@/store/sidebarCollectionElements";
-  import { createWritable } from "@/lib/utils";
+  import { createWritable, localStorageWritable } from "@/lib/utils";
   import { type SortOrder } from "@/components/Sidebar/sort";
   import { type Option, collectionElementsToOptions } from "@/lib/trieFilter";
   import { useFilter } from "@/lib/filter";
@@ -29,7 +28,7 @@
   );
 
   const { query, filtered } = useFilter(elementOptions, getElementOptions);
-  let order = writable<SortOrder>("gamename-asc");
+  let order = localStorageWritable<SortOrder>("sort-order", "gamename-asc");
   const { attributes, toggleEnable } = searchAttributes();
 
   let displayCollectionElements: CollectionElementsWithLabel[] = [];
