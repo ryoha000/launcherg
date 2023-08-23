@@ -4,7 +4,7 @@ pub struct LnkMetadata {
     pub icon: String,
 }
 
-use std::{fs, io::Write, path::Path};
+use std::{collections::HashMap, fs, io::Write, path::Path};
 
 use anyhow::Ok;
 use chrono::{DateTime, Local};
@@ -145,8 +145,8 @@ pub fn get_file_paths_by_exts(
     Ok(link_file_paths)
 }
 
-pub fn get_lnk_metadatas(lnk_file_paths: Vec<String>) -> anyhow::Result<Vec<LnkMetadata>> {
-    let mut metadatas = vec![];
+pub fn get_lnk_metadatas(lnk_file_paths: Vec<&str>) -> anyhow::Result<HashMap<&str, LnkMetadata>> {
+    let mut metadatas = HashMap::new();
 
     unsafe {
         CoInitialize(None)?;
@@ -155,12 +155,12 @@ pub fn get_lnk_metadatas(lnk_file_paths: Vec<String>) -> anyhow::Result<Vec<LnkM
         let target_path_slice =
             std::slice::from_raw_parts_mut(target_path_vec.as_mut_ptr(), target_path_vec.len());
 
-        for file_path in lnk_file_paths.iter() {
+        for file_path in lnk_file_paths {
             let shell_link: IShellLinkW = CoCreateInstance(&ShellLink, None, CLSCTX_INPROC_SERVER)?;
 
             let persist_file: IPersistFile = ComInterface::cast(&shell_link)?;
             persist_file.Load(
-                PCWSTR::from_raw(file_path.as_str().to_wide_null_terminated().as_ptr()),
+                PCWSTR::from_raw(file_path.to_wide_null_terminated().as_ptr()),
                 STGM_READ,
             )?;
 
@@ -173,7 +173,7 @@ pub fn get_lnk_metadatas(lnk_file_paths: Vec<String>) -> anyhow::Result<Vec<LnkM
                 .to_string()?
                 .clone();
 
-            metadatas.push(LnkMetadata { path, icon });
+            metadatas.insert(file_path, LnkMetadata { path, icon });
         }
 
         CoUninitialize();

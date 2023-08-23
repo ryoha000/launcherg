@@ -29,12 +29,12 @@ pub async fn create_elements_in_pc(
     use_cache: bool,
 ) -> anyhow::Result<Vec<String>, CommandError> {
     let window = Arc::new(window);
-    let emit_progress = |message| {
+    let emit_progress = Arc::new(|message| {
         if let Err(e) = window.emit("progress", ProgressPayload::new(message)) {
             return Err(anyhow::anyhow!(e.to_string()));
         }
         Ok(())
-    };
+    });
     let cloned_window = Arc::clone(&window);
     let process_each_game_file_callback = Arc::new(Mutex::new(move || {
         if let Err(e) = cloned_window.emit("progresslive", ProgressLivePayload::new(None)) {

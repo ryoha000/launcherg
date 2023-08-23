@@ -5,7 +5,6 @@ use std::{collections::HashMap, sync::Arc, time::Instant};
 use derive_new::new;
 
 use crate::domain::file::{get_file_created_at_sync, PlayHistory};
-use crate::interface::models::collection::ProgressLivePayload;
 use crate::{
     domain::{
         collection::{CollectionElement, NewCollectionElement},
@@ -40,6 +39,20 @@ const IGNORE_WORD_WHEN_CONFLICT: [&str; 7] = [
     "ください",
     "マニュアル",
 ];
+
+fn emit_progress_with_time(
+    f: Arc<impl Fn(String) -> anyhow::Result<()>>,
+    start: Instant,
+    base_announce: &str,
+) -> anyhow::Result<()> {
+    let end = start.elapsed();
+    f(format!(
+        "{}累計{}.{:03}秒経過しました.",
+        base_announce,
+        end.as_secs(),
+        end.subsec_nanos() / 1_000_000
+    ))
+}
 
 impl<R: ExplorersExt> FileUseCase<R> {
     pub async fn concurency_get_file_paths(
@@ -130,7 +143,7 @@ impl<R: ExplorersExt> FileUseCase<R> {
     >(
         &self,
         files: Vec<String>,
-        emit_progress: impl Fn(String) -> anyhow::Result<()>,
+        emit_progress: Arc<impl Fn(String) -> anyhow::Result<()>>,
         process_each_game_file_callback: Arc<Mutex<F>>,
     ) -> anyhow::Result<Vec<NewCollectionElement>> {
         let start = Instant::now();
@@ -151,12 +164,11 @@ impl<R: ExplorersExt> FileUseCase<R> {
             .map(|v| (v.id, v.gamename))
             .collect();
 
-        let end = start.elapsed();
-        emit_progress(format!(
-            "突合させるための全てのゲームの取得が完了しました。累計{}.{:03}秒経過しました.",
-            end.as_secs(),
-            end.subsec_nanos() / 1_000_000
-        ))?;
+        emit_progress_with_time(
+            emit_progress.clone(),
+            start,
+            "突合させるための全てのゲームの取得が完了しました。",
+        )?;
 
         let (lnk_id_path_vec, exe_id_path_vec): (Vec<(i32, String)>, Vec<(i32, String)>) = self
             .concurency_get_path_game_map(
@@ -168,48 +180,50 @@ impl<R: ExplorersExt> FileUseCase<R> {
             .into_iter()
             .partition(|(_id, path)| path.to_lowercase().ends_with("lnk"));
 
-        let end = start.elapsed();
-        emit_progress(format!(
-            ".lnk, .exe ファイルのゲームとの紐づけが完了しました。累計{}.{:03}秒経過しました.",
-            end.as_secs(),
-            end.subsec_nanos() / 1_000_000
-        ))?;
+        emit_progress_with_time(
+            emit_progress.clone(),
+            start,
+            ".lnk, .exe ファイルのゲームとの紐づけが完了しました。",
+        )?;
 
-        let (lnk_id_vec, lnk_path_vec): (Vec<ErogamescapeID>, Vec<String>) =
-            lnk_id_path_vec.into_iter().unzip();
-
+        let lnk_path_vec: Vec<&str> = lnk_id_path_vec
+            .iter()
+            .map(|(_, lnk_path)| lnk_path.as_str())
+            .collect();
         let lnk_metadatas = get_lnk_metadatas(lnk_path_vec)?;
-        if lnk_id_vec.len() != lnk_metadatas.len() {
-            return Err(anyhow::anyhow!(
-                "lnk ファイルの数と lnk のターゲットファイルの数が一致しません",
-            ));
+        if lnk_id_path_vec.len() != lnk_metadatas.len() {
+            emit_progress(format!(
+                "lnk ファイルの数と lnk のターゲットファイルの数が一致しません。リンクファイル数: {}, ターゲットファイル数: {}", lnk_id_path_vec.len(), lnk_metadatas.len()
+            ))?;
         }
 
         let mut save_icon_tasks = vec![];
-        for icon_src_path in exe_id_path_vec.iter() {
-            let task = save_icon_to_png(&icon_src_path.1, &Id::new(icon_src_path.0))?;
+        for (id, icon_src_path) in exe_id_path_vec.iter() {
+            let task = save_icon_to_png(&icon_src_path, &Id::new(*id))?;
             save_icon_tasks.push(task);
         }
-        for icon_src_path in lnk_id_vec.iter().zip(lnk_metadatas.iter().map(|v| &v.path)) {
-            let task = save_icon_to_png(icon_src_path.1, &Id::new(*icon_src_path.0))?;
-            save_icon_tasks.push(task);
+        for (id, lnk_path) in lnk_id_path_vec.iter() {
+            if let Some(metadata) = lnk_metadatas.get(lnk_path.as_str()) {
+                let task = save_icon_to_png(&metadata.icon, &Id::new(*id))?;
+                save_icon_tasks.push(task);
+            }
         }
         futures::future::try_join_all(save_icon_tasks)
             .await?
             .into_iter()
             .collect::<anyhow::Result<()>>()?;
 
-        let end = start.elapsed();
-        emit_progress(format!(
-            "icon の保存が完了しました。累計{}.{:03}秒経過しました.",
-            end.as_secs(),
-            end.subsec_nanos() / 1_000_000
-        ))?;
+        emit_progress_with_time(emit_progress.clone(), start, "icon の保存が完了しました。")?;
 
-        let collection_elements: Vec<NewCollectionElement> = lnk_id_vec
-            .into_iter()
-            .zip(lnk_metadatas.into_iter().map(|v| v.path))
-            .chain(exe_id_path_vec)
+        let collection_elements: Vec<NewCollectionElement> = lnk_id_path_vec
+            .iter()
+            .filter_map(|(id, lnk_path)| {
+                if let Some(metadata) = lnk_metadatas.get(lnk_path.as_str()) {
+                    return Some((*id, metadata.path.clone()));
+                }
+                None
+            })
+            .chain(exe_id_path_vec.into_iter().map(|(id, path)| (id, path)))
             .filter_map(|(id, path)| {
                 if let Some(gamename) = all_erogamescape_game_map.get(&id) {
                     let install_at = get_file_created_at_sync(&path);
@@ -232,9 +246,6 @@ impl<R: ExplorersExt> FileUseCase<R> {
             .file_explorer()
             .save_base64_image(&path, base64_image)?;
         Ok(path)
-    }
-    pub async fn get_memo_path(&self, id: i32) -> anyhow::Result<String> {
-        Ok(self.explorers.file_explorer().get_md_path(id)?)
     }
     pub fn start_game(
         &self,
