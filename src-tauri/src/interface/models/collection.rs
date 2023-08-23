@@ -33,6 +33,7 @@ pub struct CollectionElement {
     pub install_at: Option<String>,
     pub last_play_at: Option<String>,
     pub like_at: Option<String>,
+    pub registered_at: String,
 }
 
 impl From<domain::collection::CollectionElement> for CollectionElement {
@@ -53,6 +54,7 @@ impl From<domain::collection::CollectionElement> for CollectionElement {
                 .and_then(|v| Some(v.format("%Y-%m-%d").to_string())),
             st.like_at
                 .and_then(|v| Some(v.format("%Y-%m-%d").to_string())),
+            st.created_at.format("%Y-%m-%d").to_string(),
         )
     }
 }

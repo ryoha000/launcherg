@@ -56,6 +56,7 @@ export type CollectionElement = {
   installAt: string | null; // yyyy-MM-dd
   lastPlayAt: string | null; // yyyy-MM-dd
   likeAt: string | null; // yyyy-MM-dd
+  registeredAt: string; // yyyy-MM-dd
   path: string;
   icon: string;
 };

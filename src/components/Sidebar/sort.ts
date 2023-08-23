@@ -7,16 +7,18 @@ export type SortOrder =
   `${(typeof SORT_ORDER_TYPES)[keyof typeof SORT_ORDER_TYPES]}-${(typeof SORT_ORDER_BY)[keyof typeof SORT_ORDER_BY]}`;
 
 export const SORT_LABELS: { [key in SortOrder]: string } = {
-  "gamename-asc": "タイトルで並び替え(昇順)",
-  "gamename-desc": "タイトルで並び替え(降順)",
-  "sellyear-asc": "発売年で並び替え(昇順)",
-  "sellyear-desc": "発売年で並び替え",
-  "brandname-asc": "ブランド名で並び替え(昇順)",
-  "brandname-desc": "ブランド名で並び替え(降順)",
-  "install-asc": "インストールした年で並び替え(昇順)",
-  "install-desc": "インストールした年で並び替え",
-  "last_play-asc": "最後に起動した年で並び替え(昇順)",
-  "last_play-desc": "最後に起動した年で並び替え",
+  "gamename-asc": "タイトル(昇順)",
+  "gamename-desc": "タイトル(降順)",
+  "sellyear-asc": "発売年(昇順)",
+  "sellyear-desc": "発売年",
+  "brandname-asc": "ブランド名(昇順)",
+  "brandname-desc": "ブランド名(降順)",
+  "install-asc": "インストールした年(昇順)",
+  "install-desc": "インストールした年",
+  "last_play-asc": "最後に起動した年(昇順)",
+  "last_play-desc": "最後に起動した年",
+  "registered-asc": "登録した年(昇順)",
+  "registered-desc": "登録した年",
 } as const;
 
 export const SORT_ORDER_TYPES = {
@@ -25,6 +27,7 @@ export const SORT_ORDER_TYPES = {
   BRANDNAME: "brandname",
   INSTALL: "install",
   LAST_PLAY: "last_play",
+  REGISTERED: "registered",
 } as const;
 export const SORT_ORDER_BY = {
   ASC: "asc",
@@ -42,6 +45,7 @@ export const sort = (
   const isBrandname = order.includes(SORT_ORDER_TYPES.BRANDNAME);
   const isInstall = order.includes(SORT_ORDER_TYPES.INSTALL);
   const isLastPlay = order.includes(SORT_ORDER_TYPES.LAST_PLAY);
+  const isRegistered = order.includes(SORT_ORDER_TYPES.REGISTERED);
   const isAsc = order.includes(SORT_ORDER_BY.ASC);
   const multiplyer = isAsc ? 1 : -1;
 
@@ -59,6 +63,9 @@ export const sort = (
   }
   if (isLastPlay) {
     return sortByLastPlay(filteredElements, multiplyer);
+  }
+  if (isRegistered) {
+    return sortByRegistered(filteredElements, multiplyer);
   }
   return [
     {
@@ -158,7 +165,7 @@ const createCompareDay = (multiplyer: number) => (a: string, b: string) => {
 };
 
 const createSortByNullableDate =
-  (key: "installAt" | "lastPlayAt") =>
+  (key: "installAt" | "lastPlayAt" | "registeredAt") =>
   (elements: CollectionElement[], multiplyer: number) =>
     elements
       .reduce((acc, cur) => {
@@ -188,3 +195,4 @@ const createSortByNullableDate =
 
 const sortByInstall = createSortByNullableDate("installAt");
 const sortByLastPlay = createSortByNullableDate("lastPlayAt");
+const sortByRegistered = createSortByNullableDate("registeredAt");

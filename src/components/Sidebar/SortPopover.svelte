@@ -12,6 +12,7 @@
     "sellyear-desc",
     "install-desc",
     "last_play-desc",
+    "registered-desc",
     "brandname-asc",
     "brandname-desc",
   ];
