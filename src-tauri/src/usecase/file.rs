@@ -4,7 +4,7 @@ use std::{collections::HashMap, sync::Arc, time::Instant};
 
 use derive_new::new;
 
-use crate::domain::file::{get_file_created_at_sync, PlayHistory};
+use crate::domain::file::{get_file_created_at_sync, get_game_candidates_by_exe_path, PlayHistory};
 use crate::{
     domain::{
         collection::{CollectionElement, NewCollectionElement},
@@ -96,7 +96,7 @@ impl<R: ExplorersExt> FileUseCase<R> {
             })
         });
 
-        let id_path_pairs: Vec<(ErogamescapeIDNamePair, String)> =
+        let id_path_pairs: Vec<(ErogamescapeIDNamePair, FilePathString)> =
             futures::future::try_join_all(get_game_id_tasks)
                 .await?
                 .into_iter()
@@ -125,6 +125,7 @@ impl<R: ExplorersExt> FileUseCase<R> {
                     } else if !not_must_update {
                         let before_distance = get_comparable_distance(&before, &pair.0.gamename);
                         let after_distance = get_comparable_distance(&pair.1, &pair.0.gamename);
+                        println!("conflicted. gamename: {}, before: {}, before_distance: {}, after: {}, after_distance: {}", pair.0.gamename, before, before_distance, pair.1, after_distance);
                         if before_distance < after_distance {
                             id_path_map.insert(pair.0.id, pair.1);
                         }
@@ -136,6 +137,31 @@ impl<R: ExplorersExt> FileUseCase<R> {
             }
         }
         Ok(id_path_map)
+    }
+    pub async fn concurency_get_game_candidates_map(
+        &self,
+        normalized_all_games: Arc<Vec<ErogamescapeIDNamePair>>,
+        files: Vec<String>,
+    ) -> anyhow::Result<HashMap<String, Vec<ErogamescapeIDNamePair>>> {
+        let get_game_id_tasks = files.into_iter().map(|path| {
+            let all = normalized_all_games.clone();
+            tauri::async_runtime::spawn(async move {
+                match get_game_candidates_by_exe_path(&all, &path, 0.5, 5) {
+                    Ok(pairs) => {
+                        return Ok((path, pairs));
+                    }
+                    Err(e) => {
+                        return Err(anyhow::anyhow!(e.to_string()));
+                    }
+                }
+            })
+        });
+
+        Ok(futures::future::try_join_all(get_game_id_tasks)
+            .await?
+            .into_iter()
+            .filter_map(|v| v.ok())
+            .collect())
     }
     pub async fn filter_files_to_collection_elements<
         F: Fn() -> anyhow::Result<()> + Send + 'static,

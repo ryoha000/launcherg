@@ -9,6 +9,7 @@ use super::{
     models::collection::CollectionElement,
     module::{Modules, ModulesExt},
 };
+use crate::domain::all_game_cache::AllGameCacheOne;
 use crate::interface::models::collection::ProgressPayload;
 use crate::{
     domain::{
@@ -324,5 +325,32 @@ pub fn open_folder(path: String) -> anyhow::Result<(), CommandError> {
         .output()
         .map_err(|_| err_msg)?;
 
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn get_all_game_cache_last_updated(
+    modules: State<'_, Arc<Modules>>,
+) -> anyhow::Result<(i32, String), CommandError> {
+    let last_updated = modules
+        .all_game_cache_use_case()
+        .get_cache_last_updated()
+        .await?;
+    Ok((last_updated.0, last_updated.1.to_rfc3339()))
+}
+
+#[tauri::command]
+pub async fn update_all_game_cache(
+    modules: State<'_, Arc<Modules>>,
+    value: Vec<(i32, String)>,
+) -> anyhow::Result<(), CommandError> {
+    let mut cache = vec![];
+    for (id, gamename) in value {
+        cache.push(AllGameCacheOne { id, gamename })
+    }
+    modules
+        .all_game_cache_use_case()
+        .update_all_game_cache(cache)
+        .await?;
     Ok(())
 }

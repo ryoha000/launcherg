@@ -91,6 +91,15 @@ CREATE TABLE IF NOT EXISTS collection_element_maps (
         "
     .to_string();
 
+    let all_game_caches = "
+    CREATE TABLE IF NOT EXISTS all_game_caches (
+        id INTEGER PRIMARY KEY,
+        gamename TEXT NOT NULL,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+        "
+    .to_string();
+
     let collection_element_details = "
     CREATE TABLE IF NOT EXISTS collection_element_details (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -119,5 +128,6 @@ CREATE TABLE IF NOT EXISTS collection_element_maps (
         explored_caches,
         collection_element_details,
         insert_onepiece_collection,
+        all_game_caches,
     ];
 }
