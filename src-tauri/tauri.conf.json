@@ -23,7 +23,7 @@
       },
       "http": {
         "request": true,
-        "scope": ["https://erogamescape.dyndns.org/~ap2/ero/toukei_kaiseki/*", "https://seiya-saiga.com/game/*"]
+        "scope": ["https://erogamescape.dyndns.org/~ap2/ero/toukei_kaiseki/*", "https://seiya-saiga.com/game/*", "https://raw.githubusercontent.com/ryoha000/launcherg/*"]
       },
       "clipboard": {
         "all": false,

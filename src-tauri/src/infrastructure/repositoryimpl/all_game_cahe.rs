@@ -36,16 +36,19 @@ impl AllGameCacheRepository for RepositoryImpl<AllGameCache> {
         if cache.len() == 0 {
             return Ok(());
         }
-        // ref: https://docs.rs/sqlx-core/latest/sqlx_core/query_builder/struct.QueryBuilder.html#method.push_values
-        let mut query_builder = QueryBuilder::new("INSERT INTO all_game_caches (id, gamename) ");
-        query_builder.push_values(cache, |mut b, new| {
-            b.push_bind(new.id);
-            b.push_bind(new.gamename);
-        });
+        for c in cache.chunks(1000) {
+            // ref: https://docs.rs/sqlx-core/latest/sqlx_core/query_builder/struct.QueryBuilder.html#method.push_values
+            let mut query_builder =
+                QueryBuilder::new("INSERT INTO all_game_caches (id, gamename) ");
+            query_builder.push_values(c, |mut b, new| {
+                b.push_bind(new.id);
+                b.push_bind(new.gamename.clone());
+            });
 
-        let pool = self.pool.0.clone();
-        let query = query_builder.build();
-        query.execute(&*pool).await?;
+            let pool = self.pool.0.clone();
+            let query = query_builder.build();
+            query.execute(&*pool).await?;
+        }
         Ok(())
     }
 }

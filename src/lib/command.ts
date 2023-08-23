@@ -110,3 +110,17 @@ export const commandUpdateElementLike = async (id: number, isLike: boolean) => {
 export const commandOpenFolder = async (path: string) => {
   return await invoke<void>("open_folder", { path });
 };
+
+export const commandGetAllGameCacheLastUpdated = async () => {
+  const [id, dateString] = await invoke<[number, string]>(
+    "get_all_game_cache_last_updated"
+  );
+  console.log({ id, dateString });
+  return { id, date: new Date(dateString) };
+};
+
+export const commandUpdateAllGameCache = async (value: [number, string][]) => {
+  await invoke("update_all_game_cache", {
+    value,
+  });
+};
