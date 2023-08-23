@@ -77,7 +77,6 @@ impl<R: ExplorersExt> FileUseCase<R> {
         files: Vec<String>,
         callback: Arc<Mutex<F>>,
     ) -> anyhow::Result<HashMap<ErogamescapeID, FilePathString>> {
-        println!("{:#?}", files);
         let get_game_id_tasks = files.into_iter().map(|path| {
             let all = normalized_all_games.clone();
             let mutex_cb = Arc::clone(&callback);

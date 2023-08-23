@@ -6,7 +6,6 @@ pub struct LnkMetadata {
 
 use std::{collections::HashMap, fs, io::Write, path::Path};
 
-use anyhow::Ok;
 use chrono::{DateTime, Local};
 use serde::{Deserialize, Serialize};
 use tauri::{
@@ -185,6 +184,20 @@ pub fn filter_game_path(
     id_name_pairs: &Vec<ErogamescapeIDNamePair>,
     filepath: String,
 ) -> anyhow::Result<Option<(ErogamescapeIDNamePair, String)>> {
+    let candidates: Vec<ErogamescapeIDNamePair> =
+        get_game_candidates_by_exe_path(id_name_pairs, &filepath, 0.8, 1)?;
+    if let Some(candidate) = candidates.get(0) {
+        return Ok(Some((candidate.clone(), filepath)));
+    }
+    return Ok(None);
+}
+
+pub fn get_game_candidates_by_exe_path(
+    id_name_pairs: &Vec<ErogamescapeIDNamePair>,
+    filepath: &str,
+    threshould: f32,
+    candidate_limit: usize,
+) -> anyhow::Result<Vec<ErogamescapeIDNamePair>> {
     let parent = Path::new(&filepath)
         .parent()
         .and_then(|v| {
@@ -193,19 +206,17 @@ pub fn filter_game_path(
         })
         .ok_or(anyhow::anyhow!("can not get parent"))?;
 
-    let filename = get_file_name_without_extension(&filepath)
-        .ok_or(anyhow::anyhow!("can not get filename"))?;
+    let filename: String =
+        get_file_name_without_extension(filepath).ok_or(anyhow::anyhow!("can not get filename"))?;
     let filename = normalize(&filename);
     if not_game(&filename) {
-        return Ok(None);
+        return Ok(vec![]);
     }
     let filename = remove_word(&filename);
 
     let is_skip_filename_check = filename == "game" || filename == "start";
 
-    // 編集距離は最小でも0.8欲しい
-    let mut max_distance_value = 0.8;
-    let mut max_distance_pair = None;
+    let mut distance_pairs = vec![];
     for pair in id_name_pairs.iter() {
         let mut is_ignore = false;
         for ignore_id in IGNORE_GAME_ID {
@@ -223,22 +234,31 @@ pub fn filter_game_path(
         }
 
         val = val.max(get_comparable_distance(&parent, &pair.gamename));
-        if val > max_distance_value {
-            max_distance_value = val;
-            max_distance_pair = Some(pair.clone());
+        if val > threshould {
+            distance_pairs.push((pair.clone(), val));
         }
     }
 
-    if let Some(pair) = max_distance_pair {
-        return Ok(Some((pair, filepath)));
-    }
-
-    for pair in id_name_pairs.iter() {
-        if filename.len() > 5 && pair.gamename.contains(&filename) {
-            return Ok(Some((pair.clone(), filepath)));
+    if distance_pairs.len() == 0 {
+        for pair in id_name_pairs.iter() {
+            if filename.len() > 5 && pair.gamename.contains(&filename) {
+                distance_pairs.push((pair.clone(), 1.0));
+            }
+            if parent.len() > 5 && pair.gamename.contains(&parent) {
+                distance_pairs.push((pair.clone(), 1.0));
+            }
         }
     }
-    Ok(None)
+
+    distance_pairs.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap());
+
+    let mut res = vec![];
+    for (pair, _) in distance_pairs {
+        if res.len() > candidate_limit {
+            res.push(pair)
+        }
+    }
+    Ok(res)
 }
 
 const ICONS_ROOT_DIR: &str = "game-icons";
@@ -416,9 +436,4 @@ pub fn get_file_created_at_sync(path: &str) -> Option<DateTime<Local>> {
             .ok()
             .and_then(|time| Some(DateTime::from(time)))
     })
-}
-
-pub fn get_file_created_at(path: &str) -> JoinHandle<Option<DateTime<Local>>> {
-    let path = path.to_string();
-    tauri::async_runtime::spawn(async move { get_file_created_at_sync(&path) })
 }
