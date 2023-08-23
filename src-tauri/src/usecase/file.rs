@@ -4,12 +4,13 @@ use std::{collections::HashMap, sync::Arc, time::Instant};
 
 use derive_new::new;
 
+use crate::domain::all_game_cache::AllGameCache;
 use crate::domain::file::{get_file_created_at_sync, get_game_candidates_by_exe_path, PlayHistory};
 use crate::{
     domain::{
         collection::{CollectionElement, NewCollectionElement},
         distance::get_comparable_distance,
-        explorer::{file::FileExplorer, network::NetworkExplorer},
+        explorer::file::FileExplorer,
         file::{
             filter_game_path, get_file_paths_by_exts, get_lnk_metadatas, get_play_history_path,
             normalize, save_icon_to_png, start_process,
@@ -168,15 +169,14 @@ impl<R: ExplorersExt> FileUseCase<R> {
     >(
         &self,
         files: Vec<String>,
+        all_game_cache: AllGameCache,
         emit_progress: Arc<impl Fn(String) -> anyhow::Result<()>>,
         process_each_game_file_callback: Arc<Mutex<F>>,
     ) -> anyhow::Result<Vec<NewCollectionElement>> {
         let start = Instant::now();
 
-        let all_erogamescape_games_vec = self.explorers.network_explorer().get_all_games().await?;
-
         let normalized_all_games = Arc::new(
-            all_erogamescape_games_vec
+            all_game_cache
                 .iter()
                 .map(|pair| ErogamescapeIDNamePair {
                     id: pair.id,
@@ -184,16 +184,10 @@ impl<R: ExplorersExt> FileUseCase<R> {
                 })
                 .collect::<Vec<ErogamescapeIDNamePair>>(),
         );
-        let all_erogamescape_game_map: HashMap<i32, String> = all_erogamescape_games_vec
+        let all_erogamescape_game_map: HashMap<i32, String> = all_game_cache
             .into_iter()
             .map(|v| (v.id, v.gamename))
             .collect();
-
-        emit_progress_with_time(
-            emit_progress.clone(),
-            start,
-            "突合させるための全てのゲームの取得が完了しました。",
-        )?;
 
         let (lnk_id_path_vec, exe_id_path_vec): (Vec<(i32, String)>, Vec<(i32, String)>) = self
             .concurency_get_path_game_map(

@@ -67,10 +67,16 @@ pub async fn create_elements_in_pc(
         return Err(CommandError::Anyhow(anyhow::anyhow!(e.to_string())));
     }
 
+    let all_game_cache = modules
+        .all_game_cache_use_case()
+        .get_all_game_cache()
+        .await?;
+
     let new_elements = modules
         .file_use_case()
         .filter_files_to_collection_elements(
             explore_files.clone(),
+            all_game_cache,
             emit_progress,
             process_each_game_file_callback,
         )
