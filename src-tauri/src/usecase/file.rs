@@ -1,4 +1,5 @@
 use std::io::prelude::*;
+use std::sync::Mutex;
 use std::{collections::HashMap, sync::Arc, time::Instant};
 
 use derive_new::new;
@@ -57,22 +58,29 @@ impl<R: ExplorersExt> FileUseCase<R> {
             .flatten()
             .collect())
     }
-    pub async fn concurency_get_path_game_map(
+    pub async fn concurency_get_path_game_map<F: Fn() -> anyhow::Result<()> + Send + 'static>(
         &self,
         normalized_all_games: Arc<Vec<ErogamescapeIDNamePair>>,
         files: Vec<String>,
-        window: Arc<tauri::window::Window>,
+        callback: Arc<Mutex<F>>,
     ) -> anyhow::Result<HashMap<ErogamescapeID, FilePathString>> {
         println!("{:#?}", files);
         let get_game_id_tasks = files.into_iter().map(|path| {
             let all = normalized_all_games.clone();
-            let w = Arc::clone(&window);
+            let mutex_cb = Arc::clone(&callback);
             tauri::async_runtime::spawn(async move {
                 let res = filter_game_path(&all, path)?;
-                if let Err(e) = w.emit("progresslive", ProgressLivePayload::new(None)) {
-                    return Err(anyhow::anyhow!(e.to_string()));
-                };
-                Ok(res)
+                match mutex_cb.lock() {
+                    Ok(cb) => {
+                        if let Err(e) = cb() {
+                            return Err(e);
+                        };
+                        Ok(res)
+                    }
+                    Err(e) => {
+                        return Err(anyhow::anyhow!(e.to_string()));
+                    }
+                }
             })
         });
 
@@ -117,11 +125,13 @@ impl<R: ExplorersExt> FileUseCase<R> {
         }
         Ok(id_path_map)
     }
-    pub async fn filter_files_to_collection_elements(
+    pub async fn filter_files_to_collection_elements<
+        F: Fn() -> anyhow::Result<()> + Send + 'static,
+    >(
         &self,
         files: Vec<String>,
         emit_progress: impl Fn(String) -> anyhow::Result<()>,
-        window: Arc<tauri::window::Window>,
+        process_each_game_file_callback: Arc<Mutex<F>>,
     ) -> anyhow::Result<Vec<NewCollectionElement>> {
         let start = Instant::now();
 
@@ -149,7 +159,11 @@ impl<R: ExplorersExt> FileUseCase<R> {
         ))?;
 
         let (lnk_id_path_vec, exe_id_path_vec): (Vec<(i32, String)>, Vec<(i32, String)>) = self
-            .concurency_get_path_game_map(normalized_all_games, files, window)
+            .concurency_get_path_game_map(
+                normalized_all_games,
+                files,
+                process_each_game_file_callback,
+            )
             .await?
             .into_iter()
             .partition(|(_id, path)| path.to_lowercase().ends_with("lnk"));

@@ -1,4 +1,5 @@
 use std::sync::Arc;
+use std::sync::Mutex;
 use tauri::State;
 use tauri::Window;
 
@@ -34,6 +35,13 @@ pub async fn create_elements_in_pc(
         }
         Ok(())
     };
+    let cloned_window = Arc::clone(&window);
+    let process_each_game_file_callback = Arc::new(Mutex::new(move || {
+        if let Err(e) = cloned_window.emit("progresslive", ProgressLivePayload::new(None)) {
+            return Err(anyhow::anyhow!(e.to_string()));
+        }
+        Ok(())
+    }));
 
     let explored_caches = modules.explored_cache_use_case().get_cache().await?;
     let explore_files: Vec<String> = modules
@@ -60,7 +68,11 @@ pub async fn create_elements_in_pc(
 
     let new_elements = modules
         .file_use_case()
-        .filter_files_to_collection_elements(explore_files.clone(), emit_progress, window.clone())
+        .filter_files_to_collection_elements(
+            explore_files.clone(),
+            emit_progress,
+            process_each_game_file_callback,
+        )
         .await?;
 
     modules
