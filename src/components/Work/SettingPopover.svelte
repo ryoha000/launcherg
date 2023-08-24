@@ -21,6 +21,13 @@
     />
   </div>
   <OptionButton
+    text="ゲームのフォルダーを開く"
+    on:click={() => {
+      dispatcher("close");
+      dispatcher("selectOpen");
+    }}
+  />
+  <OptionButton
     text="違うゲームに変更する"
     on:click={() => {
       dispatcher("close");
@@ -32,13 +39,6 @@
     on:click={() => {
       dispatcher("close");
       dispatcher("selectDelete");
-    }}
-  />
-  <OptionButton
-    text="ゲームのフォルダーを開く"
-    on:click={() => {
-      dispatcher("close");
-      dispatcher("selectOpen");
     }}
   />
 </div>

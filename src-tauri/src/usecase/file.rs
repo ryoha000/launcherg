@@ -31,15 +31,24 @@ pub struct FileUseCase<R: ExplorersExt> {
 type FilePathString = String;
 type ErogamescapeID = i32;
 
-const IGNORE_WORD_WHEN_CONFLICT: [&str; 7] = [
+const IGNORE_WORD_WHEN_CONFLICT: [&str; 14] = [
     "設定",
     "チェック",
-    "アンインスト",
+    "インスト",
     "削除",
     "ファイル",
     "ください",
     "マニュアル",
+    "アップデート",
+    "システム",
+    "check",
+    "setting",
+    "config",
+    "update",
+    "inst",
 ];
+
+const SHOULD_UPDATE_WORD_WHEN_CONFLICT: [&str; 4] = ["adv", "64", "cmvs", "bgi"];
 
 fn emit_progress_with_time(
     f: Arc<impl Fn(String) -> anyhow::Result<()>>,
@@ -121,7 +130,17 @@ impl<R: ExplorersExt> FileUseCase<R> {
                             break;
                         }
                     }
-                    if must_update {
+                    for update_word in SHOULD_UPDATE_WORD_WHEN_CONFLICT {
+                        if before.contains(update_word) {
+                            not_must_update = true;
+                            break;
+                        }
+                        if pair.1.contains(update_word) {
+                            must_update = true;
+                            break;
+                        }
+                    }
+                    if must_update && !not_must_update {
                         id_path_map.insert(pair.0.id, pair.1);
                     } else if !not_must_update {
                         let before_distance = get_comparable_distance(&before, &pair.0.gamename);
