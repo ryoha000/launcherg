@@ -35,7 +35,7 @@
   {/if}
   <div class="space-y-2">
     <div class="text-(text-primary h3) font-medium">Help</div>
-    <LinkText href="https://google.com" text="かんたん説明" />
+    <LinkText href="https://youtu.be/SZnOkYNIeG0" text="かんたん説明" />
   </div>
   <div class="space-y-2">
     <div class="text-(text-primary h3) font-medium">Memo</div>
