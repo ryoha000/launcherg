@@ -5,18 +5,14 @@
   import { initialize, routeLoaded } from "@/store/tabs";
   import { registerCollectionElementDetails } from "@/lib/registerCollectionElementDetails";
   import { onMount } from "svelte";
-  import { listen } from "@tauri-apps/api/event";
   import { initializeAllGameCache } from "@/lib/scrapeAllGame";
+  import ImportDropFiles from "@/components/Home/ImportDropFiles.svelte";
 
   $: setDetailPromise = registerCollectionElementDetails();
 
   onMount(() => {
     initialize();
     initializeAllGameCache();
-    const unlisten = listen("tauri://file-drop", (event) => {
-      console.log(event);
-    });
-    return unlisten;
   });
 </script>
 
@@ -26,4 +22,5 @@
       <Router {routes} on:routeLoaded={routeLoaded} />
     </Layout>
   {/await}
+  <ImportDropFiles />
 </main>
