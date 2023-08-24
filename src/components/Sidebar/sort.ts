@@ -167,7 +167,7 @@ const createCompareDay = (multiplyer: number) => (a: string, b: string) => {
 const createCompareNullableDay =
   (multiplyer: number) => (a: string | null, b: string | null) => {
     return (
-      (a ? new Date(a).getTime() : 0 - (b ? new Date(b).getTime() : 0)) *
+      ((a ? new Date(a).getTime() : 0) - (b ? new Date(b).getTime() : 0)) *
       multiplyer
     );
   };
@@ -178,7 +178,7 @@ const createSortByNullableDate =
     elements
       .reduce((acc, cur) => {
         const value = cur[key];
-        const year = value ? value.split("-")[0] : NULL_DATE;
+        const year = value ? `${new Date(value).getFullYear()}` : NULL_DATE;
         const index = acc.findIndex((v) => v.label === year);
         if (index !== -1) {
           acc[index].elements.push(cur);

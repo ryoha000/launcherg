@@ -123,6 +123,7 @@
     withInputPath={false}
     on:confirm={(e) =>
       onChangeGame(e.detail.id, e.detail.gamename, element.path)}
+    on:cancel={() => (isOpenImportManually = false)}
   />
   <DeleteElement bind:isOpen={isOpenDelete} {element} />
 {/await}

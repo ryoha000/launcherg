@@ -51,12 +51,12 @@ export type CollectionElement = {
   gamenameRuby: string;
   brandname: string;
   brandnameRuby: string;
-  sellday: string; // yyyy-MM-dd
+  sellday: string;
   isNukige: boolean;
-  installAt: string | null; // yyyy-MM-dd
-  lastPlayAt: string | null; // yyyy-MM-dd
-  likeAt: string | null; // yyyy-MM-dd
-  registeredAt: string; // yyyy-MM-dd
+  installAt: string | null;
+  lastPlayAt: string | null;
+  likeAt: string | null;
+  registeredAt: string;
   path: string;
   icon: string;
 };

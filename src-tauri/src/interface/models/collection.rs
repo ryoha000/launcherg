@@ -48,13 +48,10 @@ impl From<domain::collection::CollectionElement> for CollectionElement {
             st.is_nukige,
             st.path,
             get_icon_path(&st.id),
-            st.install_at
-                .and_then(|v| Some(v.format("%Y-%m-%d").to_string())),
-            st.last_play_at
-                .and_then(|v| Some(v.format("%Y-%m-%d").to_string())),
-            st.like_at
-                .and_then(|v| Some(v.format("%Y-%m-%d").to_string())),
-            st.created_at.format("%Y-%m-%d").to_string(),
+            st.install_at.and_then(|v| Some(v.to_rfc3339())),
+            st.last_play_at.and_then(|v| Some(v.to_rfc3339())),
+            st.like_at.and_then(|v| Some(v.to_rfc3339())),
+            st.updated_at.to_rfc3339(),
         )
     }
 }

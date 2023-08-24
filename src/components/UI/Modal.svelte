@@ -9,6 +9,7 @@
   export let headerClass = "";
   export let title = "";
   export let confirmText = "";
+  export let cancelText = "Cancel";
   export let withFooter = true;
   export let withContentPadding = true;
   export let fullmodal = false;
@@ -49,7 +50,7 @@
       <slot name="footer">
         <div class="flex items-center p-4 border-(t-1px solid border-primary)">
           <div class="flex items-center ml-auto gap-2">
-            <Button text="Cancel" on:click={() => dispatcher("close")} />
+            <Button text={cancelText} on:click={() => dispatcher("cancel")} />
             <Button
               variant="success"
               disabled={confirmDisabled}

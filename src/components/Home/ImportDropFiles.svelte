@@ -37,6 +37,15 @@
   let isOpenImportFileDrop = false;
   let importFileDropPathIndex = -1;
   let importFileDropPaths: string[] = [];
+
+  const next = () => {
+    if (importFileDropPathIndex < importFileDropPaths.length - 1) {
+      isOpenImportFileDrop = true;
+      importFileDropPathIndex += 1;
+    } else {
+      importFileDropPathIndex = -1;
+    }
+  };
   const importManually = async (arg: {
     id: number;
     gamename: string;
@@ -45,16 +54,13 @@
     await commandUpsertCollectionElement(arg.id, arg.gamename, arg.path);
     await registerCollectionElementDetails();
     await sidebarCollectionElements.refetch();
-    isOpenImportFileDrop = false;
     showInfoToast(`${arg.gamename}を登録しました。`);
-    setTimeout(() => {
-      if (importFileDropPathIndex < importFileDropPaths.length - 1) {
-        isOpenImportFileDrop = true;
-        importFileDropPathIndex += 1;
-      } else {
-        importFileDropPathIndex = -1;
-      }
-    }, 0);
+    isOpenImportFileDrop = false;
+    setTimeout(next, 0);
+  };
+  const skipImport = () => {
+    isOpenImportFileDrop = false;
+    setTimeout(next, 0);
   };
 </script>
 
@@ -62,6 +68,8 @@
   <ImportManually
     bind:isOpen={isOpenImportFileDrop}
     path={importFileDropPaths[importFileDropPathIndex]}
+    cancelText="Skip"
     on:confirm={(e) => importManually(e.detail)}
+    on:cancel={skipImport}
   />
 {/if}

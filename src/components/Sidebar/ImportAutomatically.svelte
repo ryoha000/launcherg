@@ -1,7 +1,6 @@
 <script lang="ts">
   import Button from "@/components/UI/Button.svelte";
   import Checkbox from "@/components/UI/Checkbox.svelte";
-  import Input from "@/components/UI/Input.svelte";
   import Modal from "@/components/UI/Modal.svelte";
   import {
     commandCreateElementsInPc,
@@ -125,6 +124,11 @@
   <Modal
     {isOpen}
     on:close={() => {
+      if (!isLoading) {
+        isOpen = false;
+      }
+    }}
+    on:cancel={() => {
       if (!isLoading) {
         isOpen = false;
       }

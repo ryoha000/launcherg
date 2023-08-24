@@ -50,5 +50,6 @@
   <ImportManually
     bind:isOpen={isOpenImportManually}
     on:confirm={(e) => importManually(e.detail)}
+    on:cancel={() => (isOpenImportManually = false)}
   />
 {/if}

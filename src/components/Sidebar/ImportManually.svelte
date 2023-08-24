@@ -8,12 +8,14 @@
 
   export let isOpen: boolean;
   export let withInputPath = true;
+  export let cancelText = "Cancel";
 
   let idInput = "";
   export let path = "";
 
   const dispather = createEventDispatcher<{
     confirm: { id: number; gamename: string; path: string };
+    cancel: {};
   }>();
 
   let candidates: [number, string][] = [];
@@ -42,8 +44,10 @@
 <Modal
   {isOpen}
   on:close={() => (isOpen = false)}
+  on:cancel={() => dispather("cancel")}
   title="Manually import game"
   confirmText="Import"
+  {cancelText}
   confirmDisabled={!idInput || (!path && withInputPath)}
   on:confirm={onConfirm}
 >

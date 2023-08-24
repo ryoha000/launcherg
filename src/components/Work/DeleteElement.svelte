@@ -20,6 +20,7 @@
 <Modal
   {isOpen}
   on:close={() => (isOpen = false)}
+  on:cancel={() => (isOpen = false)}
   title={`Delete game`}
   withContentPadding={false}
   autofocusCloseButton
