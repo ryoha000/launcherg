@@ -360,3 +360,22 @@ pub async fn update_all_game_cache(
         .await?;
     Ok(())
 }
+
+#[tauri::command]
+pub async fn get_game_candidates(
+    modules: State<'_, Arc<Modules>>,
+    filepath: String,
+) -> anyhow::Result<Vec<(i32, String)>, CommandError> {
+    let all_game_cache = modules
+        .all_game_cache_use_case()
+        .get_all_game_cache()
+        .await?;
+
+    Ok(modules
+        .file_use_case()
+        .get_game_candidates(all_game_cache, filepath)
+        .await?
+        .into_iter()
+        .map(|c| (c.id, c.gamename))
+        .collect())
+}

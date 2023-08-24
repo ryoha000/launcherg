@@ -39,7 +39,8 @@ fn main() {
             command::update_element_like,
             command::open_folder,
             command::get_all_game_cache_last_updated,
-            command::update_all_game_cache
+            command::update_all_game_cache,
+            command::get_game_candidates
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

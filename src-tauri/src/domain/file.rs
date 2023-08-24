@@ -23,9 +23,14 @@ use windows::{
     },
 };
 
-use crate::{domain::network::ErogamescapeIDNamePair, infrastructure::util::get_save_root_abs_dir};
+use crate::infrastructure::util::get_save_root_abs_dir;
 
-use super::{collection::CollectionElement, distance::get_comparable_distance, Id};
+use super::{
+    all_game_cache::{AllGameCache, AllGameCacheOne},
+    collection::CollectionElement,
+    distance::get_comparable_distance,
+    Id,
+};
 
 trait WString {
     fn to_wide(&self) -> Vec<u16>;
@@ -181,10 +186,10 @@ pub fn get_lnk_metadatas(lnk_file_paths: Vec<&str>) -> anyhow::Result<HashMap<&s
 }
 
 pub fn filter_game_path(
-    id_name_pairs: &Vec<ErogamescapeIDNamePair>,
+    id_name_pairs: &AllGameCache,
     filepath: String,
-) -> anyhow::Result<Option<(ErogamescapeIDNamePair, String)>> {
-    let candidates: Vec<ErogamescapeIDNamePair> =
+) -> anyhow::Result<Option<(AllGameCacheOne, String)>> {
+    let candidates: AllGameCache =
         get_game_candidates_by_exe_path(id_name_pairs, &filepath, 0.8, 1)?;
     if let Some(candidate) = candidates.get(0) {
         return Ok(Some((candidate.clone(), filepath)));
@@ -193,11 +198,11 @@ pub fn filter_game_path(
 }
 
 pub fn get_game_candidates_by_exe_path(
-    id_name_pairs: &Vec<ErogamescapeIDNamePair>,
+    id_name_pairs: &AllGameCache,
     filepath: &str,
     threshould: f32,
     candidate_limit: usize,
-) -> anyhow::Result<Vec<ErogamescapeIDNamePair>> {
+) -> anyhow::Result<AllGameCache> {
     let parent = Path::new(&filepath)
         .parent()
         .and_then(|v| {
@@ -254,7 +259,7 @@ pub fn get_game_candidates_by_exe_path(
 
     let mut res = vec![];
     for (pair, _) in distance_pairs {
-        if res.len() > candidate_limit {
+        if res.len() < candidate_limit {
             res.push(pair)
         }
     }

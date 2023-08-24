@@ -2,6 +2,7 @@
   import Input from "@/components/UI/Input.svelte";
   import InputPath from "@/components/UI/InputPath.svelte";
   import Modal from "@/components/UI/Modal.svelte";
+  import { commandGetGameCandidates } from "@/lib/command";
   import { scrapeSql } from "@/lib/scrapeSql";
   import { showErrorToast } from "@/lib/toast";
   import { createEventDispatcher } from "svelte";
@@ -15,6 +16,17 @@
   const dispather = createEventDispatcher<{
     confirm: { id: number; gamename: string; path: string };
   }>();
+
+  let candidates: [number, string][] = [];
+  $: {
+    (async () => {
+      if (!path) {
+        candidates = [];
+        return;
+      }
+      candidates = await commandGetGameCandidates(path);
+    })();
+  }
 
   const getIdNumber = (value: string) => {
     {
@@ -57,6 +69,9 @@
 
     dispather("confirm", { id, gamename, path });
   };
+  const clickCandidate = (id: number) => {
+    idInput = `${id}`;
+  };
 </script>
 
 <Modal
@@ -68,12 +83,29 @@
   on:confirm={confirm}
 >
   <div class="space-y-4">
-    <Input
-      bind:value={idInput}
-      label="ErogameScape ID or URL"
-      placeholder="17909 or https://erogamescape.dyndns.org/~ap2/ero/toukei_kaiseki/game.php?game=17909"
-      on:update={(e) => (idInput = e.detail.value)}
-    />
+    <div class="space-y-2">
+      <Input
+        bind:value={idInput}
+        label="ErogameScape ID or URL"
+        placeholder="17909 or https://erogamescape.dyndns.org/~ap2/ero/toukei_kaiseki/game.php?game=17909"
+        on:update={(e) => (idInput = e.detail.value)}
+      />
+      {#if candidates.length !== 0}
+        <div class="space-y-1 pl-2">
+          <h4 class="text-(text-primary body) font-medium mb-1">候補</h4>
+          <div>
+            {#each candidates as [id, gamename] (id)}
+              <button
+                class="rounded bg-inherit hover:bg-bg-button transition-all px-4 block"
+                on:click={() => clickCandidate(id)}
+              >
+                <span class="text-(text-secondary left body2)">{gamename}</span>
+              </button>
+            {/each}
+          </div>
+        </div>
+      {/if}
+    </div>
     {#if withInputPath}
       <InputPath
         {path}

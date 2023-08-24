@@ -4,7 +4,7 @@ use std::{collections::HashMap, sync::Arc, time::Instant};
 
 use derive_new::new;
 
-use crate::domain::all_game_cache::AllGameCache;
+use crate::domain::all_game_cache::{AllGameCache, AllGameCacheOne};
 use crate::domain::file::{get_file_created_at_sync, get_game_candidates_by_exe_path, PlayHistory};
 use crate::{
     domain::{
@@ -15,7 +15,6 @@ use crate::{
             filter_game_path, get_file_paths_by_exts, get_lnk_metadatas, get_play_history_path,
             normalize, save_icon_to_png, start_process,
         },
-        network::ErogamescapeIDNamePair,
         Id,
     },
     infrastructure::explorerimpl::explorer::ExplorersExt,
@@ -83,7 +82,7 @@ impl<R: ExplorersExt> FileUseCase<R> {
     }
     pub async fn concurency_get_path_game_map<F: Fn() -> anyhow::Result<()> + Send + 'static>(
         &self,
-        normalized_all_games: Arc<Vec<ErogamescapeIDNamePair>>,
+        normalized_all_games: Arc<AllGameCache>,
         files: Vec<String>,
         callback: Arc<Mutex<F>>,
     ) -> anyhow::Result<HashMap<ErogamescapeID, FilePathString>> {
@@ -106,7 +105,7 @@ impl<R: ExplorersExt> FileUseCase<R> {
             })
         });
 
-        let id_path_pairs: Vec<(ErogamescapeIDNamePair, FilePathString)> =
+        let id_path_pairs: Vec<(AllGameCacheOne, FilePathString)> =
             futures::future::try_join_all(get_game_id_tasks)
                 .await?
                 .into_iter()
@@ -158,30 +157,19 @@ impl<R: ExplorersExt> FileUseCase<R> {
         }
         Ok(id_path_map)
     }
-    pub async fn concurency_get_game_candidates_map(
+    pub async fn get_game_candidates(
         &self,
-        normalized_all_games: Arc<Vec<ErogamescapeIDNamePair>>,
-        files: Vec<String>,
-    ) -> anyhow::Result<HashMap<String, Vec<ErogamescapeIDNamePair>>> {
-        let get_game_id_tasks = files.into_iter().map(|path| {
-            let all = normalized_all_games.clone();
-            tauri::async_runtime::spawn(async move {
-                match get_game_candidates_by_exe_path(&all, &path, 0.5, 5) {
-                    Ok(pairs) => {
-                        return Ok((path, pairs));
-                    }
-                    Err(e) => {
-                        return Err(anyhow::anyhow!(e.to_string()));
-                    }
-                }
+        all_game_cache: AllGameCache,
+        file: String,
+    ) -> anyhow::Result<AllGameCache> {
+        let normalized_all_games = all_game_cache
+            .iter()
+            .map(|pair| AllGameCacheOne {
+                id: pair.id,
+                gamename: normalize(&pair.gamename),
             })
-        });
-
-        Ok(futures::future::try_join_all(get_game_id_tasks)
-            .await?
-            .into_iter()
-            .filter_map(|v| v.ok())
-            .collect())
+            .collect::<AllGameCache>();
+        get_game_candidates_by_exe_path(&normalized_all_games, &file, 0.2, 5)
     }
     pub async fn filter_files_to_collection_elements<
         F: Fn() -> anyhow::Result<()> + Send + 'static,
@@ -197,11 +185,11 @@ impl<R: ExplorersExt> FileUseCase<R> {
         let normalized_all_games = Arc::new(
             all_game_cache
                 .iter()
-                .map(|pair| ErogamescapeIDNamePair {
+                .map(|pair| AllGameCacheOne {
                     id: pair.id,
                     gamename: normalize(&pair.gamename),
                 })
-                .collect::<Vec<ErogamescapeIDNamePair>>(),
+                .collect::<AllGameCache>(),
         );
         let all_erogamescape_game_map: HashMap<i32, String> = all_game_cache
             .into_iter()

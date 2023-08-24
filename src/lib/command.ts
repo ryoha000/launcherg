@@ -115,12 +115,17 @@ export const commandGetAllGameCacheLastUpdated = async () => {
   const [id, dateString] = await invoke<[number, string]>(
     "get_all_game_cache_last_updated"
   );
-  console.log({ id, dateString });
   return { id, date: new Date(dateString) };
 };
 
 export const commandUpdateAllGameCache = async (value: [number, string][]) => {
   await invoke("update_all_game_cache", {
     value,
+  });
+};
+
+export const commandGetGameCandidates = async (filepath: string) => {
+  return await invoke<[number, string][]>("get_game_candidates", {
+    filepath,
   });
 };
