@@ -11,9 +11,13 @@ function createSidebarCollectionElements() {
     set(await commandGetAllElements());
   };
   const updateLike = (id: number, isLike: boolean) => {
+    const now = new Date();
+    const likeAt = `${now.getFullYear()}-${
+      now.getMonth() + 1
+    }-${now.getDate()}`;
     update((elements) =>
       elements.map((v) =>
-        v.id === id ? { ...v, likeAt: isLike ? "2023-06-09" : null } : { ...v }
+        v.id === id ? { ...v, likeAt: isLike ? likeAt : null } : { ...v }
       )
     );
   };

@@ -164,6 +164,14 @@ const createCompareDay = (multiplyer: number) => (a: string, b: string) => {
   return (dateA.getTime() - dateB.getTime()) * multiplyer;
 };
 
+const createCompareNullableDay =
+  (multiplyer: number) => (a: string | null, b: string | null) => {
+    return (
+      (a ? new Date(a).getTime() : 0 - (b ? new Date(b).getTime() : 0)) *
+      multiplyer
+    );
+  };
+
 const createSortByNullableDate =
   (key: "installAt" | "lastPlayAt" | "registeredAt") =>
   (elements: CollectionElement[], multiplyer: number) =>
@@ -189,7 +197,7 @@ const createSortByNullableDate =
       .map((v) => ({
         ...v,
         elements: v.elements.sort((a, b) =>
-          createCompareDay(multiplyer)(a.sellday, b.sellday)
+          createCompareNullableDay(multiplyer)(a[key], b[key])
         ),
       }));
 
