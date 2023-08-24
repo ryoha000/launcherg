@@ -5,7 +5,10 @@ use std::{collections::HashMap, sync::Arc, time::Instant};
 use derive_new::new;
 
 use crate::domain::all_game_cache::{AllGameCache, AllGameCacheOne};
-use crate::domain::file::{get_file_created_at_sync, get_game_candidates_by_exe_path, PlayHistory};
+use crate::domain::file::{
+    get_file_created_at_sync, get_file_name_without_extension, get_game_candidates_by_exe_path,
+    PlayHistory,
+};
 use crate::{
     domain::{
         collection::{CollectionElement, NewCollectionElement},
@@ -30,13 +33,14 @@ pub struct FileUseCase<R: ExplorersExt> {
 type FilePathString = String;
 type ErogamescapeID = i32;
 
-const IGNORE_WORD_WHEN_CONFLICT: [&str; 14] = [
+const IGNORE_WORD_WHEN_CONFLICT: [&str; 17] = [
     "設定",
     "チェック",
     "インスト",
     "削除",
     "ファイル",
     "ください",
+    "下さい",
     "マニュアル",
     "アップデート",
     "システム",
@@ -45,9 +49,11 @@ const IGNORE_WORD_WHEN_CONFLICT: [&str; 14] = [
     "config",
     "update",
     "inst",
+    "tool",
+    "support",
 ];
 
-const SHOULD_UPDATE_WORD_WHEN_CONFLICT: [&str; 4] = ["adv", "64", "cmvs", "bgi"];
+const SHOULD_UPDATE_WORD_WHEN_CONFLICT: [&str; 6] = ["adv", "64", "cmvs", "bgi", "実行", "起動"];
 
 fn emit_progress_with_time(
     f: Arc<impl Fn(String) -> anyhow::Result<()>>,
@@ -117,6 +123,10 @@ impl<R: ExplorersExt> FileUseCase<R> {
             let before = id_path_map.get(&pair.0.id);
             match before {
                 Some(before) => {
+                    let before =
+                        get_file_name_without_extension(&normalize(&before)).unwrap_or_default();
+                    let after =
+                        get_file_name_without_extension(&normalize(&pair.1)).unwrap_or_default();
                     let mut must_update = false;
                     let mut not_must_update = false;
                     for ignore_word in IGNORE_WORD_WHEN_CONFLICT {
@@ -124,7 +134,7 @@ impl<R: ExplorersExt> FileUseCase<R> {
                             must_update = true;
                             break;
                         }
-                        if pair.1.contains(ignore_word) {
+                        if after.contains(ignore_word) {
                             not_must_update = true;
                             break;
                         }
@@ -134,7 +144,7 @@ impl<R: ExplorersExt> FileUseCase<R> {
                             not_must_update = true;
                             break;
                         }
-                        if pair.1.contains(update_word) {
+                        if after.contains(update_word) {
                             must_update = true;
                             break;
                         }
@@ -143,8 +153,7 @@ impl<R: ExplorersExt> FileUseCase<R> {
                         id_path_map.insert(pair.0.id, pair.1);
                     } else if !not_must_update {
                         let before_distance = get_comparable_distance(&before, &pair.0.gamename);
-                        let after_distance = get_comparable_distance(&pair.1, &pair.0.gamename);
-                        println!("conflicted. gamename: {}, before: {}, before_distance: {}, after: {}, after_distance: {}", pair.0.gamename, before, before_distance, pair.1, after_distance);
+                        let after_distance = get_comparable_distance(&after, &pair.0.gamename);
                         if before_distance < after_distance {
                             id_path_map.insert(pair.0.id, pair.1);
                         }
@@ -230,7 +239,12 @@ impl<R: ExplorersExt> FileUseCase<R> {
         }
         for (id, lnk_path) in lnk_id_path_vec.iter() {
             if let Some(metadata) = lnk_metadatas.get(lnk_path.as_str()) {
-                let task = save_icon_to_png(&metadata.icon, &Id::new(*id))?;
+                let task;
+                if metadata.icon.to_lowercase().ends_with("ico") {
+                    task = save_icon_to_png(&metadata.icon, &Id::new(*id))?;
+                } else {
+                    task = save_icon_to_png(&metadata.path, &Id::new(*id))?;
+                }
                 save_icon_tasks.push(task);
             }
         }
@@ -245,7 +259,11 @@ impl<R: ExplorersExt> FileUseCase<R> {
             .iter()
             .filter_map(|(id, lnk_path)| {
                 if let Some(metadata) = lnk_metadatas.get(lnk_path.as_str()) {
-                    return Some((*id, metadata.path.clone()));
+                    let path = metadata.path.clone();
+                    match path.to_lowercase().ends_with("exe") {
+                        true => return Some((*id, path.clone())),
+                        false => return None,
+                    }
                 }
                 None
             })

@@ -25,7 +25,6 @@ export const useFilter = <T>(
   const filtered = writable<Option<T>[]>([...getOptions()]);
 
   const init = () => {
-    query.set("");
     const lazyQuery = writable("");
     filtered.set([...getOptions()]);
 

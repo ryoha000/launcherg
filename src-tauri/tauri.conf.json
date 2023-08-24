@@ -7,8 +7,8 @@
     "withGlobalTauri": false
   },
   "package": {
-    "productName": "launcherg",
-    "version": "0.0.6"
+    "productName": "Launcherg",
+    "version": "0.0.9"
   },
   "tauri": {
     "allowlist": {
@@ -72,7 +72,7 @@
       {
         "fullscreen": false,
         "resizable": true,
-        "title": "launcherg",
+        "title": "Launcherg",
         "width": 800,
         "height": 600
       }

@@ -97,12 +97,12 @@
       }
       return [...appendPaths, ...v];
     });
-    const unlistenProgress = await listen<{ message: string }>(
-      "progress",
-      (event) => {
-        showInfoToast(event.payload.message, 10000);
-      }
-    );
+    // const unlistenProgress = await listen<{ message: string }>(
+    //   "progress",
+    //   (event) => {
+    //     showInfoToast(event.payload.message, 10000);
+    //   }
+    // );
     const unlistenProgressLive = await listen<{ max: number | null }>(
       "progresslive",
       (event) => {
@@ -114,7 +114,7 @@
       }
     );
     return () => {
-      unlistenProgress();
+      // unlistenProgress();
       unlistenProgressLive();
     };
   });

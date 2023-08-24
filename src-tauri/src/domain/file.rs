@@ -51,7 +51,7 @@ fn to_pcwstr(str: &str) -> PCWSTR {
     PCWSTR::from_raw(str.to_wide_null_terminated().as_ptr())
 }
 
-const NOT_GAME_TERMS: [&str; 12] = [
+const NOT_GAME_TERMS: [&str; 16] = [
     "マニュアル",
     "詳細設定",
     "はじめに",
@@ -64,6 +64,10 @@ const NOT_GAME_TERMS: [&str; 12] = [
     "uninstall",
     "autorun",
     "削除",
+    "license",
+    "ライセンス",
+    "公式サイト",
+    "ホームページ",
 ];
 fn not_game(filename: &str) -> bool {
     for not_game_str in NOT_GAME_TERMS {
@@ -95,7 +99,7 @@ fn remove_word(filename: &str) -> String {
 
 const IGNORE_GAME_ID: [i32; 1] = [2644];
 
-fn get_file_name_without_extension(file_path: &str) -> Option<String> {
+pub fn get_file_name_without_extension(file_path: &str) -> Option<String> {
     let path = Path::new(file_path);
     if let Some(file_name) = path.file_name() {
         if let Some(file_name_str) = file_name.to_str() {
@@ -247,10 +251,10 @@ pub fn get_game_candidates_by_exe_path(
     if distance_pairs.len() == 0 {
         for pair in id_name_pairs.iter() {
             if filename.len() > 5 && pair.gamename.contains(&filename) {
-                distance_pairs.push((pair.clone(), 1.0));
+                distance_pairs.push((pair.clone(), filename.len() as f32));
             }
             if parent.len() > 5 && pair.gamename.contains(&parent) {
-                distance_pairs.push((pair.clone(), 1.0));
+                distance_pairs.push((pair.clone(), parent.len() as f32));
             }
         }
     }

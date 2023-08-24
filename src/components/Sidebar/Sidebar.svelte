@@ -44,7 +44,6 @@
   );
 
   sidebarCollectionElements.subscribe(() => {
-    query.set("");
     displayCollectionElements = search($filtered, $attributes, $order);
   });
 </script>
