@@ -83,6 +83,14 @@
   on:confirm={confirm}
 >
   <div class="space-y-4">
+    {#if withInputPath}
+      <InputPath
+        {path}
+        label="Exe file path"
+        placeholder="C:\game\Monkeys!!\Monkeys!!.exe"
+        on:update={(e) => (path = e.detail.value)}
+      />
+    {/if}
     <div class="space-y-2">
       <Input
         bind:value={idInput}
@@ -106,13 +114,5 @@
         </div>
       {/if}
     </div>
-    {#if withInputPath}
-      <InputPath
-        {path}
-        label="Exe file path"
-        placeholder="C:\game\Monkeys!!\Monkeys!!.exe"
-        on:update={(e) => (path = e.detail.value)}
-      />
-    {/if}
   </div>
 </Modal>

@@ -29,7 +29,7 @@
 >
   <div class="grid grid-rows-[min-content_1fr_min-content] h-full">
     <div
-      class="flex items-center bg-bg-secondary border-(b-1px solid border-primary) {headerClass}"
+      class="flex items-center bg-bg-secondary border-(b-1px solid border-primary) rounded-t-lg {headerClass}"
     >
       <div class="px-4 text-(text-primary body) font-medium">
         {title}

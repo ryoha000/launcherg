@@ -6,6 +6,7 @@
   import Button from "@/components/UI/Button.svelte";
   import { commandUpsertCollectionElement } from "@/lib/command";
   import { registerCollectionElementDetails } from "@/lib/registerCollectionElementDetails";
+  import { showInfoToast } from "@/lib/toast";
   import { sidebarCollectionElements } from "@/store/sidebarCollectionElements";
 
   let isOpenImportAutomatically = false;
@@ -20,6 +21,7 @@
     await registerCollectionElementDetails();
     await sidebarCollectionElements.refetch();
     isOpenImportManually = false;
+    showInfoToast(`${arg.gamename}を登録しました。`);
   };
 </script>
 
