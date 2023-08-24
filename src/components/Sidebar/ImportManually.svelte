@@ -109,13 +109,19 @@
       {#if candidates.length !== 0}
         <div class="space-y-1 pl-2">
           <h4 class="text-(text-primary body) font-medium mb-1">候補</h4>
-          <div>
+          <div class="w-full">
             {#each candidates as [id, gamename] (id)}
               <button
-                class="rounded bg-inherit hover:bg-bg-button transition-all px-4 block"
+                class={`rounded hover:bg-bg-button-hover transition-all px-4 block max-w-full ${
+                  idInput === `${id}` ? "bg-bg-button" : "bg-inherit"
+                }`}
                 on:click={() => clickCandidate(id)}
               >
-                <span class="text-(text-secondary left body2)">{gamename}</span>
+                <div
+                  class="text-(text-secondary left body2) overflow-ellipsis whitespace-nowrap overflow-hidden w-full"
+                >
+                  {gamename}
+                </div>
               </button>
             {/each}
           </div>
