@@ -129,3 +129,9 @@ export const commandGetGameCandidates = async (filepath: string) => {
     filepath,
   });
 };
+
+export const commandGetExePathByLnk = async (filepath: string) => {
+  return await invoke<string>("get_exe_path_by_lnk", {
+    filepath,
+  });
+};

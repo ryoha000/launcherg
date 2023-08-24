@@ -10,6 +10,7 @@ use super::{
     module::{Modules, ModulesExt},
 };
 use crate::domain::all_game_cache::AllGameCacheOne;
+use crate::domain::file::get_lnk_metadatas;
 use crate::interface::models::collection::ProgressPayload;
 use crate::{
     domain::{
@@ -378,4 +379,23 @@ pub async fn get_game_candidates(
         .into_iter()
         .map(|c| (c.id, c.gamename))
         .collect())
+}
+
+#[tauri::command]
+pub async fn get_exe_path_by_lnk(filepath: String) -> anyhow::Result<String, CommandError> {
+    if !filepath.to_lowercase().ends_with("lnk") {
+        return Err(CommandError::Anyhow(anyhow::anyhow!(
+            "filepath is not ends with lnk"
+        )));
+    }
+
+    let p: &str = &filepath;
+    let metadatas = get_lnk_metadatas(vec![p])?;
+    if let Some(meta) = metadatas.get(p) {
+        return Ok(meta.path.clone());
+    } else {
+        return Err(CommandError::Anyhow(anyhow::anyhow!(
+            "cannot get lnk metadata"
+        )));
+    }
 }

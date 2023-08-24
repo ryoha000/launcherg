@@ -10,7 +10,7 @@
   <div class="bg-bg-secondary p-4 rounded-t-xl">
     <div class="text-(body text-primary)">{title}</div>
   </div>
-  <div class="grid-(~ cols-[min-content_1fr]) items-center">
+  <div class="grid-(~ cols-[min-content_1fr])">
     {#each rows as row (row.label)}
       <div
         class="p-4 border-(t-1px solid border-primary) whitespace-nowrap text-(body2 text-primary)"

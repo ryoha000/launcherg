@@ -2,7 +2,10 @@
   import Input from "@/components/UI/Input.svelte";
   import InputPath from "@/components/UI/InputPath.svelte";
   import Modal from "@/components/UI/Modal.svelte";
-  import { commandGetGameCandidates } from "@/lib/command";
+  import {
+    commandGetExePathByLnk,
+    commandGetGameCandidates,
+  } from "@/lib/command";
   import { scrapeSql } from "@/lib/scrapeSql";
   import { showErrorToast } from "@/lib/toast";
   import { createEventDispatcher } from "svelte";
@@ -67,7 +70,12 @@
     }
     const gamename = gamenames[0][0];
 
-    dispather("confirm", { id, gamename, path });
+    if (path.toLowerCase().endsWith("lnk")) {
+      const exePath = await commandGetExePathByLnk(path);
+      dispather("confirm", { id, gamename, path: exePath });
+    } else {
+      dispather("confirm", { id, gamename, path });
+    }
   };
   const clickCandidate = (id: number) => {
     idInput = `${id}`;
@@ -86,7 +94,7 @@
     {#if withInputPath}
       <InputPath
         {path}
-        label="Exe file path"
+        label="EXEファイル or ショットカットファイル のパス"
         placeholder="C:\game\Monkeys!!\Monkeys!!.exe"
         on:update={(e) => (path = e.detail.value)}
       />

@@ -19,7 +19,7 @@
         ? [
             {
               name: "exe",
-              extensions: ["exe", "EXE"],
+              extensions: ["exe", "EXE", "lnk"],
             },
           ]
         : [],
