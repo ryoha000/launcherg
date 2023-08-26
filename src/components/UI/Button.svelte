@@ -10,8 +10,8 @@
   export let tooltip: Partial<TippyOption> | undefined = undefined;
   export let variant: Variant = "normal";
   export let disabled = false;
+  export let wrappable = false;
 
-  let buttonSizeClass = "h-8 px-3 gap-2";
   let iconSizeClass = "w-4 h-4";
 
   let iconVarinatClass = "color-ui-tertiary";
@@ -23,7 +23,9 @@
 </script>
 
 <ButtonBase
-  appendClass={`${appendClass} ${buttonSizeClass} flex items-center`}
+  appendClass={`${appendClass} ${
+    wrappable ? "" : "h-8"
+  } px-3 gap-2 flex items-center`}
   {variant}
   {type}
   {tooltip}
@@ -34,7 +36,11 @@
     <div class={`${iconVarinatClass} ${iconSizeClass} ${leftIcon}`} />
   {/if}
   {#if text}
-    <div class="text-body2 font-medium whitespace-nowrap">{text}</div>
+    <div
+      class={`text-body2 font-medium ${wrappable ? "" : "whitespace-nowrap"}`}
+    >
+      {text}
+    </div>
   {/if}
   {#if rightIcon}
     <div class={`${iconVarinatClass} ${iconSizeClass} ${rightIcon}`} />

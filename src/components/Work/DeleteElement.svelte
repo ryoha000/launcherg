@@ -24,7 +24,6 @@
   title={`Delete game`}
   withContentPadding={false}
   autofocusCloseButton
-  maxWidth="max-w-110"
   headerClass="border-b-(border-warning opacity-40) "
 >
   <div
@@ -42,10 +41,11 @@
       </div>
     </div>
   </div>
-  <div class="p-4" slot="footer">
+  <div class="p-4 max-w-full" slot="footer">
     <Button
       text="{element.gamename} を削除する"
       variant="error"
+      wrappable
       appendClass="w-full justify-center"
       on:click={deleteGame}
     />
