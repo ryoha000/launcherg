@@ -9,26 +9,30 @@
   $: imgSrc = convertFileSrc(collectionElement.thumbnail);
 </script>
 
-<div
-  class="hover:scale-110 hover:shadow-md focus-within:scale-110 focus-within:shadow-md transition-all cursor-pointer"
->
-  <a
-    tabIndex={0}
-    href={`/works/${collectionElement.id}?gamename=${collectionElement.gamename}`}
-    use:link
+{#await existThumbnail then isExist}
+  <div
+    class="hover:scale-120 hover:shadow-md focus-within:scale-110 focus-within:shadow-md transition-all cursor-pointer"
   >
-    {#await existThumbnail then isExist}
+    <a
+      tabIndex={0}
+      href={`/works/${collectionElement.id}?gamename=${collectionElement.gamename}`}
+      use:link
+    >
       {#if isExist}
-        <img
+        <!-- <img
           decoding="async"
           class="object-contain rounded"
           src={imgSrc}
           loading="lazy"
           alt="hhoge"
-        />
+        /> -->
       {:else}
-        {collectionElement.gamename}
+        <div
+          class="text-(body text-primary) font-bold p-8 rounded border bg-bg-primary"
+        >
+          {collectionElement.gamename}
+        </div>
       {/if}
-    {/await}
-  </a>
-</div>
+    </a>
+  </div>
+{/await}

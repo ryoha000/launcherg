@@ -1,5 +1,8 @@
 import { commandGetAllElements } from "@/lib/command";
-import type { CollectionElement } from "@/lib/types";
+import type {
+  CollectionElement,
+  CollectionElementsWithLabel,
+} from "@/lib/types";
 import { createWritable } from "@/lib/utils";
 
 function createSidebarCollectionElements() {
@@ -22,11 +25,14 @@ function createSidebarCollectionElements() {
     );
   };
 
+  const [shown] = createWritable<CollectionElementsWithLabel[]>([]);
+
   return {
     subscribe,
     value,
     refetch,
     updateLike,
+    shown,
   };
 }
 
