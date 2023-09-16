@@ -118,7 +118,9 @@ export const commandGetAllGameCacheLastUpdated = async () => {
   return { id, date: new Date(dateString) };
 };
 
-export const commandUpdateAllGameCache = async (value: [number, string][]) => {
+export const commandUpdateAllGameCache = async (
+  value: [number, string, string][]
+) => {
   await invoke("update_all_game_cache", {
     value,
   });

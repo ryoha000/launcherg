@@ -95,6 +95,7 @@ CREATE TABLE IF NOT EXISTS collection_element_maps (
     CREATE TABLE IF NOT EXISTS all_game_caches (
         id INTEGER PRIMARY KEY,
         gamename TEXT NOT NULL,
+        thumbnail_url TEXT NOT NULL,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     );
         "

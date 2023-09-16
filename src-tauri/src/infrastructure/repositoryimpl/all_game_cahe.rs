@@ -3,7 +3,8 @@ use chrono::{DateTime, Local, NaiveDateTime};
 use sqlx::{query_as, QueryBuilder};
 
 use crate::domain::{
-    all_game_cache::AllGameCache, repository::all_game_cache::AllGameCacheRepository,
+    all_game_cache::{AllGameCache, NewAllGameCacheOne},
+    repository::all_game_cache::AllGameCacheRepository,
 };
 
 use super::{models::all_game_cache::AllGameCacheTable, repository::RepositoryImpl};
@@ -32,17 +33,18 @@ impl AllGameCacheRepository for RepositoryImpl<AllGameCache> {
             last_updated.1.and_utc().with_timezone(&Local),
         ))
     }
-    async fn update(&self, cache: AllGameCache) -> anyhow::Result<()> {
+    async fn update(&self, cache: Vec<NewAllGameCacheOne>) -> anyhow::Result<()> {
         if cache.len() == 0 {
             return Ok(());
         }
         for c in cache.chunks(1000) {
             // ref: https://docs.rs/sqlx-core/latest/sqlx_core/query_builder/struct.QueryBuilder.html#method.push_values
             let mut query_builder =
-                QueryBuilder::new("INSERT INTO all_game_caches (id, gamename) ");
+                QueryBuilder::new("INSERT INTO all_game_caches (id, gamename, thumbnail_url) ");
             query_builder.push_values(c, |mut b, new| {
                 b.push_bind(new.id);
                 b.push_bind(new.gamename.clone());
+                b.push_bind(new.thumbnail_url.clone());
             });
 
             let pool = self.pool.0.clone();

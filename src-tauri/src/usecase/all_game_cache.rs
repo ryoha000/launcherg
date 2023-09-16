@@ -4,7 +4,10 @@ use chrono::{DateTime, Local};
 use derive_new::new;
 
 use crate::{
-    domain::{all_game_cache::AllGameCache, repository::all_game_cache::AllGameCacheRepository},
+    domain::{
+        all_game_cache::{AllGameCache, NewAllGameCacheOne},
+        repository::all_game_cache::AllGameCacheRepository,
+    },
     infrastructure::repositoryimpl::repository::RepositoriesExt,
 };
 
@@ -26,7 +29,10 @@ impl<R: RepositoriesExt> AllGameCacheUseCase<R> {
             .get_last_updated()
             .await
     }
-    pub async fn update_all_game_cache(&self, cache: AllGameCache) -> anyhow::Result<()> {
+    pub async fn update_all_game_cache(
+        &self,
+        cache: Vec<NewAllGameCacheOne>,
+    ) -> anyhow::Result<()> {
         self.repositories
             .all_game_cache_repository()
             .update(cache)
