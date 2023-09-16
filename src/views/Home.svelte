@@ -4,6 +4,7 @@
   import { link } from "svelte-spa-router";
   import LinkText from "@/components/UI/LinkText.svelte";
   import { sidebarCollectionElements } from "@/store/sidebarCollectionElements";
+  import ZappingGames from "@/components/Home/ZappingGames.svelte";
 
   const memoRegex = /^smde_memo-(\d+)$/;
   const memoPromises = Promise.all(
@@ -16,54 +17,57 @@
   let isOpenGettingStarted = true;
 </script>
 
-<div class="p-8 space-y-8">
-  <div class="flex items-center gap-2 w-full">
-    <img src={Icon} alt="launcherg icon" class="h-12" />
-    <div class="font-logo text-(8 text-primary)">Launcherg</div>
-  </div>
-  {#if $sidebarCollectionElements.length === 0 && isOpenGettingStarted}
-    <div
-      class="space-y-2 p-4 border-(border-primary solid ~) rounded max-w-120"
-    >
-      <div class="flex items-center">
-        <div class="text-(text-primary h3) font-medium">Getting started</div>
-      </div>
-      <div class="text-(text-tertiary body)">
-        持っているゲームをこのランチャーに登録してみましょう。左のサイドバーにある「Add」ボタンから自動で追加できます。
-      </div>
+<div class="w-full h-full overflow-y-auto">
+  <div class="p-8 space-y-8">
+    <div class="flex items-center gap-2 w-full">
+      <img src={Icon} alt="launcherg icon" class="h-12" />
+      <div class="font-logo text-(8 text-primary)">Launcherg</div>
     </div>
-  {/if}
-  <div class="space-y-2">
-    <div class="text-(text-primary h3) font-medium">Help</div>
-    <LinkText href="https://youtu.be/SZnOkYNIeG0" text="かんたん説明" />
-  </div>
-  <div class="space-y-2">
-    <div class="text-(text-primary h3) font-medium">Memo</div>
-    {#await memoPromises then elements}
-      {#if elements.length === 0 && $sidebarCollectionElements.length !== 0}
-        <div
-          class="space-y-2 p-4 border-(border-primary solid ~) rounded max-w-120"
-        >
-          <div class="flex items-center">
-            <div class="text-(text-primary h3) font-medium">メモ機能</div>
-          </div>
-          <div class="text-(text-tertiary body)">
-            このアプリにはメモ機能があります。サイドバーからゲームを選択して「Memo」ボタンを押すことでそのゲームについてメモを取ることができます。
-          </div>
+    {#if $sidebarCollectionElements.length === 0 && isOpenGettingStarted}
+      <div
+        class="space-y-2 p-4 border-(border-primary solid ~) rounded max-w-120"
+      >
+        <div class="flex items-center">
+          <div class="text-(text-primary h3) font-medium">Getting started</div>
         </div>
-      {:else}
-        <div class="gap-1 flex-(~ col)">
-          {#each elements as element (element.id)}
-            <a
-              use:link
-              href="/memos/{element.id}?gamename={element.gamename}"
-              class="text-(text-link body2) hover:underline-(1px text-link)"
-            >
-              メモ - {element.gamename}
-            </a>
-          {/each}
+        <div class="text-(text-tertiary body)">
+          持っているゲームをこのランチャーに登録してみましょう。左のサイドバーにある「Add」ボタンから自動で追加できます。
         </div>
-      {/if}
-    {/await}
+      </div>
+    {/if}
+    <div class="space-y-2">
+      <div class="text-(text-primary h3) font-medium">Help</div>
+      <LinkText href="https://youtu.be/SZnOkYNIeG0" text="かんたん説明" />
+    </div>
+    <div class="space-y-2">
+      <div class="text-(text-primary h3) font-medium">Memo</div>
+      {#await memoPromises then elements}
+        {#if elements.length === 0 && $sidebarCollectionElements.length !== 0}
+          <div
+            class="space-y-2 p-4 border-(border-primary solid ~) rounded max-w-120"
+          >
+            <div class="flex items-center">
+              <div class="text-(text-primary h3) font-medium">メモ機能</div>
+            </div>
+            <div class="text-(text-tertiary body)">
+              このアプリにはメモ機能があります。サイドバーからゲームを選択して「Memo」ボタンを押すことでそのゲームについてメモを取ることができます。
+            </div>
+          </div>
+        {:else}
+          <div class="gap-1 flex-(~ col)">
+            {#each elements as element (element.id)}
+              <a
+                use:link
+                href="/memos/{element.id}?gamename={element.gamename}"
+                class="text-(text-link body2) hover:underline-(1px text-link)"
+              >
+                メモ - {element.gamename}
+              </a>
+            {/each}
+          </div>
+        {/if}
+      {/await}
+    </div>
+    <ZappingGames />
   </div>
 </div>

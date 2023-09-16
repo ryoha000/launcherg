@@ -2,7 +2,10 @@ use chrono::NaiveDateTime;
 use derive_new::new;
 use serde::{Deserialize, Serialize};
 
-use crate::domain::{self, file::get_icon_path};
+use crate::domain::{
+    self,
+    file::{get_icon_path, get_thumbnail_path},
+};
 
 #[derive(new, Debug, Serialize, Deserialize, Clone)]
 pub struct Collection {
@@ -29,6 +32,7 @@ pub struct CollectionElement {
     pub sellday: String,
     pub is_nukige: bool,
     pub path: String,
+    pub thumbnail: String,
     pub icon: String,
     pub install_at: Option<String>,
     pub last_play_at: Option<String>,
@@ -47,6 +51,7 @@ impl From<domain::collection::CollectionElement> for CollectionElement {
             st.sellday,
             st.is_nukige,
             st.path,
+            get_thumbnail_path(&st.id),
             get_icon_path(&st.id),
             st.install_at.and_then(|v| Some(v.to_rfc3339())),
             st.last_play_at.and_then(|v| Some(v.to_rfc3339())),

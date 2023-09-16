@@ -59,6 +59,7 @@ export type CollectionElement = {
   registeredAt: string;
   path: string;
   icon: string;
+  thumbnail: string;
 };
 
 export type CollectionElementsWithLabel = {

@@ -40,7 +40,7 @@
         "removeDir": false,
         "removeFile": false,
         "renameFile": false,
-        "scope": ["$APPDATA/*"],
+        "scope": ["**"],
         "writeFile": true
       },
       "dialog": {
