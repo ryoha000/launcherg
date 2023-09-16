@@ -6,6 +6,7 @@
     selectChange: {};
     selectDelete: {};
     selectOpen: {};
+    selectOtherInfomation: {};
     close: {};
   }>();
 </script>
@@ -39,6 +40,13 @@
     on:click={() => {
       dispatcher("close");
       dispatcher("selectDelete");
+    }}
+  />
+  <OptionButton
+    text="その他の情報"
+    on:click={() => {
+      dispatcher("close");
+      dispatcher("selectOtherInfomation");
     }}
   />
 </div>

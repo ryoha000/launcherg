@@ -23,6 +23,7 @@
   import path from "path";
   import DeleteElement from "@/components/Work/DeleteElement.svelte";
   import type { AllGameCacheOne } from "@/lib/types";
+  import OtherInformation from "@/components/Work/OtherInformation.svelte";
 
   export let name: string;
   export let id: number;
@@ -80,6 +81,7 @@
   };
 
   let isOpenDelete = false;
+  let isOpenOtherInformation = false;
 </script>
 
 {#await elementPromise then element}
@@ -114,6 +116,7 @@
           on:selectChange={() => (isOpenImportManually = true)}
           on:selectDelete={() => (isOpenDelete = true)}
           on:selectOpen={() => commandOpenFolder(element.path)}
+          on:selectOtherInfomation={() => (isOpenOtherInformation = true)}
         />
       </APopover>
     </div>
@@ -125,4 +128,5 @@
     on:cancel={() => (isOpenImportManually = false)}
   />
   <DeleteElement bind:isOpen={isOpenDelete} {element} />
+  <OtherInformation bind:isOpen={isOpenOtherInformation} {element} />
 {/await}
