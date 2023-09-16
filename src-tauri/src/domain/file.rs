@@ -63,6 +63,8 @@ fn to_pcwstr(str: &str) -> PCWSTR {
     PCWSTR::from_raw(str.to_wide_null_terminated().as_ptr())
 }
 
+const NOT_GAME_EQUALLY_WORD: [&str; 1] = ["bgi"];
+
 const NOT_GAME_TERMS: [&str; 16] = [
     "マニュアル",
     "詳細設定",
@@ -84,6 +86,11 @@ const NOT_GAME_TERMS: [&str; 16] = [
 fn not_game(filename: &str) -> bool {
     for not_game_str in NOT_GAME_TERMS {
         if filename.contains(not_game_str) {
+            return true;
+        }
+    }
+    for not_game_str in NOT_GAME_EQUALLY_WORD {
+        if filename.eq(not_game_str) {
             return true;
         }
     }
@@ -109,7 +116,7 @@ fn remove_word(filename: &str) -> String {
     result
 }
 
-const IGNORE_GAME_ID: [i32; 1] = [2644];
+const IGNORE_GAME_ID: [i32; 4] = [2644, 63, 2797, 10419];
 
 pub fn get_file_name_without_extension(file_path: &str) -> Option<String> {
     let path = Path::new(file_path);
