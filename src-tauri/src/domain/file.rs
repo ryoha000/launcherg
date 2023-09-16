@@ -494,11 +494,13 @@ pub fn save_thumbnail(
 ) -> JoinHandle<anyhow::Result<()>> {
     let collection_element_id = collection_element_id.clone();
     tauri::async_runtime::spawn(async move {
-        let orig_path = get_origin_thumbnail_path(&collection_element_id, &src_url)?;
-        save_origin_thumbnail(&src_url, &orig_path).await?;
+        let save_path = get_thumbnail_path(&collection_element_id);
+        if !(std::path::Path::new(&save_path).exists()) && src_url != "" {
+            let orig_path = get_origin_thumbnail_path(&collection_element_id, &src_url)?;
+            save_origin_thumbnail(&src_url, &orig_path).await?;
 
-        resize_image(&orig_path, &get_thumbnail_path(&collection_element_id), 400)?;
-
+            resize_image(&orig_path, &save_path, 400)?;
+        }
         Ok(())
     })
 }

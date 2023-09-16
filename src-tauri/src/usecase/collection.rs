@@ -180,14 +180,19 @@ impl<R: RepositoriesExt> CollectionUseCase<R> {
         &self,
         args: Vec<(Id<CollectionElement>, String)>,
     ) -> anyhow::Result<()> {
-        let tasks = args.into_iter().map(|(id, url)| save_thumbnail(&id, url));
-        futures::future::try_join_all(tasks)
-            .await?
-            .into_iter()
-            .for_each(|v| match v {
-                Err(e) => eprintln!("[concurency_save_thumbnails] {}", e.to_string()),
-                _ => {}
-            });
+        use futures::StreamExt as _;
+
+        futures::stream::iter(args.into_iter())
+            .map(|(id, url)| save_thumbnail(&id, url))
+            .buffered(50)
+            .map(|v| v?)
+            .for_each(|v| async move {
+                match v {
+                    Err(e) => eprintln!("[concurency_save_thumbnails] {}", e.to_string()),
+                    _ => {}
+                }
+            })
+            .await;
         Ok(())
     }
 
