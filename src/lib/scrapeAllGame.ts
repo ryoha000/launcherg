@@ -12,11 +12,12 @@ const MAX_SCRAPE_COUNT = 20;
 export const scrapeAllGame = async (idCursor = 0) => {
   const idGameNamePairs: AllGameCacheOne[] = [];
   for (let i = 0; i < MAX_SCRAPE_COUNT; i++) {
-    const query = `SELECT id, gamename, CASE WHEN gamelist.dmm_genre='digital' AND gamelist.dmm_genre_2='pcgame' THEN 'http://pics.dmm.co.jp/digital/pcgame/' || gamelist.dmm || '/' || gamelist.dmm || 'pl.jpg'
-    WHEN gamelist.dmm_genre='digital' AND gamelist.dmm_genre_2='doujin' THEN 'https://doujin-assets.dmm.co.jp/digital/game/' || gamelist.dmm || '/' || gamelist.dmm || 'pr.jpg'
-    WHEN gamelist.dlsite_id IS NOT NULL AND (gamelist.dlsite_domain='pro' OR gamelist.dlsite_domain='soft') THEN 'https://img.dlsite.jp/modpub/images2/work/professional/' || left(gamelist.dlsite_id,2) || CAST(right(left(gamelist.dlsite_id,5),3) AS INTEGER)+1 || '000/' || gamelist.dlsite_id || '_img_main.jpg'
-    WHEN gamelist.dlsite_id IS NOT NULL THEN 'https://img.dlsite.jp/modpub/images2/work/doujin/' || left(gamelist.dlsite_id,2) || CAST(right(left(gamelist.dlsite_id,5),3) AS INTEGER)+1 || '000/' || gamelist.dlsite_id || '_img_main.jpg'
-    ELSE 'https://pics.dmm.co.jp/mono/game/' || gamelist.dmm || '/' || gamelist.dmm || 'pl.jpg' END AS thumbnail_url FROM gamelist WHERE id >= ${idCursor} AND id < ${
+    const query = `SELECT id, gamename, CASE WHEN dmm_genre='digital' AND dmm_genre_2='pcgame' THEN 'http://pics.dmm.co.jp/digital/pcgame/' || dmm || '/' || dmm || 'pl.jpg'
+    WHEN dmm_genre='digital' AND dmm_genre_2='doujin' THEN 'https://doujin-assets.dmm.co.jp/digital/game/' || dmm || '/' || dmm || 'pr.jpg'
+    WHEN dmm_genre='mono' AND dmm_genre_2='pcgame' THEN 'https://pics.dmm.co.jp/mono/game/' || dmm || '/' || dmm || 'pl.jpg'
+    WHEN dlsite_id IS NOT NULL AND (dlsite_domain='pro' OR dlsite_domain='soft') THEN 'https://img.dlsite.jp/modpub/images2/work/professional/' || left(dlsite_id,2) || CAST(right(left(dlsite_id,5),3) AS INTEGER)+1 || '000/' || dlsite_id || '_img_main.jpg'
+    WHEN dlsite_id IS NOT NULL THEN 'https://img.dlsite.jp/modpub/images2/work/doujin/' || left(dlsite_id,2) || CAST(right(left(dlsite_id,5),3) AS INTEGER)+1 || '000/' || dlsite_id || '_img_main.jpg'
+    ELSE 'https://pics.dmm.co.jp/mono/game/' || dmm || '/' || dmm || 'pl.jpg' END AS thumbnail_url FROM gamelist WHERE id >= ${idCursor} AND id < ${
       idCursor + STEP
     } AND model = 'PC';`;
     const rows = await scrapeSql(query, 3);
