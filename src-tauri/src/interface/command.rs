@@ -3,13 +3,13 @@ use std::sync::Mutex;
 use tauri::State;
 use tauri::Window;
 
+use super::models::all_game_cache::AllGameCacheOne;
 use super::models::collection::ProgressLivePayload;
 use super::{
     error::CommandError,
     models::collection::CollectionElement,
     module::{Modules, ModulesExt},
 };
-use crate::domain::all_game_cache::AllGameCacheOne;
 use crate::domain::file::get_lnk_metadatas;
 use crate::interface::models::collection::ProgressPayload;
 use crate::{
@@ -146,12 +146,16 @@ pub async fn upload_image(
 #[tauri::command]
 pub async fn upsert_collection_element(
     modules: State<'_, Arc<Modules>>,
-    id: i32,
-    gamename: String,
     path: String,
+    game_cache: AllGameCacheOne,
 ) -> anyhow::Result<(), CommandError> {
     let install_at = get_file_created_at_sync(&path);
-    let new_element = NewCollectionElement::new(Id::new(id), gamename, path, install_at);
+    let new_element = NewCollectionElement::new(
+        Id::new(game_cache.id),
+        game_cache.gamename,
+        path,
+        install_at,
+    );
     modules
         .collection_use_case()
         .upsert_collection_element(&new_element)
@@ -160,9 +164,16 @@ pub async fn upsert_collection_element(
         .collection_use_case()
         .save_element_icon(&new_element.path, &new_element.id)
         .await?;
+    modules
+        .collection_use_case()
+        .save_element_thumbnail(&new_element.id, game_cache.thumbnail_url)
+        .await?;
     Ok(modules
         .collection_use_case()
-        .add_collection_elements(&Id::new(ONEPIECE_COLLECTION_ID), &vec![Id::new(id)])
+        .add_collection_elements(
+            &Id::new(ONEPIECE_COLLECTION_ID),
+            &vec![Id::new(game_cache.id)],
+        )
         .await?)
 }
 
@@ -349,15 +360,11 @@ pub async fn get_all_game_cache_last_updated(
 #[tauri::command]
 pub async fn update_all_game_cache(
     modules: State<'_, Arc<Modules>>,
-    value: Vec<(i32, String)>,
+    game_caches: Vec<AllGameCacheOne>,
 ) -> anyhow::Result<(), CommandError> {
-    let mut cache = vec![];
-    for (id, gamename) in value {
-        cache.push(AllGameCacheOne { id, gamename })
-    }
     modules
         .all_game_cache_use_case()
-        .update_all_game_cache(cache)
+        .update_all_game_cache(game_caches.into_iter().map(|v| v.into()).collect())
         .await?;
     Ok(())
 }
@@ -398,4 +405,30 @@ pub async fn get_exe_path_by_lnk(filepath: String) -> anyhow::Result<String, Com
             "cannot get lnk metadata"
         )));
     }
+}
+
+#[tauri::command]
+pub async fn get_game_cache_by_id(
+    modules: State<'_, Arc<Modules>>,
+    id: i32,
+) -> anyhow::Result<Option<AllGameCacheOne>, CommandError> {
+    Ok(modules
+        .all_game_cache_use_case()
+        .get(id)
+        .await?
+        .and_then(|v| Some(v.into())))
+}
+
+#[tauri::command]
+pub async fn get_game_cache_by_ids(
+    modules: State<'_, Arc<Modules>>,
+    ids: Vec<i32>,
+) -> anyhow::Result<Vec<AllGameCacheOne>, CommandError> {
+    Ok(modules
+        .all_game_cache_use_case()
+        .get_by_ids(ids)
+        .await?
+        .into_iter()
+        .map(|v| v.into())
+        .collect())
 }

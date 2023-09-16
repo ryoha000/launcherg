@@ -7,21 +7,21 @@
   import { commandUpsertCollectionElement } from "@/lib/command";
   import { registerCollectionElementDetails } from "@/lib/registerCollectionElementDetails";
   import { showInfoToast } from "@/lib/toast";
+  import type { AllGameCacheOne } from "@/lib/types";
   import { sidebarCollectionElements } from "@/store/sidebarCollectionElements";
 
   let isOpenImportAutomatically = false;
   let isOpenImportManually = false;
 
   const importManually = async (arg: {
-    id: number;
-    gamename: string;
     path: string;
+    gameCache: AllGameCacheOne;
   }) => {
-    await commandUpsertCollectionElement(arg.id, arg.gamename, arg.path);
+    await commandUpsertCollectionElement(arg);
     await registerCollectionElementDetails();
     await sidebarCollectionElements.refetch();
     isOpenImportManually = false;
-    showInfoToast(`${arg.gamename}を登録しました。`);
+    showInfoToast(`${arg.gameCache.gamename}を登録しました。`);
   };
 </script>
 

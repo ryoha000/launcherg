@@ -1,5 +1,5 @@
 import type {
-  Collection,
+  AllGameCacheOne,
   CollectionElement,
   CollectionElementDetail,
 } from "@/lib/types";
@@ -32,16 +32,11 @@ export const commandUploadImage = async (id: number, base64Image: string) => {
   });
 };
 
-export const commandUpsertCollectionElement = async (
-  id: number,
-  gamename: string,
-  path: string
-) => {
-  return await invoke<void>("upsert_collection_element", {
-    id,
-    gamename,
-    path,
-  });
+export const commandUpsertCollectionElement = async (arg: {
+  path: string;
+  gameCache: AllGameCacheOne;
+}) => {
+  return await invoke<void>("upsert_collection_element", arg);
 };
 
 export const commandUpdateCollectionElementIcon = async (
@@ -119,10 +114,10 @@ export const commandGetAllGameCacheLastUpdated = async () => {
 };
 
 export const commandUpdateAllGameCache = async (
-  value: [number, string, string][]
+  gameCaches: AllGameCacheOne[]
 ) => {
   await invoke("update_all_game_cache", {
-    value,
+    gameCaches,
   });
 };
 
@@ -135,5 +130,11 @@ export const commandGetGameCandidates = async (filepath: string) => {
 export const commandGetExePathByLnk = async (filepath: string) => {
   return await invoke<string>("get_exe_path_by_lnk", {
     filepath,
+  });
+};
+
+export const commandGetGameCacheById = async (id: number) => {
+  return await invoke<AllGameCacheOne | null>("get_game_cache_by_id", {
+    id,
   });
 };

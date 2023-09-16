@@ -3,17 +3,14 @@ import {
   commandUpdateAllGameCache,
 } from "@/lib/command";
 import { scrapeSql } from "@/lib/scrapeSql";
+import type { AllGameCacheOne } from "@/lib/types";
 import { ResponseType, fetch } from "@tauri-apps/api/http";
 
 const STEP = 5000;
 const MAX_SCRAPE_COUNT = 20;
 
 export const scrapeAllGame = async (idCursor = 0) => {
-  const idGameNamePairs: {
-    id: number;
-    gamename: string;
-    thumbnailUrl: string;
-  }[] = [];
+  const idGameNamePairs: AllGameCacheOne[] = [];
   for (let i = 0; i < MAX_SCRAPE_COUNT; i++) {
     const query = `SELECT id, gamename, CASE WHEN gamelist.dmm_genre='digital' AND gamelist.dmm_genre_2='pcgame' THEN 'http://pics.dmm.co.jp/digital/pcgame/' || gamelist.dmm || '/' || gamelist.dmm || 'pl.jpg'
     WHEN gamelist.dmm_genre='digital' AND gamelist.dmm_genre_2='doujin' THEN 'https://doujin-assets.dmm.co.jp/digital/game/' || gamelist.dmm || '/' || gamelist.dmm || 'pr.jpg'
@@ -40,7 +37,7 @@ export const scrapeAllGame = async (idCursor = 0) => {
 };
 
 export const initializeAllGameCache = async () => {
-  let objValue: { id: number; gamename: string; thumbnailUrl: string }[] = [];
+  let objValue: AllGameCacheOne[] = [];
   try {
     const lastUpdated = await commandGetAllGameCacheLastUpdated();
     const now = new Date();
@@ -53,7 +50,7 @@ export const initializeAllGameCache = async () => {
     );
     console.warn(e);
     const initValue = (
-      await fetch<{ id: number; gamename: string; thumbnailUrl: string }[]>(
+      await fetch<AllGameCacheOne[]>(
         "https://raw.githubusercontent.com/ryoha000/launcherg/main/script/all_games.json",
         {
           method: "GET",
@@ -67,10 +64,5 @@ export const initializeAllGameCache = async () => {
     );
     objValue = [...initValue, ...(await scrapeAllGame(maxId + 1))];
   }
-  const value: [number, string, string][] = objValue.map((v) => [
-    v.id,
-    v.gamename,
-    v.thumbnailUrl,
-  ]);
-  await commandUpdateAllGameCache(value);
+  await commandUpdateAllGameCache(objValue);
 };

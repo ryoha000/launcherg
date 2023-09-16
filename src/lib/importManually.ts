@@ -1,4 +1,4 @@
-import { commandGetExePathByLnk } from "@/lib/command";
+import { commandGetExePathByLnk, commandGetGameCacheById } from "@/lib/command";
 import { scrapeSql } from "@/lib/scrapeSql";
 import { showErrorToast } from "@/lib/toast";
 
@@ -36,21 +36,18 @@ export const useImportManually = () => {
       return showErrorToast("ErogameScape の id として解釈できませんでした");
     }
 
-    const gamenames = await scrapeSql(
-      `select gamename from gamelist where id = ${id};`,
-      1
-    );
-    if (gamenames.length !== 1 || gamenames[0].length !== 1) {
-      showErrorToast("指定したゲームの名前が取得できませんでした");
-      return;
+    const gameCache = await commandGetGameCacheById(id);
+    if (!gameCache) {
+      return showErrorToast(
+        "存在しない id でした。ErogameScape を確認して存在していたらバグなので @ryoha000 に連絡していただけると幸いです。"
+      );
     }
-    const gamename = gamenames[0][0];
 
     if (pathInput.toLowerCase().endsWith("lnk")) {
       const exePath = await commandGetExePathByLnk(pathInput);
-      return { id, gamename, path: exePath };
+      return { path: exePath, gameCache };
     } else {
-      return { id, gamename, path: pathInput };
+      return { path: pathInput, gameCache };
     }
   };
 

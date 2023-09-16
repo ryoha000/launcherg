@@ -22,6 +22,7 @@
   import { deleteTab, tabs, selected } from "@/store/tabs";
   import path from "path";
   import DeleteElement from "@/components/Work/DeleteElement.svelte";
+  import type { AllGameCacheOne } from "@/lib/types";
 
   export let name: string;
   export let id: number;
@@ -68,13 +69,12 @@
   })();
 
   let isOpenImportManually = false;
-  const onChangeGame = async (
-    elementId: number,
-    gamename: string,
-    path: string
-  ) => {
+  const onChangeGame = async (arg: {
+    path: string;
+    gameCache: AllGameCacheOne;
+  }) => {
     await commandDeleteCollectionElement(id);
-    await commandUpsertCollectionElement(elementId, gamename, path);
+    await commandUpsertCollectionElement(arg);
     await sidebarCollectionElements.refetch();
     deleteTab($tabs[$selected].id);
   };
@@ -121,8 +121,7 @@
   <ImportManually
     bind:isOpen={isOpenImportManually}
     withInputPath={false}
-    on:confirm={(e) =>
-      onChangeGame(e.detail.id, e.detail.gamename, element.path)}
+    on:confirm={(e) => onChangeGame(e.detail)}
     on:cancel={() => (isOpenImportManually = false)}
   />
   <DeleteElement bind:isOpen={isOpenDelete} {element} />

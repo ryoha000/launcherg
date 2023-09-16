@@ -76,3 +76,9 @@ export type CollectionElementDetail = {
   sellday: string;
   isNukige: boolean;
 };
+
+export type AllGameCacheOne = {
+  id: number;
+  gamename: string;
+  thumbnailUrl: string;
+};

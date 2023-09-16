@@ -6,6 +6,7 @@
   import { commandUpsertCollectionElement } from "@/lib/command";
   import { showErrorToast, showInfoToast } from "@/lib/toast";
   import { sidebarCollectionElements } from "@/store/sidebarCollectionElements";
+  import type { AllGameCacheOne } from "@/lib/types";
 
   onMount(() =>
     listen<string[]>("tauri://file-drop", (event) => {
@@ -47,14 +48,13 @@
     }
   };
   const importManually = async (arg: {
-    id: number;
-    gamename: string;
     path: string;
+    gameCache: AllGameCacheOne;
   }) => {
-    await commandUpsertCollectionElement(arg.id, arg.gamename, arg.path);
+    await commandUpsertCollectionElement(arg);
     await registerCollectionElementDetails();
     await sidebarCollectionElements.refetch();
-    showInfoToast(`${arg.gamename}を登録しました。`);
+    showInfoToast(`${arg.gameCache.gamename}を登録しました。`);
     isOpenImportFileDrop = false;
     setTimeout(next, 0);
   };

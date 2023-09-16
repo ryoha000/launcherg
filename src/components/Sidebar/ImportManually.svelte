@@ -4,6 +4,7 @@
   import Modal from "@/components/UI/Modal.svelte";
   import { commandGetGameCandidates } from "@/lib/command";
   import { useImportManually } from "@/lib/importManually";
+  import type { AllGameCacheOne } from "@/lib/types";
   import { createEventDispatcher } from "svelte";
 
   export let isOpen: boolean;
@@ -14,7 +15,10 @@
   export let path = "";
 
   const dispather = createEventDispatcher<{
-    confirm: { id: number; gamename: string; path: string };
+    confirm: {
+      path: string;
+      gameCache: AllGameCacheOne;
+    };
     cancel: {};
   }>();
 
