@@ -10,7 +10,7 @@ use crate::{
             Collection, CollectionElement, NewCollectionElement, NewCollectionElementDetail,
             UpdateCollection,
         },
-        file::{get_icon_path, save_icon_to_png},
+        file::{get_icon_path, save_icon_to_png, save_thumbnail},
         repository::collection::CollectionRepository,
         Id,
     },
@@ -166,6 +166,29 @@ impl<R: RepositoriesExt> CollectionUseCase<R> {
         id: &Id<CollectionElement>,
     ) -> anyhow::Result<()> {
         Ok(save_icon_to_png(path, id)?.await??)
+    }
+
+    pub async fn save_element_thumbnail(
+        &self,
+        id: &Id<CollectionElement>,
+        src_url: String,
+    ) -> anyhow::Result<()> {
+        Ok(save_thumbnail(id, src_url).await??)
+    }
+
+    pub async fn concurency_save_thumbnails(
+        &self,
+        args: Vec<(Id<CollectionElement>, String)>,
+    ) -> anyhow::Result<()> {
+        let tasks = args.into_iter().map(|(id, url)| save_thumbnail(&id, url));
+        futures::future::try_join_all(tasks)
+            .await?
+            .into_iter()
+            .for_each(|v| match v {
+                Err(e) => eprintln!("[concurency_save_thumbnails] {}", e.to_string()),
+                _ => {}
+            });
+        Ok(())
     }
 
     pub async fn delete_collection_element_by_id(

@@ -10,6 +10,7 @@ use std::sync::Arc;
 
 use interface::{command, module::Modules};
 use tauri::{async_runtime::block_on, Manager};
+use tauri_plugin_log::LogTarget;
 
 fn main() {
     let modules = Arc::new(block_on(Modules::new()));
@@ -21,6 +22,11 @@ fn main() {
             Ok(())
         })
         .plugin(tauri_plugin_clipboard::init())
+        .plugin(
+            tauri_plugin_log::Builder::default()
+                .targets([LogTarget::LogDir, LogTarget::Stdout, LogTarget::Webview])
+                .build(),
+        )
         .invoke_handler(tauri::generate_handler![
             command::create_elements_in_pc,
             command::get_nearest_key_and_distance,

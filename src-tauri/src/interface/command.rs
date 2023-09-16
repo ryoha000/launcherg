@@ -83,6 +83,20 @@ pub async fn create_elements_in_pc(
         )
         .await?;
 
+    let new_elements_game_caches = modules
+        .all_game_cache_use_case()
+        .get_by_ids(new_elements.iter().map(|v| v.id.value).collect())
+        .await?;
+    modules
+        .collection_use_case()
+        .concurency_save_thumbnails(
+            new_elements_game_caches
+                .into_iter()
+                .map(|v| (Id::new(v.id), v.thumbnail_url))
+                .collect(),
+        )
+        .await?;
+
     modules
         .collection_use_case()
         .upsert_collection_elements(&new_elements)
@@ -417,18 +431,4 @@ pub async fn get_game_cache_by_id(
         .get(id)
         .await?
         .and_then(|v| Some(v.into())))
-}
-
-#[tauri::command]
-pub async fn get_game_cache_by_ids(
-    modules: State<'_, Arc<Modules>>,
-    ids: Vec<i32>,
-) -> anyhow::Result<Vec<AllGameCacheOne>, CommandError> {
-    Ok(modules
-        .all_game_cache_use_case()
-        .get_by_ids(ids)
-        .await?
-        .into_iter()
-        .map(|v| v.into())
-        .collect())
 }
