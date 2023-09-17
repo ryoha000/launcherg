@@ -168,7 +168,11 @@ pub async fn upsert_collection_element(
     if let Some(path) = exe_path.clone() {
         install_at = get_file_created_at_sync(&path);
     } else if let Some(path) = lnk_path.clone() {
-        install_at = get_file_created_at_sync(&path);
+        let metadatas = get_lnk_metadatas(vec![path.as_str()])?;
+        let metadata = metadatas
+            .get(path.as_str())
+            .ok_or(anyhow::anyhow!("metadata cannot get"))?;
+        install_at = get_file_created_at_sync(&metadata.path);
     } else {
         install_at = None;
     }

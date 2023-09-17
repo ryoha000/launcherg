@@ -232,20 +232,51 @@ impl<R: ExplorersExt> FileUseCase<R> {
             ))?;
         }
 
+        let mut collection_elements = vec![];
         let mut save_icon_tasks = vec![];
-        for (id, icon_src_path) in exe_id_path_vec.iter() {
-            let task = save_icon_to_png(&icon_src_path, &Id::new(*id))?;
+        for (id, exe_path) in exe_id_path_vec.into_iter() {
+            // icon
+            let task = save_icon_to_png(&exe_path, &Id::new(id))?;
             save_icon_tasks.push(task);
+
+            // new collection element
+            if let Some(gamename) = all_erogamescape_game_map.get(&id) {
+                let install_at = get_file_created_at_sync(&exe_path);
+                collection_elements.push(NewCollectionElement::new(
+                    Id::new(id),
+                    gamename.clone(),
+                    None,
+                    Some(exe_path),
+                    install_at,
+                ));
+            }
         }
         for (id, lnk_path) in lnk_id_path_vec.iter() {
+            let id = Id::new(*id);
+            let install_at;
+            // icon
             if let Some(metadata) = lnk_metadatas.get(lnk_path.as_str()) {
                 let task;
                 if metadata.icon.to_lowercase().ends_with("ico") {
-                    task = save_icon_to_png(&metadata.icon, &Id::new(*id))?;
+                    task = save_icon_to_png(&metadata.icon, &id)?;
                 } else {
-                    task = save_icon_to_png(&metadata.path, &Id::new(*id))?;
+                    task = save_icon_to_png(&metadata.path, &id)?;
                 }
                 save_icon_tasks.push(task);
+
+                install_at = get_file_created_at_sync(&metadata.path);
+            } else {
+                install_at = None;
+            }
+
+            if let Some(gamename) = all_erogamescape_game_map.get(&id.value) {
+                collection_elements.push(NewCollectionElement::new(
+                    id,
+                    gamename.clone(),
+                    None,
+                    Some(lnk_path.clone()),
+                    install_at,
+                ));
             }
         }
         futures::future::try_join_all(save_icon_tasks)
@@ -254,36 +285,6 @@ impl<R: ExplorersExt> FileUseCase<R> {
             .collect::<anyhow::Result<()>>()?;
 
         emit_progress_with_time(emit_progress.clone(), start, "icon の保存が完了しました。")?;
-
-        let collection_elements: Vec<NewCollectionElement> = lnk_id_path_vec
-            .into_iter()
-            .filter_map(|(id, lnk_path)| {
-                if let Some(gamename) = all_erogamescape_game_map.get(&id) {
-                    let install_at = get_file_created_at_sync(&lnk_path);
-                    return Some(NewCollectionElement::new(
-                        Id::new(id),
-                        gamename.clone(),
-                        None,
-                        Some(lnk_path),
-                        install_at,
-                    ));
-                }
-                None
-            })
-            .chain(exe_id_path_vec.into_iter().filter_map(|(id, exe_path)| {
-                if let Some(gamename) = all_erogamescape_game_map.get(&id) {
-                    let install_at = get_file_created_at_sync(&exe_path);
-                    return Some(NewCollectionElement::new(
-                        Id::new(id),
-                        gamename.clone(),
-                        None,
-                        Some(exe_path),
-                        install_at,
-                    ));
-                }
-                None
-            }))
-            .collect();
 
         Ok(collection_elements)
     }

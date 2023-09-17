@@ -57,7 +57,8 @@ export type CollectionElement = {
   lastPlayAt: string | null;
   likeAt: string | null;
   registeredAt: string;
-  path: string;
+  exePath: string;
+  lnkPath: string;
   icon: string;
   thumbnail: string;
 };

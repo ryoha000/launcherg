@@ -31,7 +31,11 @@
       label="Registered At"
       value={element.registeredAt}
     />
-    <OtherInfomationSection label="Execute file path" value={element.path} />
+    <OtherInfomationSection label="Execute file path" value={element.exePath} />
+    <OtherInfomationSection
+      label="Shortcut file path"
+      value={element.lnkPath}
+    />
     <OtherInfomationSection label="Icon file path" value={element.icon} />
     {#await gameCache then c}
       <OtherInfomationSection label="Thumbnail URL" value={c?.thumbnailUrl} />
