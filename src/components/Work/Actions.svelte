@@ -92,7 +92,7 @@
       text="Memo"
       on:click={() => push(`/memos/${id}?gamename=${name}`)}
     />
-    <div class="flex items-end gap-2 h-8 min-w-0">
+    <!-- <div class="flex items-end gap-2 h-8 min-w-0">
       <div class="text-(text-primary body2) whitespace-nowrap">Time</div>
       {#await playTimePromise then playTime}
         <div class="text-(text-primary body)">
@@ -101,7 +101,7 @@
           )}`.padStart(2, "0")}`}
         </div>
       {/await}
-    </div>
+    </div> -->
     <div class="flex items-center gap-2 ml-auto">
       <ButtonCancel
         icon={isLike
@@ -124,6 +124,7 @@
   </div>
   <ImportManually
     bind:isOpen={isOpenImportManually}
+    path={element.exePath ?? element.lnkPath}
     withInputPath={false}
     on:confirm={(e) => onChangeGame(e.detail)}
     on:cancel={() => (isOpenImportManually = false)}

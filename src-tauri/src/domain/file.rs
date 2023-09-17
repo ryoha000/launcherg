@@ -368,11 +368,10 @@ pub fn save_ico_to_png(
     let p = file_path.to_string();
     let save_p = save_png_path.to_string();
     let handle = tauri::async_runtime::spawn(async move {
-        // match save_ico_to_png_sync(&p, &save_p) {
-        //     Err(_) => save_default_icon(&save_p)?.await?,
-        //     _ => Ok(()),
-        // }
-        Ok(save_ico_to_png_sync(&p, &save_p).unwrap())
+        match save_ico_to_png_sync(&p, &save_p) {
+            Err(_) => save_default_icon(&save_p)?.await?,
+            _ => Ok(()),
+        }
     });
 
     Ok(handle)
