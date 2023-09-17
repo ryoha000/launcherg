@@ -409,50 +409,87 @@ pub struct PlayHistory {
     pub start_date: String,
 }
 
+fn get_lnk_start_process_script(is_run_as_admin: bool, lnk_path: &str) -> String {
+    let verb = if is_run_as_admin { "-Verb RunAs" } else { "" };
+    format!(
+        "
+    filter Get-Shortcut()
+    {{
+        $shl  = new-object -comobject WScript.Shell
+        return $shl.CreateShortcut($_)
+    }}
+    $shortcut_info = (\"{}\" | Get-Shortcut)
+
+    $params = @{{
+        'FilePath' = $shortcut_info.TargetPath
+    }}
+
+    # Check if WorkingDirectory exists and is not empty
+    if ($null -ne $shortcut_info.WorkingDirectory -and $shortcut_info.WorkingDirectory -ne '') {{
+        $params['WorkingDirectory'] = $shortcut_info.WorkingDirectory
+    }}
+
+    # Check if Arguments exists and is not empty
+    if ($null -ne $shortcut_info.Arguments -and $shortcut_info.Arguments -ne '') {{
+        $params['ArgumentList'] = $shortcut_info.Arguments
+    }}
+
+    Start-Process @params {}
+    ",
+        lnk_path, verb
+    )
+}
+
+fn get_exe_start_process_script(is_run_as_admin: bool, exe_path: &str) -> String {
+    let verb = if is_run_as_admin { "-Verb RunAs" } else { "" };
+    format!(
+        "
+    Start-Process \"{}\" {}
+    ",
+        exe_path, verb
+    )
+}
+
 pub fn start_process(
     is_run_as_admin: bool,
-    path: &str,
-    play_history_path: &str,
+    exe_path: Option<String>,
+    lnk_path: Option<String>,
 ) -> anyhow::Result<()> {
-    let path = path.to_string();
-    let play_history_path = play_history_path.to_string();
-    std::thread::spawn(move || {
-        let start = std::time::Instant::now();
-        let start_date = Local::now().format("%Y/%m/%d %H:%M:%S").to_string();
-        let mut child = match is_run_as_admin {
-            true => std::process::Command::new("powershell")
-                .args(&[
-                    "-Command",
-                    &format!(r#"Start-Process "{}" -Verb RunAs"#, path),
-                ])
-                .spawn()
-                .unwrap(),
-            false => std::process::Command::new(&path).spawn().unwrap(),
-        };
-        child.wait().unwrap();
+    if exe_path.is_some() && lnk_path.is_some() {
+        return Err(anyhow::anyhow!(
+            "Both exe_path and lnk_path are provided. Only one should be provided.",
+        ));
+    }
 
-        let duration = start.elapsed();
-        let minutes = duration.as_secs_f64() / 60.0;
+    let script: String;
+    if let Some(path) = exe_path {
+        script = get_exe_start_process_script(is_run_as_admin, &path);
+    } else if let Some(path) = lnk_path {
+        script = get_lnk_start_process_script(is_run_as_admin, &path);
+    } else {
+        return Err(anyhow::anyhow!(
+            "Neither exe_path nor lnk_path are provided."
+        ));
+    }
 
-        let history = PlayHistory {
-            minutes: minutes as f32,
-            start_date,
-        };
+    println!("[INFO] [start processs] script: {}", script);
 
-        // JSONにシリアライズ
-        let serialized = serde_json::to_string(&history).unwrap();
+    // PowerShellでスクリプトを実行
+    let output = std::process::Command::new("powershell")
+        .arg("-ExecutionPolicy")
+        .arg("Bypass")
+        .arg("-Command")
+        .arg(&script)
+        .output()?;
 
-        // ファイルに追記
-        let mut file = std::fs::OpenOptions::new()
-            .write(true)
-            .append(true)
-            .open(play_history_path)
-            .unwrap();
+    if !output.status.success() {
+        return Err(anyhow::anyhow!(
+            "PowerShell script failed with error: {}",
+            String::from_utf8_lossy(&output.stderr)
+        ));
+    }
 
-        if let Err(e) = writeln!(file, "{}", serialized) {
-            eprintln!("Couldn't write to file: {}", e);
-        }
-    });
+    println!("end start process");
 
     Ok(())
 }

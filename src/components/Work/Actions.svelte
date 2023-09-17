@@ -20,7 +20,6 @@
   import SettingPopover from "@/components/Work/SettingPopover.svelte";
   import ImportManually from "@/components/Sidebar/ImportManually.svelte";
   import { deleteTab, tabs, selected } from "@/store/tabs";
-  import path from "path";
   import DeleteElement from "@/components/Work/DeleteElement.svelte";
   import type { AllGameCacheOne } from "@/lib/types";
   import OtherInformation from "@/components/Work/OtherInformation.svelte";
@@ -71,7 +70,8 @@
 
   let isOpenImportManually = false;
   const onChangeGame = async (arg: {
-    path: string;
+    exePath: string | null;
+    lnkPath: string | null;
     gameCache: AllGameCacheOne;
   }) => {
     await commandDeleteCollectionElement(id);
@@ -115,7 +115,8 @@
           on:close={() => close(null)}
           on:selectChange={() => (isOpenImportManually = true)}
           on:selectDelete={() => (isOpenDelete = true)}
-          on:selectOpen={() => commandOpenFolder(element.path)}
+          on:selectOpen={() =>
+            commandOpenFolder(element.exePath ?? element.lnkPath)}
           on:selectOtherInfomation={() => (isOpenOtherInformation = true)}
         />
       </APopover>

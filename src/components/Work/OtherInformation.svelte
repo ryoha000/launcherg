@@ -26,11 +26,6 @@
 >
   <div class="space-y-4">
     <OtherInfomationSection label="ErogameScape ID" value={element.id} />
-    <OtherInfomationSection label="Install At" value={element.installAt} />
-    <OtherInfomationSection
-      label="Registered At"
-      value={element.registeredAt}
-    />
     <OtherInfomationSection label="Execute file path" value={element.exePath} />
     <OtherInfomationSection
       label="Shortcut file path"

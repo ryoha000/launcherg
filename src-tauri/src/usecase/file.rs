@@ -23,8 +23,6 @@ use crate::{
     infrastructure::explorerimpl::explorer::ExplorersExt,
 };
 
-use super::error::UseCaseError;
-
 #[derive(new)]
 pub struct FileUseCase<R: ExplorersExt> {
     explorers: Arc<R>,
@@ -245,8 +243,8 @@ impl<R: ExplorersExt> FileUseCase<R> {
                 collection_elements.push(NewCollectionElement::new(
                     Id::new(id),
                     gamename.clone(),
-                    None,
                     Some(exe_path),
+                    None,
                     install_at,
                 ));
             }
@@ -300,19 +298,11 @@ impl<R: ExplorersExt> FileUseCase<R> {
         collection_element: CollectionElement,
         is_run_as_admin: bool,
     ) -> anyhow::Result<()> {
-        if let Some(exe_path) = collection_element.exe_path {
-            let exist = std::path::Path::new(&exe_path).exists();
-            if !exist {
-                return Err(UseCaseError::IsNotValidPath(exe_path).into());
-            }
-            let play_history_path = get_play_history_path(&collection_element.id);
-            return Ok(start_process(
-                is_run_as_admin,
-                &exe_path,
-                &play_history_path,
-            )?);
-        }
-        Ok(())
+        return Ok(start_process(
+            is_run_as_admin,
+            collection_element.exe_path,
+            collection_element.lnk_path,
+        )?);
     }
     pub fn get_play_time_minutes(
         &self,
