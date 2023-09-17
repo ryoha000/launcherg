@@ -16,7 +16,8 @@
 
   const dispather = createEventDispatcher<{
     confirm: {
-      path: string;
+      exePath: string | null;
+      lnkPath: string | null;
       gameCache: AllGameCacheOne;
     };
     cancel: {};

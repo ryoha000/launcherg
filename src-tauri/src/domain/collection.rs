@@ -34,7 +34,8 @@ pub struct CollectionElement {
     pub brandname_ruby: String,
     pub sellday: String,
     pub is_nukige: bool,
-    pub path: String,
+    pub exe_path: Option<String>,
+    pub lnk_path: Option<String>,
     pub install_at: Option<DateTime<Local>>,
     pub last_play_at: Option<DateTime<Local>>,
     pub like_at: Option<DateTime<Local>>,
@@ -46,7 +47,8 @@ pub struct CollectionElement {
 pub struct NewCollectionElement {
     pub id: Id<CollectionElement>,
     pub gamename: String,
-    pub path: String,
+    pub exe_path: Option<String>,
+    pub lnk_path: Option<String>,
     pub install_at: Option<DateTime<Local>>,
 }
 

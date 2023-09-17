@@ -256,30 +256,33 @@ impl<R: ExplorersExt> FileUseCase<R> {
         emit_progress_with_time(emit_progress.clone(), start, "icon の保存が完了しました。")?;
 
         let collection_elements: Vec<NewCollectionElement> = lnk_id_path_vec
-            .iter()
+            .into_iter()
             .filter_map(|(id, lnk_path)| {
-                if let Some(metadata) = lnk_metadatas.get(lnk_path.as_str()) {
-                    let path = metadata.path.clone();
-                    match path.to_lowercase().ends_with("exe") {
-                        true => return Some((*id, path.clone())),
-                        false => return None,
-                    }
-                }
-                None
-            })
-            .chain(exe_id_path_vec.into_iter().map(|(id, path)| (id, path)))
-            .filter_map(|(id, path)| {
                 if let Some(gamename) = all_erogamescape_game_map.get(&id) {
-                    let install_at = get_file_created_at_sync(&path);
-                    return Some(NewCollectionElement {
-                        id: Id::new(id),
-                        gamename: gamename.clone(),
-                        path,
+                    let install_at = get_file_created_at_sync(&lnk_path);
+                    return Some(NewCollectionElement::new(
+                        Id::new(id),
+                        gamename.clone(),
+                        None,
+                        Some(lnk_path),
                         install_at,
-                    });
+                    ));
                 }
                 None
             })
+            .chain(exe_id_path_vec.into_iter().filter_map(|(id, exe_path)| {
+                if let Some(gamename) = all_erogamescape_game_map.get(&id) {
+                    let install_at = get_file_created_at_sync(&exe_path);
+                    return Some(NewCollectionElement::new(
+                        Id::new(id),
+                        gamename.clone(),
+                        None,
+                        Some(exe_path),
+                        install_at,
+                    ));
+                }
+                None
+            }))
             .collect();
 
         Ok(collection_elements)
@@ -296,16 +299,19 @@ impl<R: ExplorersExt> FileUseCase<R> {
         collection_element: CollectionElement,
         is_run_as_admin: bool,
     ) -> anyhow::Result<()> {
-        let exist = std::path::Path::new(&collection_element.path).exists();
-        if !exist {
-            return Err(UseCaseError::IsNotValidPath(collection_element.path).into());
+        if let Some(exe_path) = collection_element.exe_path {
+            let exist = std::path::Path::new(&exe_path).exists();
+            if !exist {
+                return Err(UseCaseError::IsNotValidPath(exe_path).into());
+            }
+            let play_history_path = get_play_history_path(&collection_element.id);
+            return Ok(start_process(
+                is_run_as_admin,
+                &exe_path,
+                &play_history_path,
+            )?);
         }
-        let play_history_path = get_play_history_path(&collection_element.id);
-        Ok(start_process(
-            is_run_as_admin,
-            &collection_element.path,
-            &play_history_path,
-        )?)
+        Ok(())
     }
     pub fn get_play_time_minutes(
         &self,

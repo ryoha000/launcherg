@@ -48,7 +48,8 @@
     }
   };
   const importManually = async (arg: {
-    path: string;
+    exePath: string | null;
+    lnkPath: string | null;
     gameCache: AllGameCacheOne;
   }) => {
     await commandUpsertCollectionElement(arg);

@@ -33,7 +33,8 @@ export const commandUploadImage = async (id: number, base64Image: string) => {
 };
 
 export const commandUpsertCollectionElement = async (arg: {
-  path: string;
+  exePath: string | null;
+  lnkPath: string | null;
   gameCache: AllGameCacheOne;
 }) => {
   return await invoke<void>("upsert_collection_element", arg);

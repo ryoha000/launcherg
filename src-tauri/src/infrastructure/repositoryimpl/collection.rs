@@ -140,39 +140,19 @@ impl CollectionRepository for RepositoryImpl<Collection> {
     }
     async fn upsert_collection_element(&self, new: &NewCollectionElement) -> Result<()> {
         let pool = self.pool.0.clone();
-        let _ = query("insert into collection_elements (id, gamename, path, install_at) values (?, ?, ?, ?) ON CONFLICT(id) DO UPDATE SET gamename = ?, path = ?, install_at = ?, updated_at = ?")
+        let _ = query("insert into collection_elements (id, gamename, exe_path, lnk_path, install_at) values (?, ?, ?, ?, ?) ON CONFLICT(id) DO UPDATE SET gamename = ?, exe_path = ?, lnk_path = ?, install_at = ?, updated_at = ?")
             .bind(new.id.value)
             .bind(new.gamename.clone())
-            .bind(new.path.clone())
+            .bind(new.exe_path.clone())
+            .bind(new.lnk_path.clone())
             .bind(new.install_at.and_then(|v| Some(v.naive_utc()))) // TODO: naive_utc いるか確認
             .bind(new.gamename.clone())
-            .bind(new.path.clone())
+            .bind(new.exe_path.clone())
+            .bind(new.lnk_path.clone())
             .bind(new.install_at.and_then(|v| Some(v.naive_utc()))) // TODO: naive_utc いるか確認
             .bind(Local::now().naive_utc()) // TODO: naive_utc いるか確認
             .execute(&*pool)
             .await?;
-        Ok(())
-    }
-    async fn create_collection_elements(
-        &self,
-        new_elements: Vec<NewCollectionElement>,
-    ) -> Result<()> {
-        if new_elements.len() == 0 {
-            return Ok(());
-        }
-        // ref: https://docs.rs/sqlx-core/latest/sqlx_core/query_builder/struct.QueryBuilder.html#method.push_values
-        let mut query_builder =
-            QueryBuilder::new("INSERT INTO collection_elements (id, gamename, path, install_at) ");
-        query_builder.push_values(new_elements, |mut b, new| {
-            b.push_bind(new.id.value)
-                .push_bind(new.gamename)
-                .push_bind(new.path)
-                .push_bind(new.install_at.and_then(|v| Some(v.naive_utc())));
-        });
-
-        let pool = self.pool.0.clone();
-        let query = query_builder.build();
-        query.execute(&*pool).await?;
         Ok(())
     }
     async fn add_elements_by_id(

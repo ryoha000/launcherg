@@ -59,7 +59,8 @@ CREATE TABLE IF NOT EXISTS collections (
 CREATE TABLE IF NOT EXISTS collection_elements (
     id INTEGER PRIMARY KEY,
     gamename TEXT NOT NULL,
-    path TEXT NOT NULL,
+    exe_path TEXT,
+    lnk_path TEXT,
     install_at DATETIME,
     last_play_at DATETIME,
     like_at DATETIME,

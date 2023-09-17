@@ -160,14 +160,23 @@ pub async fn upload_image(
 #[tauri::command]
 pub async fn upsert_collection_element(
     modules: State<'_, Arc<Modules>>,
-    path: String,
+    exe_path: Option<String>,
+    lnk_path: Option<String>,
     game_cache: AllGameCacheOne,
 ) -> anyhow::Result<(), CommandError> {
-    let install_at = get_file_created_at_sync(&path);
+    let install_at;
+    if let Some(path) = exe_path.clone() {
+        install_at = get_file_created_at_sync(&path);
+    } else if let Some(path) = lnk_path.clone() {
+        install_at = get_file_created_at_sync(&path);
+    } else {
+        install_at = None;
+    }
     let new_element = NewCollectionElement::new(
         Id::new(game_cache.id),
         game_cache.gamename,
-        path,
+        exe_path,
+        lnk_path,
         install_at,
     );
     modules
@@ -176,7 +185,7 @@ pub async fn upsert_collection_element(
         .await?;
     modules
         .collection_use_case()
-        .save_element_icon(&new_element.path, &new_element.id)
+        .save_element_icon(&new_element)
         .await?;
     modules
         .collection_use_case()

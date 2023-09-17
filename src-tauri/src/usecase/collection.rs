@@ -10,7 +10,7 @@ use crate::{
             Collection, CollectionElement, NewCollectionElement, NewCollectionElementDetail,
             UpdateCollection,
         },
-        file::{get_icon_path, save_icon_to_png, save_thumbnail},
+        file::{get_icon_path, get_lnk_metadatas, save_icon_to_png, save_thumbnail},
         repository::collection::CollectionRepository,
         Id,
     },
@@ -63,16 +63,6 @@ impl<R: RepositoriesExt> CollectionUseCase<R> {
             return Err(UseCaseError::CollectionIsNotFound.into());
         }
         Ok(self.repositories.collection_repository().delete(id).await?)
-    }
-    pub async fn create_collection_elements(
-        &self,
-        source: Vec<NewCollectionElement>,
-    ) -> anyhow::Result<()> {
-        Ok(self
-            .repositories
-            .collection_repository()
-            .create_collection_elements(source)
-            .await?)
     }
     pub async fn upsert_collection_element(
         &self,
@@ -160,12 +150,26 @@ impl<R: RepositoriesExt> CollectionUseCase<R> {
         Ok(())
     }
 
-    pub async fn save_element_icon(
-        &self,
-        path: &str,
-        id: &Id<CollectionElement>,
-    ) -> anyhow::Result<()> {
-        Ok(save_icon_to_png(path, id)?.await??)
+    pub async fn save_element_icon(&self, element: &NewCollectionElement) -> anyhow::Result<()> {
+        let id = &element.id;
+        let icon_path;
+        if let Some(lnk_path) = element.lnk_path.clone() {
+            let metadatas = get_lnk_metadatas(vec![lnk_path.as_str()])?;
+            let metadata = metadatas
+                .get(lnk_path.as_str())
+                .ok_or(anyhow::anyhow!("metadata cannot get"))?;
+            if metadata.icon.to_lowercase().ends_with("ico") {
+                icon_path = metadata.icon.clone();
+            } else {
+                icon_path = metadata.path.clone();
+            }
+        } else if let Some(exe_path) = element.exe_path.clone() {
+            icon_path = exe_path;
+        } else {
+            eprintln!("lnk_path and exe_path are None");
+            return Ok(());
+        }
+        Ok(save_icon_to_png(&icon_path, id)?.await??)
     }
 
     pub async fn save_element_thumbnail(

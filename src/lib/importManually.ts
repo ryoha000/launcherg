@@ -44,10 +44,9 @@ export const useImportManually = () => {
     }
 
     if (pathInput.toLowerCase().endsWith("lnk")) {
-      const exePath = await commandGetExePathByLnk(pathInput);
-      return { path: exePath, gameCache };
+      return { exePath: null, lnkPath: pathInput, gameCache };
     } else {
-      return { path: pathInput, gameCache };
+      return { exePath: pathInput, lnkPath: null, gameCache };
     }
   };
 

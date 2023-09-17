@@ -36,7 +36,8 @@ pub struct CollectionElementTable {
     pub brandname_ruby: String,
     pub sellday: String,
     pub is_nukige: i32,
-    pub path: String,
+    pub exe_path: Option<String>,
+    pub lnk_path: Option<String>,
     pub install_at: Option<NaiveDateTime>,
     pub last_play_at: Option<NaiveDateTime>,
     pub like_at: Option<NaiveDateTime>,
@@ -55,7 +56,8 @@ impl TryFrom<CollectionElementTable> for CollectionElement {
             st.brandname_ruby,
             st.sellday,
             st.is_nukige != 0,
-            st.path,
+            st.exe_path,
+            st.lnk_path,
             st.install_at
                 .and_then(|v| Some(v.and_utc().with_timezone(&Local))),
             st.last_play_at

@@ -23,10 +23,6 @@ pub trait CollectionRepository {
     async fn create(&self, new: NewCollection) -> Result<Collection>;
     async fn update(&self, src: UpdateCollection) -> Result<()>;
     async fn delete(&self, id: &Id<Collection>) -> Result<()>;
-    async fn create_collection_elements(
-        &self,
-        new_elements: Vec<NewCollectionElement>,
-    ) -> Result<()>;
     async fn upsert_collection_element(&self, new_elements: &NewCollectionElement) -> Result<()>;
     async fn add_elements_by_id(
         &self,
