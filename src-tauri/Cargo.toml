@@ -32,6 +32,7 @@ dirs = "5.0.1"
 fast_image_resize = "1.0.0"
 url = "2.4.1"
 tauri-plugin-log = { git = "https://github.com/tauri-apps/plugins-workspace", branch = "v1" }
+ico = "0.3.0"
 
 [dependencies.windows]
 version = "0.48"

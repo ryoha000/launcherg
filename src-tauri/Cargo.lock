@@ -1829,6 +1829,7 @@ dependencies = [
  "dirs",
  "fast_image_resize",
  "futures",
+ "ico",
  "image",
  "reqwest",
  "serde",

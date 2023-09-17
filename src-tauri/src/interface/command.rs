@@ -172,6 +172,10 @@ pub async fn upsert_collection_element(
         let metadata = metadatas
             .get(path.as_str())
             .ok_or(anyhow::anyhow!("metadata cannot get"))?;
+        println!(
+            "metadata.path: {}, metadata.icon: {}",
+            metadata.path, metadata.icon
+        );
         install_at = get_file_created_at_sync(&metadata.path);
     } else {
         install_at = None;

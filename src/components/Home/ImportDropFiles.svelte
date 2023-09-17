@@ -13,7 +13,7 @@
       importFileDropPaths = [];
       const files = event.payload;
       for (const file of files) {
-        const exts = ["exe", "lnk"];
+        const exts = ["exe", "lnk", "url"];
         let isIgnore = true;
         for (const ext of exts) {
           if (file.toLowerCase().endsWith(ext)) {

@@ -203,7 +203,7 @@ impl<R: ExplorersExt> FileUseCase<R> {
             .map(|v| (v.id, v.gamename))
             .collect();
 
-        let (lnk_id_path_vec, exe_id_path_vec): (Vec<(i32, String)>, Vec<(i32, String)>) = self
+        let (exe_id_path_vec, lnk_id_path_vec): (Vec<(i32, String)>, Vec<(i32, String)>) = self
             .concurency_get_path_game_map(
                 normalized_all_games,
                 files,
@@ -211,7 +211,7 @@ impl<R: ExplorersExt> FileUseCase<R> {
             )
             .await?
             .into_iter()
-            .partition(|(_id, path)| path.to_lowercase().ends_with("lnk"));
+            .partition(|(_id, path)| path.to_lowercase().ends_with("exe"));
 
         emit_progress_with_time(
             emit_progress.clone(),

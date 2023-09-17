@@ -172,6 +172,21 @@ pub fn get_file_paths_by_exts(
     Ok(link_file_paths)
 }
 
+pub fn get_url_file_icon_path(url_file_path: &str) -> anyhow::Result<Option<String>> {
+    let ini_contents = std::fs::read_to_string(url_file_path)?;
+    Ok(get_ini_value(&ini_contents, "IconFile"))
+}
+
+fn get_ini_value(contents: &str, key: &str) -> Option<String> {
+    let key_line = contents.lines().find(|&line| line.starts_with(key))?;
+    let parts: Vec<&str> = key_line.splitn(2, '=').collect();
+    if parts.len() == 2 {
+        Some(parts[1].trim().to_string())
+    } else {
+        None
+    }
+}
+
 pub fn get_lnk_metadatas(lnk_file_paths: Vec<&str>) -> anyhow::Result<HashMap<&str, LnkMetadata>> {
     let mut metadatas = HashMap::new();
 
@@ -183,24 +198,39 @@ pub fn get_lnk_metadatas(lnk_file_paths: Vec<&str>) -> anyhow::Result<HashMap<&s
             std::slice::from_raw_parts_mut(target_path_vec.as_mut_ptr(), target_path_vec.len());
 
         for file_path in lnk_file_paths {
-            let shell_link: IShellLinkW = CoCreateInstance(&ShellLink, None, CLSCTX_INPROC_SERVER)?;
+            if file_path.to_lowercase().ends_with("lnk") {
+                let shell_link: IShellLinkW =
+                    CoCreateInstance(&ShellLink, None, CLSCTX_INPROC_SERVER)?;
 
-            let persist_file: IPersistFile = ComInterface::cast(&shell_link)?;
-            persist_file.Load(
-                PCWSTR::from_raw(file_path.to_wide_null_terminated().as_ptr()),
-                STGM_READ,
-            )?;
+                let persist_file: IPersistFile = ComInterface::cast(&shell_link)?;
+                persist_file.Load(
+                    PCWSTR::from_raw(file_path.to_wide_null_terminated().as_ptr()),
+                    STGM_READ,
+                )?;
 
-            shell_link.GetPath(target_path_slice, &mut WIN32_FIND_DATAW::default(), 0)?;
-            let path = PCWSTR::from_raw(target_path_vec.as_mut_ptr())
-                .to_string()?
-                .clone();
-            shell_link.GetIconLocation(target_path_slice, &mut 0)?;
-            let icon = PCWSTR::from_raw(target_path_vec.as_mut_ptr())
-                .to_string()?
-                .clone();
+                shell_link.GetPath(target_path_slice, &mut WIN32_FIND_DATAW::default(), 0)?;
+                let path = PCWSTR::from_raw(target_path_vec.as_mut_ptr())
+                    .to_string()?
+                    .clone();
+                shell_link.GetIconLocation(target_path_slice, &mut 0)?;
+                let icon = PCWSTR::from_raw(target_path_vec.as_mut_ptr())
+                    .to_string()?
+                    .clone();
 
-            metadatas.insert(file_path, LnkMetadata { path, icon });
+                metadatas.insert(file_path, LnkMetadata { path, icon });
+            } else if file_path.to_lowercase().ends_with("url") {
+                let icon_file = get_url_file_icon_path(file_path)?;
+
+                metadatas.insert(
+                    file_path,
+                    LnkMetadata {
+                        path: file_path.to_string(),
+                        icon: icon_file.unwrap_or_default(),
+                    },
+                );
+            } else {
+                return Err(anyhow::anyhow!("{} is not end lnk|url", file_path));
+            }
         }
 
         CoUninitialize();
@@ -338,19 +368,48 @@ pub fn save_ico_to_png(
     let p = file_path.to_string();
     let save_p = save_png_path.to_string();
     let handle = tauri::async_runtime::spawn(async move {
-        match save_ico_to_png_sync(&p, &save_p) {
-            Err(_) => save_default_icon(&save_p)?.await?,
-            _ => Ok(()),
-        }
+        // match save_ico_to_png_sync(&p, &save_p) {
+        //     Err(_) => save_default_icon(&save_p)?.await?,
+        //     _ => Ok(()),
+        // }
+        Ok(save_ico_to_png_sync(&p, &save_p).unwrap())
     });
 
     Ok(handle)
 }
 
 pub fn save_ico_to_png_sync(file_path: &str, save_png_path: &str) -> anyhow::Result<()> {
-    Ok(image::io::Reader::open(file_path)?
-        .decode()?
-        .save(save_png_path)?)
+    // Read an ICO file from disk:
+    let file = std::fs::File::open(file_path)?;
+    let icon_dir = ico::IconDir::read(file)?;
+
+    let largest_entry = icon_dir
+        .entries()
+        .into_iter()
+        .fold(None, |largest, v| match largest {
+            None => {
+                return Some(v);
+            }
+            Some(largest) => {
+                if largest.width() < v.width() {
+                    return Some(v);
+                }
+                return Some(largest);
+            }
+        });
+
+    if let Some(entry) = largest_entry {
+        // Decode the first entry into an image:
+        let image = entry.decode()?;
+        // You can get raw RGBA pixel data to pass to another image library:
+        let rgba = image.rgba_data();
+        assert_eq!(rgba.len(), (4 * image.width() * image.height()) as usize);
+        // Alternatively, you can save the image as a PNG file:
+        let file = std::fs::File::create(save_png_path)?;
+        Ok(image.write_png(file)?)
+    } else {
+        return Err(anyhow::anyhow!("icon_dir.entries() is empty"));
+    }
 }
 
 pub fn save_exe_file_png(

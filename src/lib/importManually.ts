@@ -43,10 +43,10 @@ export const useImportManually = () => {
       );
     }
 
-    if (pathInput.toLowerCase().endsWith("lnk")) {
-      return { exePath: null, lnkPath: pathInput, gameCache };
-    } else {
+    if (pathInput.toLowerCase().endsWith("exe")) {
       return { exePath: pathInput, lnkPath: null, gameCache };
+    } else {
+      return { exePath: null, lnkPath: pathInput, gameCache };
     }
   };
 
