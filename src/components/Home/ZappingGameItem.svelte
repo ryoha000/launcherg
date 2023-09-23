@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { link } from "svelte-spa-router";
   import type { CollectionElement } from "@/lib/types";
   import { exists } from "@tauri-apps/api/fs";
   import { convertFileSrc } from "@tauri-apps/api/tauri";
@@ -15,8 +14,7 @@
   >
     <a
       tabIndex={0}
-      href={`/works/${collectionElement.id}?gamename=${collectionElement.gamename}`}
-      use:link
+      href={`/works?id=${collectionElement.id}&gamename=${collectionElement.gamename}`}
     >
       {#if isExist}
         <img

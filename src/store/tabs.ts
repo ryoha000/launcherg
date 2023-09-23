@@ -1,5 +1,6 @@
+import { goto } from "$app/navigation";
 import { createLocalStorageWritable, localStorageWritable } from "@/lib/utils";
-import { push, type RouteLoadedEvent } from "svelte-spa-router";
+import type { AfterNavigate, BeforeNavigate } from "@sveltejs/kit";
 
 export type Tab = {
   id: number;
@@ -34,25 +35,22 @@ const createTabs = () => {
 
   const [selected, getSelected] = createLocalStorageWritable("tab-selected", 0);
 
-  const routeLoaded = (event: RouteLoadedEvent) => {
-    const isHome = event.detail.location === "/";
+  const onBeforeNavigate = ({ to }: AfterNavigate) => {
+    const route = to?.route.id;
+    if (!to || !route) return;
+    const isHome = route === "/";
     if (isHome) {
       selected.set(-1);
       return;
     }
 
-    const params = event.detail.params;
-    if (!params) {
-      console.error("params is null (not home)");
-      return;
-    }
-    const id = +params["id"];
+    const id = +(to.url.searchParams.get("id") ?? "");
     if (!id || isNaN(id)) {
       console.error("params[id] is undefined (not home)");
       return;
     }
 
-    const tabType = event.detail.location.split("/")[1];
+    const tabType = route.split("/")[1];
     if (!isValidTabType(tabType)) {
       console.error("tabType is invalid (not home)");
       return;
@@ -62,7 +60,7 @@ const createTabs = () => {
       (v) => v.workId === id && v.type === tabType
     );
     if (tabIndex === -1) {
-      const searchParams = new URLSearchParams(event.detail.querystring);
+      const searchParams = to.url.searchParams;
       const gamename = searchParams.get("gamename");
       if (!gamename) {
         console.error("tabs にないのに gamename の queryParam がない");
@@ -99,7 +97,7 @@ const createTabs = () => {
     tabs.update((v) => {
       const newTabs = v.filter((tab) => tab.id !== id);
       if (newTabs.length === 0) {
-        push("/");
+        goto("/");
       }
       return newTabs;
     });
@@ -112,7 +110,7 @@ const createTabs = () => {
     if (isCurrentTab) {
       const newIndex = isRightestTab ? currentIndex - 1 : currentIndex;
       const nextTab = getTabs()[newIndex];
-      push(`/${nextTab.type}/${nextTab.workId}`);
+      goto(`/${nextTab.type}?id=${nextTab.workId}`);
       return;
     }
 
@@ -130,26 +128,26 @@ const createTabs = () => {
         selected: getSelected(),
       });
       selected.set(-1);
-      push("/");
+      goto("/");
       return;
     }
     if (index < 0) {
-      push("/");
+      goto("/");
       return;
     }
     const tab = _tabs[index];
-    push(`/${tab.type}/${tab.workId}`);
+    goto(`/${tab.type}?id=${tab.workId}`);
   };
   return {
     tabs,
     selected: {
       subscribe: selected.subscribe,
     },
-    routeLoaded,
+    onBeforeNavigate,
     deleteTab,
     initialize,
   };
 };
 
-export const { tabs, selected, routeLoaded, deleteTab, initialize } =
+export const { tabs, selected, onBeforeNavigate, deleteTab, initialize } =
   createTabs();

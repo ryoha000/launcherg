@@ -1,7 +1,6 @@
 <script lang="ts">
   import type { CollectionElement } from "@/lib/types";
   import { convertFileSrc } from "@tauri-apps/api/tauri";
-  import { link } from "svelte-spa-router";
 
   export let collectionElement: CollectionElement;
 
@@ -14,7 +13,6 @@
   <a
     href={`/works/${collectionElement.id}?gamename=${collectionElement.gamename}`}
     class="flex-(~ 1) h-12 w-full items-center gap-2 pr-2"
-    use:link
   >
     <img
       alt="{collectionElement.gamename}_icon"

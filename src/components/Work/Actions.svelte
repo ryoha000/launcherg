@@ -1,7 +1,6 @@
 <script lang="ts">
   import Button from "@/components/UI/Button.svelte";
   import PlayButton from "@/components/Work/PlayButton.svelte";
-  import { push } from "svelte-spa-router";
   import {
     commandDeleteCollectionElement,
     commandGetCollectionElement,
@@ -23,6 +22,7 @@
   import DeleteElement from "@/components/Work/DeleteElement.svelte";
   import type { AllGameCacheOne } from "@/lib/types";
   import OtherInformation from "@/components/Work/OtherInformation.svelte";
+  import { goto } from "$app/navigation";
 
   export let name: string;
   export let id: number;
@@ -90,7 +90,7 @@
     <Button
       leftIcon="i-material-symbols-drive-file-rename-outline"
       text="Memo"
-      on:click={() => push(`/memos/${id}?gamename=${name}`)}
+      on:click={() => goto(`/memos/${id}?gamename=${name}`)}
     />
     <!-- <div class="flex items-end gap-2 h-8 min-w-0">
       <div class="text-(text-primary body2) whitespace-nowrap">Time</div>
@@ -103,11 +103,13 @@
       {/await}
     </div> -->
     <div class="flex items-center gap-2 ml-auto">
-      <ButtonCancel
-        icon={isLike
-          ? "i-material-symbols-favorite-rounded"
-          : "i-material-symbols-favorite-outline-rounded"}
+      <button
         on:click={toggleLike}
+        type="button"
+        tabindex={-1}
+        class="ml-auto w-5 h-5 {isLike
+          ? 'i-material-symbols-favorite-rounded'
+          : 'i-material-symbols-favorite-outline-rounded'} color-text-tertiary hover:color-text-primary transition-all flex-shrink-0"
       />
       <APopover let:close panelClass="right-0">
         <ButtonIcon icon="i-material-symbols-menu-rounded" slot="button" />

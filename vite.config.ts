@@ -1,4 +1,6 @@
 import { defineConfig } from "vite";
+// @ts-expect-error
+import { sveltekit } from "@sveltejs/kit/vite";
 import { svelte } from "@sveltejs/vite-plugin-svelte";
 import sveltePreprocess from "svelte-preprocess";
 import UnoCSS from "unocss/vite";
@@ -12,13 +14,7 @@ export default defineConfig(async () => ({
       extractors: [extractorSvelte()],
       /* more options */
     }),
-    svelte({
-      preprocess: [
-        sveltePreprocess({
-          typescript: true,
-        }),
-      ],
-    }),
+    sveltekit(),
   ],
 
   resolve: {

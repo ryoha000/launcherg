@@ -1,6 +1,6 @@
 <script lang="ts">
+  import { goto } from "$app/navigation";
   import { deleteTab, type Tab } from "@/store/tabs";
-  import { push } from "svelte-spa-router";
 
   export let tab: Tab;
   export let selected: boolean;
@@ -21,7 +21,7 @@
 
 <!-- svelte-ignore a11y-click-events-have-key-events -->
 <div
-  on:click={() => push(`/${tab.type}/${tab.workId}`)}
+  on:click={() => goto(`/${tab.type}/${tab.workId}`)}
   on:mousedown={closeWheelClick}
 >
   <div
