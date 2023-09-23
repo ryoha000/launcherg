@@ -25,11 +25,11 @@ jobs:
           echo "TAURI_KEY_PASSWORD=${{ secrets.TAURI_KEY_PASSWORD }}" >> $GITHUB_ENV
           echo "TAURI_PRIVATE_KEY=${{ secrets.TAURI_PRIVATE_KEY }}" >> $GITHUB_ENV
 
-      - name: Update package.version in tauri.config.json
+      - name: Update package.version in tauri.conf.json
         run: |
-          $json = Get-Content -Path "src-tauri\tauri.config.json" -Raw | ConvertFrom-Json
+          $json = Get-Content -Path "src-tauri\tauri.conf.json" -Raw | ConvertFrom-Json
           $json.package.version = "${{ github.ref }}"
-          $json | ConvertTo-Json | Set-Content -Path "src-tauri\tauri.config.json"
+          $json | ConvertTo-Json | Set-Content -Path "src-tauri\tauri.conf.json"
 
       - name: Install dependencies and build
         env:
@@ -74,7 +74,7 @@ jobs:
         run: |
           git config user.name "$(git --no-pager log --format=format:'%an' -n 1)"
           git config user.name "$(git --no-pager log --format=format:'%an' -n 1)"
-          git add src-tauri\tauri.config.json
+          git add src-tauri\tauri.conf.json
           git add .tauri-updater.json
           git commit -m "Update for release ${{ github.ref }}"
           git push origin main
