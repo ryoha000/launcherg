@@ -241,16 +241,15 @@ pub fn get_lnk_metadatas(lnk_file_paths: Vec<&str>) -> anyhow::Result<HashMap<&s
     Ok(metadatas)
 }
 
-pub fn filter_game_path(
+pub fn get_most_probable_game_candidate(
     id_name_pairs: &AllGameCache,
     filepath: String,
 ) -> anyhow::Result<Option<(AllGameCacheOne, String)>> {
     let candidates: AllGameCache =
         get_game_candidates_by_exe_path(id_name_pairs, &filepath, 0.8, 1)?;
-    if let Some(candidate) = candidates.get(0) {
-        return Ok(Some((candidate.clone(), filepath)));
-    }
-    return Ok(None);
+    Ok(candidates
+        .first()
+        .map(|candidate| (candidate.clone(), filepath)))
 }
 
 pub fn get_game_candidates_by_exe_path(

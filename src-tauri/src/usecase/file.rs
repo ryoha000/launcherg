@@ -15,8 +15,8 @@ use crate::{
         distance::get_comparable_distance,
         explorer::file::FileExplorer,
         file::{
-            filter_game_path, get_file_paths_by_exts, get_lnk_metadatas, get_play_history_path,
-            normalize, save_icon_to_png, start_process,
+            get_file_paths_by_exts, get_lnk_metadatas, get_most_probable_game_candidate,
+            get_play_history_path, normalize, save_icon_to_png, start_process,
         },
         Id,
     },
@@ -84,6 +84,64 @@ impl<R: ExplorersExt> FileUseCase<R> {
             .flatten()
             .collect())
     }
+    // 各ゲームとして一番の候補の配列から重複したものを踏まえて各ゲームに対して最高1つのファイルパスにする
+    pub fn get_map_of_one_filepath_per_game(
+        &self,
+        cache_path_pairs: Vec<(AllGameCacheOne, String)>,
+    ) -> HashMap<ErogamescapeID, FilePathString> {
+        let mut res: HashMap<ErogamescapeID, FilePathString> = HashMap::new();
+        for (cache, filepath_unnormalized) in cache_path_pairs {
+            match res.get(&cache.id) {
+                Some(current_filepath) => {
+                    let current_filepath =
+                        get_file_name_without_extension(&normalize(&current_filepath))
+                            .unwrap_or_default();
+                    let filepath =
+                        get_file_name_without_extension(&normalize(&filepath_unnormalized))
+                            .unwrap_or_default();
+
+                    let mut must_update = false;
+                    let mut not_must_update = false;
+                    // 競合時に無視する単語をチェックする
+                    for ignore_word in IGNORE_WORD_WHEN_CONFLICT {
+                        if current_filepath.contains(ignore_word) {
+                            must_update = true;
+                            break;
+                        }
+                        if filepath.contains(ignore_word) {
+                            not_must_update = true;
+                            break;
+                        }
+                    }
+                    // 競合時に更新する単語をチェックする
+                    for update_word in SHOULD_UPDATE_WORD_WHEN_CONFLICT {
+                        if current_filepath.contains(update_word) {
+                            not_must_update = true;
+                            break;
+                        }
+                        if filepath.contains(update_word) {
+                            must_update = true;
+                            break;
+                        }
+                    }
+                    if must_update && !not_must_update {
+                        res.insert(cache.id, filepath_unnormalized);
+                    } else if !not_must_update {
+                        let gamename = &cache.gamename;
+                        let current_distance = get_comparable_distance(&current_filepath, gamename);
+                        let distance = get_comparable_distance(&filepath, gamename);
+                        if current_distance < distance {
+                            res.insert(cache.id, filepath_unnormalized);
+                        }
+                    }
+                }
+                None => {
+                    res.insert(cache.id, filepath_unnormalized);
+                }
+            }
+        }
+        res
+    }
     pub async fn concurency_get_path_game_map<F: Fn() -> anyhow::Result<()> + Send + 'static>(
         &self,
         normalized_all_games: Arc<AllGameCache>,
@@ -94,7 +152,7 @@ impl<R: ExplorersExt> FileUseCase<R> {
             let all = normalized_all_games.clone();
             let mutex_cb = Arc::clone(&callback);
             tauri::async_runtime::spawn(async move {
-                let res = filter_game_path(&all, path)?;
+                let res = get_most_probable_game_candidate(&all, path)?;
                 match mutex_cb.lock() {
                     Ok(cb) => {
                         if let Err(e) = cb() {
@@ -109,60 +167,14 @@ impl<R: ExplorersExt> FileUseCase<R> {
             })
         });
 
-        let id_path_pairs: Vec<(AllGameCacheOne, FilePathString)> =
+        let most_probable_game_filepath_pairs: Vec<(AllGameCacheOne, FilePathString)> =
             futures::future::try_join_all(get_game_id_tasks)
                 .await?
                 .into_iter()
                 .filter_map(|v| v.ok().and_then(|res| res))
                 .collect();
 
-        let mut id_path_map: HashMap<ErogamescapeID, FilePathString> = HashMap::new();
-        for pair in id_path_pairs.into_iter() {
-            let before = id_path_map.get(&pair.0.id);
-            match before {
-                Some(before) => {
-                    let before =
-                        get_file_name_without_extension(&normalize(&before)).unwrap_or_default();
-                    let after =
-                        get_file_name_without_extension(&normalize(&pair.1)).unwrap_or_default();
-                    let mut must_update = false;
-                    let mut not_must_update = false;
-                    for ignore_word in IGNORE_WORD_WHEN_CONFLICT {
-                        if before.contains(ignore_word) {
-                            must_update = true;
-                            break;
-                        }
-                        if after.contains(ignore_word) {
-                            not_must_update = true;
-                            break;
-                        }
-                    }
-                    for update_word in SHOULD_UPDATE_WORD_WHEN_CONFLICT {
-                        if before.contains(update_word) {
-                            not_must_update = true;
-                            break;
-                        }
-                        if after.contains(update_word) {
-                            must_update = true;
-                            break;
-                        }
-                    }
-                    if must_update && !not_must_update {
-                        id_path_map.insert(pair.0.id, pair.1);
-                    } else if !not_must_update {
-                        let before_distance = get_comparable_distance(&before, &pair.0.gamename);
-                        let after_distance = get_comparable_distance(&after, &pair.0.gamename);
-                        if before_distance < after_distance {
-                            id_path_map.insert(pair.0.id, pair.1);
-                        }
-                    }
-                }
-                None => {
-                    id_path_map.insert(pair.0.id, pair.1);
-                }
-            }
-        }
-        Ok(id_path_map)
+        Ok(self.get_map_of_one_filepath_per_game(most_probable_game_filepath_pairs))
     }
     pub async fn get_game_candidates(
         &self,
