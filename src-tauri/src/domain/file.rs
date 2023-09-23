@@ -531,11 +531,16 @@ fn get_lnk_start_process_script(is_run_as_admin: bool, lnk_path: &str) -> String
 
 fn get_exe_start_process_script(is_run_as_admin: bool, exe_path: &str) -> String {
     let verb = if is_run_as_admin { "-Verb RunAs" } else { "" };
+    let exe_dir = std::path::Path::new(exe_path)
+        .parent()
+        .map(|v| v.to_string_lossy().to_string())
+        .unwrap_or_default();
     format!(
         "
+    Set-Location \"{}\"
     Start-Process \"{}\" {}
     ",
-        exe_path, verb
+        exe_dir, exe_path, verb
     )
 }
 
