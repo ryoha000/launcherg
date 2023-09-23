@@ -13,24 +13,23 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
       - uses: actions/setup-node@v3
+
+      - name: Extract tag name
+        run: echo "TAG_NAME=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
+
+      - name: Update package.version in tauri.conf.json
+        run: |
+          $json = Get-Content -Path "src-tauri\tauri.conf.json" -Raw | ConvertFrom-Json
+          $json.package.version = "${{ env.TAG_NAME }}"
+          $json | ConvertTo-Json -Depth 100 | Set-Content -Path "src-tauri\tauri.conf.json"
+          npx -y prettier .\src-tauri\tauri.conf.json --write
+
       - name: Install Rust stable toolchain
         uses: actions-rs/toolchain@v1
         with:
           profile: minimal
           toolchain: stable
           override: true
-
-      - name: Set env variables from secrets
-        run: |
-          echo "TAURI_KEY_PASSWORD=${{ secrets.TAURI_KEY_PASSWORD }}" >> $GITHUB_ENV
-          echo "TAURI_PRIVATE_KEY=${{ secrets.TAURI_PRIVATE_KEY }}" >> $GITHUB_ENV
-
-      - name: Update package.version in tauri.conf.json
-        run: |
-          $json = Get-Content -Path "src-tauri\tauri.conf.json" -Raw | ConvertFrom-Json
-          $json.package.version = "${{ github.ref }}"
-          $json | ConvertTo-Json -Depth 100 | Set-Content -Path "src-tauri\tauri.conf.json"
-          npx -y prettier .\src-tauri\tauri.conf.json --write
 
       - name: Install dependencies and build
         env:
@@ -47,7 +46,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} 
         with:
           tag_name: ${{ github.ref }}
-          release_name: Release ${{ github.ref }}
+          release_name: Release ${{ env.TAG_NAME }}
 
       - name: Upload Release Asset
         id: upload-release-asset
@@ -56,17 +55,17 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} 
         with:
           upload_url: ${{ steps.create-release.outputs.upload_url }}
-          asset_path: .\src-tauri\target\release\bundle\msi\Launcherg_${{ github.ref }}_x64_ja-JP.msi.zip
-          asset_name: Launcherg_${{ github.ref }}_x64_ja-JP.msi.zip
+          asset_path: .\src-tauri\target\release\bundle\msi\Launcherg_${{ env.TAG_NAME }}_x64_ja-JP.msi.zip
+          asset_name: Launcherg_${{ env.TAG_NAME }}_x64_ja-JP.msi.zip
           asset_content_type: application/zip
 
       - name: Update .tauri-updater.json
         run: |
           $data = @{
-            version   = "${{ github.ref }}"
+            version   = "${{ env.TAG_NAME }}"
             notes     = "See the assets to download this version and install."
             pub_date  = (Get-Date -Format s) + "Z"
-            signature = ".\src-tauri\target\release\bundle\msi\Launcherg_${{ github.ref }}_x64_ja-JP.msi.zip"
+            signature = ".\src-tauri\target\release\bundle\msi\Launcherg_${{ env.TAG_NAME }}_x64_ja-JP.msi.zip"
             url       = ${{ steps.upload-release-asset.outputs.browser_download_url }}
           }
           $data | ConvertTo-Json | Set-Content -Path ".tauri-updater.json"
@@ -78,5 +77,5 @@ jobs:
           git config user.name "$(git --no-pager log --format=format:'%an' -n 1)"
           git add src-tauri\tauri.conf.json
           git add .tauri-updater.json
-          git commit -m "Update for release ${{ github.ref }}"
+          git commit -m "Update for release ${{ env.TAG_NAME }}"
           git push origin main
