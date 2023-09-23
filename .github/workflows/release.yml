@@ -13,7 +13,12 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
       - uses: actions/setup-node@v3
-      - uses: ATiltedTree/setup-rust@v1
+      - name: Install Rust stable toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          override: true
 
       - name: Set env variables from secrets
         run: |
