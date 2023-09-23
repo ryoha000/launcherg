@@ -39,7 +39,7 @@
       <div class="text-(text-primary h3) font-medium">Help</div>
       <LinkText
         href="https://youtu.be/GCTj6eRRgAM?si=WRFuBgNErwTJsNnk"
-        text="Introductory video"
+        text="1分でわかる Launcherg"
       />
       <LinkText
         href="https://ryoha000.hatenablog.com/entry/2023/09/24/003605"
