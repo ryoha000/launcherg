@@ -29,7 +29,8 @@ jobs:
         run: |
           $json = Get-Content -Path "src-tauri\tauri.conf.json" -Raw | ConvertFrom-Json
           $json.package.version = "${{ github.ref }}"
-          $json | ConvertTo-Json | Set-Content -Path "src-tauri\tauri.conf.json"
+          $json | ConvertTo-Json -Depth 100 | Set-Content -Path "src-tauri\tauri.conf.json"
+          npx -y prettier .\src-tauri\tauri.conf.json --write
 
       - name: Install dependencies and build
         env:
@@ -69,6 +70,7 @@ jobs:
             url       = ${{ steps.upload-release-asset.outputs.browser_download_url }}
           }
           $data | ConvertTo-Json | Set-Content -Path ".tauri-updater.json"
+          npx -y prettier .tauri-updater.json --write
 
       - name: Push updated files to main
         run: |

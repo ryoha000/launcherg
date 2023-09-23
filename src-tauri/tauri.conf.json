@@ -8,8 +8,9 @@
   },
   "package": {
     "productName": "Launcherg",
-    "version": "0.2.0"
+    "version": "0.2.1"
   },
+
   "tauri": {
     "allowlist": {
       "all": false,
@@ -19,11 +20,15 @@
       },
       "protocol": {
         "asset": true,
-        "assetScope": [ "**" ]
+        "assetScope": ["**"]
       },
       "http": {
         "request": true,
-        "scope": ["https://erogamescape.dyndns.org/~ap2/ero/toukei_kaiseki/*", "https://seiya-saiga.com/game/*", "https://raw.githubusercontent.com/ryoha000/launcherg/*"]
+        "scope": [
+          "https://erogamescape.dyndns.org/~ap2/ero/toukei_kaiseki/*",
+          "https://seiya-saiga.com/game/*",
+          "https://raw.githubusercontent.com/ryoha000/launcherg/*"
+        ]
       },
       "clipboard": {
         "all": false,
