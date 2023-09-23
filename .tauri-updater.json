@@ -1,11 +1,7 @@
 {
   "version": "0.2.1",
   "notes": "See the assets to download this version and install.",
-  "pub_date": "2023-09-23T21:12:10.350Z",
-  "platforms": {
-    "windows-x86_64": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVTTU1aNmtrVzFOdGd3MDZZMmlrYXV4ZzNlUmJvUHdqNEMrZmZXejd4eHpZU2hHcUhocGQyNitveTZjUVRYVmpTeFF0S2oxdXEvVmVKbU52emU1MFJPRlFoU3l0ZGp5TmdRPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNjk1NTA0NDY2CWZpbGU6TGF1bmNoZXJnXzAuMi4xX3g2NF9qYS1KUC5tc2kuemlwCmM4UlVheHBhRi94OUVKVkV4QWtLdE9CS3Ira3hiU0RiZVBRUTRqeTA3TUdzQ01yTjZDVDB0Vk1yQS9nS056dGhSa1VYN2NiZHRVSnUxTzhZNUtHZkFBPT0K",
-      "url": "https://github.com/ryoha000/launcherg/releases/download/v0.2.1/Launcherg_0.2.1_x64_ja-JP.msi"
-    }
-  }
+  "pub_date": "2023-09-23T21:32:10.350Z",
+  "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVTTU1aNmtrVzFOdGd3MDZZMmlrYXV4ZzNlUmJvUHdqNEMrZmZXejd4eHpZU2hHcUhocGQyNitveTZjUVRYVmpTeFF0S2oxdXEvVmVKbU52emU1MFJPRlFoU3l0ZGp5TmdRPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNjk1NTA0NDY2CWZpbGU6TGF1bmNoZXJnXzAuMi4xX3g2NF9qYS1KUC5tc2kuemlwCmM4UlVheHBhRi94OUVKVkV4QWtLdE9CS3Ira3hiU0RiZVBRUTRqeTA3TUdzQ01yTjZDVDB0Vk1yQS9nS056dGhSa1VYN2NiZHRVSnUxTzhZNUtHZkFBPT0K",
+  "url": "https://github.com/ryoha000/launcherg/releases/download/v0.2.1/Launcherg_0.2.1_x64_ja-JP.msi.zip"
 }
