@@ -16,6 +16,7 @@ jobs:
       - name: Extract tag name
         id: variables
         run: echo "version=${GITHUB_REF##*/}" >> $GITHUB_OUTPUT
+        shell: bash
 
       - name: Update package.version in tauri.conf.json
         run: |
