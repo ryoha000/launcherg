@@ -12,6 +12,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
+      - uses: actions/setup-node@v3
+      - uses: ATiltedTree/setup-rust@v1
 
       - name: Set env variables from secrets
         run: |
@@ -25,13 +27,18 @@ jobs:
           $json | ConvertTo-Json | Set-Content -Path "src-tauri\tauri.config.json"
 
       - name: Install dependencies and build
+        env:
+          TAURI_KEY_PASSWORD: ${{ secrets.TAURI_KEY_PASSWORD }}
+          TAURI_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY }}
         run: |
           npm i
           npm run tauri build
 
       - name: Create Release
         id: create-release
-        uses: gh-actions/create-release@v1
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} 
         with:
           tag_name: ${{ github.ref }}
           release_name: Release ${{ github.ref }}
@@ -39,6 +46,8 @@ jobs:
       - name: Upload Release Asset
         id: upload-release-asset
         uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} 
         with:
           upload_url: ${{ steps.create-release.outputs.upload_url }}
           asset_path: .\src-tauri\target\release\bundle\msi\Launcherg_${{ github.ref }}_x64_ja-JP.msi.zip
@@ -58,8 +67,8 @@ jobs:
 
       - name: Push updated files to main
         run: |
-          git config --local user.email "action@github.com"
-          git config --local user.name "GitHub Action"
+          git config user.name "$(git --no-pager log --format=format:'%an' -n 1)"
+          git config user.name "$(git --no-pager log --format=format:'%an' -n 1)"
           git add src-tauri\tauri.config.json
           git add .tauri-updater.json
           git commit -m "Update for release ${{ github.ref }}"
