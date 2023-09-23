@@ -31,7 +31,7 @@ pub struct FileUseCase<R: ExplorersExt> {
 type FilePathString = String;
 type ErogamescapeID = i32;
 
-const IGNORE_WORD_WHEN_CONFLICT: [&str; 17] = [
+const IGNORE_WORD_WHEN_CONFLICT: [&str; 29] = [
     "設定",
     "チェック",
     "インスト",
@@ -49,6 +49,18 @@ const IGNORE_WORD_WHEN_CONFLICT: [&str; 17] = [
     "inst",
     "tool",
     "support",
+    "setup",
+    "unins",
+    "define",
+    "bhvc",
+    "bootstrap",
+    "file",
+    "exhibit",
+    "ihs",
+    "launcher",
+    "syscfg",
+    "updchk",
+    "acmp",
 ];
 
 const SHOULD_UPDATE_WORD_WHEN_CONFLICT: [&str; 6] = ["adv", "64", "cmvs", "bgi", "実行", "起動"];
