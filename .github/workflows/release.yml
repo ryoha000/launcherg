@@ -15,7 +15,7 @@ jobs:
       - uses: actions/setup-node@v3
 
       - name: Extract tag name
-        run: echo "TAG_NAME=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
+        run: echo "TAG_NAME=${GITHUB_REF##*/}" >> $GITHUB_ENV
 
       - name: Update package.version in tauri.conf.json
         run: |
