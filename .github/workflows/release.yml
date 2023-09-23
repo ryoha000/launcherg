@@ -72,12 +72,15 @@ jobs:
           }
           $data | ConvertTo-Json | Set-Content -Path ".tauri-updater.json"
 
+      - name: format files
+        run: npx -y prettier .\src-tauri\tauri.conf.json .\.tauri-updater.json --write
+
       - name: Push updated files to main
         run: |
           git config user.name "$(git --no-pager log --format=format:'%an' -n 1)"
           git config user.name "$(git --no-pager log --format=format:'%an' -n 1)"
-          npx -y prettier .\src-tauri\tauri.conf.json .\.tauri-updater.json --write
           git add src-tauri\tauri.conf.json
           git add .tauri-updater.json
           git commit -m "Update for release ${{ steps.variables.outputs.version }}"
           git push origin main
+        shell: bash
