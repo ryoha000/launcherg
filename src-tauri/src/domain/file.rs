@@ -118,6 +118,9 @@ fn remove_word(filename: &str) -> String {
 
 const IGNORE_GAME_ID: [i32; 4] = [2644, 63, 2797, 10419];
 
+// (string, i32)でstringがファイル名といっちした場合はこのゲームにする
+const EQUALLY_FILENAME_GAME_ID_PAIR: [(&str, i32); 1] = [("pieces", 27123)];
+
 pub fn get_file_name_without_extension(file_path: &str) -> Option<String> {
     let path = Path::new(file_path);
     if let Some(file_name) = path.file_name() {
@@ -275,6 +278,15 @@ pub fn get_game_candidates_by_exe_path(
     let is_skip_filename_check = filename == "game" || filename == "start";
 
     let mut distance_pairs = vec![];
+
+    for (equally_filename, id) in EQUALLY_FILENAME_GAME_ID_PAIR {
+        if filename == *equally_filename {
+            id_name_pairs.iter().find(|v| v.id == id).map(|v| {
+                distance_pairs.push((v.clone(), 100.0));
+            });
+        }
+    }
+
     for pair in id_name_pairs.iter() {
         let mut is_ignore = false;
         for ignore_id in IGNORE_GAME_ID {
@@ -317,6 +329,26 @@ pub fn get_game_candidates_by_exe_path(
         }
     }
     Ok(res)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn test_get_game_candidates_by_exe_path() {
+        let res = get_game_candidates_by_exe_path(
+            &vec![AllGameCacheOne::new(
+                27123,
+                "pieces/渡り鳥のソムニウム".to_string(),
+            )],
+            "W:\\others\\software\\Whirlpool\\pieces\\pieces.exe",
+            0.5,
+            3,
+        )
+        .unwrap();
+        let pieces = res.first().unwrap();
+        assert_eq!(pieces.id, 27123);
+    }
 }
 
 const ICONS_ROOT_DIR: &str = "game-icons";
