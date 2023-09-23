@@ -39,7 +39,11 @@
       <div class="text-(text-primary h3) font-medium">Help</div>
       <LinkText
         href="https://youtu.be/GCTj6eRRgAM?si=WRFuBgNErwTJsNnk"
-        text="かんたん説明"
+        text="Introductory video"
+      />
+      <LinkText
+        href="https://ryoha000.hatenablog.com/entry/2023/09/24/003605"
+        text="よくある Q&A"
       />
     </div>
     <div class="space-y-2">
@@ -53,7 +57,7 @@
               <div class="text-(text-primary h3) font-medium">メモ機能</div>
             </div>
             <div class="text-(text-tertiary body)">
-              このアプリにはメモ機能があります。サイドバーからゲームを選択して「Memo」ボタンを押すことでそのゲームについてメモを取ることができます。
+              Launchergにはメモ機能があります。サイドバーからゲームを選択して「Memo」ボタンを押すことでそのゲームについてメモを取ることができます。
             </div>
           </div>
         {:else}
