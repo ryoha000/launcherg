@@ -8,7 +8,7 @@
   },
   "package": {
     "productName": "Launcherg",
-    "version": "0.2.3"
+    "version": "0.2.1"
   },
   "tauri": {
     "allowlist": {
@@ -87,7 +87,7 @@
       "dialog": true,
       "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEI2NEQ2RDkxQTQ5RTMxOEMKUldTTU1aNmtrVzFOdGdTTmZUZnBZMWFSTUNYSDBLY2R4WTYvZEVqL0FLZWs1M0I2YVZTclp4dHUK",
       "endpoints": [
-        "https://gist.githubusercontent.com/ryoha000/373b0d1d6ac805ce65ce42564e0c23af/raw/a6339f3a758630722022a2ef26e9ddd372e28a77/launcherg-update.json"
+        "https://raw.githubusercontent.com/ryoha000/launcherg/main/.tauri-updater.json"
       ],
       "windows": {
         "installMode": "passive",
