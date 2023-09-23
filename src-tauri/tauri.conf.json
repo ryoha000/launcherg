@@ -8,7 +8,7 @@
   },
   "package": {
     "productName": "Launcherg",
-    "version": "0.2.1"
+    "version": "0.2.0"
   },
   "tauri": {
     "allowlist": {
@@ -85,7 +85,7 @@
     "updater": {
       "active": true,
       "dialog": true,
-      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEI2NEQ2RDkxQTQ5RTMxOEMKUldTTU1aNmtrVzFOdGdTTmZUZnBZMWFSTUNYSDBLY2R4WTYvZEVqL0FLZWs1M0I2YVZTclp4dHUK",
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDg3RDI3NjI1MjM0MkI0NDMKUldSRHRFSWpKWGJTaCtEM1JHNEhPZGlIdzhnSWdMc1I0Unp2SXZ1NEl2Q0FmeU9QOFUxaUZuU3AK",
       "endpoints": [
         "https://raw.githubusercontent.com/ryoha000/launcherg/main/.tauri-updater.json"
       ],

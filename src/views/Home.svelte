@@ -57,7 +57,7 @@
               <div class="text-(text-primary h3) font-medium">メモ機能</div>
             </div>
             <div class="text-(text-tertiary body)">
-              Launchergにはメモ機能があります。サイドバーからゲームを選択して「Memo」ボタンを押すことでそのゲームについてメモを取ることができます。
+              このアプリにはメモ機能があります。サイドバーからゲームを選択して「Memo」ボタンを押すことでそのゲームについてメモを取ることができます。
             </div>
           </div>
         {:else}

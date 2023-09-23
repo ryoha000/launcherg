@@ -1,0 +1,66 @@
+name: Release Workflow
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+jobs:
+  release:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Set env variables from secrets
+        run: |
+          echo "TAURI_KEY_PASSWORD=${{ secrets.TAURI_KEY_PASSWORD }}" >> $GITHUB_ENV
+          echo "TAURI_PRIVATE_KEY=${{ secrets.TAURI_PRIVATE_KEY }}" >> $GITHUB_ENV
+
+      - name: Update package.version in tauri.config.json
+        run: |
+          $json = Get-Content -Path "src-tauri\tauri.config.json" -Raw | ConvertFrom-Json
+          $json.package.version = "${{ github.ref }}"
+          $json | ConvertTo-Json | Set-Content -Path "src-tauri\tauri.config.json"
+
+      - name: Install dependencies and build
+        run: |
+          npm i
+          npm run tauri build
+
+      - name: Create Release
+        id: create-release
+        uses: gh-actions/create-release@v1
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: Release ${{ github.ref }}
+
+      - name: Upload Release Asset
+        id: upload-release-asset
+        uses: actions/upload-release-asset@v1
+        with:
+          upload_url: ${{ steps.create-release.outputs.upload_url }}
+          asset_path: .\src-tauri\target\release\bundle\msi\Launcherg_${{ github.ref }}_x64_ja-JP.msi.zip
+          asset_name: Launcherg_${{ github.ref }}_x64_ja-JP.msi.zip
+          asset_content_type: application/zip
+
+      - name: Update .tauri-updater.json
+        run: |
+          $data = @{
+            version   = "${{ github.ref }}"
+            notes     = "See the assets to download this version and install."
+            pub_date  = (Get-Date -Format s) + "Z"
+            signature = ".\src-tauri\target\release\bundle\msi\Launcherg_${{ github.ref }}_x64_ja-JP.msi.zip"
+            url       = ${{ steps.upload-release-asset.outputs.browser_download_url }}
+          }
+          $data | ConvertTo-Json | Set-Content -Path ".tauri-updater.json"
+
+      - name: Push updated files to main
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add src-tauri\tauri.config.json
+          git add .tauri-updater.json
+          git commit -m "Update for release ${{ github.ref }}"
+          git push origin main
