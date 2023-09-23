@@ -21,7 +21,6 @@ jobs:
           $json = Get-Content -Path "src-tauri\tauri.conf.json" -Raw | ConvertFrom-Json
           $json.package.version = "${{ steps.variables.outputs.version }}"
           $json | ConvertTo-Json -Depth 100 | Set-Content -Path "src-tauri\tauri.conf.json"
-          npx -y prettier .\src-tauri\tauri.conf.json --write
 
       - uses: actions/setup-node@v3
 
@@ -70,12 +69,12 @@ jobs:
             url       = ${{ steps.upload-release-asset.outputs.browser_download_url }}
           }
           $data | ConvertTo-Json | Set-Content -Path ".tauri-updater.json"
-          npx -y prettier .tauri-updater.json --write
 
       - name: Push updated files to main
         run: |
           git config user.name "$(git --no-pager log --format=format:'%an' -n 1)"
           git config user.name "$(git --no-pager log --format=format:'%an' -n 1)"
+          npx -y prettier .\src-tauri\tauri.conf.json .\.tauri-updater.json --write
           git add src-tauri\tauri.conf.json
           git add .tauri-updater.json
           git commit -m "Update for release ${{ steps.variables.outputs.version }}"
