@@ -33,7 +33,6 @@ fn main() {
             command::upload_image,
             command::upsert_collection_element,
             command::update_collection_element_icon,
-            command::remove_elements_from_collection,
             command::get_default_import_dirs,
             command::play_game,
             command::get_play_time_minutes,

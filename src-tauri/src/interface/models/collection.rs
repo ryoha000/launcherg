@@ -1,4 +1,3 @@
-use chrono::NaiveDateTime;
 use derive_new::new;
 use serde::{Deserialize, Serialize};
 
@@ -6,20 +5,6 @@ use crate::domain::{
     self,
     file::{get_icon_path, get_thumbnail_path},
 };
-
-#[derive(new, Debug, Serialize, Deserialize, Clone)]
-pub struct Collection {
-    pub id: i32,
-    pub name: String,
-    pub created_at: NaiveDateTime,
-    pub updated_at: NaiveDateTime,
-}
-
-impl From<domain::collection::Collection> for Collection {
-    fn from(st: domain::collection::Collection) -> Self {
-        Collection::new(st.id.value, st.name, st.created_at, st.updated_at)
-    }
-}
 
 #[derive(new, Serialize)]
 #[serde(rename_all = "camelCase")]

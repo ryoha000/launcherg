@@ -3,7 +3,7 @@ use std::marker::PhantomData;
 
 use crate::domain::{
     all_game_cache::AllGameCache,
-    collection::Collection,
+    collection::CollectionElement,
     explored_cache::ExploredCache,
     repository::{
         all_game_cache::AllGameCacheRepository, collection::CollectionRepository,
@@ -20,7 +20,7 @@ pub struct RepositoryImpl<T> {
 }
 
 pub struct Repositories {
-    collection_repository: RepositoryImpl<Collection>,
+    collection_repository: RepositoryImpl<CollectionElement>,
     explored_cache_repository: RepositoryImpl<ExploredCache>,
     all_game_cache_repository: RepositoryImpl<AllGameCache>,
 }
@@ -35,7 +35,7 @@ pub trait RepositoriesExt {
 }
 
 impl RepositoriesExt for Repositories {
-    type CollectionRepo = RepositoryImpl<Collection>;
+    type CollectionRepo = RepositoryImpl<CollectionElement>;
     type ExploredCacheRepo = RepositoryImpl<ExploredCache>;
     type AllGameCacheRepo = RepositoryImpl<AllGameCache>;
 

@@ -6,19 +6,6 @@ use crate::domain::{
     Id,
 };
 
-#[derive(new)]
-pub struct CreateCollection {
-    pub name: String,
-}
-
-impl TryFrom<CreateCollection> for NewCollection {
-    type Error = anyhow::Error;
-
-    fn try_from(c: CreateCollection) -> anyhow::Result<Self> {
-        Ok(NewCollection::new(c.name))
-    }
-}
-
 #[derive(new, Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CreateCollectionElementDetail {

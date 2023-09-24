@@ -19,7 +19,6 @@ use crate::{
         file::{get_file_created_at_sync, normalize},
         Id,
     },
-    infrastructure::repositoryimpl::migration::ONEPIECE_COLLECTION_ID,
     usecase::models::collection::CreateCollectionElementDetail,
 };
 
@@ -195,16 +194,9 @@ pub async fn upsert_collection_element(
         .collection_use_case()
         .save_element_icon(&new_element)
         .await?;
-    modules
-        .collection_use_case()
-        .save_element_thumbnail(&new_element.id, game_cache.thumbnail_url)
-        .await?;
     Ok(modules
         .collection_use_case()
-        .add_collection_elements(
-            &Id::new(ONEPIECE_COLLECTION_ID),
-            &vec![Id::new(game_cache.id)],
-        )
+        .save_element_thumbnail(&new_element.id, game_cache.thumbnail_url)
         .await?)
 }
 
@@ -217,24 +209,6 @@ pub async fn update_collection_element_icon(
     Ok(modules
         .collection_use_case()
         .update_collection_element_icon(&Id::new(id), path)
-        .await?)
-}
-
-#[tauri::command]
-pub async fn remove_elements_from_collection(
-    modules: State<'_, Arc<Modules>>,
-    collection_id: i32,
-    collection_element_ids: Vec<i32>,
-) -> anyhow::Result<(), CommandError> {
-    Ok(modules
-        .collection_use_case()
-        .remove_collection_elements(
-            &Id::new(collection_id),
-            &collection_element_ids
-                .into_iter()
-                .map(|v| Id::new(v))
-                .collect(),
-        )
         .await?)
 }
 
