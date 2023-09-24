@@ -502,6 +502,7 @@ fn get_lnk_start_process_script(is_run_as_admin: bool, lnk_path: &str) -> String
     let verb = if is_run_as_admin { "-Verb RunAs" } else { "" };
     format!(
         "
+    chcp 65001
     filter Get-Shortcut()
     {{
         $shl  = new-object -comobject WScript.Shell
@@ -537,6 +538,7 @@ fn get_exe_start_process_script(is_run_as_admin: bool, exe_path: &str) -> String
         .unwrap_or_default();
     format!(
         "
+    chcp 65001
     Set-Location \"{}\"
     Start-Process \"{}\" {}
     ",
