@@ -39,3 +39,12 @@ git push origin main
 
 git tag $tagName
 git push origin $tagName
+
+# orphan なブランチを作って、そこにビルド結果をコミットする
+$artifactBranchName = "${tagName}-artifacts"
+git checkout --orphan $artifactBranchName
+git rm -rf .
+git add -f src-tauri/target/release/bundle/msi/Launcherg_${version}_x64_ja-JP.msi.zip
+git commit -m "Release $version"
+git push origin $artifactBranchName --force
+git switch main
