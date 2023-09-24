@@ -48,6 +48,7 @@ jobs:
         with:
           artifacts: .\src-tauri\target\release\bundle\msi\Launcherg_${{ steps.variables.outputs.version }}_x64_ja-JP.msi.zip
           token: ${{ secrets.GITHUB_TOKEN }}
+          prerelease: true
 
       - name: Update .tauri-updater.json
         run: |
@@ -62,6 +63,34 @@ jobs:
           $data | ConvertTo-Json | Set-Content -Path ".tauri-updater.json"
       - name: format files
         run: npx -y prettier .\src-tauri\tauri.conf.json .\.tauri-updater.json --write
+
+      - name: Archive production artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: changed-files
+          path: |
+            src-tauri/tauri.conf.json
+            .tauri-updater.json
+
+  push-changed-files:
+    runs-on: ubuntu-latest
+    needs: release
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+        with:
+          ref: main
+      
+      - name: Download artifacts
+        uses: actions/download-artifact@v3
+        with:
+          name: changed-files
+          path: changed-files
+      
+      - name: Move files to correct locations
+        run: |
+          mv changed-files/src-tauri/tauri.conf.json src-tauri/tauri.conf.json
+          mv changed-files/.tauri-updater.json .tauri-updater.json
 
       - name: Push updated files to main
         run: |
