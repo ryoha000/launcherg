@@ -1,0 +1,156 @@
+html,
+body {
+  height: 100%;
+  overflow: hidden;
+  margin: 0;
+  padding: 0;
+  
+  ::-webkit-scrollbar {
+    width: 0.4rem;
+    height: 0.3rem;
+  }
+  ::-webkit-scrollbar-thumb {
+    background-color: #CDD9E5;
+    height: 3rem;
+    width: 5rem;
+    border-radius: 999px;
+    cursor: pointer;
+  }
+}
+
+#app {
+  height: 100%;
+  overflow: auto;
+  /* scrollbar-gutter: stable; */
+}
+
+a {
+  color: inherit;
+  background-color: transparent;
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: none;
+}
+
+* {
+  outline: none;
+}
+
+.tippy-box[data-theme~='default'] {
+  > .tippy-arrow {
+    color: #636e7b;
+  }
+  background-color: #636e7b;
+  color: #c3cfdb;
+}
+
+.simplebar-vertical {
+  > .simplebar-scrollbar::before {
+    background-color: #CDD9E5;
+  }
+}
+
+.simplebar-horizontal {
+  height: 0.25rem !important;
+  > .simplebar-scrollbar::before {
+    background-color: #CDD9E5;
+    bottom: 0;
+  }
+}
+
+.hide-scrollbar {
+  .simplebar-horizontal {
+    height: 0 !important;
+  }
+}
+
+#app {
+  .EasyMDEContainer {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    max-width: 100%;
+    min-width: 0;
+    width: 100%;
+  }
+}
+.EasyMDEContainer > .editor-toolbar {
+  border-color: transparent;
+  border-bottom-width: 1px;
+  border-bottom-color: #444c56;
+  * {
+    color: #adbac7;
+  }
+  i.separator {
+    border-left: 1px solid #444c56;
+    border-right: 1px solid #444c56;
+  }
+  button:hover {
+    background-color: #2d333b;
+    border-color: #444c56;
+  }
+  button.active {
+    background-color: #2d333b;
+    border-color: #444c56;
+  }
+}
+.EasyMDEContainer > .cm-s-easymde {
+  .cm-header {
+    line-height:  160%;
+  }
+  .cm-header-1 {
+    font-size: 1.75rem;
+  }
+  .cm-header-2 {
+    font-size: 1.5rem;
+  }
+  .cm-header-3 {
+    font-size: 1.25rem;
+  }
+  .cm-header-4 {
+    font-size: 1.125rem;
+  }
+  .cm-header-5 {
+    font-size: 1.08rem;
+  }
+  .cm-header-6 {
+    font-size: 1.04rem;
+  }
+  .cm-image {
+    font-size: 0.5rem;
+  }
+  .cm-url {
+    font-size: 0.5rem;
+    line-height:  120%;
+  }
+}
+.CodeMirror.cm-s-easymde.CodeMirror-wrap {
+  color: #adbac7;
+  border-width: 0;
+  border-color: #444c56;
+  background-color: transparent;
+  flex: 1;
+}
+.EasyMDEContainer .cm-s-easymde .CodeMirror-cursor {
+  border-color: #adbac7;
+}
+
+.EasyMDEContainer .CodeMirror-selected {
+  background: #2d333b !important;
+}
+
+.editor-toolbar {
+  border-top: 1px solid #333;
+  border-left: 1px solid #333;
+  border-right: 1px solid #333;
+}
+
+.editor-toolbar.fullscreen {
+  background: #000;
+}
+
+.editor-preview {
+  background: #000;
+}
