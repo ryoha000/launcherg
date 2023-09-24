@@ -3,7 +3,7 @@ name: Create Release and Upload Artifacts
 on:
   push:
     branches:
-      - 'v[0-9]+(\.[0-9]+)+-artifacts'
+      - 'v?[0-9]+(\.[0-9]+)+-artifacts'
 
 jobs:
   create-release:
