@@ -47,7 +47,6 @@ jobs:
       - uses: "marvinpinto/action-automatic-releases@latest"
         with:
           repo_token: "${{ secrets.GITHUB_TOKEN }}"
-          automatic_release_tag: ${{ github.ref }}
           prerelease: true
           title: "Release ${{ steps.variables.outputs.version }}"
           files: |
@@ -61,7 +60,7 @@ jobs:
             notes     = "See the assets to download this version and install."
             pub_date  = (Get-Date -Format s) + "Z"
             signature = $env:TEMP_SIGNATURE
-            url       = ${{ steps.upload-release-asset.outputs.browser_download_url }}
+            url       = "https://github.com/ryoha000/launcherg/releases/download/${{ steps.variables.outputs.version }}/Launcherg_${{ steps.variables.outputs.version }}_x64_ja-JP.msi.zip"
           }
           $data | ConvertTo-Json | Set-Content -Path ".tauri-updater.json"
       - name: format files
