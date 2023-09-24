@@ -3,20 +3,15 @@ use std::{collections::HashSet, fs, sync::Arc};
 use chrono::Local;
 use derive_new::new;
 
-use super::{error::UseCaseError, models::collection::CreateCollection};
+use super::error::UseCaseError;
 use crate::{
     domain::{
-        collection::{
-            Collection, CollectionElement, NewCollectionElement, NewCollectionElementDetail,
-            UpdateCollection,
-        },
+        collection::{CollectionElement, NewCollectionElement, NewCollectionElementDetail},
         file::{get_icon_path, get_lnk_metadatas, save_icon_to_png, save_thumbnail},
         repository::collection::CollectionRepository,
         Id,
     },
-    infrastructure::repositoryimpl::{
-        migration::ONEPIECE_COLLECTION_ID, repository::RepositoriesExt,
-    },
+    infrastructure::repositoryimpl::repository::RepositoriesExt,
 };
 
 #[derive(new)]
@@ -25,45 +20,6 @@ pub struct CollectionUseCase<R: RepositoriesExt> {
 }
 
 impl<R: RepositoriesExt> CollectionUseCase<R> {
-    pub async fn create_collection(&self, source: CreateCollection) -> anyhow::Result<Collection> {
-        let existed = self
-            .repositories
-            .collection_repository()
-            .get_by_name(source.name.clone())
-            .await?;
-        if existed.is_some() {
-            return Err(UseCaseError::CollectionIsAlreadyExist.into());
-        }
-        self.repositories
-            .collection_repository()
-            .create(source.try_into()?)
-            .await
-    }
-    pub async fn update_collection_by_id(&self, src: UpdateCollection) -> anyhow::Result<()> {
-        let existed = self
-            .repositories
-            .collection_repository()
-            .get(&src.id)
-            .await?;
-        if existed.is_none() {
-            return Err(UseCaseError::CollectionIsNotFound.into());
-        }
-        Ok(self
-            .repositories
-            .collection_repository()
-            .update(src)
-            .await?)
-    }
-    pub async fn delete_collection_by_id(&self, id: &Id<Collection>) -> anyhow::Result<()> {
-        if id.value == ONEPIECE_COLLECTION_ID {
-            return Err(UseCaseError::CollectionNotPermittedToDelete.into());
-        }
-        let existed = self.repositories.collection_repository().get(id).await?;
-        if existed.is_none() {
-            return Err(UseCaseError::CollectionIsNotFound.into());
-        }
-        Ok(self.repositories.collection_repository().delete(id).await?)
-    }
     pub async fn upsert_collection_element(
         &self,
         source: &NewCollectionElement,
@@ -85,47 +41,6 @@ impl<R: RepositoriesExt> CollectionUseCase<R> {
                 .await?
         }
         Ok(())
-    }
-    pub async fn add_collection_elements(
-        &self,
-        collection_id: &Id<Collection>,
-        collection_element_ids: &Vec<Id<CollectionElement>>,
-    ) -> anyhow::Result<()> {
-        self.repositories
-            .collection_repository()
-            .add_elements_by_id(collection_id, collection_element_ids)
-            .await?;
-        Ok(self
-            .repositories
-            .collection_repository()
-            .remove_conflict_maps()
-            .await?)
-    }
-
-    pub async fn remove_collection_elements(
-        &self,
-        collection_id: &Id<Collection>,
-        collection_element_ids: &Vec<Id<CollectionElement>>,
-    ) -> anyhow::Result<()> {
-        Ok(self
-            .repositories
-            .collection_repository()
-            .remove_elements_by_id(collection_id, collection_element_ids)
-            .await?)
-    }
-
-    pub async fn get_all_collections(&self) -> anyhow::Result<Vec<Collection>> {
-        self.repositories.collection_repository().get_all().await
-    }
-
-    pub async fn get_elements_by_id(
-        &self,
-        id: &Id<Collection>,
-    ) -> anyhow::Result<Vec<CollectionElement>> {
-        self.repositories
-            .collection_repository()
-            .get_elements_by_id(id)
-            .await
     }
 
     pub async fn get_element_by_element_id(
@@ -213,11 +128,10 @@ impl<R: RepositoriesExt> CollectionUseCase<R> {
         if existed.is_none() {
             return Err(UseCaseError::CollectionElementIsNotFound.into());
         }
-        Ok(self
-            .repositories
+        self.repositories
             .collection_repository()
             .delete_collection_element(id)
-            .await?)
+            .await
     }
 
     pub async fn get_not_registered_detail_element_ids(
