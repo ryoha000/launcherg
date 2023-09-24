@@ -22,6 +22,6 @@
     },
     "strict": true
   },
-  "include": ["src/**/*.d.ts", "src/**/*.ts", "src/**/*.js", "src/**/*.svelte", ".eslintrc.cjs", "unocss.config.ts"],
+  "include": ["src/**/*.d.ts", "src/**/*.ts", "src/**/*.js", "src/**/*.svelte", "*.cjs", "unocss.config.ts"],
   "references": [{ "path": "./tsconfig.node.json" }]
 }

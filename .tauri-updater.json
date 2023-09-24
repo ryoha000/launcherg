@@ -1,9 +1,9 @@
 {
   "url": "https://github.com/ryoha000/launcherg/releases/download/v0.2.1/Launcherg_0.2.1_x64_ja-JP.msi.zip",
-  "pub_date": "2023-09-24T16:31:19Z",
+  "pub_date": "2023-09-24T16:42:25Z",
   "version": "0.2.1",
   "signature": {
-    "value": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVSRHRFSWpKWGJTaDQ1VFJFdkgyWEFOeW1GVzJFdEdpTHFNc1M5dmJDL0puRVJZZjBJdHpFTy9ndjA5NzliQ1hxS05pcHk0b2xySXBtUUN3UDJMUERWUGRHeHRDbEFRK0FJPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNjk1NTQwNjc5CWZpbGU6TGF1bmNoZXJnXzAuMi4xX3g2NF9qYS1KUC5tc2kuemlwCjZlTll6cXkwWlhhZ096TUl3eU13bmRwTUEzdDBQcHZlbHVDS1IxUS9qV25tTHQwWnRWRWZrQ0s5Qm41ODFGM2twam1LUUlSR0RYRnY2Z0l3WUp1ZkJnPT0K",
+    "value": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVSRHRFSWpKWGJTaDk0MExvMVZ0U3hjTERJL2kzQWVwMjhDVjhnaXRpT0pJY1J4a2VWdld0SVBUOGVqSktNR1ZmYVpQWWZKcmUvSm94WWNnTFBOWDNxMFoyQlFPZDBkb3dvPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNjk1NTQxMzQ1CWZpbGU6TGF1bmNoZXJnXzAuMi4xX3g2NF9qYS1KUC5tc2kuemlwCjM2aWdWM3FEUmVXcW04VzlJZS9VRWsrRTRvY0d5Q20zRGJqZkc2OWd0eTc5S1R6ZlQ0ZG96RHBGZFh3UWtQb3pxSmpNNSttZDNqVlA5OUhocXlJTUNRPT0K",
     "PSPath": "F:\\workspace\\launcherg\\src-tauri\\target\\release\\bundle\\msi\\Launcherg_0.2.1_x64_ja-JP.msi.zip.sig",
     "PSParentPath": "F:\\workspace\\launcherg\\src-tauri\\target\\release\\bundle\\msi",
     "PSChildName": "Launcherg_0.2.1_x64_ja-JP.msi.zip.sig",
