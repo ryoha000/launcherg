@@ -23,6 +23,7 @@
   import DeleteElement from "@/components/Work/DeleteElement.svelte";
   import type { AllGameCacheOne } from "@/lib/types";
   import OtherInformation from "@/components/Work/OtherInformation.svelte";
+  import { registerCollectionElementDetails } from "@/lib/registerCollectionElementDetails";
 
   export let name: string;
   export let id: number;
@@ -74,10 +75,17 @@
     lnkPath: string | null;
     gameCache: AllGameCacheOne;
   }) => {
-    await commandDeleteCollectionElement(id);
+    const isChangedGameId = id !== arg.gameCache.id;
+    if (isChangedGameId) {
+      await commandDeleteCollectionElement(id);
+    }
     await commandUpsertCollectionElement(arg);
+    await registerCollectionElementDetails();
     await sidebarCollectionElements.refetch();
-    deleteTab($tabs[$selected].id);
+    if (isChangedGameId) {
+      deleteTab($tabs[$selected].id);
+    }
+    isOpenImportManually = false;
   };
 
   let isOpenDelete = false;
