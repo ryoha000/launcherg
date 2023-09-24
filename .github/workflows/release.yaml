@@ -67,7 +67,7 @@ jobs:
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
-          git add src-tauri\tauri.conf.json
+          git add src-tauri/tauri.conf.json
           git add .tauri-updater.json
           git commit -m "Update for release ${{ steps.variables.outputs.version }}"
           git push origin main
