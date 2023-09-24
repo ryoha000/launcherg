@@ -8,9 +8,8 @@
   },
   "package": {
     "productName": "Launcherg",
-    "version": "0.2.1"
+    "version": ""
   },
-
   "tauri": {
     "allowlist": {
       "all": false,
