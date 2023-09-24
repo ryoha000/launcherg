@@ -124,8 +124,8 @@
   </div>
   <ImportManually
     bind:isOpen={isOpenImportManually}
+    idInput={`${id}`}
     path={element.exePath ?? element.lnkPath}
-    withInputPath={false}
     on:confirm={(e) => onChangeGame(e.detail)}
     on:cancel={() => (isOpenImportManually = false)}
   />

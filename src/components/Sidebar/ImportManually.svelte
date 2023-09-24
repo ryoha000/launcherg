@@ -11,7 +11,7 @@
   export let withInputPath = true;
   export let cancelText = "Cancel";
 
-  let idInput = "";
+  export let idInput = "";
   export let path = "";
 
   const dispather = createEventDispatcher<{
