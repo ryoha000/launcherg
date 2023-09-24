@@ -18,7 +18,7 @@
   >
     <img
       alt="{collectionElement.gamename}_icon"
-      src={iconSrc}
+      src="{iconSrc}?{collectionElement.registeredAt}"
       class="h-10 w-10 rounded"
       loading="lazy"
     />
