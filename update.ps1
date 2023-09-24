@@ -19,11 +19,12 @@ Invoke-Expression "npm i"
 Invoke-Expression "npm run tauri build"
 
 # Update .tauri-updater.json
+$env:TEMP_SIGNATURE = Get-Content -Path ".\src-tauri\target\release\bundle\msi\Launcherg_${version}_x64_ja-JP.msi.zip.sig"
 $updaterData = @{
     version = $version
     notes = "See the assets to download this version and install."
     pub_date = (Get-Date -Format s) + "Z"
-    signature = Get-Content -Path ".\src-tauri\target\release\bundle\msi\Launcherg_${version}_x64_ja-JP.msi.zip.sig"
+    signature = $env:TEMP_SIGNATURE
     url = "https://github.com/ryoha000/launcherg/releases/download/${tagName}/Launcherg_${version}_x64_ja-JP.msi.zip"
 }
 $updaterData | ConvertTo-Json | Set-Content -Path ".tauri-updater.json"
