@@ -48,7 +48,6 @@ jobs:
         with:
           artifacts: .\src-tauri\target\release\bundle\msi\Launcherg_${{ steps.variables.outputs.version }}_x64_ja-JP.msi.zip
           token: ${{ secrets.GITHUB_TOKEN }}
-          prerelease: true
 
       - name: Update .tauri-updater.json
         run: |
