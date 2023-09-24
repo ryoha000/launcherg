@@ -44,13 +44,10 @@ jobs:
           npm i
           npm run tauri build
       
-      - uses: "marvinpinto/action-automatic-releases@latest"
+      - uses: ncipollo/release-action@v1
         with:
-          repo_token: "${{ secrets.GITHUB_TOKEN }}"
-          prerelease: true
-          title: "Release ${{ steps.variables.outputs.version }}"
-          files: |
-            .\src-tauri\target\release\bundle\msi\Launcherg_${{ steps.variables.outputs.version }}_x64_ja-JP.msi.zip
+          artifacts: .\src-tauri\target\release\bundle\msi\Launcherg_${{ steps.variables.outputs.version }}_x64_ja-JP.msi.zip
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Update .tauri-updater.json
         run: |
@@ -68,8 +65,8 @@ jobs:
 
       - name: Push updated files to main
         run: |
-          git config user.name "$(git --no-pager log --format=format:'%an' -n 1)"
-          git config user.name "$(git --no-pager log --format=format:'%an' -n 1)"
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
           git add src-tauri\tauri.conf.json
           git add .tauri-updater.json
           git commit -m "Update for release ${{ steps.variables.outputs.version }}"
