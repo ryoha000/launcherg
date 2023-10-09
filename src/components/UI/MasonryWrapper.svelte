@@ -8,7 +8,6 @@
 
   $: {
     if (container) {
-      console.log("MasonryWrapper.container is not undefined");
       rowHeight = +window
         .getComputedStyle(container)
         .getPropertyValue("grid-auto-rows")
@@ -18,8 +17,6 @@
         .getComputedStyle(container)
         .getPropertyValue("grid-row-gap")
         .replace("px", "");
-    } else {
-      console.error("MasonryWrapper.container is undefined");
     }
   }
 </script>

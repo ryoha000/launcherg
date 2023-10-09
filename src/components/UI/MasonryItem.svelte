@@ -7,7 +7,6 @@
 
   const onResize = () => {
     if (!container || !content) {
-      console.error("MasonryItem.(container|content) is undefined");
       return;
     }
 

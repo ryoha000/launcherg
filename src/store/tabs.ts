@@ -140,16 +140,24 @@ const createTabs = () => {
     const tab = _tabs[index];
     push(`/${tab.type}/${tab.workId}`);
   };
+  const getSelectedTab = () => getTabs()[getSelected()];
   return {
     tabs,
     selected: {
       subscribe: selected.subscribe,
     },
+    getSelectedTab,
     routeLoaded,
     deleteTab,
     initialize,
   };
 };
 
-export const { tabs, selected, routeLoaded, deleteTab, initialize } =
-  createTabs();
+export const {
+  tabs,
+  selected,
+  getSelectedTab,
+  routeLoaded,
+  deleteTab,
+  initialize,
+} = createTabs();

@@ -24,9 +24,11 @@
   import type { AllGameCacheOne } from "@/lib/types";
   import OtherInformation from "@/components/Work/OtherInformation.svelte";
   import { registerCollectionElementDetails } from "@/lib/registerCollectionElementDetails";
+  import QrCode from "@/components/Work/QRCode.svelte";
 
   export let name: string;
   export let id: number;
+  export let seiyaUrl: string;
 
   const isAdminRecord = localStorageWritable<Record<number, boolean>>(
     "play-admin-cache",
@@ -90,6 +92,7 @@
 
   let isOpenDelete = false;
   let isOpenOtherInformation = false;
+  let isOpenQrCode = false;
 </script>
 
 {#await elementPromise then element}
@@ -111,6 +114,10 @@
       {/await}
     </div> -->
     <div class="flex items-center gap-2 ml-auto">
+      <ButtonCancel
+        icon="i-material-symbols-qr-code"
+        on:click={() => (isOpenQrCode = true)}
+      />
       <ButtonCancel
         icon={isLike
           ? "i-material-symbols-favorite-rounded"
@@ -139,4 +146,5 @@
   />
   <DeleteElement bind:isOpen={isOpenDelete} {element} />
   <OtherInformation bind:isOpen={isOpenOtherInformation} {element} />
+  <QrCode bind:isOpen={isOpenQrCode} {id} {seiyaUrl} />
 {/await}
