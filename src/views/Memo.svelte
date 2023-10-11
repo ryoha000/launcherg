@@ -1,11 +1,16 @@
 <script lang="ts">
   import EasyMDE from "easymde";
   import { readImage } from "tauri-plugin-clipboard-api";
-  import { commandUploadImage } from "@/lib/command";
+  import {
+    commandSaveScreenshotByPid,
+    commandUploadImage,
+  } from "@/lib/command";
   import { convertFileSrc } from "@tauri-apps/api/tauri";
   import { open } from "@tauri-apps/api/dialog";
   import { memo } from "@/store/memo";
   import { skyWay } from "@/store/skyway";
+  import { startProcessMap } from "@/store/startProcessMap";
+  import { showErrorToast } from "@/lib/toast";
 
   export let params: { id: string };
   $: id = +params.id;
@@ -53,6 +58,24 @@
           },
           className: "fa fa-picture-o",
           title: "Insert image",
+        },
+        {
+          name: "screenshot",
+          action: async () => {
+            const startProcessId = $startProcessMap[id];
+            try {
+              const screenshotPath = await commandSaveScreenshotByPid(
+                id,
+                startProcessId
+              );
+              insertImage(screenshotPath);
+            } catch (e) {
+              showErrorToast("スクリーンショットの取得に失敗しました");
+              console.error(e);
+            }
+          },
+          className: "fa fa-desktop",
+          title: "Insert screenshot",
         },
       ],
       imagesPreviewHandler: (imagePath) => convertFileSrc(imagePath),

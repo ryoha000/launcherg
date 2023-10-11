@@ -58,7 +58,10 @@ export const commandPlayGame = async (
   collectionElementId: number,
   isRunAsAdmin: boolean
 ) => {
-  return await invoke<void>("play_game", { collectionElementId, isRunAsAdmin });
+  return await invoke<number | null>("play_game", {
+    collectionElementId,
+    isRunAsAdmin,
+  });
 };
 
 export const commandGetPlayTomeMinutes = async (
@@ -137,5 +140,15 @@ export const commandGetExePathByLnk = async (filepath: string) => {
 export const commandGetGameCacheById = async (id: number) => {
   return await invoke<AllGameCacheOne | null>("get_game_cache_by_id", {
     id,
+  });
+};
+
+export const commandSaveScreenshotByPid = async (
+  workId: number,
+  processId: number
+) => {
+  return await invoke<string>("save_screenshot_by_pid", {
+    workId,
+    processId,
   });
 };

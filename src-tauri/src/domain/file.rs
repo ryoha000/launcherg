@@ -502,7 +502,7 @@ fn get_lnk_start_process_script(is_run_as_admin: bool, lnk_path: &str) -> String
     let verb = if is_run_as_admin { "-Verb RunAs" } else { "" };
     format!(
         "
-    chcp 65001
+    chcp 65001 | Out-Null
     filter Get-Shortcut()
     {{
         $shl  = new-object -comobject WScript.Shell
@@ -524,7 +524,8 @@ fn get_lnk_start_process_script(is_run_as_admin: bool, lnk_path: &str) -> String
         $params['ArgumentList'] = $shortcut_info.Arguments
     }}
 
-    Start-Process @params {}
+    $process = Start-Process @params {} -PassThru
+    echo $process.Id
     ",
         lnk_path, verb
     )
@@ -538,9 +539,10 @@ fn get_exe_start_process_script(is_run_as_admin: bool, exe_path: &str) -> String
         .unwrap_or_default();
     format!(
         "
-    chcp 65001
-    Set-Location \"{}\"
-    Start-Process \"{}\" {}
+    chcp 65001 | Out-Null
+    Set-Location \"{}\" | Out-Null
+    $process = Start-Process \"{}\" {} -PassThru
+    echo $process.Id
     ",
         exe_dir, exe_path, verb
     )
@@ -550,7 +552,7 @@ pub fn start_process(
     is_run_as_admin: bool,
     exe_path: Option<String>,
     lnk_path: Option<String>,
-) -> anyhow::Result<()> {
+) -> anyhow::Result<Option<u32>> {
     if exe_path.is_some() && lnk_path.is_some() {
         return Err(anyhow::anyhow!(
             "Both exe_path and lnk_path are provided. Only one should be provided.",
@@ -584,10 +586,10 @@ pub fn start_process(
             String::from_utf8_lossy(&output.stderr)
         ));
     }
+    let process_id = String::from_utf8_lossy(&output.stdout);
+    let process_id = process_id.trim().parse::<u32>().ok();
 
-    println!("end start process");
-
-    Ok(())
+    Ok(process_id)
 }
 
 pub fn get_file_created_at_sync(path: &str) -> Option<DateTime<Local>> {

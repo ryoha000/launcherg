@@ -310,6 +310,9 @@ impl<R: ExplorersExt> FileUseCase<R> {
 
         Ok(collection_elements)
     }
+    pub fn get_new_upload_image_path(&self, id: i32) -> anyhow::Result<String> {
+        self.explorers.file_explorer().get_save_image_path(id)
+    }
     pub async fn upload_image(&self, id: i32, base64_image: String) -> anyhow::Result<String> {
         let path = self.explorers.file_explorer().get_save_image_path(id)?;
         self.explorers
@@ -321,12 +324,12 @@ impl<R: ExplorersExt> FileUseCase<R> {
         &self,
         collection_element: CollectionElement,
         is_run_as_admin: bool,
-    ) -> anyhow::Result<()> {
-        return Ok(start_process(
+    ) -> anyhow::Result<Option<u32>> {
+        start_process(
             is_run_as_admin,
             collection_element.exe_path,
             collection_element.lnk_path,
-        )?);
+        )
     }
     pub fn get_play_time_minutes(
         &self,

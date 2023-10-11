@@ -9,9 +9,11 @@ pub mod distance;
 pub mod explored_cache;
 pub mod file;
 pub mod network;
+pub mod process;
 
 pub mod explorer;
 pub mod repository;
+pub mod windows;
 
 #[derive(new, Debug, Clone, Copy, Serialize, Deserialize)]
 pub struct Id<T> {
