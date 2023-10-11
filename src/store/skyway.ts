@@ -6,11 +6,15 @@ import {
   type RoomPublication,
   type LocalStream,
   type LocalDataStream,
+  type RemoteRoomMember,
 } from "@skyway-sdk/room";
 import { memo } from "../store/memo";
 import { createWritable } from "@/lib/utils";
 import { ResponseType, fetch } from "@tauri-apps/api/http";
 import { readBinaryFile } from "@tauri-apps/api/fs";
+import { commandSaveScreenshotByPid } from "@/lib/command";
+import { getStartProcessMap } from "@/store/startProcessMap";
+import { showErrorToast } from "@/lib/toast";
 
 type PingMessage = { type: "ping" };
 type MemoMessage = {
@@ -19,15 +23,24 @@ type MemoMessage = {
   gameId: number;
   base64Images: { path: string; base64: string }[];
 };
-type InitMessage = { type: "init"; gameId: number; memberId: string };
+type InitMessage = { type: "init"; gameId: number };
 type InitResponseMessage = {
   type: "init_response";
   gameId: number;
   initialMemo: MemoMessage;
 };
+type TakeScreenshotMessage = {
+  type: "take_screenshot";
+  gameId: number;
+  cursorLine: number;
+};
 
 type LocalMessage = PingMessage | MemoMessage | InitResponseMessage;
-type RemoteMessage = PingMessage | MemoMessage | InitMessage;
+type RemoteMessage =
+  | PingMessage
+  | MemoMessage
+  | InitMessage
+  | TakeScreenshotMessage;
 
 const createSkyWay = () => {
   const roomId = uuidV4();
@@ -83,7 +96,7 @@ const createSkyWay = () => {
 
     memo.update((v) => {
       // 開いてないときはわざわざ store に入れない
-      if (v.find((v) => v.workId !== workId)) {
+      if (!v.find((v) => v.workId === workId)) {
         return v;
       }
       return v.map((v) =>
@@ -125,7 +138,6 @@ const createSkyWay = () => {
   };
 
   let dataStream: LocalDataStream | undefined = undefined;
-  const sentInitResponseSet = new Set<string>();
   const setDataStream = async () => {
     const response = await fetch<{ authToken: string }>(
       "https://launcherg.ryoha.moe/connect",
@@ -148,7 +160,7 @@ const createSkyWay = () => {
     me.onFatalError.add(() => {
       dataStream = undefined;
       cleanup();
-      alert("接続が切断されました。");
+      showErrorToast("接続が切断されました。");
     });
 
     const onPublicate = async (publication: RoomPublication<LocalStream>) => {
@@ -162,6 +174,9 @@ const createSkyWay = () => {
         if (typeof data !== "string") return;
 
         const message: RemoteMessage = JSON.parse(data);
+        if (message.type !== "ping") {
+          console.log("receive message", message);
+        }
         switch (message.type) {
           case "ping":
             return;
@@ -169,22 +184,35 @@ const createSkyWay = () => {
             setRemoteMemo(message.gameId, message.text);
             return;
           case "init":
-            if (sentInitResponseSet.has(message.memberId)) return;
             const response = await createInitResponseMessage(message.gameId);
-            sentInitResponseSet.add(message.memberId);
-            const member = room.members.find((v) => v.id === message.memberId);
-            if (!member) {
-              alert(
-                "初期化リクエストを送信したクライアント(QRコードを読んだ端末)が見つかりません。"
-              );
-              throw new Error("member not found");
-            }
-            await member.subscribe(myPublication.id);
             sendMessage(response);
             break;
+          case "take_screenshot":
+            const imagePath = await commandSaveScreenshotByPid(
+              message.gameId,
+              getStartProcessMap()[message.gameId]
+            );
+            const prev = getMemo(message.gameId).value;
+            const lines = prev.split("\n");
+            const newLines: string[] = [];
+            for (let i = 0; i < lines.length; i++) {
+              newLines.push(lines[i]);
+              if (i === message.cursorLine) {
+                newLines.push(`![](${imagePath})`);
+                newLines.push("");
+              }
+            }
+            const newMemo = newLines.join("\n");
+            setRemoteMemo(message.gameId, newMemo);
+            syncMemo(message.gameId, newMemo);
         }
       });
       cleanupFuncs.push(removeListener);
+
+      // PC側の準備が完了したら subscribe させる
+      await (publication.publisher as RemoteRoomMember).subscribe(
+        myPublication.id
+      );
     };
 
     dataStream = await SkyWayStreamFactory.createDataStream();
@@ -205,12 +233,19 @@ const createSkyWay = () => {
     if (!dataStream) {
       await setDataStream();
     }
-    return `http://127.0.0.1:8788?seiyaUrl=${seiyaUrl}&roomId=${roomId}&gameId=${workId}`;
-    // return `https://launcherg.ryoha.moe?seiyaUrl=${seiyaUrl}&roomId=${roomId}&gameId=${workId}`;
+    const url = new URL("https://launcherg.ryoha.moe");
+    url.searchParams.set("seiyaUrl", seiyaUrl);
+    url.searchParams.set("roomId", roomId);
+    url.searchParams.set("gameId", workId.toString());
+    // return `http://127.0.0.1:8788?seiyaUrl=${seiyaUrl}&roomId=${roomId}&gameId=${workId}`;
+    return url.toString();
   };
 
   const sendMessage = (message: LocalMessage) => {
     if (!dataStream) return;
+    if (message.type !== "ping") {
+      console.log("send message", message);
+    }
 
     dataStream.write(JSON.stringify(message));
   };
