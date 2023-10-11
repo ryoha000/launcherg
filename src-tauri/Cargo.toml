@@ -33,11 +33,12 @@ fast_image_resize = "1.0.0"
 url = "2.4.1"
 tauri-plugin-log = { git = "https://github.com/tauri-apps/plugins-workspace", branch = "v1" }
 ico = "0.3.0"
+sysinfo = "0.29.10"
 
 [dependencies.windows]
-version = "0.48"
+version = "0.51"
 features = [
-    "Win32_System_Com", "Win32_Foundation", "Win32_System_Ole", "Win32_UI_Shell", "Win32_Storage_FileSystem", "Win32_UI_WindowsAndMessaging", "Win32_Graphics_Gdi"
+    "Win32_System_Com", "Win32_Foundation", "Win32_System_Ole", "Win32_UI_Shell", "Win32_Storage_FileSystem", "Win32_UI_WindowsAndMessaging", "Win32_Graphics_Direct3D", "Graphics_Capture", "Win32_Graphics_Dxgi", "Win32_Graphics_Direct3D11", "Win32_System_WinRT_Direct3D11", "Graphics_DirectX_Direct3D11", "Win32_System_WinRT_Graphics_Capture", "Win32_Graphics_Dwm", "Win32_Graphics_Dxgi_Common", "Foundation", "Graphics_Imaging", "Storage", "Storage_Streams"
 ]
 
 [dependencies.uuid]
