@@ -10,6 +10,7 @@
   import { memo } from "@/store/memo";
   import { skyWay } from "@/store/skyway";
   import { startProcessMap } from "@/store/startProcessMap";
+  import { showErrorToast } from "@/lib/toast";
 
   export let params: { id: string };
   $: id = +params.id;
@@ -62,12 +63,16 @@
           name: "screenshot",
           action: async () => {
             const startProcessId = $startProcessMap[id];
-            console.log({ startProcessId });
-            const screenshotPath = await commandSaveScreenshotByPid(
-              id,
-              startProcessId
-            );
-            insertImage(screenshotPath);
+            try {
+              const screenshotPath = await commandSaveScreenshotByPid(
+                id,
+                startProcessId
+              );
+              insertImage(screenshotPath);
+            } catch (e) {
+              showErrorToast("スクリーンショットの取得に失敗しました");
+              console.error(e);
+            }
           },
           className: "fa fa-desktop",
           title: "Insert screenshot",

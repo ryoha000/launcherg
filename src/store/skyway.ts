@@ -188,23 +188,28 @@ const createSkyWay = () => {
             sendMessage(response);
             break;
           case "take_screenshot":
-            const imagePath = await commandSaveScreenshotByPid(
-              message.gameId,
-              getStartProcessMap()[message.gameId]
-            );
-            const prev = getMemo(message.gameId).value;
-            const lines = prev.split("\n");
-            const newLines: string[] = [];
-            for (let i = 0; i < lines.length; i++) {
-              newLines.push(lines[i]);
-              if (i === message.cursorLine) {
-                newLines.push(`![](${imagePath})`);
-                newLines.push("");
+            try {
+              const imagePath = await commandSaveScreenshotByPid(
+                message.gameId,
+                getStartProcessMap()[message.gameId]
+              );
+              const prev = getMemo(message.gameId).value;
+              const lines = prev.split("\n");
+              const newLines: string[] = [];
+              for (let i = 0; i < lines.length; i++) {
+                newLines.push(lines[i]);
+                if (i === message.cursorLine) {
+                  newLines.push(`![](${imagePath})`);
+                  newLines.push("");
+                }
               }
+              const newMemo = newLines.join("\n");
+              setRemoteMemo(message.gameId, newMemo);
+              syncMemo(message.gameId, newMemo);
+            } catch (e) {
+              showErrorToast("スクリーンショットの取得に失敗しました。");
+              console.error(e);
             }
-            const newMemo = newLines.join("\n");
-            setRemoteMemo(message.gameId, newMemo);
-            syncMemo(message.gameId, newMemo);
         }
       });
       cleanupFuncs.push(removeListener);

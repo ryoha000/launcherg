@@ -235,7 +235,7 @@ pub async fn play_game(
     modules: State<'_, Arc<Modules>>,
     collection_element_id: i32,
     is_run_as_admin: bool,
-) -> anyhow::Result<i32, CommandError> {
+) -> anyhow::Result<Option<u32>, CommandError> {
     let element = modules
         .collection_use_case()
         .get_element_by_element_id(&Id::new(collection_element_id))

@@ -324,7 +324,7 @@ impl<R: ExplorersExt> FileUseCase<R> {
         &self,
         collection_element: CollectionElement,
         is_run_as_admin: bool,
-    ) -> anyhow::Result<i32> {
+    ) -> anyhow::Result<Option<u32>> {
         start_process(
             is_run_as_admin,
             collection_element.exe_path,

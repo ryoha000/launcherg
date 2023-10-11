@@ -552,7 +552,7 @@ pub fn start_process(
     is_run_as_admin: bool,
     exe_path: Option<String>,
     lnk_path: Option<String>,
-) -> anyhow::Result<i32> {
+) -> anyhow::Result<Option<u32>> {
     if exe_path.is_some() && lnk_path.is_some() {
         return Err(anyhow::anyhow!(
             "Both exe_path and lnk_path are provided. Only one should be provided.",
@@ -587,7 +587,7 @@ pub fn start_process(
         ));
     }
     let process_id = String::from_utf8_lossy(&output.stdout);
-    let process_id = process_id.trim().parse::<i32>()?;
+    let process_id = process_id.trim().parse::<u32>().ok();
 
     Ok(process_id)
 }
