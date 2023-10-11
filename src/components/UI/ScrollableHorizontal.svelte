@@ -43,7 +43,7 @@
   };
 
   export let scrollBy = (options?: ScrollToOptions | undefined): void => {
-    console.log("hoge");
+    console.warn("scrollBy is not initialized");
   };
 </script>
 

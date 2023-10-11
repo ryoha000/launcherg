@@ -26,7 +26,8 @@
         "scope": [
           "https://erogamescape.dyndns.org/~ap2/ero/toukei_kaiseki/*",
           "https://seiya-saiga.com/game/*",
-          "https://raw.githubusercontent.com/ryoha000/launcherg/*"
+          "https://raw.githubusercontent.com/ryoha000/launcherg/*",
+          "https://launcherg.ryoha.moe/*"
         ]
       },
       "clipboard": {
