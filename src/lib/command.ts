@@ -58,7 +58,10 @@ export const commandPlayGame = async (
   collectionElementId: number,
   isRunAsAdmin: boolean
 ) => {
-  return await invoke<void>("play_game", { collectionElementId, isRunAsAdmin });
+  return await invoke<number>("play_game", {
+    collectionElementId,
+    isRunAsAdmin,
+  });
 };
 
 export const commandGetPlayTomeMinutes = async (

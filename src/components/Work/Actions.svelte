@@ -25,6 +25,7 @@
   import OtherInformation from "@/components/Work/OtherInformation.svelte";
   import { registerCollectionElementDetails } from "@/lib/registerCollectionElementDetails";
   import QrCode from "@/components/Work/QRCode.svelte";
+  import { startProcessMap } from "@/store/startProcessMap";
 
   export let name: string;
   export let id: number;
@@ -50,7 +51,11 @@
       }
     }
     try {
-      await commandPlayGame(id, _isAdmin);
+      const processId = await commandPlayGame(id, _isAdmin);
+      startProcessMap.update((v) => {
+        v[processId] = id;
+        return v;
+      });
     } catch (e) {
       showErrorToast(e as string);
     }

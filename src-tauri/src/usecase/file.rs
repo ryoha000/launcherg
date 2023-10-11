@@ -321,12 +321,12 @@ impl<R: ExplorersExt> FileUseCase<R> {
         &self,
         collection_element: CollectionElement,
         is_run_as_admin: bool,
-    ) -> anyhow::Result<()> {
-        return Ok(start_process(
+    ) -> anyhow::Result<i32> {
+        start_process(
             is_run_as_admin,
             collection_element.exe_path,
             collection_element.lnk_path,
-        )?);
+        )
     }
     pub fn get_play_time_minutes(
         &self,

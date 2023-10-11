@@ -235,18 +235,19 @@ pub async fn play_game(
     modules: State<'_, Arc<Modules>>,
     collection_element_id: i32,
     is_run_as_admin: bool,
-) -> anyhow::Result<(), CommandError> {
+) -> anyhow::Result<i32, CommandError> {
     let element = modules
         .collection_use_case()
         .get_element_by_element_id(&Id::new(collection_element_id))
         .await?;
-    modules
+    let process_id = modules
         .file_use_case()
         .start_game(element, is_run_as_admin)?;
-    Ok(modules
+    modules
         .collection_use_case()
         .update_element_last_play_at(&Id::new(collection_element_id))
-        .await?)
+        .await?;
+    Ok(process_id)
 }
 
 #[tauri::command]
