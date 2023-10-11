@@ -142,3 +142,13 @@ export const commandGetGameCacheById = async (id: number) => {
     id,
   });
 };
+
+export const commandSaveScreenshotByPid = async (
+  workId: number,
+  processId: number
+) => {
+  return await invoke<string>("save_screenshot_by_pid", {
+    workId,
+    processId,
+  });
+};

@@ -310,6 +310,9 @@ impl<R: ExplorersExt> FileUseCase<R> {
 
         Ok(collection_elements)
     }
+    pub fn get_new_upload_image_path(&self, id: i32) -> anyhow::Result<String> {
+        self.explorers.file_explorer().get_save_image_path(id)
+    }
     pub async fn upload_image(&self, id: i32, base64_image: String) -> anyhow::Result<String> {
         let path = self.explorers.file_explorer().get_save_image_path(id)?;
         self.explorers

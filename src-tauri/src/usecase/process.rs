@@ -12,11 +12,13 @@ pub struct ProcessUseCase<R: WindowsExt> {
 }
 
 impl<R: WindowsExt> ProcessUseCase<R> {
-    pub async fn save_screenshot_by_pid(&self, process_id: u32) -> anyhow::Result<String> {
-        let filepath = format!("{}.png", process_id);
+    pub async fn save_screenshot_by_pid(
+        &self,
+        process_id: u32,
+        filepath: &str,
+    ) -> anyhow::Result<()> {
         self.windows
             .process()
-            .save_screenshot(process_id, &filepath)?;
-        Ok(filepath)
+            .save_screenshot(process_id, &filepath)
     }
 }

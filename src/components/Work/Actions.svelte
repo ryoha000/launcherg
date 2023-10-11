@@ -53,7 +53,7 @@
     try {
       const processId = await commandPlayGame(id, _isAdmin);
       startProcessMap.update((v) => {
-        v[processId] = id;
+        v[id] = processId;
         return v;
       });
     } catch (e) {

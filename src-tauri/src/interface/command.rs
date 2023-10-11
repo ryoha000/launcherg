@@ -424,3 +424,17 @@ pub async fn get_game_cache_by_id(
         .await?
         .and_then(|v| Some(v.into())))
 }
+
+#[tauri::command]
+pub async fn save_screenshot_by_pid(
+    modules: State<'_, Arc<Modules>>,
+    work_id: i32,
+    process_id: u32,
+) -> anyhow::Result<String, CommandError> {
+    let upload_path = modules.file_use_case().get_new_upload_image_path(work_id)?;
+    modules
+        .process_use_case()
+        .save_screenshot_by_pid(process_id, &upload_path)
+        .await?;
+    Ok(upload_path)
+}

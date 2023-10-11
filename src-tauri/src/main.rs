@@ -47,7 +47,8 @@ fn main() {
             command::update_all_game_cache,
             command::get_game_candidates,
             command::get_exe_path_by_lnk,
-            command::get_game_cache_by_id
+            command::get_game_cache_by_id,
+            command::save_screenshot_by_pid
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
