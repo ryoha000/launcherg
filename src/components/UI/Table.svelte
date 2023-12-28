@@ -2,7 +2,8 @@
   export let title: string;
   export let rows: {
     label: string;
-    value: string | { text: string; link: string };
+    value: string;
+    component?: any;
   }[];
 </script>
 
@@ -17,11 +18,9 @@
       >
         {row.label}
       </div>
-      {#if typeof row.value.link === "string"}
-        <div
-          class="p-4 border-(t-1px solid border-primary) text-(body2 text-link)"
-        >
-          {row.value}
+      {#if row.component}
+        <div class="p-4 border-(t-1px solid border-primary)">
+          <svelte:component this={row.component} value={row.value} />
         </div>
       {:else}
         <div

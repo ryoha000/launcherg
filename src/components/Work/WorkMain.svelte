@@ -2,6 +2,7 @@
   import LinkButton from "@/components/UI/LinkButton.svelte";
   import Table from "@/components/UI/Table.svelte";
   import Actions from "@/components/Work/Actions.svelte";
+  import LinkToSidebar from "@/components/Work/LinkToSidebar.svelte";
   import type { Work } from "@/lib/types";
   import { seiya } from "@/store/seiya";
 
@@ -9,7 +10,11 @@
 
   $: seiyaUrlPromise = seiya.getUrl(work.name);
   $: summaryValue = [
-    { label: "ブランド", value: work.brandName },
+    {
+      label: "ブランド",
+      value: work.brandName,
+      component: LinkToSidebar,
+    },
     { label: "発売日", value: work.sellday },
     { label: "平均プレイ時間", value: `${work.statistics.playTime}` },
     { label: "中央値", value: `${work.statistics.median}` },
