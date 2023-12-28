@@ -1,5 +1,4 @@
 <script lang="ts">
-  import type { CollectionElementsWithLabel } from "@/lib/types";
   import { onMount } from "svelte";
   import CollectionElements from "@/components/Sidebar/CollectionElements.svelte";
   import { sidebarCollectionElements } from "@/store/sidebarCollectionElements";
@@ -15,6 +14,7 @@
   import SubHeader from "@/components/Sidebar/SubHeader.svelte";
   import { searchAttributes } from "@/components/Sidebar/searchAttributes";
   import { search } from "@/components/Sidebar/search";
+  import { query } from "@/store/query";
 
   onMount(async () => {
     await sidebarCollectionElements.refetch();
@@ -27,7 +27,7 @@
     elementOptions.set(collectionElementsToOptions(v))
   );
 
-  const { query, filtered } = useFilter(elementOptions, getElementOptions);
+  const { filtered } = useFilter(query, elementOptions, getElementOptions);
   let order = localStorageWritable<SortOrder>("sort-order", "gamename-asc");
   const { attributes, toggleEnable } = searchAttributes();
 

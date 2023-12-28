@@ -1,7 +1,7 @@
 export type Option<T> = { label: string; value: T; otherLabels?: string[] };
 
 import type { CollectionElement } from "@/lib/types";
-import { writable, type Readable } from "svelte/store";
+import { writable, type Readable, type Writable } from "svelte/store";
 import { toHiragana, toRomaji } from "wanakana";
 
 export const collectionElementsToOptions = (elements: CollectionElement[]) =>
@@ -18,10 +18,10 @@ export const collectionElementsToOptions = (elements: CollectionElement[]) =>
   }));
 
 export const useFilter = <T>(
+  query: Writable<string>,
   options: Readable<Option<T>[]>,
   getOptions: () => Option<T>[]
 ) => {
-  const query = writable("");
   const filtered = writable<Option<T>[]>([...getOptions()]);
 
   const init = () => {
