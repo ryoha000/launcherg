@@ -15,13 +15,13 @@ import { readBinaryFile } from "@tauri-apps/api/fs";
 import { commandSaveScreenshotByPid } from "@/lib/command";
 import { getStartProcessMap } from "@/store/startProcessMap";
 import { showErrorToast } from "@/lib/toast";
+import { useChunk } from "@/lib/chunk";
 
 type PingMessage = { type: "ping" };
 type MemoMessage = {
   type: "memo";
   text: string;
   gameId: number;
-  base64Images: { path: string; base64: string }[];
 };
 type InitMessage = { type: "init"; gameId: number };
 type InitResponseMessage = {
@@ -34,8 +34,19 @@ type TakeScreenshotMessage = {
   gameId: number;
   cursorLine: number;
 };
+type ImageMetadataMessage = {
+  type: "image_metadata";
+  path: string;
+  key: number;
+  totalChunkLength: number;
+  mimeType: string;
+};
 
-type LocalMessage = PingMessage | MemoMessage | InitResponseMessage;
+type LocalMessage =
+  | PingMessage
+  | MemoMessage
+  | InitResponseMessage
+  | ImageMetadataMessage;
 type RemoteMessage =
   | PingMessage
   | MemoMessage
@@ -44,34 +55,30 @@ type RemoteMessage =
 
 const createSkyWay = () => {
   const roomId = uuidV4();
-  const [base64ImagesStore, getBase64Images] = createWritable<
-    {
-      path: string;
-      dataUrl: string;
-    }[]
-  >([]);
+  const sentImagePathSet = new Set<string>();
+  const { createChunks } = useChunk();
 
-  const getBase64Image = async (filePath: string) => {
-    // ファイルをバイナリとして読み込む
-    const data = await readBinaryFile(filePath);
-    const lowerCasePath = filePath.toLowerCase();
-    // MIME タイプを推定 (ここでは ".png" の場合 "image/png" としていますが、他の形式もサポートする場合は調整が必要)
-    const mimeType = (function () {
-      if (lowerCasePath.endsWith(".png")) return "image/png";
-      if (lowerCasePath.endsWith(".jpg") || lowerCasePath.endsWith(".jpeg"))
-        return "image/jpeg";
-      if (lowerCasePath.endsWith(".gif")) return "image/gif";
-      if (lowerCasePath.endsWith(".webp")) return "image/webp";
-      throw new Error("Unsupported file type");
-    })();
-    // DataURL を生成
-    let binary = "";
-    for (let i = 0; i < data.byteLength; i++) {
-      binary += String.fromCharCode(data[i]);
-    }
-    const base64 = btoa(binary);
-    return { dataUrl: `data:${mimeType};base64,${base64}`, path: filePath };
+  const sendImagesAsChunks = async (imagePaths: string[]) => {
+    await Promise.all(
+      imagePaths.map((path) => {
+        return new Promise<void>(async (resolve) => {
+          const [{ chunkId, mimeType, totalChunkLength }, chunks] =
+            await createChunks(path);
+          const message: ImageMetadataMessage = {
+            type: "image_metadata",
+            path,
+            key: chunkId,
+            totalChunkLength,
+            mimeType,
+          };
+          sendMessage(message);
+          chunks.forEach(sendBinaryMessage);
+          resolve();
+        });
+      })
+    );
   };
+
   const getMemoImagePaths = (text: string) => {
     const regex = /!\[.*?\]\((.*?)\)/g;
     const paths: string[] = [];
@@ -107,14 +114,8 @@ const createSkyWay = () => {
 
   const createInitResponseMessage = async (workId: number) => {
     const { value, imagePaths } = getMemo(workId);
-    const images = await Promise.all(imagePaths.map(getBase64Image));
-    base64ImagesStore.update((current) => [
-      ...current,
-      ...images.map((v) => ({
-        path: v.path,
-        dataUrl: v.dataUrl,
-      })),
-    ]);
+    imagePaths.forEach((path) => sentImagePathSet.add(path));
+    await sendImagesAsChunks(imagePaths);
 
     const message: InitResponseMessage = {
       type: "init_response",
@@ -123,10 +124,6 @@ const createSkyWay = () => {
         type: "memo",
         text: value,
         gameId: workId,
-        base64Images: images.map((v) => ({
-          path: v.path,
-          base64: v.dataUrl,
-        })),
       },
     };
     return message;
@@ -254,33 +251,24 @@ const createSkyWay = () => {
 
     dataStream.write(JSON.stringify(message));
   };
+  const sendBinaryMessage = (message: Uint8Array) => {
+    if (!dataStream) return;
+
+    dataStream.write(message);
+  };
 
   const syncMemo = async (workId: number, text: string) => {
     if (!dataStream) return;
     const imagePaths = getMemoImagePaths(text);
     const notSharedImages = imagePaths.filter(
-      (path) =>
-        getBase64Images().findIndex((image) => image.path === path) === -1
+      (path) => !sentImagePathSet.has(path)
     );
-    const images = await Promise.all(
-      notSharedImages.map((path) => getBase64Image(path))
-    );
-    base64ImagesStore.update((current) => [
-      ...current,
-      ...images.map((v) => ({
-        path: v.path,
-        dataUrl: v.dataUrl,
-      })),
-    ]);
+    await sendImagesAsChunks(notSharedImages);
 
     const message: MemoMessage = {
       type: "memo",
       text,
       gameId: workId,
-      base64Images: images.map((v) => ({
-        path: v.path,
-        base64: v.dataUrl,
-      })),
     };
     sendMessage(message);
   };
