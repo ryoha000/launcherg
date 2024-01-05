@@ -1,5 +1,6 @@
 use std::{path::Path, str::FromStr, sync::Arc};
 
+use refinery::config::{Config, ConfigDbType};
 use sqlx::{
     sqlite::{SqliteConnectOptions, SqlitePoolOptions},
     Pool, Sqlite,
@@ -11,6 +12,11 @@ use crate::infrastructure::util::get_save_root_abs_dir;
 pub struct Db(pub(crate) Arc<Pool<Sqlite>>);
 
 const DB_FILE: &str = "launcherg_sqlite.db3";
+
+mod embedded {
+    use refinery::embed_migrations;
+    embed_migrations!("./src/migrations");
+}
 
 impl Db {
     pub async fn new() -> Db {
@@ -31,6 +37,10 @@ impl Db {
             .await
             .map_err(|err| format!("{}\nfile: {}", err.to_string(), db_filename))
             .unwrap();
+
+        // migrate
+        let mut conf = Config::new(ConfigDbType::Sqlite).set_db_path(&db_filename);
+        embedded::migrations::runner().run(&mut conf).unwrap();
 
         println!("finish setup database. file: {:?}", db_filename);
 
