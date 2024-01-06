@@ -24,7 +24,7 @@
       />
     {:else}
       <div
-        class="text-(body text-primary) font-bold p-8 rounded border bg-bg-primary"
+        class="text-(body text-primary) font-bold px-6 rounded border bg-bg-primary w-full h-full flex items-center justify-center"
       >
         {collectionElement.gamename}
       </div>

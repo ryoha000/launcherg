@@ -4,8 +4,9 @@
   import { link } from "svelte-spa-router";
   import LinkText from "@/components/UI/LinkText.svelte";
   import { sidebarCollectionElements } from "@/store/sidebarCollectionElements";
-  import ZappingGames from "@/components/Home/ZappingGames.svelte";
-  import ZappingGamesContainer from "@/components/Home/ZappingGamesContainer.svelte";
+  import VirtualScroller from "@/components/UI/VirtualScroller.svelte";
+  import VirtualScrollerMasonry from "@/components/UI/VirtualScrollerMasonry.svelte";
+  import { derived } from "svelte/store";
 
   const memoRegex = /^smde_memo-(\d+)$/;
   const memoPromises = Promise.all(
@@ -18,13 +19,19 @@
   let isOpenGettingStarted = true;
 
   const shown = sidebarCollectionElements.shown;
-  $: flattenShown = $shown.flatMap((v) => v.elements);
+  const flattenShown = derived(shown, ($shown) =>
+    $shown.flatMap((v) => v.elements)
+  );
 </script>
 
-<!-- 
-<div class="w-full h-full overflow-y-auto"> -->
-<ZappingGamesContainer elements={flattenShown}>
-  <div class="p-8 space-y-8" slot="header">
+<VirtualScroller
+  className="p-8"
+  let:containerHeight
+  let:contentsWidth
+  let:contentsScrollY
+  let:setVirtualHeight
+>
+  <div class="space-y-8 mb-2" slot="header">
     <div class="flex items-center gap-2 w-full">
       <img src={Icon} alt="launcherg icon" class="h-12" />
       <div class="font-logo text-(8 text-primary)">Launcherg</div>
@@ -81,7 +88,13 @@
         {/if}
       {/await}
     </div>
-    <!-- <ZappingGames /> -->
+    <h3 class="text-(text-primary h3) font-medium">登録したゲーム</h3>
   </div>
-  <!-- </div> -->
-</ZappingGamesContainer>
+  <VirtualScrollerMasonry
+    elements={flattenShown}
+    {setVirtualHeight}
+    {contentsScrollY}
+    {contentsWidth}
+    {containerHeight}
+  />
+</VirtualScroller>
