@@ -1,7 +1,7 @@
 {
   "url": "https://github.com/ryoha000/launcherg/releases/download/0.3.2/Launcherg_0.3.2_x64_ja-JP.msi.zip",
   "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVSRHRFSWpKWGJTaHh3eDB5em1qSVJKOHRhM1lGK21ROTRYN1ZqaW5VVUowZ1hjZWlkcmNha3hXcjlHcWN4L0VHY0lqZ3d5ZVRZTWxBNDI0RjIxbWRnbnhod0prTFc5RncwPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzA0NTczMDg5CWZpbGU6TGF1bmNoZXJnXzAuMy4yX3g2NF9qYS1KUC5tc2kuemlwCmRxejRTM2dEb2FwZCtLRFhBdVdDYTVGTmk3NTcweGVMTmt3eGdtZ1RpRlBCQ2J5Ny9uNE1FTkM3enY3OG90bDZUMVA4M1Y0UkcxRjZnOW1vNXJFckN3PT0K",
-  "notes": "See the assets to download this version and install.",
+  "notes": "ホーム画面とのゲーム詳細画面の行き来でスクロール位置を保持するようになりました",
   "pub_date": "2024-01-06T20:31:31Z",
   "version": "0.3.2"
 }
