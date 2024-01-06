@@ -101,6 +101,15 @@ pub async fn create_elements_in_pc(
         .upsert_collection_elements(&new_elements)
         .await?;
 
+    let new_element_ids = new_elements
+        .iter()
+        .map(|v| v.id.clone())
+        .collect::<Vec<Id<_>>>();
+    modules
+        .collection_use_case()
+        .concurency_upsert_collection_element_thumbnail_size(new_element_ids)
+        .await?;
+
     modules
         .explored_cache_use_case()
         .add_cache(explore_files)
@@ -193,6 +202,10 @@ pub async fn upsert_collection_element(
     modules
         .collection_use_case()
         .save_element_icon(&new_element)
+        .await?;
+    modules
+        .collection_use_case()
+        .upsert_collection_element_thumbnail_size(&new_element.id)
         .await?;
     Ok(modules
         .collection_use_case()

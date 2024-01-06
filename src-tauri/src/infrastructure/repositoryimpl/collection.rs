@@ -59,6 +59,34 @@ impl CollectionRepository for RepositoryImpl<CollectionElement> {
             .await?;
         Ok(())
     }
+    async fn upsert_collection_element_thumbnail_size(
+        &self,
+        id: &Id<CollectionElement>,
+        width: i32,
+        height: i32,
+    ) -> anyhow::Result<()> {
+        let pool = self.pool.0.clone();
+        query(
+            "update collection_elements set thumbnail_width = ?, thumbnail_height = ? where id = ?",
+        )
+        .bind(width)
+        .bind(height)
+        .bind(id.value)
+        .execute(&*pool)
+        .await?;
+        Ok(())
+    }
+    async fn get_null_thumbnail_size_element_ids(
+        &self,
+    ) -> anyhow::Result<Vec<Id<CollectionElement>>> {
+        let pool = self.pool.0.clone();
+        let ids: Vec<(i32,)> = sqlx::query_as(
+            "SELECT id FROM collection_elements WHERE thumbnail_width IS NULL OR thumbnail_height IS NULL",
+        )
+        .fetch_all(&*pool)
+        .await?;
+        Ok(ids.into_iter().map(|v| Id::new(v.0)).collect())
+    }
     async fn remove_conflict_maps(&self) -> anyhow::Result<()> {
         let pool = self.pool.0.clone();
         let not_delete_ids: Vec<(i32,)> = sqlx::query_as(

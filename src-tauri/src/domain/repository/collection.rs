@@ -14,6 +14,13 @@ pub trait CollectionRepository {
         id: &Id<CollectionElement>,
     ) -> Result<Option<CollectionElement>>;
     async fn upsert_collection_element(&self, new_elements: &NewCollectionElement) -> Result<()>;
+    async fn upsert_collection_element_thumbnail_size(
+        &self,
+        id: &Id<CollectionElement>,
+        width: i32,
+        height: i32,
+    ) -> Result<()>;
+    async fn get_null_thumbnail_size_element_ids(&self) -> Result<Vec<Id<CollectionElement>>>;
     async fn remove_conflict_maps(&self) -> Result<()>;
     async fn delete_collection_element(&self, element_id: &Id<CollectionElement>) -> Result<()>;
 
