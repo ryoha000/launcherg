@@ -28,7 +28,7 @@
     >
       {#each $visibleLayouts as { top, left, width, height, element } (element.id)}
         <div
-          class="absolute {element.id}"
+          class="absolute"
           style="transform: translate({left}px, {top}px); width: {width}px; height: {height}px;"
         >
           <ZappingGameItem collectionElement={element} />

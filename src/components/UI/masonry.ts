@@ -34,7 +34,7 @@ export const useMasonry = (elements: CollectionElement[]) => {
   );
 
   // virtual scroll するために表示されている layout とその上下${buffer}行分を保持する
-  const buffer = 2;
+  const buffer = 5;
   const [scrollY, scrollYValue] = createWritable(0);
   const [masonryHeaderHeight, masonryHeaderHeightValue] = createWritable(0);
   const [masonryContentsWidth, masonryContentsWidthValue] = createWritable(0);
@@ -83,7 +83,6 @@ export const useMasonry = (elements: CollectionElement[]) => {
       if (!containerWidth) {
         return [];
       }
-      masonryContainerHeight.set(node.clientHeight);
       const itemNumPerRow = Math.floor(
         (containerWidth + itemGap) / (minItemWidth + itemGap)
       );
@@ -147,6 +146,7 @@ export const useMasonry = (elements: CollectionElement[]) => {
       if (!(target instanceof HTMLElement)) {
         return;
       }
+      // debugger;
       console.log({ scrollTop: target.scrollTop });
       scrollY.set(target.scrollTop);
     };
@@ -156,6 +156,7 @@ export const useMasonry = (elements: CollectionElement[]) => {
       if (!entry) {
         return;
       }
+      masonryContainerHeight.set(entry.contentRect.height);
       layouts.set(calculateLayouts(elements, masonryContentsWidthValue()));
     });
     resizeObserver.observe(node);
