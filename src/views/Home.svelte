@@ -30,6 +30,7 @@
   let:contentsWidth
   let:contentsScrollY
   let:setVirtualHeight
+  let:contentsScrollTo
 >
   <div class="space-y-8 mb-2" slot="header">
     <div class="flex items-center gap-2 w-full">
@@ -96,5 +97,6 @@
     {contentsScrollY}
     {contentsWidth}
     {containerHeight}
+    {contentsScrollTo}
   />
 </VirtualScroller>

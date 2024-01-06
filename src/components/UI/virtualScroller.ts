@@ -1,4 +1,4 @@
-import { derived, writable } from "svelte/store";
+import { derived, get, writable } from "svelte/store";
 
 export const useVirtualScroller = () => {
   const virtualHeight = writable(0);
@@ -6,6 +6,7 @@ export const useVirtualScroller = () => {
 
   const scrollY = writable(0);
   const containerHeight = writable(0);
+  let containerNode: HTMLElement | null = null;
 
   const headerHeight = writable(0);
 
@@ -16,6 +17,23 @@ export const useVirtualScroller = () => {
     number
   >([scrollY, headerHeight], ([$scrollY, $headerHeight], set) => {
     set(Math.max(0, $scrollY - $headerHeight));
+  });
+
+  let notAppliedContentsScrollY = 0;
+  const contentsScrollTo = (y: number) => {
+    const to = y + get(headerHeight);
+    if (!containerNode || containerNode.scrollHeight < to) {
+      notAppliedContentsScrollY = y;
+      return;
+    }
+    containerNode.scrollTo({ top: to });
+    notAppliedContentsScrollY = 0;
+  };
+
+  virtualHeight.subscribe((v) => {
+    if (notAppliedContentsScrollY) {
+      contentsScrollTo(notAppliedContentsScrollY);
+    }
   });
 
   const header = (node: HTMLElement) => {
@@ -52,6 +70,10 @@ export const useVirtualScroller = () => {
   };
 
   const container = (node: HTMLElement) => {
+    containerNode = node;
+    if (notAppliedContentsScrollY) {
+      contentsScrollTo(notAppliedContentsScrollY);
+    }
     const onScroll = (e: Event) => {
       const target = e.target;
       if (!(target instanceof HTMLElement)) {
@@ -72,6 +94,7 @@ export const useVirtualScroller = () => {
 
     return {
       destroy() {
+        containerNode = null;
         node.removeEventListener("scroll", onScroll);
         resizeObserver.disconnect();
       },
@@ -87,5 +110,6 @@ export const useVirtualScroller = () => {
     contentsWidth,
     contentsScrollY,
     containerHeight,
+    contentsScrollTo,
   };
 };

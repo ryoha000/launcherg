@@ -11,6 +11,7 @@
     contentsWidth,
     contentsScrollY,
     containerHeight,
+    contentsScrollTo,
   } = useVirtualScroller();
 </script>
 
@@ -28,6 +29,7 @@
       {contentsWidth}
       {contentsScrollY}
       {containerHeight}
+      {contentsScrollTo}
     />
   </div>
 </div>

@@ -2,6 +2,7 @@
   import ZappingGameItem from "@/components/Home/ZappingGameItem.svelte";
   import { useVirtualScrollerMasonry } from "@/components/UI/virtualScrollerMasonry";
   import type { CollectionElement } from "@/lib/types";
+  import { onDestroy, onMount } from "svelte";
   import type { Readable } from "svelte/store";
 
   export let elements: Readable<CollectionElement[]>;
@@ -9,6 +10,7 @@
   export let contentsWidth: Readable<number>;
   export let contentsScrollY: Readable<number>;
   export let containerHeight: Readable<number>;
+  export let contentsScrollTo: (v: number) => void;
 
   const { visibleLayouts } = useVirtualScrollerMasonry(
     elements,
@@ -17,6 +19,19 @@
     contentsScrollY,
     containerHeight
   );
+
+  const LAST_CONTENTS_SCROLL_Y_KEY = "lastContentsScrollY";
+  onMount(() => {
+    const lastContentsScrollY = localStorage.getItem(
+      LAST_CONTENTS_SCROLL_Y_KEY
+    );
+    if (lastContentsScrollY) {
+      contentsScrollTo(+lastContentsScrollY);
+    }
+  });
+  onDestroy(() => {
+    localStorage.setItem(LAST_CONTENTS_SCROLL_Y_KEY, `${$contentsScrollY}`);
+  });
 </script>
 
 <div>
