@@ -5,6 +5,7 @@
   import LinkText from "@/components/UI/LinkText.svelte";
   import { sidebarCollectionElements } from "@/store/sidebarCollectionElements";
   import ZappingGames from "@/components/Home/ZappingGames.svelte";
+  import ZappingGamesContainer from "@/components/Home/ZappingGamesContainer.svelte";
 
   const memoRegex = /^smde_memo-(\d+)$/;
   const memoPromises = Promise.all(
@@ -15,10 +16,15 @@
   );
 
   let isOpenGettingStarted = true;
+
+  const shown = sidebarCollectionElements.shown;
+  $: flattenShown = $shown.flatMap((v) => v.elements);
 </script>
 
-<div class="w-full h-full overflow-y-auto">
-  <div class="p-8 space-y-8">
+<!-- 
+<div class="w-full h-full overflow-y-auto"> -->
+<ZappingGamesContainer elements={flattenShown}>
+  <div class="p-8 space-y-8" slot="header">
     <div class="flex items-center gap-2 w-full">
       <img src={Icon} alt="launcherg icon" class="h-12" />
       <div class="font-logo text-(8 text-primary)">Launcherg</div>
@@ -75,6 +81,7 @@
         {/if}
       {/await}
     </div>
-    <ZappingGames />
+    <!-- <ZappingGames /> -->
   </div>
-</div>
+  <!-- </div> -->
+</ZappingGamesContainer>

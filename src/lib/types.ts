@@ -61,6 +61,8 @@ export type CollectionElement = {
   lnkPath: string;
   icon: string;
   thumbnail: string;
+  thumbnailWidth: number | null;
+  thumbnailHeight: number | null;
 };
 
 export type CollectionElementsWithLabel = {

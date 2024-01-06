@@ -11,7 +11,7 @@
 
 {#await existThumbnail then isExist}
   <div
-    class="hover:scale-115 hover:shadow-md focus-within:scale-110 focus-within:shadow-md transition-all cursor-pointer"
+    class="hover:scale-115 hover:shadow-md focus-within:scale-110 focus-within:shadow-md transition-all cursor-pointer w-full h-full"
   >
     <a
       tabIndex={0}
@@ -19,13 +19,14 @@
       use:link
     >
       {#if isExist}
-        <img
+        <!-- <img
           decoding="async"
           class="object-contain rounded"
           src={imgSrc}
           loading="lazy"
           alt={`${collectionElement.gamename}のサムネイル`}
-        />
+        /> -->
+        <div class="w-full h-full bg-green"></div>
       {:else}
         <div
           class="text-(body text-primary) font-bold p-8 rounded border bg-bg-primary"
