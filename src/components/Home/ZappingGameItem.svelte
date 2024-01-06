@@ -1,38 +1,33 @@
 <script lang="ts">
   import { link } from "svelte-spa-router";
   import type { CollectionElement } from "@/lib/types";
-  import { exists } from "@tauri-apps/api/fs";
   import { convertFileSrc } from "@tauri-apps/api/tauri";
   export let collectionElement: CollectionElement;
 
-  $: existThumbnail = exists(collectionElement.thumbnail);
   $: imgSrc = convertFileSrc(collectionElement.thumbnail);
 </script>
 
-{#await existThumbnail then isExist}
-  <div
-    class="hover:scale-115 hover:shadow-md focus-within:scale-110 focus-within:shadow-md transition-all cursor-pointer"
+<div
+  class="hover:scale-115 hover:shadow-md focus-within:scale-110 focus-within:shadow-md transition-all cursor-pointer w-full h-full"
+>
+  <a
+    tabIndex={0}
+    href={`/works/${collectionElement.id}?gamename=${collectionElement.gamename}`}
+    use:link
   >
-    <a
-      tabIndex={0}
-      href={`/works/${collectionElement.id}?gamename=${collectionElement.gamename}`}
-      use:link
-    >
-      {#if isExist}
-        <img
-          decoding="async"
-          class="object-contain rounded"
-          src={imgSrc}
-          loading="lazy"
-          alt={`${collectionElement.gamename}のサムネイル`}
-        />
-      {:else}
-        <div
-          class="text-(body text-primary) font-bold p-8 rounded border bg-bg-primary"
-        >
-          {collectionElement.gamename}
-        </div>
-      {/if}
-    </a>
-  </div>
-{/await}
+    {#if collectionElement.thumbnailWidth && collectionElement.thumbnailHeight}
+      <img
+        decoding="async"
+        class="object-contain rounded w-full h-full"
+        src={imgSrc}
+        alt={`${collectionElement.gamename}のサムネイル`}
+      />
+    {:else}
+      <div
+        class="text-(body text-primary) font-bold px-6 rounded border bg-bg-primary w-full h-full flex items-center justify-center"
+      >
+        {collectionElement.gamename}
+      </div>
+    {/if}
+  </a>
+</div>

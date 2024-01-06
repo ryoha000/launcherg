@@ -24,6 +24,8 @@ pub struct CollectionElement {
     pub last_play_at: Option<String>,
     pub like_at: Option<String>,
     pub registered_at: String,
+    pub thumbnail_width: Option<i32>,
+    pub thumbnail_height: Option<i32>,
 }
 
 impl From<domain::collection::CollectionElement> for CollectionElement {
@@ -44,6 +46,8 @@ impl From<domain::collection::CollectionElement> for CollectionElement {
             st.last_play_at.and_then(|v| Some(v.to_rfc3339())),
             st.like_at.and_then(|v| Some(v.to_rfc3339())),
             st.updated_at.to_rfc3339(),
+            st.thumbnail_width,
+            st.thumbnail_height,
         )
     }
 }

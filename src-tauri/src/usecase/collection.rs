@@ -7,7 +7,9 @@ use super::error::UseCaseError;
 use crate::{
     domain::{
         collection::{CollectionElement, NewCollectionElement, NewCollectionElementDetail},
-        file::{get_icon_path, get_lnk_metadatas, save_icon_to_png, save_thumbnail},
+        file::{
+            get_icon_path, get_lnk_metadatas, get_thumbnail_path, save_icon_to_png, save_thumbnail,
+        },
         repository::collection::CollectionRepository,
         Id,
     },
@@ -28,6 +30,51 @@ impl<R: RepositoriesExt> CollectionUseCase<R> {
             .collection_repository()
             .upsert_collection_element(source)
             .await?;
+        Ok(())
+    }
+    pub async fn upsert_collection_element_thumbnail_size(
+        &self,
+        id: &Id<CollectionElement>,
+    ) -> anyhow::Result<()> {
+        let thumbnail_path = get_thumbnail_path(id);
+        match image::image_dimensions(thumbnail_path) {
+            Ok((width, height)) => {
+                self.repositories
+                    .collection_repository()
+                    .upsert_collection_element_thumbnail_size(id, width as i32, height as i32)
+                    .await?;
+            }
+            Err(e) => {
+                eprintln!(
+                    "[upsert_collection_element_thumbnail_size] {}",
+                    e.to_string()
+                );
+            }
+        }
+        Ok(())
+    }
+    pub async fn concurency_upsert_collection_element_thumbnail_size(
+        &self,
+        ids: Vec<Id<CollectionElement>>,
+    ) -> anyhow::Result<()> {
+        use futures::StreamExt as _;
+
+        futures::stream::iter(ids.into_iter())
+            .map(move |id| {
+                let id = id.clone();
+                async move { self.upsert_collection_element_thumbnail_size(&id).await }
+            })
+            .buffered(50)
+            .for_each(|v| async move {
+                match v {
+                    Err(e) => eprintln!(
+                        "[concurency_upsert_collection_element_thumbnail_size] {}",
+                        e.to_string()
+                    ),
+                    _ => {}
+                }
+            })
+            .await;
         Ok(())
     }
     pub async fn upsert_collection_elements(
@@ -182,6 +229,14 @@ impl<R: RepositoriesExt> CollectionUseCase<R> {
         Ok(())
     }
     pub async fn get_all_elements(&self) -> anyhow::Result<Vec<CollectionElement>> {
+        let null_size_ids = self
+            .repositories
+            .collection_repository()
+            .get_null_thumbnail_size_element_ids()
+            .await?;
+        self.concurency_upsert_collection_element_thumbnail_size(null_size_ids)
+            .await?;
+
         self.repositories
             .collection_repository()
             .get_all_elements()

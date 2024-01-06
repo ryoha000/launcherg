@@ -3,6 +3,7 @@
   import { useFilter } from "@/lib/filter";
   import { type Option } from "@/lib/trieFilter";
   import { createWritable } from "@/lib/utils";
+  import { query } from "@/store/query";
   import SimpleBar from "simplebar";
   import { createEventDispatcher } from "svelte";
 
@@ -19,7 +20,7 @@
     writableOptions.set(options);
   }
 
-  const { query, filtered } = useFilter(writableOptions, getOptions);
+  const { filtered } = useFilter(query, writableOptions, getOptions);
 
   const dispatcher = createEventDispatcher<{
     select: { value: string | number };

@@ -5,7 +5,6 @@ use crate::{
         explorerimpl::explorer::{Explorers, ExplorersExt},
         repositoryimpl::{
             driver::Db,
-            migration::migration,
             repository::{Repositories, RepositoriesExt},
         },
         windowsimpl::windows::{Windows, WindowsExt},
@@ -65,7 +64,6 @@ impl ModulesExt for Modules {
 
 impl Modules {
     pub async fn new() -> Self {
-        migration().await;
         let db = Db::new().await;
 
         let repositories = Arc::new(Repositories::new(db.clone()));
