@@ -40,7 +40,10 @@ impl Db {
 
         // migrate
         let mut conf = Config::new(ConfigDbType::Sqlite).set_db_path(&db_filename);
-        embedded::migrations::runner().run(&mut conf).unwrap();
+        embedded::migrations::runner()
+            .set_abort_divergent(false)
+            .run(&mut conf)
+            .unwrap();
 
         println!("finish setup database. file: {:?}", db_filename);
 

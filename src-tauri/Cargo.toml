@@ -33,12 +33,12 @@ image = "0.24.6"
 tauri-plugin-clipboard = "0.2.5"
 base64 = "0.21.2"
 dirs = "5.0.1"
-fast_image_resize = "1.0.0"
+fast_image_resize = "3.0.4"
 url = "2.4.1"
 tauri-plugin-log = { git = "https://github.com/tauri-apps/plugins-workspace", branch = "v1" }
 ico = "0.3.0"
 sysinfo = "0.29.10"
-refinery = { version = "0.8", features = ["rusqlite"] }
+refinery = { version = "0.8.9", features = ["rusqlite"] }
 
 [dependencies.windows]
 version = "0.51"

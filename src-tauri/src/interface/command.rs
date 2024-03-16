@@ -205,11 +205,37 @@ pub async fn upsert_collection_element(
         .await?;
     modules
         .collection_use_case()
-        .upsert_collection_element_thumbnail_size(&new_element.id)
+        .save_element_thumbnail(&new_element.id, game_cache.thumbnail_url)
         .await?;
     Ok(modules
         .collection_use_case()
-        .save_element_thumbnail(&new_element.id, game_cache.thumbnail_url)
+        .upsert_collection_element_thumbnail_size(&new_element.id)
+        .await?)
+}
+
+#[tauri::command]
+pub async fn update_collection_element_thumbnails(
+    modules: State<'_, Arc<Modules>>,
+    ids: Vec<i32>,
+) -> anyhow::Result<(), CommandError> {
+    let all_game_cache = modules
+        .all_game_cache_use_case()
+        .get_by_ids(ids.clone())
+        .await?;
+    modules
+        .collection_use_case()
+        .concurency_save_thumbnails(
+            all_game_cache
+                .into_iter()
+                .map(|v| (Id::new(v.id), v.thumbnail_url))
+                .collect(),
+        )
+        .await?;
+    Ok(modules
+        .collection_use_case()
+        .concurency_upsert_collection_element_thumbnail_size(
+            ids.into_iter().map(|v| Id::new(v)).collect(),
+        )
         .await?)
 }
 

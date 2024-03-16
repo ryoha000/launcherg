@@ -1,5 +1,9 @@
 <script lang="ts">
-  import { commandGetCollectionElement } from "@/lib/command";
+  import {
+    commandGetCollectionElement,
+    commandUpdateAllGameCache,
+    commandUpdateCollectionElementThumbnails,
+  } from "@/lib/command";
   import Icon from "/icon.png";
   import { link } from "svelte-spa-router";
   import LinkText from "@/components/UI/LinkText.svelte";
@@ -7,6 +11,9 @@
   import VirtualScroller from "@/components/UI/VirtualScroller.svelte";
   import VirtualScrollerMasonry from "@/components/UI/VirtualScrollerMasonry.svelte";
   import { derived } from "svelte/store";
+  import Button from "@/components/UI/Button.svelte";
+  import { scrapeAllGameCacheOnes } from "@/lib/scrapeAllGame";
+  import { showErrorToast, showInfoToast } from "@/lib/toast";
 
   const memoRegex = /^smde_memo-(\d+)$/;
   const memoPromises = Promise.all(
@@ -22,6 +29,26 @@
   const flattenShown = derived(shown, ($shown) =>
     $shown.flatMap((v) => v.elements)
   );
+
+  let disabledRefetchThumbnail = false;
+  const refetchThumbnail = async () => {
+    try {
+      disabledRefetchThumbnail = true;
+      const ids = $flattenShown
+        .filter((v) => !v.thumbnailWidth && !v.thumbnailHeight)
+        .map((v) => v.id);
+      const caches = await scrapeAllGameCacheOnes(ids);
+      await commandUpdateAllGameCache(caches);
+      await commandUpdateCollectionElementThumbnails(ids);
+      await sidebarCollectionElements.refetch();
+      showInfoToast("サムネイルの再取得が完了しました");
+    } catch (e) {
+      showErrorToast("サムネイルの再取得に失敗しました");
+      console.error(e);
+    } finally {
+      disabledRefetchThumbnail = false;
+    }
+  };
 </script>
 
 <VirtualScroller
@@ -89,7 +116,15 @@
         {/if}
       {/await}
     </div>
-    <h3 class="text-(text-primary h3) font-medium">登録したゲーム</h3>
+    <div class="flex items-center gap-4">
+      <h3 class="text-(text-primary h3) font-medium">登録したゲーム</h3>
+      <Button
+        leftIcon="i-material-symbols-refresh-rounded"
+        text="サムネイルを再取得する"
+        disabled={disabledRefetchThumbnail}
+        on:click={refetchThumbnail}
+      />
+    </div>
   </div>
   <VirtualScrollerMasonry
     elements={flattenShown}
