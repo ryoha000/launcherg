@@ -1,7 +1,7 @@
 {
-  "url": "https://github.com/ryoha000/launcherg/releases/download/0.3.2/Launcherg_0.3.2_x64_ja-JP.msi.zip",
-  "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVSRHRFSWpKWGJTaHh3eDB5em1qSVJKOHRhM1lGK21ROTRYN1ZqaW5VVUowZ1hjZWlkcmNha3hXcjlHcWN4L0VHY0lqZ3d5ZVRZTWxBNDI0RjIxbWRnbnhod0prTFc5RncwPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzA0NTczMDg5CWZpbGU6TGF1bmNoZXJnXzAuMy4yX3g2NF9qYS1KUC5tc2kuemlwCmRxejRTM2dEb2FwZCtLRFhBdVdDYTVGTmk3NTcweGVMTmt3eGdtZ1RpRlBCQ2J5Ny9uNE1FTkM3enY3OG90bDZUMVA4M1Y0UkcxRjZnOW1vNXJFckN3PT0K",
-  "notes": "ホーム画面とのゲーム詳細画面の行き来でスクロール位置を保持するようになりました",
-  "pub_date": "2024-01-06T20:31:31Z",
-  "version": "0.3.2"
+  "pub_date": "2024-03-16T16:52:07Z",
+  "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVSRHRFSWpKWGJTaDVOVFdPekFvU0tBUXh6NmFIM3gya1cwWkcrMHBLekVpbktZcXdFa3hyMGNZQUtWS0Q0cVlPOXN2UXluSDU5TWR5akpKcDRoMnJEZms5R25BZjY5V3dZPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzEwNjA3OTI0CWZpbGU6TGF1bmNoZXJnXzAuMy4zX3g2NF9qYS1KUC5tc2kuemlwCm92b2Z3S21STnJDTklrOXVmL0hvR2NWbEVaQ3pJcGNreXIzNitWQzdFQ0ZXMWxyNWx4WFVDZzFQQU0rWHozUGhXZ29XM1dpbnVuQlZWQThiU0o3R0FBPT0K",
+  "url": "https://github.com/ryoha000/launcherg/releases/download/0.3.3/Launcherg_0.3.3_x64_ja-JP.msi.zip",
+  "notes": "See the assets to download this version and install.",
+  "version": "0.3.3"
 }
