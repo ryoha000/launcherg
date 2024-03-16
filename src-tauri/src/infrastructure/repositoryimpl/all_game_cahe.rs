@@ -77,4 +77,19 @@ impl AllGameCacheRepository for RepositoryImpl<AllGameCache> {
         }
         Ok(())
     }
+    async fn delete_by_ids(&self, ids: Vec<i32>) -> anyhow::Result<()> {
+        if ids.len() == 0 {
+            return Ok(());
+        }
+        let pool = self.pool.0.clone();
+        let mut builder = QueryBuilder::new("DELETE FROM all_game_caches WHERE id IN (");
+        let mut separated = builder.separated(", ");
+        for id in ids.iter() {
+            separated.push_bind(id);
+        }
+        separated.push_unseparated(")");
+        let query = builder.build();
+        query.execute(&*pool).await?;
+        Ok(())
+    }
 }

@@ -152,3 +152,11 @@ export const commandSaveScreenshotByPid = async (
     processId,
   });
 };
+
+export const commandUpdateCollectionElementThumbnails = async (
+  ids: number[]
+) => {
+  return await invoke<void>("update_collection_element_thumbnails", {
+    ids,
+  });
+};

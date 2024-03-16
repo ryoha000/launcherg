@@ -51,6 +51,13 @@ impl<R: RepositoriesExt> AllGameCacheUseCase<R> {
         &self,
         cache: Vec<NewAllGameCacheOne>,
     ) -> anyhow::Result<()> {
+        if cache.is_empty() {
+            return Ok(());
+        }
+        self.repositories
+            .all_game_cache_repository()
+            .delete_by_ids(cache.iter().map(|v| v.id).collect())
+            .await?;
         self.repositories
             .all_game_cache_repository()
             .update(cache)
