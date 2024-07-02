@@ -1,25 +1,35 @@
 use std::sync::Arc;
 
 use anyhow;
-use axum::{
-    http::StatusCode,
-    routing::{get, post},
-    Json, Router,
-};
-use serde::{Deserialize, Serialize};
+use axum::{routing::get, Router};
 use tokio::{net::TcpListener, signal, sync::Notify};
+
+use crate::infrastructure::{
+    repositoryimpl::{driver::Db, repository::Repositories},
+    windowsimpl::windows::Windows,
+};
+
+use super::{handler, module::Modules};
 
 pub async fn serve() -> anyhow::Result<Arc<Notify>> {
     let shutdown_notify = Arc::new(Notify::new());
     let shutdown_notify_clone = shutdown_notify.clone();
 
-    let app = Router::new()
-        // `GET /` goes to `root`
-        .route("/", get(root))
-        // `POST /users` goes to `create_user`
-        .route("/users", post(create_user));
-
     let listener = TcpListener::bind("0.0.0.0:3000").await?;
+
+    let db = Db::new().await;
+    let modules = Arc::new(Modules::new(
+        Arc::new(Repositories::new(db.clone())),
+        Arc::new(Windows::new()),
+    ));
+
+    let hc_router = Router::new().route("/", get(handler::health_check::hc));
+    let games_router = Router::new().route("/", get(handler::games::list_games));
+
+    let app = Router::new()
+        .nest("/hc", hc_router)
+        .nest("/games", games_router)
+        .with_state(modules);
 
     tauri::async_runtime::spawn(async {
         axum::serve(listener, app)
@@ -58,38 +68,4 @@ async fn shutdown_signal(shutdown_notify: Arc<Notify>) {
         _ = terminate => {},
         _ = shutdown => {},
     }
-}
-
-// basic handler that responds with a static string
-async fn root() -> &'static str {
-    "Hello, World!"
-}
-
-async fn create_user(
-    // this argument tells axum to parse the request body
-    // as JSON into a `CreateUser` type
-    Json(payload): Json<CreateUser>,
-) -> (StatusCode, Json<User>) {
-    // insert your application logic here
-    let user = User {
-        id: 1337,
-        username: payload.username,
-    };
-
-    // this will be converted into a JSON response
-    // with a status code of `201 Created`
-    (StatusCode::CREATED, Json(user))
-}
-
-// the input to our `create_user` handler
-#[derive(Deserialize)]
-struct CreateUser {
-    username: String,
-}
-
-// the output to our `create_user` handler
-#[derive(Serialize)]
-struct User {
-    id: u64,
-    username: String,
 }
