@@ -13,6 +13,7 @@ use crate::{
 use super::explorer::ExplorerImpl;
 
 const MEMOS_ROOT_DIR: &str = "game-memos";
+const SCREENSHOTS_ROOT_DIR: &str = "screenshots";
 
 #[async_trait]
 impl FileExplorer for ExplorerImpl<File> {
@@ -30,6 +31,15 @@ impl FileExplorer for ExplorerImpl<File> {
         fs::create_dir_all(&dir).unwrap();
         Ok(Path::new(&dir)
             .join(format!("{}.png", Uuid::new_v4().to_string()))
+            .to_string_lossy()
+            .to_string())
+    }
+    fn get_save_screenshot_path_by_name(&self, name: &str) -> anyhow::Result<String> {
+        let dir = Path::new(&get_save_root_abs_dir()).join(SCREENSHOTS_ROOT_DIR);
+        fs::create_dir_all(&dir).unwrap();
+        let timestamp = chrono::Local::now().format("%Y-%m-%d-%H-%M-%S");
+        Ok(Path::new(&dir)
+            .join(format!("{}-{}.png", name, timestamp))
             .to_string_lossy()
             .to_string())
     }
