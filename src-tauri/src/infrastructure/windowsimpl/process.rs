@@ -8,4 +8,7 @@ impl ProcessWindows for WindowsImpl<Process> {
     fn save_screenshot_by_process_id(&self, process_id: u32, filepath: &str) -> anyhow::Result<()> {
         take::take_screenshot_by_process_id(process_id, filepath)
     }
+    fn save_top_window_screenshot(&self, filepath: &str) -> anyhow::Result<()> {
+        take::take_screenshot_by_top_window(filepath)
+    }
 }

@@ -164,3 +164,18 @@ pub fn take_screenshot_by_process_id(process_id: u32, filepath: &str) -> anyhow:
 
     Ok(())
 }
+
+pub fn take_screenshot_by_top_window(filepath: &str) -> anyhow::Result<()> {
+    unsafe {
+        RoInitialize(RO_INIT_MULTITHREADED)?;
+    }
+
+    let hwnd = capture::find_top_window()?;
+    let (item_size, bits) = get_screenshot_data(hwnd)?;
+
+    save_bits_to_file(bits, item_size, filepath)?;
+
+    unsafe { RoUninitialize() }
+
+    Ok(())
+}

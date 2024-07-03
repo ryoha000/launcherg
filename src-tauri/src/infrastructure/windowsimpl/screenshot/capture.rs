@@ -103,3 +103,11 @@ pub fn find_capture_hwnd(started_process_id: u32) -> anyhow::Result<HWND> {
     }
     Err(anyhow::anyhow!("No capture window found"))
 }
+
+pub fn find_top_window() -> anyhow::Result<HWND> {
+    let hwnd = unsafe { windows::Win32::UI::WindowsAndMessaging::GetForegroundWindow() };
+    if hwnd.0 == 0 as isize {
+        return Err(anyhow::anyhow!("No top window found"));
+    }
+    Ok(hwnd)
+}
