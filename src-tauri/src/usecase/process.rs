@@ -19,6 +19,6 @@ impl<R: WindowsExt> ProcessUseCase<R> {
     ) -> anyhow::Result<()> {
         self.windows
             .process()
-            .save_screenshot(process_id, &filepath)
+            .save_screenshot_by_process_id(process_id, &filepath)
     }
 }

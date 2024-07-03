@@ -3,6 +3,7 @@ use windows::Foundation::TypedEventHandler;
 use windows::Graphics::Capture::{Direct3D11CaptureFramePool, GraphicsCaptureItem};
 use windows::Graphics::DirectX::DirectXPixelFormat;
 use windows::Graphics::Imaging::{BitmapAlphaMode, BitmapEncoder, BitmapPixelFormat};
+use windows::Graphics::SizeInt32;
 use windows::Storage::{CreationCollisionOption, FileAccessMode, StorageFolder};
 use windows::Win32::Foundation::HWND;
 use windows::Win32::Graphics::Direct3D11::{
@@ -24,12 +25,7 @@ fn create_capture_item_for_window(window_handle: HWND) -> Result<GraphicsCapture
     unsafe { interop.CreateForWindow(window_handle) }
 }
 
-pub fn take_screenshot(process_id: u32, filepath: &str) -> anyhow::Result<()> {
-    unsafe {
-        RoInitialize(RO_INIT_MULTITHREADED)?;
-    }
-
-    let hwnd = capture::find_capture_hwnd(process_id)?;
+fn get_screenshot_data(hwnd: HWND) -> anyhow::Result<(SizeInt32, Vec<u8>)> {
     let item = create_capture_item_for_window(hwnd)?;
 
     let item_size = item.Size()?;
@@ -120,6 +116,10 @@ pub fn take_screenshot(process_id: u32, filepath: &str) -> anyhow::Result<()> {
         bits
     };
 
+    Ok((item_size, bits))
+}
+
+fn save_bits_to_file(bits: Vec<u8>, item_size: SizeInt32, filepath: &str) -> anyhow::Result<()> {
     let filepath = std::path::Path::new(filepath);
     let folder_path = filepath.parent().context("cannot get folder path")?;
     let file_name = filepath.file_name().context("cannot get file name")?;
@@ -146,6 +146,19 @@ pub fn take_screenshot(process_id: u32, filepath: &str) -> anyhow::Result<()> {
 
         encoder.FlushAsync()?.get()?;
     }
+
+    Ok(())
+}
+
+pub fn take_screenshot_by_process_id(process_id: u32, filepath: &str) -> anyhow::Result<()> {
+    unsafe {
+        RoInitialize(RO_INIT_MULTITHREADED)?;
+    }
+
+    let hwnd = capture::find_capture_hwnd(process_id)?;
+    let (item_size, bits) = get_screenshot_data(hwnd)?;
+
+    save_bits_to_file(bits, item_size, filepath)?;
 
     unsafe { RoUninitialize() }
 
