@@ -10,8 +10,8 @@ import {
 } from "@skyway-sdk/room";
 import { memo } from "../store/memo";
 import { createWritable } from "@/lib/utils";
-import { ResponseType, fetch } from "@tauri-apps/api/http";
-import { readBinaryFile } from "@tauri-apps/api/fs";
+import { fetch } from "@tauri-apps/plugin-http";
+import { readFile } from "@tauri-apps/plugin-fs";
 import { commandSaveScreenshotByPid } from "@/lib/command";
 import { getStartProcessMap } from "@/store/startProcessMap";
 import { showErrorToast } from "@/lib/toast";
@@ -136,17 +136,13 @@ const createSkyWay = () => {
 
   let dataStream: LocalDataStream | undefined = undefined;
   const setDataStream = async () => {
-    const response = await fetch<{ authToken: string }>(
-      "https://launcherg.ryoha.moe/connect",
-      {
-        method: "POST",
-        responseType: ResponseType.JSON,
-        headers: {
-          "content-type": "application/json",
-        },
-      }
-    );
-    const authToken = response.data.authToken;
+    const response = await fetch("https://launcherg.ryoha.moe/connect", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+      },
+    });
+    const { authToken } = (await response.json()) as { authToken: string };
 
     const context = await SkyWayContext.Create(authToken);
     const room = await SkyWayRoom.FindOrCreate(context, {

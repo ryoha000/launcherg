@@ -3,7 +3,7 @@ import type {
   CollectionElement,
   CollectionElementDetail,
 } from "@/lib/types";
-import { invoke } from "@tauri-apps/api/tauri";
+import { invoke } from "@tauri-apps/api/core";
 
 export const commandCreateElementsInPc = async (
   exploreDirPaths: string[],

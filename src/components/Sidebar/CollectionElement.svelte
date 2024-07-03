@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { CollectionElement } from "@/lib/types";
-  import { convertFileSrc } from "@tauri-apps/api/tauri";
+  import { convertFileSrc } from "@tauri-apps/api/core";
   import { link } from "svelte-spa-router";
 
   export let collectionElement: CollectionElement;

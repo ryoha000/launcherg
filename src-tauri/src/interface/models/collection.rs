@@ -1,5 +1,8 @@
+use std::sync::Arc;
+
 use derive_new::new;
 use serde::{Deserialize, Serialize};
+use tauri::AppHandle;
 
 use crate::domain::{
     self,
@@ -28,8 +31,8 @@ pub struct CollectionElement {
     pub thumbnail_height: Option<i32>,
 }
 
-impl From<domain::collection::CollectionElement> for CollectionElement {
-    fn from(st: domain::collection::CollectionElement) -> Self {
+impl CollectionElement {
+    pub fn from_domain(handle: &Arc<AppHandle>, st: domain::collection::CollectionElement) -> Self {
         CollectionElement::new(
             st.id.value,
             st.gamename,
@@ -40,8 +43,8 @@ impl From<domain::collection::CollectionElement> for CollectionElement {
             st.is_nukige,
             st.exe_path,
             st.lnk_path,
-            get_thumbnail_path(&st.id),
-            get_icon_path(&st.id),
+            get_thumbnail_path(handle, &st.id),
+            get_icon_path(handle, &st.id),
             st.install_at.and_then(|v| Some(v.to_rfc3339())),
             st.last_play_at.and_then(|v| Some(v.to_rfc3339())),
             st.like_at.and_then(|v| Some(v.to_rfc3339())),

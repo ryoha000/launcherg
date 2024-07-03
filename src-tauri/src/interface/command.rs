@@ -1,5 +1,8 @@
 use std::sync::Arc;
 use std::sync::Mutex;
+use tauri::async_runtime::handle;
+use tauri::AppHandle;
+use tauri::Manager;
 use tauri::State;
 use tauri::Window;
 
@@ -27,20 +30,20 @@ use crate::phonerg;
 #[tauri::command]
 pub async fn create_elements_in_pc(
     modules: State<'_, Arc<Modules>>,
-    window: Window,
+    handle: AppHandle,
     explore_dir_paths: Vec<String>,
     use_cache: bool,
 ) -> anyhow::Result<Vec<String>, CommandError> {
-    let window = Arc::new(window);
+    let handle = Arc::new(handle);
     let emit_progress = Arc::new(|message| {
-        if let Err(e) = window.emit("progress", ProgressPayload::new(message)) {
+        if let Err(e) = handle.emit("progress", ProgressPayload::new(message)) {
             return Err(anyhow::anyhow!(e.to_string()));
         }
         Ok(())
     });
-    let cloned_window = Arc::clone(&window);
+    let cloned_handle = handle.clone();
     let process_each_game_file_callback = Arc::new(Mutex::new(move || {
-        if let Err(e) = cloned_window.emit("progresslive", ProgressLivePayload::new(None)) {
+        if let Err(e) = cloned_handle.emit("progresslive", ProgressLivePayload::new(None)) {
             return Err(anyhow::anyhow!(e.to_string()));
         }
         Ok(())
@@ -62,7 +65,7 @@ pub async fn create_elements_in_pc(
         "指定したフォルダの .lnk .exe ファイルを取得しました。ファイル数: {}",
         explore_files.len()
     ))?;
-    if let Err(e) = window.emit(
+    if let Err(e) = handle.emit(
         "progresslive",
         ProgressLivePayload::new(Some(explore_files.len() as i32)),
     ) {
@@ -77,6 +80,7 @@ pub async fn create_elements_in_pc(
     let new_elements = modules
         .file_use_case()
         .filter_files_to_collection_elements(
+            &handle,
             explore_files.clone(),
             all_game_cache,
             emit_progress,
@@ -91,6 +95,7 @@ pub async fn create_elements_in_pc(
     modules
         .collection_use_case()
         .concurency_save_thumbnails(
+            &handle,
             new_elements_game_caches
                 .into_iter()
                 .map(|v| (Id::new(v.id), v.thumbnail_url))
@@ -109,7 +114,7 @@ pub async fn create_elements_in_pc(
         .collect::<Vec<Id<_>>>();
     modules
         .collection_use_case()
-        .concurency_upsert_collection_element_thumbnail_size(new_element_ids)
+        .concurency_upsert_collection_element_thumbnail_size(&handle, new_element_ids)
         .await?;
 
     modules
@@ -157,18 +162,20 @@ pub async fn get_nearest_key_and_distance(
 
 #[tauri::command]
 pub async fn upload_image(
+    handle: AppHandle,
     modules: State<'_, Arc<Modules>>,
     id: i32,
     base64_image: String,
 ) -> anyhow::Result<String, CommandError> {
     Ok(modules
         .file_use_case()
-        .upload_image(id, base64_image)
+        .upload_image(&Arc::new(handle), id, base64_image)
         .await?)
 }
 
 #[tauri::command]
 pub async fn upsert_collection_element(
+    handle: AppHandle,
     modules: State<'_, Arc<Modules>>,
     exe_path: Option<String>,
     lnk_path: Option<String>,
@@ -197,26 +204,28 @@ pub async fn upsert_collection_element(
         lnk_path,
         install_at,
     );
+    let handle = Arc::new(handle);
     modules
         .collection_use_case()
         .upsert_collection_element(&new_element)
         .await?;
     modules
         .collection_use_case()
-        .save_element_icon(&new_element)
+        .save_element_icon(&handle, &new_element)
         .await?;
     modules
         .collection_use_case()
-        .save_element_thumbnail(&new_element.id, game_cache.thumbnail_url)
+        .save_element_thumbnail(&handle, &new_element.id, game_cache.thumbnail_url)
         .await?;
     Ok(modules
         .collection_use_case()
-        .upsert_collection_element_thumbnail_size(&new_element.id)
+        .upsert_collection_element_thumbnail_size(&handle, &new_element.id)
         .await?)
 }
 
 #[tauri::command]
 pub async fn update_collection_element_thumbnails(
+    handle: AppHandle,
     modules: State<'_, Arc<Modules>>,
     ids: Vec<i32>,
 ) -> anyhow::Result<(), CommandError> {
@@ -224,9 +233,11 @@ pub async fn update_collection_element_thumbnails(
         .all_game_cache_use_case()
         .get_by_ids(ids.clone())
         .await?;
+    let handle = Arc::new(handle);
     modules
         .collection_use_case()
         .concurency_save_thumbnails(
+            &handle,
             all_game_cache
                 .into_iter()
                 .map(|v| (Id::new(v.id), v.thumbnail_url))
@@ -236,6 +247,7 @@ pub async fn update_collection_element_thumbnails(
     Ok(modules
         .collection_use_case()
         .concurency_upsert_collection_element_thumbnail_size(
+            &handle,
             ids.into_iter().map(|v| Id::new(v)).collect(),
         )
         .await?)
@@ -243,13 +255,14 @@ pub async fn update_collection_element_thumbnails(
 
 #[tauri::command]
 pub async fn update_collection_element_icon(
+    handle: AppHandle,
     modules: State<'_, Arc<Modules>>,
     id: i32,
     path: String,
 ) -> anyhow::Result<(), CommandError> {
     Ok(modules
         .collection_use_case()
-        .update_collection_element_icon(&Id::new(id), path)
+        .update_collection_element_icon(&Arc::new(handle), &Id::new(id), path)
         .await?)
 }
 
@@ -293,16 +306,18 @@ pub async fn play_game(
 
 #[tauri::command]
 pub async fn get_play_time_minutes(
+    handle: AppHandle,
     modules: State<'_, Arc<Modules>>,
     collection_element_id: i32,
 ) -> anyhow::Result<f32, CommandError> {
     Ok(modules
         .file_use_case()
-        .get_play_time_minutes(&Id::new(collection_element_id))?)
+        .get_play_time_minutes(&Arc::new(handle), &Id::new(collection_element_id))?)
 }
 
 #[tauri::command]
 pub async fn get_collection_element(
+    handle: AppHandle,
     modules: State<'_, Arc<Modules>>,
     collection_element_id: i32,
 ) -> anyhow::Result<CollectionElement, CommandError> {
@@ -310,7 +325,7 @@ pub async fn get_collection_element(
         .collection_use_case()
         .get_element_by_element_id(&Id::new(collection_element_id))
         .await
-        .and_then(|v| Ok(v.into()))?)
+        .and_then(|v| Ok(CollectionElement::from_domain(&Arc::new(handle), v)))?)
 }
 
 #[tauri::command]
@@ -350,14 +365,16 @@ pub async fn create_element_details(
 
 #[tauri::command]
 pub async fn get_all_elements(
+    handle: AppHandle,
     modules: State<'_, Arc<Modules>>,
 ) -> anyhow::Result<Vec<CollectionElement>, CommandError> {
+    let handle = &Arc::new(handle);
     Ok(modules
         .collection_use_case()
-        .get_all_elements()
+        .get_all_elements(&handle)
         .await?
         .into_iter()
-        .map(|v| v.into())
+        .map(|v| CollectionElement::from_domain(&handle, v))
         .collect())
 }
 
@@ -468,11 +485,14 @@ pub async fn get_game_cache_by_id(
 
 #[tauri::command]
 pub async fn save_screenshot_by_pid(
+    handle: AppHandle,
     modules: State<'_, Arc<Modules>>,
     work_id: i32,
     process_id: u32,
 ) -> anyhow::Result<String, CommandError> {
-    let upload_path = modules.file_use_case().get_new_upload_image_path(work_id)?;
+    let upload_path = modules
+        .file_use_case()
+        .get_new_upload_image_path(&Arc::new(handle), work_id)?;
     modules
         .process_use_case()
         .save_screenshot_by_pid(process_id, &upload_path)
@@ -481,8 +501,11 @@ pub async fn save_screenshot_by_pid(
 }
 
 #[tauri::command]
-pub async fn phonerg_serve(modules: State<'_, Arc<Modules>>) -> anyhow::Result<(), CommandError> {
-    let phonerg_shutdown_notify = phonerg::serve::serve().await?;
+pub async fn phonerg_serve(
+    handle: AppHandle,
+    modules: State<'_, Arc<Modules>>,
+) -> anyhow::Result<(), CommandError> {
+    let phonerg_shutdown_notify = phonerg::serve::serve(handle).await?;
     modules.set_phonerg_shutdown_notify(Some(phonerg_shutdown_notify));
     Ok(())
 }

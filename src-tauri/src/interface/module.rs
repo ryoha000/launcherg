@@ -1,5 +1,6 @@
 use std::sync::{Arc, Mutex};
 
+use tauri::AppHandle;
 use tokio::sync::Notify;
 
 use crate::{
@@ -77,8 +78,8 @@ impl ModulesExt for Modules {
 }
 
 impl Modules {
-    pub async fn new() -> Self {
-        let db = Db::new().await;
+    pub async fn new(handle: &AppHandle) -> Self {
+        let db = Db::new(handle).await;
 
         let repositories = Arc::new(Repositories::new(db.clone()));
         let explorers = Arc::new(Explorers::new());

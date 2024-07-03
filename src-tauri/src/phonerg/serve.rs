@@ -1,26 +1,30 @@
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 
 use anyhow;
 use axum::{routing::get, Router};
+use tauri::AppHandle;
 use tokio::{net::TcpListener, signal, sync::Notify};
 
 use crate::infrastructure::{
+    explorerimpl::explorer::Explorers,
     repositoryimpl::{driver::Db, repository::Repositories},
     windowsimpl::windows::Windows,
 };
 
 use super::{handler, module::Modules};
 
-pub async fn serve() -> anyhow::Result<Arc<Notify>> {
+pub async fn serve(handle: AppHandle) -> anyhow::Result<Arc<Notify>> {
     let shutdown_notify = Arc::new(Notify::new());
     let shutdown_notify_clone = shutdown_notify.clone();
 
     let listener = TcpListener::bind("0.0.0.0:3000").await?;
 
-    let db = Db::new().await;
+    let db = Db::new(&handle).await;
     let modules = Arc::new(Modules::new(
+        Mutex::new(None),
         Arc::new(Repositories::new(db.clone())),
         Arc::new(Windows::new()),
+        Arc::new(Explorers::new()),
     ));
 
     let hc_router = Router::new().route("/", get(handler::health_check::hc));

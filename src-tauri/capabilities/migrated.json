@@ -1,0 +1,53 @@
+{
+  "identifier": "migrated",
+  "description": "permissions that were migrated from v1",
+  "local": true,
+  "windows": [
+    "main"
+  ],
+  "permissions": [
+    "path:default",
+    "event:default",
+    "window:default",
+    "app:default",
+    "resources:default",
+    "menu:default",
+    "tray:default",
+    "fs:allow-read-file",
+    "fs:allow-write-file",
+    "fs:allow-mkdir",
+    "fs:allow-exists",
+    {
+      "identifier": "fs:scope",
+      "allow": [
+        "**"
+      ]
+    },
+    "shell:allow-open",
+    "dialog:allow-open",
+    {
+      "identifier": "http:default",
+      "allow": [
+        {
+          "url": "https://erogamescape.dyndns.org/~ap2/ero/toukei_kaiseki/*"
+        },
+        {
+          "url": "https://seiya-saiga.com/game/*"
+        },
+        {
+          "url": "https://raw.githubusercontent.com/ryoha000/launcherg/*"
+        },
+        {
+          "url": "https://launcherg.ryoha.moe/*"
+        }
+      ]
+    },
+    "clipboard-manager:allow-read-text",
+    "clipboard-manager:allow-read-image",
+    "clipboard-manager:default",
+    "fs:default",
+    "dialog:default",
+    "shell:default",
+    "http:default"
+  ]
+}
