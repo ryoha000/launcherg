@@ -22,6 +22,7 @@ pub async fn serve(handle: AppHandle) -> anyhow::Result<Arc<Notify>> {
     let db = Db::new(&handle).await;
     let modules = Arc::new(Modules::new(
         Mutex::new(None),
+        Arc::new(handle),
         Arc::new(Repositories::new(db.clone())),
         Arc::new(Windows::new()),
         Arc::new(Explorers::new()),
@@ -30,9 +31,12 @@ pub async fn serve(handle: AppHandle) -> anyhow::Result<Arc<Notify>> {
     let hc_router = Router::new().route("/", get(handler::health_check::hc));
     let games_router = Router::new().route("/", get(handler::games::list_games));
 
+    let current_router = Router::new().route("/screenshot", get(handler::current::get_screenshot));
+
     let app = Router::new()
         .nest("/hc", hc_router)
         .nest("/games", games_router)
+        .nest("/current", current_router)
         .with_state(modules);
 
     tauri::async_runtime::spawn(async {
