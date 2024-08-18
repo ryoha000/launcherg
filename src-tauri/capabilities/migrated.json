@@ -6,13 +6,13 @@
     "main"
   ],
   "permissions": [
-    "path:default",
-    "event:default",
-    "window:default",
-    "app:default",
-    "resources:default",
-    "menu:default",
-    "tray:default",
+    "core:path:default",
+    "core:event:default",
+    "core:window:default",
+    "core:app:default",
+    "core:resources:default",
+    "core:menu:default",
+    "core:tray:default",
     "fs:allow-read-file",
     "fs:allow-write-file",
     "fs:allow-mkdir",
@@ -39,6 +39,9 @@
         },
         {
           "url": "https://launcherg.ryoha.moe/*"
+        },
+        {
+          "url": "http://localhost:3248/*"
         }
       ]
     },
@@ -48,6 +51,7 @@
     "fs:default",
     "dialog:default",
     "shell:default",
-    "http:default"
+    "http:default",
+    "shell:default"
   ]
 }

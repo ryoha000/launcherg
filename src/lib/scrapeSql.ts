@@ -9,9 +9,6 @@ export const scrapeSql = async (query: string, colNums: number) => {
       "https://erogamescape.dyndns.org/~ap2/ero/toukei_kaiseki/sql_for_erogamer_form.php",
       {
         method: "POST",
-        headers: {
-          "content-type": "application/x-www-form-urlencoded",
-        },
         body: formData,
       }
     );

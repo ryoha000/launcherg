@@ -1,10 +1,8 @@
 use std::sync::Arc;
 use std::sync::Mutex;
-use tauri::async_runtime::handle;
 use tauri::AppHandle;
-use tauri::Manager;
+use tauri::Emitter;
 use tauri::State;
-use tauri::Window;
 
 use super::models::all_game_cache::AllGameCacheOne;
 use super::models::collection::ProgressLivePayload;

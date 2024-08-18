@@ -40,12 +40,12 @@ refinery = { version = "0.8.9", features = ["rusqlite"] }
 axum = "0.7.5"
 tokio = { version = "1.0", features = ["net", "signal"] }
 tokio-util = "0.7.11"
-tauri-plugin-log = "2.0.0-beta.7"
-tauri-plugin-clipboard-manager = "2.1.0-beta.5"
-tauri-plugin-fs = "2.0.0-beta.10"
-tauri-plugin-http = "2.0.0-beta.11"
-tauri-plugin-dialog = "2.0.0-beta.10"
-tauri-plugin-shell = "2.0.0-beta.8"
+tauri-plugin-log = "2.0.0-rc.0"
+tauri-plugin-clipboard-manager = "2.1.0-beta.6"
+tauri-plugin-fs = "2.0.0-rc.0"
+tauri-plugin-dialog = "2.0.0-rc.0"
+tauri-plugin-shell = "2.0.0-rc.0"
+tauri-plugin-http = "2.0.0-rc.0"
 
 [dependencies.windows]
 version = "0.51"
