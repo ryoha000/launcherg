@@ -636,7 +636,6 @@ pub fn get_origin_thumbnail_path(
 
     fs::create_dir_all(&dir).unwrap();
     Ok(Path::new(&dir)
-        .join(THUMBNAILS_ROOT_DIR)
         .join(format!("{}-{}", collection_element_id.value, filename))
         .to_string_lossy()
         .to_string())
