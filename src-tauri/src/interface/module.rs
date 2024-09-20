@@ -1,7 +1,6 @@
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 
 use tauri::AppHandle;
-use tokio::sync::Notify;
 
 use crate::{
     infrastructure::{
@@ -20,8 +19,6 @@ use crate::{
 };
 
 pub struct Modules {
-    phonerg_shutdown_notify: Mutex<Option<Arc<Notify>>>,
-
     collection_use_case: CollectionUseCase<Repositories>,
     explored_cache_use_case: ExploredCacheUseCase<Repositories>,
     network_use_case: NetworkUseCase<Explorers>,
@@ -40,9 +37,6 @@ pub trait ModulesExt {
     fn network_use_case(&self) -> &NetworkUseCase<Self::Explorers>;
     fn file_use_case(&self) -> &FileUseCase<Self::Explorers>;
     fn process_use_case(&self) -> &ProcessUseCase<Self::Windows>;
-
-    fn set_phonerg_shutdown_notify(&self, _: Option<Arc<Notify>>) {}
-    fn phonerg_shutdown_notify(&self) -> &Mutex<Option<Arc<Notify>>>;
 }
 
 impl ModulesExt for Modules {
@@ -68,13 +62,6 @@ impl ModulesExt for Modules {
     fn process_use_case(&self) -> &ProcessUseCase<Self::Windows> {
         &self.process_use_case
     }
-
-    fn set_phonerg_shutdown_notify(&self, notify: Option<Arc<Notify>>) {
-        *self.phonerg_shutdown_notify.lock().unwrap() = notify;
-    }
-    fn phonerg_shutdown_notify(&self) -> &Mutex<Option<Arc<Notify>>> {
-        &self.phonerg_shutdown_notify
-    }
 }
 
 impl Modules {
@@ -96,8 +83,6 @@ impl Modules {
         let process_use_case: ProcessUseCase<Windows> = ProcessUseCase::new(windows.clone());
 
         Self {
-            phonerg_shutdown_notify: Mutex::new(None),
-
             collection_use_case,
             explored_cache_use_case,
             all_game_cache_use_case,

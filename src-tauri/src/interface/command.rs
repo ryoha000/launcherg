@@ -23,8 +23,6 @@ use crate::{
     usecase::models::collection::CreateCollectionElementDetail,
 };
 
-use crate::phonerg;
-
 #[tauri::command]
 pub async fn create_elements_in_pc(
     modules: State<'_, Arc<Modules>>,
@@ -496,25 +494,4 @@ pub async fn save_screenshot_by_pid(
         .save_screenshot_by_pid(process_id, &upload_path)
         .await?;
     Ok(upload_path)
-}
-
-#[tauri::command]
-pub async fn phonerg_serve(
-    handle: AppHandle,
-    modules: State<'_, Arc<Modules>>,
-) -> anyhow::Result<(), CommandError> {
-    let phonerg_shutdown_notify = phonerg::serve::serve(handle).await?;
-    modules.set_phonerg_shutdown_notify(Some(phonerg_shutdown_notify));
-    Ok(())
-}
-
-#[tauri::command]
-pub async fn phonerg_shutdown(
-    modules: State<'_, Arc<Modules>>,
-) -> anyhow::Result<(), CommandError> {
-    if let Some(notify) = modules.phonerg_shutdown_notify().lock().unwrap().take() {
-        notify.notify_one();
-    }
-    modules.set_phonerg_shutdown_notify(None);
-    Ok(())
 }

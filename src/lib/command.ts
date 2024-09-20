@@ -160,11 +160,3 @@ export const commandUpdateCollectionElementThumbnails = async (
     ids,
   });
 };
-
-export const commandPhonergServe = async () => {
-  return await invoke<void>("phonerg_serve", {});
-};
-
-export const commandPhonergShutdown = async () => {
-  return await invoke<void>("phonerg_shutdown", {});
-};
