@@ -1,6 +1,6 @@
 import type { Creator, VoiceActor, Work } from "@/lib/types";
 import { convertSpecialCharacters } from "@/lib/utils";
-import { ResponseType, fetch } from "@tauri-apps/api/http";
+import { fetch } from "@tauri-apps/plugin-http";
 
 const BASE_REQUEST_PATH =
   "https://erogamescape.dyndns.org/~ap2/ero/toukei_kaiseki";
@@ -64,15 +64,11 @@ const getMusics = (elements: HTMLCollectionOf<HTMLTableCellElement>) => {
 };
 
 export const getWorkByScrape = async (id: number) => {
-  const response = await fetch<string>(
-    `${BASE_REQUEST_PATH}/game.php?game=${id}`,
-    {
-      method: "GET",
-      responseType: ResponseType.Text,
-    }
-  );
+  const response = await fetch(`${BASE_REQUEST_PATH}/game.php?game=${id}`, {
+    method: "GET",
+  });
   const parser = new DOMParser();
-  const doc = parser.parseFromString(response.data, "text/html");
+  const doc = parser.parseFromString(await response.text(), "text/html");
 
   const gameTitle = doc.getElementById("game_title");
   const softTitle = doc.getElementById("soft-title");

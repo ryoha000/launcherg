@@ -1,7 +1,7 @@
 <script lang="ts">
   import Button from "@/components/UI/Button.svelte";
   import Input from "@/components/UI/Input.svelte";
-  import { open } from "@tauri-apps/api/dialog";
+  import { open } from "@tauri-apps/plugin-dialog";
   import { createEventDispatcher } from "svelte";
 
   export let path: string;

@@ -1,5 +1,7 @@
 use std::sync::Arc;
 
+use tauri::AppHandle;
+
 use crate::{
     infrastructure::{
         explorerimpl::explorer::{Explorers, ExplorersExt},
@@ -63,8 +65,8 @@ impl ModulesExt for Modules {
 }
 
 impl Modules {
-    pub async fn new() -> Self {
-        let db = Db::new().await;
+    pub async fn new(handle: &AppHandle) -> Self {
+        let db = Db::new(handle).await;
 
         let repositories = Arc::new(Repositories::new(db.clone()));
         let explorers = Arc::new(Explorers::new());

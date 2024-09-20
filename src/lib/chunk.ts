@@ -1,4 +1,4 @@
-import { readBinaryFile } from "@tauri-apps/api/fs";
+import { readFile } from "@tauri-apps/plugin-fs";
 
 export const useChunk = () => {
   let currentChunkId = 0;
@@ -13,7 +13,7 @@ export const useChunk = () => {
 
   const createChunks = async (filePath: string) => {
     // ファイルをバイナリとして読み込む
-    const data = await readBinaryFile(filePath);
+    const data = await readFile(filePath);
     const lowerCasePath = filePath.toLowerCase();
     // MIME タイプを推定 (ここでは ".png" の場合 "image/png" としていますが、他の形式もサポートする場合は調整が必要)
     const mimeType = (function () {

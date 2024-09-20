@@ -8,23 +8,56 @@ mod usecase;
 
 use std::sync::Arc;
 
+use infrastructure::util::get_save_root_abs_dir_with_ptr_handle;
 use interface::{command, module::Modules};
 use tauri::{async_runtime::block_on, Manager};
-use tauri_plugin_log::LogTarget;
+use tauri_plugin_log::{Target, TargetKind};
 
 fn main() {
-    let modules = Arc::new(block_on(Modules::new()));
-
     tauri::Builder::default()
+        .plugin(tauri_plugin_http::init())
+        .plugin(tauri_plugin_shell::init())
+        .plugin(tauri_plugin_dialog::init())
+        .plugin(tauri_plugin_fs::init())
+        .plugin(tauri_plugin_clipboard_manager::init())
         .setup(|app| {
+            // folder の中身を移動して folder を削除する
+            // C:\Users\ryoha\AppData\Roaming\launcherg -> C:\Users\ryoha\AppData\Roaming\ryoha.moe\launcherg
+
+            let dst_dir = get_save_root_abs_dir_with_ptr_handle(app.handle());
+            let src_dir = std::path::Path::new(&dst_dir)
+                .parent()
+                .unwrap()
+                .parent()
+                .unwrap()
+                .join("launcherg");
+            println!("src_dir: {:?}, dst_dir: {:?}", src_dir, dst_dir);
+            if src_dir.exists() {
+                let dst_dir = std::path::Path::new(&dst_dir);
+                std::fs::create_dir_all(&dst_dir).unwrap();
+                for entry in std::fs::read_dir(&src_dir).unwrap() {
+                    let entry = entry.unwrap();
+                    let path = entry.path();
+                    let file_name = path.file_name().unwrap();
+                    let dst_path = dst_dir.join(file_name);
+                    println!("rename {:?} -> {:?}", path, dst_path);
+                    std::fs::rename(path, dst_path).unwrap();
+                }
+                std::fs::remove_dir_all(src_dir).unwrap();
+            }
+
+            let modules = Arc::new(block_on(Modules::new(app.handle())));
             app.manage(modules);
 
             Ok(())
         })
-        .plugin(tauri_plugin_clipboard::init())
         .plugin(
-            tauri_plugin_log::Builder::default()
-                .targets([LogTarget::LogDir, LogTarget::Stdout, LogTarget::Webview])
+            tauri_plugin_log::Builder::new()
+                .targets([
+                    Target::new(TargetKind::Stdout),
+                    Target::new(TargetKind::LogDir { file_name: None }),
+                    Target::new(TargetKind::Webview),
+                ])
                 .build(),
         )
         .invoke_handler(tauri::generate_handler![

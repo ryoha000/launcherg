@@ -1,17 +1,15 @@
 import type { SeiyaDataPair } from "@/lib/types";
-import { ResponseType, fetch } from "@tauri-apps/api/http";
+import { fetch } from "@tauri-apps/plugin-http";
 import Encoding from "encoding-japanese";
 
 export const getSeiyaDataPairs = async () => {
-  const response = await fetch<Uint16Array>(
-    "https://seiya-saiga.com/game/kouryaku.html",
-    {
-      method: "GET",
-      responseType: ResponseType.Binary,
-    }
-  );
+  const response = await fetch("https://seiya-saiga.com/game/kouryaku.html", {
+    method: "GET",
+  });
+  const data = await response.arrayBuffer();
+  const uint8array = new Uint8Array(data);
   const parser = new DOMParser();
-  const htmlUnicodeArray = Encoding.convert(response.data, {
+  const htmlUnicodeArray = Encoding.convert(uint8array, {
     to: "UNICODE",
     from: "SJIS",
   });

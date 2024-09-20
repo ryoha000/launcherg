@@ -4,7 +4,7 @@ import {
 } from "@/lib/command";
 import { scrapeSql } from "@/lib/scrapeSql";
 import type { AllGameCacheOne } from "@/lib/types";
-import { ResponseType, fetch } from "@tauri-apps/api/http";
+import { fetch } from "@tauri-apps/plugin-http";
 
 const STEP = 5000;
 const MAX_SCRAPE_COUNT = 20;
@@ -69,15 +69,11 @@ export const initializeAllGameCache = async () => {
       "all_game_cache の取得に失敗しました。おそらく初期化されていないため初期化します。"
     );
     console.warn(e);
-    const initValue = (
-      await fetch<AllGameCacheOne[]>(
-        "https://raw.githubusercontent.com/ryoha000/launcherg/main/script/all_games.json",
-        {
-          method: "GET",
-          responseType: ResponseType.JSON,
-        }
-      )
-    ).data;
+    const response = await fetch(
+      "https://raw.githubusercontent.com/ryoha000/launcherg/main/script/all_games.json",
+      { method: "GET" }
+    );
+    const initValue = (await response.json()) as AllGameCacheOne[];
     const maxId = initValue.reduce(
       (acc, cur) => (acc > cur.id ? acc : cur.id),
       0

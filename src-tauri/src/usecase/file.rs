@@ -3,6 +3,7 @@ use std::sync::Mutex;
 use std::{collections::HashMap, sync::Arc, time::Instant};
 
 use derive_new::new;
+use tauri::AppHandle;
 
 use crate::domain::all_game_cache::{AllGameCache, AllGameCacheOne};
 use crate::domain::file::{
@@ -206,6 +207,7 @@ impl<R: ExplorersExt> FileUseCase<R> {
         F: Fn() -> anyhow::Result<()> + Send + 'static,
     >(
         &self,
+        handle: &Arc<AppHandle>,
         files: Vec<String>,
         all_game_cache: AllGameCache,
         emit_progress: Arc<impl Fn(String) -> anyhow::Result<()>>,
@@ -258,7 +260,7 @@ impl<R: ExplorersExt> FileUseCase<R> {
         let mut save_icon_tasks = vec![];
         for (id, exe_path) in exe_id_path_vec.into_iter() {
             // icon
-            let task = save_icon_to_png(&exe_path, &Id::new(id))?;
+            let task = save_icon_to_png(handle, &exe_path, &Id::new(id))?;
             save_icon_tasks.push(task);
 
             // new collection element
@@ -280,9 +282,9 @@ impl<R: ExplorersExt> FileUseCase<R> {
             if let Some(metadata) = lnk_metadatas.get(lnk_path.as_str()) {
                 let task;
                 if metadata.icon.to_lowercase().ends_with("ico") {
-                    task = save_icon_to_png(&metadata.icon, &id)?;
+                    task = save_icon_to_png(handle, &metadata.icon, &id)?;
                 } else {
-                    task = save_icon_to_png(&metadata.path, &id)?;
+                    task = save_icon_to_png(handle, &metadata.path, &id)?;
                 }
                 save_icon_tasks.push(task);
 
@@ -310,11 +312,25 @@ impl<R: ExplorersExt> FileUseCase<R> {
 
         Ok(collection_elements)
     }
-    pub fn get_new_upload_image_path(&self, id: i32) -> anyhow::Result<String> {
-        self.explorers.file_explorer().get_save_image_path(id)
+    pub fn get_new_upload_image_path(
+        &self,
+        handle: &Arc<AppHandle>,
+        id: i32,
+    ) -> anyhow::Result<String> {
+        self.explorers
+            .file_explorer()
+            .get_save_image_path(handle, id)
     }
-    pub async fn upload_image(&self, id: i32, base64_image: String) -> anyhow::Result<String> {
-        let path = self.explorers.file_explorer().get_save_image_path(id)?;
+    pub async fn upload_image(
+        &self,
+        handle: &Arc<AppHandle>,
+        id: i32,
+        base64_image: String,
+    ) -> anyhow::Result<String> {
+        let path = self
+            .explorers
+            .file_explorer()
+            .get_save_image_path(handle, id)?;
         self.explorers
             .file_explorer()
             .save_base64_image(&path, base64_image)?;
@@ -333,9 +349,10 @@ impl<R: ExplorersExt> FileUseCase<R> {
     }
     pub fn get_play_time_minutes(
         &self,
+        handle: &Arc<AppHandle>,
         collection_element_id: &Id<CollectionElement>,
     ) -> anyhow::Result<f32> {
-        let path = get_play_history_path(collection_element_id);
+        let path = get_play_history_path(handle, collection_element_id);
 
         let exist = std::path::Path::new(&path).exists();
         if !exist {

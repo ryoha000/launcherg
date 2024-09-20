@@ -1,7 +1,7 @@
 <script lang="ts">
   import { link } from "svelte-spa-router";
   import type { CollectionElement } from "@/lib/types";
-  import { convertFileSrc } from "@tauri-apps/api/tauri";
+  import { convertFileSrc } from "@tauri-apps/api/core";
   export let collectionElement: CollectionElement;
 
   $: imgSrc = convertFileSrc(collectionElement.thumbnail);

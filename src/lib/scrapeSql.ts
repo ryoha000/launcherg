@@ -1,23 +1,19 @@
 import { convertSpecialCharacters } from "@/lib/utils";
-import { ResponseType, fetch, Body } from "@tauri-apps/api/http";
+import { fetch } from "@tauri-apps/plugin-http";
 
 export const scrapeSql = async (query: string, colNums: number) => {
   try {
     const formData = new FormData();
     formData.append("sql", query);
-    const res = await fetch<string>(
+    const response = await fetch(
       "https://erogamescape.dyndns.org/~ap2/ero/toukei_kaiseki/sql_for_erogamer_form.php",
       {
         method: "POST",
-        responseType: ResponseType.Text,
-        headers: {
-          "content-type": "application/x-www-form-urlencoded",
-        },
-        body: Body.form(formData),
+        body: formData,
       }
     );
     const parser = new DOMParser();
-    const doc = parser.parseFromString(res.data, "text/html");
+    const doc = parser.parseFromString(await response.text(), "text/html");
 
     const rows: string[][] = [];
     doc.querySelectorAll("#query_result_main tr").forEach((tr, i) => {

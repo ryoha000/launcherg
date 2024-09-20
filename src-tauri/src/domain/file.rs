@@ -10,14 +10,14 @@ use std::{
     io::{BufWriter, Write},
     num::NonZeroU32,
     path::Path,
+    sync::Arc,
 };
 
 use chrono::{DateTime, Local};
 use serde::{Deserialize, Serialize};
-use tauri::{
-    api::process::{Command, CommandEvent},
-    async_runtime::JoinHandle,
-};
+use tauri::{async_runtime::JoinHandle, AppHandle};
+use tauri_plugin_shell::process::CommandEvent;
+use tauri_plugin_shell::ShellExt;
 use walkdir::WalkDir;
 use windows::{
     core::{ComInterface, PCWSTR},
@@ -351,20 +351,23 @@ mod tests {
 }
 
 const ICONS_ROOT_DIR: &str = "game-icons";
-pub fn get_icon_path(collection_element_id: &Id<CollectionElement>) -> String {
-    let dir = Path::new(&get_save_root_abs_dir()).join(ICONS_ROOT_DIR);
-    fs::create_dir_all(dir).unwrap();
-    Path::new(&get_save_root_abs_dir())
-        .join(ICONS_ROOT_DIR)
+pub fn get_icon_path(
+    handle: &Arc<AppHandle>,
+    collection_element_id: &Id<CollectionElement>,
+) -> String {
+    let dir = Path::new(&get_save_root_abs_dir(handle)).join(ICONS_ROOT_DIR);
+    fs::create_dir_all(&dir).unwrap();
+    Path::new(&dir)
         .join(format!("{}.png", collection_element_id.value))
         .to_string_lossy()
         .to_string()
 }
 pub fn save_icon_to_png(
+    handle: &Arc<AppHandle>,
     file_path: &str,
     collection_element_id: &Id<CollectionElement>,
 ) -> anyhow::Result<JoinHandle<anyhow::Result<()>>> {
-    let save_png_path = get_icon_path(collection_element_id);
+    let save_png_path = get_icon_path(handle, collection_element_id);
 
     let is_ico = file_path.to_lowercase().ends_with("ico");
     let is_exe = file_path.to_lowercase().ends_with("exe");
@@ -373,7 +376,7 @@ pub fn save_icon_to_png(
         return save_ico_to_png(file_path, &save_png_path);
     }
     if is_exe {
-        return save_exe_file_png(file_path, &save_png_path);
+        return save_exe_file_png(handle, file_path, &save_png_path);
     }
     return save_default_icon(&save_png_path);
 }
@@ -443,11 +446,14 @@ pub fn save_ico_to_png_sync(file_path: &str, save_png_path: &str) -> anyhow::Res
 }
 
 pub fn save_exe_file_png(
+    handle: &Arc<AppHandle>,
     file_path: &str,
     save_png_path: &str,
 ) -> anyhow::Result<JoinHandle<anyhow::Result<()>>> {
     let save_png_path_cloned = save_png_path.to_string();
-    let (mut rx, _) = Command::new_sidecar("extract-icon")?
+    let (mut rx, _) = handle
+        .shell()
+        .sidecar("extract-icon")?
         .args(vec!["48", file_path, save_png_path])
         .spawn()?;
 
@@ -470,11 +476,13 @@ pub fn save_exe_file_png(
 }
 
 const PLAY_HISTORIES_ROOT_DIR: &str = "play-histories";
-pub fn get_play_history_path(collection_element_id: &Id<CollectionElement>) -> String {
-    let dir = Path::new(&get_save_root_abs_dir()).join(PLAY_HISTORIES_ROOT_DIR);
+pub fn get_play_history_path(
+    handle: &Arc<AppHandle>,
+    collection_element_id: &Id<CollectionElement>,
+) -> String {
+    let dir = Path::new(&get_save_root_abs_dir(handle)).join(PLAY_HISTORIES_ROOT_DIR);
     fs::create_dir_all(dir).unwrap();
-    Path::new(&get_save_root_abs_dir())
-        .join(PLAY_HISTORIES_ROOT_DIR)
+    Path::new(&get_save_root_abs_dir(handle))
         .join(format!("{}.jsonl", collection_element_id.value))
         .to_string_lossy()
         .to_string()
@@ -602,20 +610,23 @@ pub fn get_file_created_at_sync(path: &str) -> Option<DateTime<Local>> {
 }
 
 const THUMBNAILS_ROOT_DIR: &str = "thumbnails";
-pub fn get_thumbnail_path(collection_element_id: &Id<CollectionElement>) -> String {
-    let dir = Path::new(&get_save_root_abs_dir()).join(THUMBNAILS_ROOT_DIR);
-    fs::create_dir_all(dir).unwrap();
-    Path::new(&get_save_root_abs_dir())
-        .join(THUMBNAILS_ROOT_DIR)
+pub fn get_thumbnail_path(
+    handle: &Arc<AppHandle>,
+    collection_element_id: &Id<CollectionElement>,
+) -> String {
+    let dir = Path::new(&get_save_root_abs_dir(handle)).join(THUMBNAILS_ROOT_DIR);
+    fs::create_dir_all(&dir).unwrap();
+    Path::new(&dir)
         .join(format!("{}.png", collection_element_id.value))
         .to_string_lossy()
         .to_string()
 }
 pub fn get_origin_thumbnail_path(
+    handle: &Arc<AppHandle>,
     collection_element_id: &Id<CollectionElement>,
     src_url: &str,
 ) -> anyhow::Result<String> {
-    let dir = Path::new(&get_save_root_abs_dir()).join(THUMBNAILS_ROOT_DIR);
+    let dir = Path::new(&get_save_root_abs_dir(handle)).join(THUMBNAILS_ROOT_DIR);
     let url = url::Url::parse(src_url)?;
 
     let filename = url
@@ -623,22 +634,24 @@ pub fn get_origin_thumbnail_path(
         .and_then(|segments| segments.last())
         .ok_or(anyhow::anyhow!("Failed to extract filename from URL"))?;
 
-    fs::create_dir_all(dir).unwrap();
-    Ok(Path::new(&get_save_root_abs_dir())
-        .join(THUMBNAILS_ROOT_DIR)
+    fs::create_dir_all(&dir).unwrap();
+    Ok(Path::new(&dir)
         .join(format!("{}-{}", collection_element_id.value, filename))
         .to_string_lossy()
         .to_string())
 }
 pub fn save_thumbnail(
+    handle: &Arc<AppHandle>,
     collection_element_id: &Id<CollectionElement>,
     src_url: String,
 ) -> JoinHandle<anyhow::Result<()>> {
     let collection_element_id = collection_element_id.clone();
+    let handle_cloned = handle.clone();
     tauri::async_runtime::spawn(async move {
-        let save_path = get_thumbnail_path(&collection_element_id);
+        let save_path = get_thumbnail_path(&handle_cloned, &collection_element_id);
         if !(std::path::Path::new(&save_path).exists()) && src_url != "" {
-            let orig_path = get_origin_thumbnail_path(&collection_element_id, &src_url)?;
+            let orig_path =
+                get_origin_thumbnail_path(&handle_cloned, &collection_element_id, &src_url)?;
             save_origin_thumbnail(&src_url, &orig_path).await?;
 
             resize_image(&orig_path, &save_path, 400)?;

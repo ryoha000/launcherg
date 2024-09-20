@@ -2,6 +2,7 @@ use std::{fs, sync::Arc};
 
 use chrono::Local;
 use derive_new::new;
+use tauri::AppHandle;
 
 use super::error::UseCaseError;
 use crate::{
@@ -34,9 +35,10 @@ impl<R: RepositoriesExt> CollectionUseCase<R> {
     }
     pub async fn upsert_collection_element_thumbnail_size(
         &self,
+        handle: &Arc<AppHandle>,
         id: &Id<CollectionElement>,
     ) -> anyhow::Result<()> {
-        let thumbnail_path = get_thumbnail_path(id);
+        let thumbnail_path = get_thumbnail_path(handle, id);
         match image::image_dimensions(thumbnail_path) {
             Ok((width, height)) => {
                 self.repositories
@@ -55,6 +57,7 @@ impl<R: RepositoriesExt> CollectionUseCase<R> {
     }
     pub async fn concurency_upsert_collection_element_thumbnail_size(
         &self,
+        handle: &Arc<AppHandle>,
         ids: Vec<Id<CollectionElement>>,
     ) -> anyhow::Result<()> {
         use futures::StreamExt as _;
@@ -62,7 +65,11 @@ impl<R: RepositoriesExt> CollectionUseCase<R> {
         futures::stream::iter(ids.into_iter())
             .map(move |id| {
                 let id = id.clone();
-                async move { self.upsert_collection_element_thumbnail_size(&id).await }
+                let handle_cloned = handle.clone();
+                async move {
+                    self.upsert_collection_element_thumbnail_size(&handle_cloned, &id)
+                        .await
+                }
             })
             .buffered(50)
             .for_each(|v| async move {
@@ -104,15 +111,20 @@ impl<R: RepositoriesExt> CollectionUseCase<R> {
 
     pub async fn update_collection_element_icon(
         &self,
+        handle: &Arc<AppHandle>,
         id: &Id<CollectionElement>,
         path: String,
     ) -> anyhow::Result<()> {
-        let save_icon_path = get_icon_path(id);
+        let save_icon_path = get_icon_path(handle, id);
         fs::copy(path, save_icon_path)?;
         Ok(())
     }
 
-    pub async fn save_element_icon(&self, element: &NewCollectionElement) -> anyhow::Result<()> {
+    pub async fn save_element_icon(
+        &self,
+        handle: &Arc<AppHandle>,
+        element: &NewCollectionElement,
+    ) -> anyhow::Result<()> {
         let id = &element.id;
         let icon_path;
         if let Some(lnk_path) = element.lnk_path.clone() {
@@ -132,25 +144,27 @@ impl<R: RepositoriesExt> CollectionUseCase<R> {
             eprintln!("lnk_path and exe_path are None");
             return Ok(());
         }
-        Ok(save_icon_to_png(&icon_path, id)?.await??)
+        Ok(save_icon_to_png(handle, &icon_path, id)?.await??)
     }
 
     pub async fn save_element_thumbnail(
         &self,
+        handle: &Arc<AppHandle>,
         id: &Id<CollectionElement>,
         src_url: String,
     ) -> anyhow::Result<()> {
-        Ok(save_thumbnail(id, src_url).await??)
+        Ok(save_thumbnail(handle, id, src_url).await??)
     }
 
     pub async fn concurency_save_thumbnails(
         &self,
+        handle: &Arc<AppHandle>,
         args: Vec<(Id<CollectionElement>, String)>,
     ) -> anyhow::Result<()> {
         use futures::StreamExt as _;
 
         futures::stream::iter(args.into_iter())
-            .map(|(id, url)| save_thumbnail(&id, url))
+            .map(|(id, url)| save_thumbnail(handle, &id, url))
             .buffered(50)
             .map(|v| v?)
             .for_each(|v| async move {
@@ -228,13 +242,16 @@ impl<R: RepositoriesExt> CollectionUseCase<R> {
             .await?;
         Ok(())
     }
-    pub async fn get_all_elements(&self) -> anyhow::Result<Vec<CollectionElement>> {
+    pub async fn get_all_elements(
+        &self,
+        handle: &Arc<AppHandle>,
+    ) -> anyhow::Result<Vec<CollectionElement>> {
         let null_size_ids = self
             .repositories
             .collection_repository()
             .get_null_thumbnail_size_element_ids()
             .await?;
-        self.concurency_upsert_collection_element_thumbnail_size(null_size_ids)
+        self.concurency_upsert_collection_element_thumbnail_size(handle, null_size_ids)
             .await?;
 
         self.repositories

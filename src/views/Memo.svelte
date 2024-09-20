@@ -1,12 +1,12 @@
 <script lang="ts">
   import EasyMDE from "easymde";
-  import { readImage } from "tauri-plugin-clipboard-api";
+  import { readImage } from "@tauri-apps/plugin-clipboard-manager";
   import {
     commandSaveScreenshotByPid,
     commandUploadImage,
   } from "@/lib/command";
-  import { convertFileSrc } from "@tauri-apps/api/tauri";
-  import { open } from "@tauri-apps/api/dialog";
+  import { convertFileSrc } from "@tauri-apps/api/core";
+  import { open } from "@tauri-apps/plugin-dialog";
   import { memo } from "@/store/memo";
   import { skyWay } from "@/store/skyway";
   import { startProcessMap } from "@/store/startProcessMap";
@@ -82,7 +82,25 @@
     });
     const onPaste = async () => {
       try {
-        const base64Image = await readImage();
+        const image = await readImage();
+        const rgba = await image.rgba();
+        const size = await image.size();
+
+        const canvas = document.createElement("canvas");
+        canvas.width = size.width;
+        canvas.height = size.height;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) {
+          return;
+        }
+        const imageData = new ImageData(
+          new Uint8ClampedArray(rgba),
+          size.width,
+          size.height
+        );
+        ctx.putImageData(imageData, 0, 0);
+        const base64Image = canvas.toDataURL("image/png").split(",")[1];
+
         const imagePath = await commandUploadImage(id, base64Image);
         insertImage(imagePath);
       } catch {}
