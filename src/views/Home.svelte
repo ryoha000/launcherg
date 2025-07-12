@@ -52,11 +52,8 @@
   }
 </script>
 
-<VirtualScroller
-  className='p-8'
-
->
-  {#snippet header()}
+<VirtualScroller className='p-8'>
+  {#snippet topElement()}
     <div class='space-y-8 mb-2'>
       <div class='flex items-center gap-2 w-full'>
         <img src={Icon} alt='launcherg icon' class='h-12' />

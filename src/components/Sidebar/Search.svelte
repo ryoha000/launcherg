@@ -1,5 +1,4 @@
 <script lang='ts'>
-  import type { SvelteComponent } from 'svelte'
   import type { Attribute, AttributeKey } from '@/components/Sidebar/searchAttributes'
   import type { SortOrder } from '@/components/Sidebar/sort'
   import { createEventDispatcher } from 'svelte'
@@ -37,7 +36,7 @@
     isShowForward = right > 0
   }
 
-  let scrollable: SvelteComponent | undefined = $state()
+  let scrollable: ScrollableHorizontal | undefined = $state()
 </script>
 
 <div class='space-y-1 w-full'>
@@ -73,7 +72,7 @@
   </div>
   <div class='relative hide-scrollbar'>
     <ScrollableHorizontal
-      on:scroll={e => onScroll(e.detail.event)}
+      onscroll={onScroll}
       bind:this={scrollable}
     >
       <div class='flex items-center gap-2 pb-1'>

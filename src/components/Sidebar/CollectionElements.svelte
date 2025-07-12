@@ -11,7 +11,15 @@
   const { collectionElement }: Props = $props()
 
   const simplebar = (node: HTMLElement) => {
-    new SimpleBar(node, { scrollbarMinSize: 64 })
+    const sb = new SimpleBar(node, { scrollbarMinSize: 64 })
+    return {
+      destroy() {
+        sb.unMount()
+      },
+      update() {
+        sb.recalculate()
+      },
+    }
   }
 </script>
 

@@ -1,7 +1,7 @@
 <script lang='ts'>
   import type { Props as TippyOption } from 'tippy.js'
 
-  import { run } from 'svelte/legacy'
+  import type { Variant } from '@/components/UI/button'
   import ButtonBase from '@/components/UI/ButtonBase.svelte'
 
   interface Props {
@@ -32,11 +32,11 @@
 
   const iconSizeClass = 'w-4 h-4'
 
-  let iconVarinatClass = $state('color-ui-tertiary')
-  run(() => {
+  const iconVarinatClass = $derived.by(() => {
     if (variant === 'success') {
-      iconVarinatClass = 'color-text-white'
+      return 'color-text-white'
     }
+    return 'color-ui-tertiary'
   })
 </script>
 

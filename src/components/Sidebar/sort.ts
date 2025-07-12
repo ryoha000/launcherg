@@ -36,6 +36,10 @@ export const SORT_ORDER_BY = {
 
 const NULL_DATE = '不明'
 
+const sortByInstall = createSortByNullableDate('installAt')
+const sortByLastPlay = createSortByNullableDate('lastPlayAt')
+const sortByRegistered = createSortByNullableDate('registeredAt')
+
 export function sort(filteredElements: CollectionElement[], order: SortOrder): CollectionElementsWithLabel[] {
   const isGamename = order.includes(SORT_ORDER_TYPES.GAMENAME)
   const isSellyear = order.includes(SORT_ORDER_TYPES.SELLYEAR)
@@ -207,7 +211,3 @@ function createSortByNullableDate(key: 'installAt' | 'lastPlayAt' | 'registeredA
         ),
       }))
 }
-
-const sortByInstall = createSortByNullableDate('installAt')
-const sortByLastPlay = createSortByNullableDate('lastPlayAt')
-const sortByRegistered = createSortByNullableDate('registeredAt')

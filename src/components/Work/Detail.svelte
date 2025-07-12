@@ -25,8 +25,7 @@
       case VoiceActorImportance.Mob:
         return 'text-(body3 text-tertiary)'
       default:
-        const _: never = importance
-        break
+        throw new Error(`Unknown importance: ${importance satisfies never}`)
     }
   }
 </script>

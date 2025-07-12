@@ -2,21 +2,27 @@
 
 <script lang='ts'>
   import SimpleBar from 'simplebar'
-  import { createEventDispatcher } from 'svelte'
-
-  const dispatcher = createEventDispatcher<{ scroll: { event: Event } }>()
 
   let isHover = $state(false)
+
+  let { onscroll, children } = $props<{
+    onscroll?: (e: Event) => void
+    children?: import('svelte').Snippet<[]>
+  }>()
+
+  let scrollByImplementation: (options?: ScrollToOptions) => void = () => {
+    console.warn('scrollBy is not implemented')
+  }
+  export function scrollBy(options?: ScrollToOptions) {
+    scrollByImplementation(options)
+  }
 
   const simplebar = (node: HTMLElement) => {
     const simplebar = new SimpleBar(node, {
       scrollbarMinSize: 64,
     })
 
-    const onScroll = (e: Event) => {
-      dispatcher('scroll', { event: e })
-    }
-    simplebar.getScrollElement()?.addEventListener('scroll', onScroll)
+    simplebar.getScrollElement()?.addEventListener('scroll', onscroll)
 
     const onWheel = (e: WheelEvent) => {
       if (isHover) {
@@ -29,29 +35,22 @@
 
     const element = simplebar.getScrollElement()
     if (element) {
-      scrollBy = (options?: ScrollToOptions | undefined) => {
+      scrollByImplementation = (options?: ScrollToOptions) => {
         element.scrollBy(options)
       }
     }
     return {
       destroy: () => {
         removeEventListener('wheel', onWheel)
-        simplebar.getScrollElement()?.removeEventListener('scroll', onScroll)
-        scrollBy = () => undefined
+        simplebar.getScrollElement()?.removeEventListener('scroll', onscroll)
+        scrollByImplementation = () => undefined
       },
     }
-  }
-
-  let { scrollBy = $bindable((options?: ScrollToOptions | undefined): void => {
-    console.warn('scrollBy is not initialized')
-  }), children } = $props()
-
-  export {
-    scrollBy,
   }
 </script>
 
 <div class='w-full min-w-0'>
+  <!-- svelte-ignore a11y_no_static_element_interactions -->
   <div
     use:simplebar
     class='overflow-x-auto scroll-smooth'

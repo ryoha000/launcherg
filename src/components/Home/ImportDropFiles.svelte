@@ -14,7 +14,6 @@
   onDestroy(stopListening)
 
   let isOpenImportFileDrop = $derived(targetFileAccessor() !== undefined)
-  $inspect(targetFileAccessor(), isOpenImportFileDrop)
 
   const next = () => {
     popToTargetFile()

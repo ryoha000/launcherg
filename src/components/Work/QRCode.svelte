@@ -34,6 +34,7 @@
   title='Link to Smartphone'
   autofocusCloseButton
   withFooter={false}
+  fullmodal
 >
   <div class='space-y-4 text-text-primary'>
     <div>

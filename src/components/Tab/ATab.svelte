@@ -2,7 +2,6 @@
   import type { Tab } from '@/store/tabs'
 
   import { goto } from '@mateothegreat/svelte5-router'
-  import { stopPropagation } from 'svelte/legacy'
   import { deleteTab } from '@/store/tabs'
 
   interface Props {
@@ -24,9 +23,15 @@
       deleteTab(tab.id)
     }
   }
+
+  const onClickCloseTabButton = (e: MouseEvent) => {
+    e.stopPropagation()
+    deleteTab(tab.id)
+  }
 </script>
 
 <!-- svelte-ignore a11y_click_events_have_key_events -->
+<!-- svelte-ignore a11y_no_static_element_interactions -->
 <div
   onclick={() => goto(`/${tab.type}/${tab.workId}`)}
   onmousedown={closeWheelClick}
@@ -51,7 +56,8 @@
         class="group-hover:opacity-100 opacity-0 transition-all w-5 h-5 i-iconoir-cancel {selected
           ? 'color-text-secondary'
           : 'color-text-tertiary'}"
-        onclick={stopPropagation(() => deleteTab(tab.id))}
+        onclick={onClickCloseTabButton}
+        aria-label='Close tab'
       ></button>
     </div>
   </div>

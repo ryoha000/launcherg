@@ -11,7 +11,7 @@ function createSeiya() {
 
   const getUrl = async (gamename: string) => {
     const cache = await getter('master')
-    const [url, distance] = await commandGetNearestKeyAndDistance(
+    const [url, _] = await commandGetNearestKeyAndDistance(
       gamename,
       cache,
     )

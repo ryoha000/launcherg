@@ -41,9 +41,6 @@ export async function scrapeAllGame(idCursor = 0) {
     } AND model = 'PC';`
     const rows = await scrapeSql(query, 3)
     if (!rows.length) {
-      console.log(
-        `end within ${i + 1} loop. games.length: ${idGameNamePairs.length}`,
-      )
       break
     }
     idGameNamePairs.push(

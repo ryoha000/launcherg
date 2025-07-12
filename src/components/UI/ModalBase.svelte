@@ -1,6 +1,7 @@
 <script lang='ts'>
   import { createDialog } from 'svelte-headlessui'
   import { fade, scale } from 'svelte/transition'
+  import { portal } from '@/components/UI/portal'
 
   interface Props {
     isOpen?: boolean
@@ -36,7 +37,7 @@
 </script>
 
 {#if isOpen}
-  <div class='fixed inset-0 z-10 w-full h-full' onclose={handleClose}>
+  <div class='fixed inset-0 z-10 w-full h-full' onclose={handleClose} use:portal>
     <div class='relative p-12 w-full h-full'>
       <!-- svelte-ignore a11y_click_events_have_key_events -->
       <!-- svelte-ignore a11y_no_static_element_interactions -->

@@ -44,6 +44,7 @@
       <button
         onclick={() => (value = '')}
         class='absolute right-2 w-5 h-5 i-material-symbols-cancel-outline-rounded color-text-primary'
+        aria-label='Clear search input'
       ></button>
     {/if}
   </div>

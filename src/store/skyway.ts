@@ -57,19 +57,19 @@ function createSkyWay() {
   const sendImagesAsChunks = async (imagePaths: string[]) => {
     await Promise.all(
       imagePaths.map((path) => {
-        return new Promise<void>(async (resolve) => {
-          const [{ chunkId, mimeType, totalChunkLength }, chunks]
-            = await createChunks(path)
-          const message: ImageMetadataMessage = {
-            type: 'image_metadata',
-            path,
-            key: chunkId,
-            totalChunkLength,
-            mimeType,
-          }
-          sendMessage(message)
-          chunks.forEach(sendBinaryMessage)
-          resolve()
+        return new Promise<void>((resolve) => {
+          createChunks(path).then(([{ chunkId, mimeType, totalChunkLength }, chunks]) => {
+            const message: ImageMetadataMessage = {
+              type: 'image_metadata',
+              path,
+              key: chunkId,
+              totalChunkLength,
+              mimeType,
+            }
+            sendMessage(message)
+            chunks.forEach(sendBinaryMessage)
+            resolve()
+          })
         })
       }),
     )
@@ -78,9 +78,10 @@ function createSkyWay() {
   const getMemoImagePaths = (text: string) => {
     const regex = /!\[.*?\]\((.*?)\)/g
     const paths: string[] = []
-    let match: RegExpExecArray | null = null
-    while ((match = regex.exec(text)) !== null) {
+    let match: RegExpExecArray | null = regex.exec(text)
+    while (match !== null) {
       paths.push(match[1])
+      match = regex.exec(text)
     }
 
     return paths
@@ -108,7 +109,7 @@ function createSkyWay() {
     })
   }
 
-  const createInitResponseMessage = async (workId: number) => {
+  async function createInitResponseMessage(workId: number) {
     const { value, imagePaths } = getMemo(workId)
     imagePaths.forEach(path => sentImagePathSet.add(path))
     await sendImagesAsChunks(imagePaths)
@@ -152,6 +153,9 @@ function createSkyWay() {
       showErrorToast('接続が切断されました。')
     })
 
+    dataStream = await SkyWayStreamFactory.createDataStream()
+    const myPublication = await me.publish(dataStream)
+
     const onPublicate = async (publication: RoomPublication<LocalStream>) => {
       if (publication.publisher.id === me.id)
         return
@@ -167,9 +171,6 @@ function createSkyWay() {
           return
 
         const message: RemoteMessage = JSON.parse(data)
-        if (message.type !== 'ping') {
-          console.log('receive message', message)
-        }
         switch (message.type) {
           case 'ping':
             return
@@ -177,8 +178,7 @@ function createSkyWay() {
             setRemoteMemo(message.gameId, message.text)
             return
           case 'init':
-            const response = await createInitResponseMessage(message.gameId)
-            sendMessage(response)
+            sendMessage(await createInitResponseMessage(message.gameId))
             break
           case 'take_screenshot':
             try {
@@ -214,9 +214,6 @@ function createSkyWay() {
       )
     }
 
-    dataStream = await SkyWayStreamFactory.createDataStream()
-    const myPublication = await me.publish(dataStream)
-
     const pingTimer = setInterval(() => {
       if (!dataStream)
         return
@@ -241,23 +238,20 @@ function createSkyWay() {
     return url.toString()
   }
 
-  const sendMessage = (message: LocalMessage) => {
+  function sendMessage(message: LocalMessage) {
     if (!dataStream)
       return
-    if (message.type !== 'ping') {
-      console.log('send message', message)
-    }
 
     dataStream.write(JSON.stringify(message))
   }
-  const sendBinaryMessage = (message: Uint8Array) => {
+  function sendBinaryMessage(message: Uint8Array) {
     if (!dataStream)
       return
 
     dataStream.write(message)
   }
 
-  const syncMemo = async (workId: number, text: string) => {
+  async function syncMemo(workId: number, text: string) {
     if (!dataStream)
       return
     const imagePaths = getMemoImagePaths(text)

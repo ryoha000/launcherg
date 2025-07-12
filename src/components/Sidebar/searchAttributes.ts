@@ -24,7 +24,7 @@ const INITIAL_ATTRIBUTES = Object.values(ATTRIBUTES).map(v => ({
 export interface Attribute { key: AttributeKey, enabled: boolean }
 
 export function searchAttributes() {
-  const [attributes, getAttributes] = createLocalStorageWritable<Attribute[]>(
+  const [attributes, _] = createLocalStorageWritable<Attribute[]>(
     'search-attributes',
     INITIAL_ATTRIBUTES,
   )

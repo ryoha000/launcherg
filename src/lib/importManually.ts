@@ -5,7 +5,7 @@ export function useImportManually() {
   const parseErogameScapeId = (input: string) => {
     {
       const idNumber = +input
-      if (!isNaN(idNumber)) {
+      if (!Number.isNaN(idNumber)) {
         return idNumber
       }
     }
@@ -17,7 +17,7 @@ export function useImportManually() {
         return
       }
       const idNumber = +idString
-      if (isNaN(idNumber)) {
+      if (Number.isNaN(idNumber)) {
         return
       }
       return idNumber

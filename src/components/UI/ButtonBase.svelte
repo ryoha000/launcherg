@@ -1,5 +1,6 @@
 <script lang='ts'>
   import type { Props as TippyOption } from 'tippy.js'
+  import type { Variant } from '@/components/UI/button'
   import tippy from 'tippy.js'
 
   interface Props {

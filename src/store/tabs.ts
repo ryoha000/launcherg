@@ -1,4 +1,4 @@
-import type { Hook } from '@mateothegreat/svelte5-router/hooks'
+import type { Hook } from '@mateothegreat/svelte5-router'
 import { goto } from '@mateothegreat/svelte5-router'
 import { createLocalStorageWritable } from '@/lib/utils'
 
@@ -47,7 +47,6 @@ function createTabs() {
   const [selected, getSelected] = createLocalStorageWritable('tab-selected', 0)
 
   const routeLoaded: Hook = (event) => {
-    console.log('routeLoaded', event)
     const path = event.result.path.original
     const isHome = path === '/'
     if (isHome) {
@@ -56,7 +55,7 @@ function createTabs() {
     }
 
     const id = extractId(path)
-    if (!id || isNaN(id)) {
+    if (!id || Number.isNaN(id)) {
       console.error('params[id] is undefined (not home)')
       return
     }
@@ -71,8 +70,14 @@ function createTabs() {
       v => v.workId === id && v.type === tabType,
     )
     if (tabIndex === -1) {
-      const searchParams = new URLSearchParams(event.result.querystring.params)
-      const gamename = searchParams.get('gamename')
+      let gamename = ''
+      if (typeof event.result.querystring.params === 'object') {
+        for (const [key, value] of Object.entries(event.result.querystring.params)) {
+          if (key === 'gamename' && typeof value === 'string') {
+            gamename = decodeURIComponent(value)
+          }
+        }
+      }
       if (!gamename) {
         console.error('tabs にないのに gamename の queryParam がない')
         return
