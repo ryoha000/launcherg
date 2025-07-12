@@ -1,1 +1,1 @@
-type Variant = "normal" | "accent" | "error" | "success";
+type Variant = 'normal' | 'accent' | 'error' | 'success'

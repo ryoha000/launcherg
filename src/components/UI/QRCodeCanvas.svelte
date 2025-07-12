@@ -1,14 +1,15 @@
-<script lang="ts">
-  import { onMount } from "svelte";
+<script lang='ts'>
   // @ts-ignore
-  import QRious from "qrious";
+  import QRious from 'qrious'
+  import { onMount } from 'svelte'
+
   interface Props {
-    value: string;
+    value: string
   }
 
-  let { value }: Props = $props();
+  const { value }: Props = $props()
 
-  let canvas: HTMLCanvasElement | null = $state(null);
+  let canvas: HTMLCanvasElement | null = $state(null)
 
   onMount(() => {
     if (canvas) {
@@ -16,10 +17,10 @@
         element: canvas,
         value,
         size: 400,
-        background: "#f7f7f4",
-      });
+        background: '#f7f7f4',
+      })
     }
-  });
+  })
 </script>
 
 <canvas bind:this={canvas}></canvas>

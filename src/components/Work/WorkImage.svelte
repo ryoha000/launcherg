@@ -1,10 +1,10 @@
-<script lang="ts">
+<script lang='ts'>
   interface Props {
-    name: string;
-    src: string;
+    name: string
+    src: string
   }
 
-  let { name, src }: Props = $props();
+  const { name, src }: Props = $props()
 </script>
 
-<img alt="{name}_icon" {src} class="object-contain w-full" />
+<img alt='{name}_icon' {src} class='object-contain w-full' />

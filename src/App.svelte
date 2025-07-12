@@ -1,22 +1,23 @@
-<script lang="ts">
-  import { Router } from "@mateothegreat/svelte5-router";
-  import Layout from "@/layouts/Layout.svelte";
-  import { routes } from "@/router/route";
-  import { initialize, routeLoaded } from "@/store/tabs";
-  import { registerCollectionElementDetails } from "@/lib/registerCollectionElementDetails";
-  import { onMount } from "svelte";
-  import { initializeAllGameCache } from "@/lib/scrape/scrapeAllGame";
-  import ImportDropFiles from "@/components/Home/ImportDropFiles.svelte";
+<script lang='ts'>
+  import { Router } from '@mateothegreat/svelte5-router'
+  import { onMount } from 'svelte'
+  import ImportDropFiles from '@/components/Home/ImportDropFiles.svelte'
+  import Layout from '@/layouts/Layout.svelte'
+  import { registerCollectionElementDetails } from '@/lib/registerCollectionElementDetails'
+  import { initializeAllGameCache } from '@/lib/scrape/scrapeAllGame'
+  import { routes } from '@/router/route'
+  import { initialize, routeLoaded } from '@/store/tabs'
 
-  let setDetailPromise = $derived(registerCollectionElementDetails());
+  const setDetailPromise = $derived(registerCollectionElementDetails())
 
   onMount(() => {
-    initialize();
-    initializeAllGameCache();
-  });
+    initialize()
+    initializeAllGameCache()
+  })
+
 </script>
 
-<main class="h-full w-full bg-(bg-primary) font-sans">
+<main class='h-full w-full bg-(bg-primary) font-sans'>
   {#await setDetailPromise then _}
     <Layout>
       <Router {routes} hooks={{ post: routeLoaded }} />

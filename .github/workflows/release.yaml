@@ -43,7 +43,7 @@ jobs:
         run: |
           npm i
           npm run tauri build
-      
+
       - uses: ncipollo/release-action@v1
         with:
           artifacts: .\src-tauri\target\release\bundle\msi\Launcherg_${{ steps.variables.outputs.version }}_x64_ja-JP.msi.zip
@@ -80,13 +80,13 @@ jobs:
         uses: actions/checkout@v2
         with:
           ref: main
-      
+
       - name: Download artifacts
         uses: actions/download-artifact@v3
         with:
           name: changed-files
           path: changed-files
-      
+
       - name: Move files to correct locations
         run: |
           mv changed-files/src-tauri/tauri.conf.json src-tauri/tauri.conf.json

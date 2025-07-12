@@ -1,21 +1,22 @@
-<script lang="ts">
-  import { createBubbler } from 'svelte/legacy';
+<script lang='ts'>
+  import { createBubbler } from 'svelte/legacy'
 
-  const bubble = createBubbler();
+  const bubble = createBubbler()
+  import type { Attribute } from '@/components/Sidebar/searchAttributes'
   import {
+
     ATTRIBUTE_LABELS,
-    type Attribute,
-  } from "@/components/Sidebar/searchAttributes";
+  } from '@/components/Sidebar/searchAttributes'
 
   interface Props {
-    attribute: Attribute;
+    attribute: Attribute
   }
 
-  let { attribute }: Props = $props();
+  const { attribute }: Props = $props()
 </script>
 
 <button
-  class="rounded-2xl border-(border-primary solid ~) p-(x-4 y-1) hover:(border-border-button-hover) transition-all"
+  class='rounded-2xl border-(border-primary solid ~) p-(x-4 y-1) hover:(border-border-button-hover) transition-all'
   class:bg-transparent={!attribute.enabled}
   class:hover:bg-bg-button-hover={!attribute.enabled}
   class:bg-text-primary={attribute.enabled}
@@ -23,7 +24,7 @@
   onclick={bubble('click')}
 >
   <div
-    class="text-(body3) whitespace-nowrap font-medium"
+    class='text-(body3) whitespace-nowrap font-medium'
     class:text-text-primary={!attribute.enabled}
     class:text-bg-primary={attribute.enabled}
   >

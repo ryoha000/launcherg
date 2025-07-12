@@ -1,11 +1,11 @@
-<script lang="ts">
+<script lang='ts'>
   interface Props {
-    noBorder?: boolean;
-    label: string;
-    children?: import('svelte').Snippet;
+    noBorder?: boolean
+    label: string
+    children?: import('svelte').Snippet
   }
 
-  let { noBorder = false, label, children }: Props = $props();
+  const { noBorder = false, label, children }: Props = $props()
 </script>
 
 <div

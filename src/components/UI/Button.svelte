@@ -1,46 +1,46 @@
-<script lang="ts">
-  import { run } from 'svelte/legacy';
+<script lang='ts'>
+  import type { Props as TippyOption } from 'tippy.js'
 
-  import ButtonBase from "@/components/UI/ButtonBase.svelte";
-  import { type Props as TippyOption } from "tippy.js";
+  import { run } from 'svelte/legacy'
+  import ButtonBase from '@/components/UI/ButtonBase.svelte'
 
   interface Props {
-    leftIcon?: string;
-    rightIcon?: string;
-    appendClass?: string;
-    text?: string;
-    type?: "button" | "submit" | undefined;
-    tooltip?: Partial<TippyOption> | undefined;
-    variant?: Variant;
-    disabled?: boolean;
-    wrappable?: boolean;
+    leftIcon?: string
+    rightIcon?: string
+    appendClass?: string
+    text?: string
+    type?: 'button' | 'submit' | undefined
+    tooltip?: Partial<TippyOption> | undefined
+    variant?: Variant
+    disabled?: boolean
+    wrappable?: boolean
   }
 
-  let {
-    leftIcon = "",
-    rightIcon = "",
-    appendClass = "",
-    text = "",
+  const {
+    leftIcon = '',
+    rightIcon = '',
+    appendClass = '',
+    text = '',
     type = undefined,
     tooltip = undefined,
-    variant = "normal",
+    variant = 'normal',
     disabled = false,
-    wrappable = false
-  }: Props = $props();
+    wrappable = false,
+  }: Props = $props()
 
-  let iconSizeClass = "w-4 h-4";
+  const iconSizeClass = 'w-4 h-4'
 
-  let iconVarinatClass = $state("color-ui-tertiary");
+  let iconVarinatClass = $state('color-ui-tertiary')
   run(() => {
-    if (variant === "success") {
-      iconVarinatClass = "color-text-white";
+    if (variant === 'success') {
+      iconVarinatClass = 'color-text-white'
     }
-  });
+  })
 </script>
 
 <ButtonBase
   appendClass={`${appendClass} ${
-    wrappable ? "" : "h-8"
+    wrappable ? '' : 'h-8'
   } px-3 gap-2 flex items-center`}
   {variant}
   {type}
@@ -53,7 +53,7 @@
   {/if}
   {#if text}
     <div
-      class={`text-body2 font-medium ${wrappable ? "" : "whitespace-nowrap"}`}
+      class={`text-body2 font-medium ${wrappable ? '' : 'whitespace-nowrap'}`}
     >
       {text}
     </div>

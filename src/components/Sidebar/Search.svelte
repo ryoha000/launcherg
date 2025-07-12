@@ -1,102 +1,100 @@
-<script lang="ts">
-  import SearchAttribute from "@/components/Sidebar/SearchAttribute.svelte";
-  import SearchAttrributeControl from "@/components/Sidebar/SearchAttrributeControl.svelte";
-  import SearchInput from "@/components/Sidebar/SearchInput.svelte";
-  import SortPopover from "@/components/Sidebar/SortPopover.svelte";
-  import {
-    type Attribute,
-    type AttributeKey,
-  } from "@/components/Sidebar/searchAttributes";
-  import type { SortOrder } from "@/components/Sidebar/sort";
-  import APopover from "@/components/UI/APopover.svelte";
-  import ButtonBase from "@/components/UI/ButtonBase.svelte";
-  import ScrollableHorizontal from "@/components/UI/ScrollableHorizontal.svelte";
-  import { createEventDispatcher, type SvelteComponent } from "svelte";
+<script lang='ts'>
+  import type { SvelteComponent } from 'svelte'
+  import type { Attribute, AttributeKey } from '@/components/Sidebar/searchAttributes'
+  import type { SortOrder } from '@/components/Sidebar/sort'
+  import { createEventDispatcher } from 'svelte'
+  import SearchAttribute from '@/components/Sidebar/SearchAttribute.svelte'
+  import SearchAttrributeControl from '@/components/Sidebar/SearchAttrributeControl.svelte'
+  import SearchInput from '@/components/Sidebar/SearchInput.svelte'
+  import SortPopover from '@/components/Sidebar/SortPopover.svelte'
+  import APopover from '@/components/UI/APopover.svelte'
+  import ButtonBase from '@/components/UI/ButtonBase.svelte'
+  import ScrollableHorizontal from '@/components/UI/ScrollableHorizontal.svelte'
 
   interface Props {
-    query: string;
-    order: SortOrder;
-    attributes: Attribute[];
+    query: string
+    order: SortOrder
+    attributes: Attribute[]
   }
 
-  let { query = $bindable(), order = $bindable(), attributes }: Props = $props();
+  let { query = $bindable(), order = $bindable(), attributes }: Props = $props()
 
   const dispatcher = createEventDispatcher<{
-    toggleAttributeEnabled: { key: AttributeKey };
-  }>();
+    toggleAttributeEnabled: { key: AttributeKey }
+  }>()
 
-  let isShowBack = $state(false);
-  let isShowForward = $state(true);
+  let isShowBack = $state(false)
+  let isShowForward = $state(true)
   const onScroll = (e: Event) => {
-    const element = e.target as HTMLElement;
-    const rect = element.getBoundingClientRect();
-    const width = element.scrollWidth;
+    const element = e.target as HTMLElement
+    const rect = element.getBoundingClientRect()
+    const width = element.scrollWidth
 
-    const left = element.scrollLeft;
-    const right = width - rect.width - left;
+    const left = element.scrollLeft
+    const right = width - rect.width - left
 
-    isShowBack = left > 0;
-    isShowForward = right > 0;
-  };
+    isShowBack = left > 0
+    isShowForward = right > 0
+  }
 
-  let scrollable: SvelteComponent = $state();
+  let scrollable: SvelteComponent = $state()
 </script>
 
-<div class="space-y-1 w-full">
-  <div class="flex items-center gap-2">
-    <div class="flex-1">
+<div class='space-y-1 w-full'>
+  <div class='flex items-center gap-2'>
+    <div class='flex-1'>
       <SearchInput
         bind:value={query}
-        placeholder="Filter by title, brand and more"
+        placeholder='Filter by title, brand and more'
       />
     </div>
-    <APopover panelClass="right-0" >
+    <APopover panelClass='right-0'>
       {#snippet button()}
-            <ButtonBase
-          appendClass="h-8 w-8 flex items-center justify-center"
+        <ButtonBase
+          appendClass='h-8 w-8 flex items-center justify-center'
           tooltip={{
-            content: "ゲームの並べ替え",
-            placement: "bottom",
-            theme: "default",
+            content: 'ゲームの並べ替え',
+            placement: 'bottom',
+            theme: 'default',
             delay: 1000,
           }}
-          
+
         >
           <div
-            class="color-ui-tertiary w-5 h-5 i-material-symbols-sort-rounded"
-  ></div>
+            class='color-ui-tertiary w-5 h-5 i-material-symbols-sort-rounded'
+          ></div>
         </ButtonBase>
-          {/snippet}
+      {/snippet}
       {#snippet children({ close })}
-            <SortPopover bind:value={order} on:close={() => close(null)} />
-                {/snippet}
-        </APopover>
+        <SortPopover bind:value={order} on:close={() => close(null)} />
+      {/snippet}
+    </APopover>
   </div>
-  <div class="relative hide-scrollbar">
+  <div class='relative hide-scrollbar'>
     <ScrollableHorizontal
-      on:scroll={(e) => onScroll(e.detail.event)}
+      on:scroll={e => onScroll(e.detail.event)}
       bind:this={scrollable}
     >
-      <div class="flex items-center gap-2 pb-1">
+      <div class='flex items-center gap-2 pb-1'>
         {#each attributes as attribute (attribute.key)}
           <SearchAttribute
             {attribute}
             on:click={() =>
-              dispatcher("toggleAttributeEnabled", { key: attribute.key })}
+              dispatcher('toggleAttributeEnabled', { key: attribute.key })}
           />
         {/each}
       </div>
     </ScrollableHorizontal>
     <SearchAttrributeControl
-      appendClass="left-0"
+      appendClass='left-0'
       back
       show={isShowBack}
-      on:click={() => scrollable.scrollBy({ left: -100, behavior: "smooth" })}
+      on:click={() => scrollable.scrollBy({ left: -100, behavior: 'smooth' })}
     />
     <SearchAttrributeControl
-      appendClass="right-0"
+      appendClass='right-0'
       show={isShowForward}
-      on:click={() => scrollable.scrollBy({ left: 100, behavior: "smooth" })}
+      on:click={() => scrollable.scrollBy({ left: 100, behavior: 'smooth' })}
     />
   </div>
 </div>

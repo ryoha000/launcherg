@@ -1,105 +1,105 @@
-import { derived, get, writable } from "svelte/store";
+import { derived, get, writable } from 'svelte/store'
 
-export const useVirtualScroller = () => {
-  const virtualHeight = writable(0);
-  const setVirtualHeight = (value: number) => virtualHeight.set(value);
+export function useVirtualScroller() {
+  const virtualHeight = writable(0)
+  const setVirtualHeight = (value: number) => virtualHeight.set(value)
 
-  const scrollY = writable(0);
-  const containerHeight = writable(0);
-  let containerNode: HTMLElement | null = null;
+  const scrollY = writable(0)
+  const containerHeight = writable(0)
+  let containerNode: HTMLElement | null = null
 
-  const headerHeight = writable(0);
+  const headerHeight = writable(0)
 
-  const contentsWidth = writable(0);
+  const contentsWidth = writable(0)
 
   const contentsScrollY = derived<
     [typeof scrollY, typeof headerHeight],
     number
   >([scrollY, headerHeight], ([$scrollY, $headerHeight], set) => {
-    set(Math.max(0, $scrollY - $headerHeight));
-  });
+    set(Math.max(0, $scrollY - $headerHeight))
+  })
 
-  let notAppliedContentsScrollY = 0;
+  let notAppliedContentsScrollY = 0
   const contentsScrollTo = (y: number) => {
-    const to = y + get(headerHeight);
+    const to = y + get(headerHeight)
     if (!containerNode || containerNode.scrollHeight < to) {
-      notAppliedContentsScrollY = y;
-      return;
+      notAppliedContentsScrollY = y
+      return
     }
-    containerNode.scrollTo({ top: to });
-    notAppliedContentsScrollY = 0;
-  };
+    containerNode.scrollTo({ top: to })
+    notAppliedContentsScrollY = 0
+  }
 
   virtualHeight.subscribe((v) => {
     if (notAppliedContentsScrollY) {
-      contentsScrollTo(notAppliedContentsScrollY);
+      contentsScrollTo(notAppliedContentsScrollY)
     }
-  });
+  })
 
   const header = (node: HTMLElement) => {
     const resizeObserver = new ResizeObserver((entries) => {
-      const entry = entries[0];
+      const entry = entries[0]
       if (!entry) {
-        return;
+        return
       }
-      headerHeight.set(entry.contentRect.height);
-    });
-    resizeObserver.observe(node);
+      headerHeight.set(entry.contentRect.height)
+    })
+    resizeObserver.observe(node)
 
     return {
       destroy() {
-        resizeObserver.disconnect();
+        resizeObserver.disconnect()
       },
-    };
-  };
+    }
+  }
   const contents = (node: HTMLElement) => {
     const resizeObserver = new ResizeObserver((entries) => {
-      const entry = entries[0];
+      const entry = entries[0]
       if (!entry) {
-        return;
+        return
       }
-      contentsWidth.set(entry.contentRect.width);
-    });
-    resizeObserver.observe(node);
+      contentsWidth.set(entry.contentRect.width)
+    })
+    resizeObserver.observe(node)
 
     return {
       destroy() {
-        resizeObserver.disconnect();
+        resizeObserver.disconnect()
       },
-    };
-  };
+    }
+  }
 
   const container = (node: HTMLElement) => {
-    containerNode = node;
+    containerNode = node
     if (notAppliedContentsScrollY) {
-      contentsScrollTo(notAppliedContentsScrollY);
+      contentsScrollTo(notAppliedContentsScrollY)
     }
     const onScroll = (e: Event) => {
-      const target = e.target;
+      const target = e.target
       if (!(target instanceof HTMLElement)) {
-        return;
+        return
       }
-      scrollY.set(target.scrollTop);
-    };
-    node.addEventListener("scroll", onScroll);
+      scrollY.set(target.scrollTop)
+    }
+    node.addEventListener('scroll', onScroll)
 
     const resizeObserver = new ResizeObserver((entries) => {
-      const entry = entries[0];
+      const entry = entries[0]
       if (!entry) {
-        return;
+        return
       }
-      containerHeight.set(entry.contentRect.height);
-    });
-    resizeObserver.observe(node);
+      containerHeight.set(entry.contentRect.height)
+    })
+    resizeObserver.observe(node)
 
     return {
       destroy() {
-        containerNode = null;
-        node.removeEventListener("scroll", onScroll);
-        resizeObserver.disconnect();
+        containerNode = null
+        node.removeEventListener('scroll', onScroll)
+        resizeObserver.disconnect()
       },
-    };
-  };
+    }
+  }
 
   return {
     container,
@@ -111,5 +111,5 @@ export const useVirtualScroller = () => {
     contentsScrollY,
     containerHeight,
     contentsScrollTo,
-  };
-};
+  }
+}

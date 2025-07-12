@@ -1,52 +1,52 @@
-<script lang="ts">
-  import APopover from "@/components/UI/APopover.svelte";
-  import Button from "@/components/UI/Button.svelte";
-  import ButtonBase from "@/components/UI/ButtonBase.svelte";
-  import PlayPopover from "@/components/Work/PlayPopover.svelte";
-  import { createEventDispatcher } from "svelte";
+<script lang='ts'>
+  import { createEventDispatcher } from 'svelte'
+  import APopover from '@/components/UI/APopover.svelte'
+  import Button from '@/components/UI/Button.svelte'
+  import ButtonBase from '@/components/UI/ButtonBase.svelte'
+  import PlayPopover from '@/components/Work/PlayPopover.svelte'
 
   const dispather = createEventDispatcher<{
-    play: { isAdmin: boolean | undefined };
-  }>();
+    play: { isAdmin: boolean | undefined }
+  }>()
 </script>
 
-<div class="flex items-center min-w-0">
+<div class='flex items-center min-w-0'>
   <Button
-    appendClass="rounded-r-0"
-    leftIcon="i-material-symbols-power-rounded"
-    text="Play"
-    variant="success"
-    on:click={() => dispather("play", { isAdmin: undefined })}
+    appendClass='rounded-r-0'
+    leftIcon='i-material-symbols-power-rounded'
+    text='Play'
+    variant='success'
+    on:click={() => dispather('play', { isAdmin: undefined })}
   />
-  <APopover  >
+  <APopover>
     {#snippet button()}
-        <ButtonBase
-        appendClass="h-8 w-8 flex items-center justify-center rounded-l-0"
+      <ButtonBase
+        appendClass='h-8 w-8 flex items-center justify-center rounded-l-0'
         tooltip={{
-          content: "このゲームの設定",
-          placement: "bottom",
-          theme: "default",
+          content: 'このゲームの設定',
+          placement: 'bottom',
+          theme: 'default',
           delay: 1000,
         }}
-        variant="success"
-        
+        variant='success'
+
       >
         <div
-          class="color-text-white w-5 h-5 i-material-symbols-arrow-drop-down"
+          class='color-text-white w-5 h-5 i-material-symbols-arrow-drop-down'
           class:rotate-180={open}
-  ></div>
+        ></div>
       </ButtonBase>
-      {/snippet}
+    {/snippet}
     {#snippet children({ open, close })}
-        <PlayPopover
+      <PlayPopover
         on:close={() => close(null)}
         on:play={() => {
-          dispather("play", { isAdmin: false });
+          dispather('play', { isAdmin: false })
         }}
         on:playAdmin={() => {
-          dispather("play", { isAdmin: true });
+          dispather('play', { isAdmin: true })
         }}
       />
-          {/snippet}
-    </APopover>
+    {/snippet}
+  </APopover>
 </div>

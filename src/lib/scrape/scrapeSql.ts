@@ -1,44 +1,45 @@
-import { convertSpecialCharacters } from "@/lib/utils";
-import { fetch } from "@tauri-apps/plugin-http";
+import { fetch } from '@tauri-apps/plugin-http'
+import { convertSpecialCharacters } from '@/lib/utils'
 
-export const scrapeSql = async (query: string, colNums: number) => {
+export async function scrapeSql(query: string, colNums: number) {
   try {
-    const formData = new FormData();
-    formData.append("sql", query);
+    const formData = new FormData()
+    formData.append('sql', query)
     const response = await fetch(
-      "https://erogamescape.dyndns.org/~ap2/ero/toukei_kaiseki/sql_for_erogamer_form.php",
+      'https://erogamescape.dyndns.org/~ap2/ero/toukei_kaiseki/sql_for_erogamer_form.php',
       {
-        method: "POST",
+        method: 'POST',
         body: formData,
-      }
-    );
-    const parser = new DOMParser();
-    const doc = parser.parseFromString(await response.text(), "text/html");
+      },
+    )
+    const parser = new DOMParser()
+    const doc = parser.parseFromString(await response.text(), 'text/html')
 
-    const rows: string[][] = [];
-    doc.querySelectorAll("#query_result_main tr").forEach((tr, i) => {
+    const rows: string[][] = []
+    doc.querySelectorAll('#query_result_main tr').forEach((tr, i) => {
       if (i === 0) {
-        return;
+        return
       }
-      const row: string[] = [];
-      let isSkip = false;
+      const row: string[] = []
+      let isSkip = false
       for (let index = 0; index < colNums; index++) {
-        const scrapeIndex = index + 1;
-        const col = tr.querySelector(`td:nth-child(${scrapeIndex})`);
+        const scrapeIndex = index + 1
+        const col = tr.querySelector(`td:nth-child(${scrapeIndex})`)
         if (!col) {
-          isSkip = true;
-          break;
+          isSkip = true
+          break
         }
-        row.push(convertSpecialCharacters(col.innerHTML));
+        row.push(convertSpecialCharacters(col.innerHTML))
       }
       if (isSkip) {
-        return;
+        return
       }
-      rows.push(row);
-    });
-    return rows;
-  } catch (e) {
-    console.error(e);
-    return [];
+      rows.push(row)
+    })
+    return rows
   }
-};
+  catch (e) {
+    console.error(e)
+    return []
+  }
+}
