@@ -1,7 +1,6 @@
 <script lang='ts'>
   import type { AllGameCacheOne } from '@/lib/types'
 
-  import { createEventDispatcher } from 'svelte'
   import { run } from 'svelte/legacy'
   import Input from '@/components/UI/Input.svelte'
   import InputPath from '@/components/UI/InputPath.svelte'
@@ -15,6 +14,8 @@
     cancelText?: string
     idInput?: string
     path?: string
+    onconfirm?: (exePath: string | null, lnkPath: string | null, gameCache: AllGameCacheOne) => void
+    oncancel?: () => void
   }
 
   let {
@@ -23,16 +24,9 @@
     cancelText = 'Cancel',
     idInput = $bindable(''),
     path = $bindable(''),
+    onconfirm,
+    oncancel,
   }: Props = $props()
-
-  const dispather = createEventDispatcher<{
-    confirm: {
-      exePath: string | null
-      lnkPath: string | null
-      gameCache: AllGameCacheOne
-    }
-    cancel: {}
-  }>()
 
   let candidates: [number, string][] = $state([])
   run(() => {
@@ -52,20 +46,20 @@
   const onConfirm = async () => {
     const val = await getNewCollectionElementByInputs(idInput, path)
     if (val) {
-      dispather('confirm', val)
+      onconfirm?.(val.exePath, val.lnkPath, val.gameCache)
     }
   }
 </script>
 
 <Modal
   {isOpen}
-  on:close={() => (isOpen = false)}
-  on:cancel={() => dispather('cancel')}
+  onclose={() => (isOpen = false)}
+  {oncancel}
   title='Manually import game'
   confirmText='Import'
   {cancelText}
   confirmDisabled={!idInput || (!path && withInputPath)}
-  on:confirm={onConfirm}
+  onconfirm={onConfirm}
 >
   <div class='space-y-4'>
     {#if withInputPath}

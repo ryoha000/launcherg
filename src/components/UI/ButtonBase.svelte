@@ -1,9 +1,26 @@
 <script lang='ts'>
-  import { createBubbler, run } from 'svelte/legacy'
-
-  const bubble = createBubbler()
   import type { Props as TippyOption } from 'tippy.js'
   import tippy from 'tippy.js'
+
+  interface Props {
+    appendClass?: string
+    type?: 'button' | 'submit' | undefined
+    tooltip?: Partial<TippyOption> | undefined
+    disabled?: boolean
+    variant?: Variant
+    children?: import('svelte').Snippet
+    onclick?: (e: Event) => void
+  }
+
+  let {
+    appendClass = '',
+    type = undefined,
+    tooltip = undefined,
+    disabled = false,
+    variant = 'normal',
+    children,
+    onclick,
+  }: Props = $props()
 
   const tooltipAction = (node: HTMLElement) => {
     if (!tooltip) {
@@ -25,47 +42,20 @@
     }
   }
 
-  interface Props {
-    appendClass?: string
-    type?: 'button' | 'submit' | undefined
-    tooltip?: Partial<TippyOption> | undefined
-    disabled?: boolean
-    variant?: Variant
-    children?: import('svelte').Snippet
-  }
-
-  let {
-    appendClass = '',
-    type = undefined,
-    tooltip = undefined,
-    disabled = false,
-    variant = 'normal',
-    children,
-  }: Props = $props()
-
-  let buttonVariantClass = $state('')
-  run(() => {
+  let buttonVariantClass = $derived.by(() => {
     switch (variant) {
       case 'normal':
-        buttonVariantClass
-          = 'bg-bg-button border-(~ border-button opacity-10 solid) text-text-primary hover:(border-border-button-hover bg-bg-button-hover)'
-        break
+        return 'bg-bg-button border-(~ border-button opacity-10 solid) text-text-primary hover:(border-border-button-hover bg-bg-button-hover)'
       case 'accent':
-        buttonVariantClass
-          = 'bg-bg-button border-(~ border-button opacity-10 solid) text-accent-accent hover:(border-accent-accent bg-accent-accent text-text-secondary)'
-        break
+        return 'bg-bg-button border-(~ border-button opacity-10 solid) text-accent-accent hover:(border-accent-accent bg-accent-accent text-text-secondary)'
       case 'error':
-        buttonVariantClass
-          = 'bg-bg-button border-(~ border-button opacity-10 solid) text-accent-error hover:(border-accent-error bg-accent-error text-text-secondary)'
-        break
+        return 'bg-bg-button border-(~ border-button opacity-10 solid) text-accent-error hover:(border-accent-error bg-accent-error text-text-secondary)'
       case 'success':
-        buttonVariantClass = disabled
+        return disabled
           ? 'bg-bg-success-disabled border-(~ solid border-success-disabled) text-text-success-disabled'
           : 'bg-accent-success border-(~ solid accent-success) text-text-white hover:bg-bg-success-hover'
-        break
       default:
-        const _: never = variant
-        break
+        throw new Error(`Unknown variant: ${variant satisfies never}`)
     }
   })
 </script>
@@ -75,7 +65,7 @@
   {type}
   {disabled}
   class={`rounded transition-all ${buttonVariantClass} ${appendClass}`}
-  onclick={bubble('click')}
+  {onclick}
 >
   {@render children?.()}
 </button>

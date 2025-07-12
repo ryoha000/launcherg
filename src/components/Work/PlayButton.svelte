@@ -13,7 +13,7 @@
     leftIcon='i-material-symbols-power-rounded'
     text='Play'
     variant='success'
-    on:click={() => play({ isAdmin: undefined })}
+    onclick={() => play({ isAdmin: undefined })}
   />
   <APopover>
     {#snippet button({ open })}
@@ -26,7 +26,6 @@
           delay: 1000,
         }}
         variant='success'
-
       >
         <div
           class='color-text-white w-5 h-5 i-material-symbols-arrow-drop-down'

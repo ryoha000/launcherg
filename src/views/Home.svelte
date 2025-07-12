@@ -120,7 +120,7 @@
           leftIcon='i-material-symbols-refresh-rounded'
           text='サムネイルを再取得する'
           disabled={disabledRefetchThumbnail}
-          on:click={refetchThumbnail}
+          onclick={refetchThumbnail}
         />
       </div>
     </div>

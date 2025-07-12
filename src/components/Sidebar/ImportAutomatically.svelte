@@ -25,6 +25,12 @@
   }
 
   let { isOpen = $bindable() }: Props = $props()
+  const closeDialog = () => {
+    if (isLoading) {
+      return
+    }
+    isOpen = false
+  }
 
   let inputContainer: HTMLDivElement | null = $state(null)
 
@@ -83,7 +89,7 @@
       : '新しく追加されたゲームはありません'
 
     showInfoToast(text)
-    isOpen = false
+    closeDialog()
   }
 
   let processFileNums = $state(0)
@@ -130,21 +136,13 @@
 {#if !isLoading}
   <Modal
     {isOpen}
-    on:close={() => {
-      if (!isLoading) {
-        isOpen = false
-      }
-    }}
-    on:cancel={() => {
-      if (!isLoading) {
-        isOpen = false
-      }
-    }}
+    onclose={closeDialog}
+    oncancel={closeDialog}
     title='Automatically import game'
     confirmText='Start import'
     fullmodal
     confirmDisabled={!$paths.length || !$paths.some(v => v.path) || isLoading}
-    on:confirm={confirm}
+    onconfirm={confirm}
   >
     <div class='space-y-8'>
       <div class='space-y-4'>
@@ -172,6 +170,7 @@
                 type='button'
                 tabindex={-1}
                 class='ml-auto p-2 bg-transparent'
+                aria-label='Remove path'
               >
                 <div
                   class='w-5 h-5 i-iconoir-cancel color-text-tertiary hover:color-text-primary transition-all'
@@ -184,13 +183,12 @@
             leftIcon='i-iconoir-plus'
             text='Add folder path'
             type='submit'
-            on:click={addEmptyPath}
+            onclick={addEmptyPath}
           />
         </form>
       </div>
       <div class='space-y-2'>
         <div class='text-(text-primary h4) font-medium'>オプション</div>
-        <!-- svelte-ignore a11y_label_has_associated_control -->
         <label class='flex gap-2 cursor-pointer'>
           <Checkbox bind:value={useCache} />
           <div>

@@ -29,8 +29,8 @@
 
 <Modal
   {isOpen}
-  on:close={() => (isOpen = false)}
-  on:cancel={() => (isOpen = false)}
+  onclose={() => (isOpen = false)}
+  oncancel={() => (isOpen = false)}
   title='Link to Smartphone'
   autofocusCloseButton
   withFooter={false}

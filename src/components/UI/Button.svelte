@@ -14,6 +14,7 @@
     variant?: Variant
     disabled?: boolean
     wrappable?: boolean
+    onclick?: (e: Event) => void
   }
 
   const {
@@ -26,6 +27,7 @@
     variant = 'normal',
     disabled = false,
     wrappable = false,
+    onclick,
   }: Props = $props()
 
   const iconSizeClass = 'w-4 h-4'
@@ -46,7 +48,7 @@
   {type}
   {tooltip}
   {disabled}
-  on:click
+  {onclick}
 >
   {#if leftIcon}
     <div class={`${iconVarinatClass} ${iconSizeClass} ${leftIcon}`}></div>

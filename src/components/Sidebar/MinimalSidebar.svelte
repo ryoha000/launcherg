@@ -5,7 +5,7 @@
 
 <div class='flex flex-col h-full w-full items-center gap-4 py-4'>
   <ButtonBase
-    on:click={() => showSidebar.set(true)}
+    onclick={() => showSidebar.set(true)}
     appendClass='border-0px p-1 bg-transparent'
     tooltip={{
       content: 'サイドバーを開く',

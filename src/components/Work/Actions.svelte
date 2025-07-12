@@ -82,16 +82,16 @@
   })())
 
   let isOpenImportManually = $state(false)
-  const onChangeGame = async (arg: {
-    exePath: string | null
-    lnkPath: string | null
+  const onChangeGame = async (
+    exePath: string | null,
+    lnkPath: string | null,
     gameCache: AllGameCacheOne
-  }) => {
-    const isChangedGameId = id !== arg.gameCache.id
+  ) => {
+    const isChangedGameId = id !== gameCache.id
     if (isChangedGameId) {
       await commandDeleteCollectionElement(id)
     }
-    await commandUpsertCollectionElement(arg)
+    await commandUpsertCollectionElement({ exePath, lnkPath, gameCache })
     await registerCollectionElementDetails()
     await sidebarCollectionElements.refetch()
     if (isChangedGameId) {
@@ -111,7 +111,7 @@
     <Button
       leftIcon='i-material-symbols-drive-file-rename-outline'
       text='Memo'
-      on:click={() => goto(`/memos/${id}?gamename=${name}`)}
+      onclick={() => goto(`/memos/${id}?gamename=${name}`)}
     />
     <div class='flex items-center gap-2 ml-auto'>
       <ButtonCancel
@@ -145,8 +145,8 @@
     bind:isOpen={isOpenImportManually}
     idInput={`${id}`}
     path={element.exePath ?? element.lnkPath}
-    on:confirm={e => onChangeGame(e.detail)}
-    on:cancel={() => (isOpenImportManually = false)}
+    onconfirm={onChangeGame}
+    oncancel={() => (isOpenImportManually = false)}
   />
   <DeleteElement bind:isOpen={isOpenDelete} {element} />
   <OtherInformation bind:isOpen={isOpenOtherInformation} {element} />

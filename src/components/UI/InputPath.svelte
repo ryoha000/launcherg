@@ -49,6 +49,6 @@
   </div>
   <Button
     leftIcon='i-material-symbols-folder-outline-rounded'
-    on:click={openDialog}
+    onclick={openDialog}
   />
 </div>

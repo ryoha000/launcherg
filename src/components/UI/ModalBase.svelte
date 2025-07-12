@@ -1,13 +1,13 @@
 <script lang='ts'>
-  import { createEventDispatcher, onMount } from 'svelte'
   import { createDialog } from 'svelte-headlessui'
-  import Transition from 'svelte-transition'
+  import { fade, scale } from 'svelte/transition'
 
   interface Props {
     isOpen?: boolean
     panelClass?: string
     fullmodal?: boolean
-    children?: import('svelte').Snippet
+    children?: import('svelte').Snippet<[]>
+    onclose?: () => void
   }
 
   const {
@@ -15,42 +15,45 @@
     panelClass = '',
     fullmodal = false,
     children,
+    onclose,
   }: Props = $props()
 
-  const dispatcher = createEventDispatcher<{
-    close: {}
-  }>()
+  const dialog = createDialog({ opened: isOpen, expanded: isOpen })
 
-  const dialog = createDialog({ label: 'Payment Success' })
-  onMount(dialog.open)
+  $effect(() => {
+    if (isOpen) {
+      dialog.open()
+    } else {
+      dialog.close()
+    }
+  })
+
+  const handleClose = (e: Event) => {
+    e.preventDefault()
+    onclose?.()
+  }
+
+  $inspect(isOpen)
 </script>
 
-<Transition show={isOpen}>
-  <div onclose={() => dispatcher('close')}>
-    <Transition
-      enter='ease-out duration-150 fixed inset-0'
-      enterFrom='opacity-0 scale-95'
-      enterTo='opacity-100 scale-100'
-      leave='ease-in duration-150 fixed inset-0'
-      leaveFrom='opacity-100 scale-100'
-      leaveTo='opacity-0 scale-95'
-    >
-      <div class='fixed inset-0 z-10 w-full h-full'>
-        <div class='relative p-12 w-full h-full'>
-          <div class='absolute inset-0 z-20 bg-(bg-backdrop opacity-80)'></div>
-          <div
-            class='relative w-full h-full z-30 m-auto {panelClass} overflow-hidden'
-            class:h-full={fullmodal}
-            use:dialog.modal
-          >
-            <div
-              class='w-full h-full border-(~ solid border-primary) rounded-lg bg-bg-primary shadow min-h-0 max-h-full'
-            >
-              {@render children?.()}
-            </div>
-          </div>
+{#if isOpen}
+  <div class='fixed inset-0 z-10 w-full h-full' onclose={handleClose}>
+    <div class='relative p-12 w-full h-full'>
+      <!-- svelte-ignore a11y_click_events_have_key_events -->
+      <!-- svelte-ignore a11y_no_static_element_interactions -->
+      <div transition:fade={{ duration: 100 }} class='absolute inset-0 z-20 bg-(bg-backdrop opacity-80)' onclick={handleClose}></div>
+      <div
+        transition:scale={{ delay: 100, duration: 200 }}
+        class='relative w-full h-full z-30 m-auto {panelClass} overflow-hidden'
+        class:h-full={fullmodal}
+        use:dialog.modal
+      >
+        <div
+          class='w-full h-full border-(~ solid border-primary) rounded-lg bg-bg-primary shadow min-h-0 max-h-full'
+        >
+          {@render children?.()}
         </div>
       </div>
-    </Transition>
+    </div>
   </div>
-</Transition>
+{/if}

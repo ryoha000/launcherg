@@ -13,17 +13,18 @@
   let isOpenImportAutomatically = $state(false)
   let isOpenImportManually = $state(false)
 
-  const importManually = async (arg: {
-    exePath: string | null
-    lnkPath: string | null
+  const importManually = async (
+    exePath: string | null,
+    lnkPath: string | null,
     gameCache: AllGameCacheOne
-  }) => {
-    await commandUpsertCollectionElement(arg)
+  ) => {
+    await commandUpsertCollectionElement({ exePath, lnkPath, gameCache })
     await registerCollectionElementDetails()
     await sidebarCollectionElements.refetch()
     isOpenImportManually = false
-    showInfoToast(`${arg.gameCache.gamename}を登録しました。`)
+    showInfoToast(`${gameCache.gamename}を登録しました。`)
   }
+  $inspect(isOpenImportAutomatically, isOpenImportManually)
 </script>
 
 <div class='mt-4 w-full px-2 flex items-center'>
@@ -36,7 +37,6 @@
         text='Add'
         leftIcon='i-material-symbols-computer-outline-rounded'
         appendClass='ml-auto'
-
       />
     {/snippet}
     {#snippet children({ close })}
@@ -48,13 +48,11 @@
     {/snippet}
   </APopover>
 </div>
-{#if isOpenImportAutomatically}
-  <ImportAutomatically bind:isOpen={isOpenImportAutomatically} />
-{/if}
+<ImportAutomatically bind:isOpen={isOpenImportAutomatically} />
 {#if isOpenImportManually}
   <ImportManually
     bind:isOpen={isOpenImportManually}
-    on:confirm={e => importManually(e.detail)}
-    on:cancel={() => (isOpenImportManually = false)}
+    onconfirm={importManually}
+    oncancel={() => (isOpenImportManually = false)}
   />
 {/if}

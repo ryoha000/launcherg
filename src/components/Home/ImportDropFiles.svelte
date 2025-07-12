@@ -48,15 +48,15 @@
       importFileDropPathIndex = -1
     }
   }
-  const importManually = async (arg: {
-    exePath: string | null
-    lnkPath: string | null
-    gameCache: AllGameCacheOne
-  }) => {
-    await commandUpsertCollectionElement(arg)
+  const importManually = async (
+    exePath: string | null,
+    lnkPath: string | null,
+    gameCache: AllGameCacheOne,
+  ) => {
+    await commandUpsertCollectionElement({ exePath, lnkPath, gameCache })
     await registerCollectionElementDetails()
     await sidebarCollectionElements.refetch()
-    showInfoToast(`${arg.gameCache.gamename}を登録しました。`)
+    showInfoToast(`${gameCache.gamename}を登録しました。`)
     isOpenImportFileDrop = false
     setTimeout(next, 0)
   }
@@ -71,7 +71,7 @@
     bind:isOpen={isOpenImportFileDrop}
     path={importFileDropPaths[importFileDropPathIndex]}
     cancelText='Skip'
-    on:confirm={e => importManually(e.detail)}
-    on:cancel={skipImport}
+    onconfirm={importManually}
+    oncancel={skipImport}
   />
 {/if}

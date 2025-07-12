@@ -1,5 +1,4 @@
 <script lang='ts'>
-  import { createEventDispatcher } from 'svelte'
   import Button from '@/components/UI/Button.svelte'
   import ModalBase from '@/components/UI/ModalBase.svelte'
 
@@ -17,6 +16,9 @@
     confirmDisabled?: boolean
     children?: import('svelte').Snippet
     footer?: import('svelte').Snippet
+    onconfirm?: () => void
+    oncancel?: () => void
+    onclose?: () => void
   }
 
   const {
@@ -33,20 +35,17 @@
     confirmDisabled = false,
     children,
     footer,
+    onconfirm,
+    oncancel,
+    onclose,
   }: Props = $props()
-
-  const dispatcher = createEventDispatcher<{
-    confirm: {}
-    cancel: {}
-    close: {}
-  }>()
 </script>
 
 <ModalBase
   {isOpen}
   panelClass={maxWidth || 'max-w-160'}
   {fullmodal}
-  on:close
+  {onclose}
 >
   <div class='grid grid-rows-[min-content_1fr_min-content] h-full'>
     <div
@@ -56,9 +55,10 @@
         {title}
       </div>
       <button
-        onclick={() => dispatcher('close')}
+        onclick={onclose}
         class='ml-auto p-4 bg-transparent color-text-tertiary hover:color-text-primary transition-all'
         tabindex={autofocusCloseButton ? 0 : -1}
+        aria-label="Close modal"
       >
         <div class='w-5 h-5 i-iconoir-cancel'></div>
       </button>
@@ -70,12 +70,12 @@
       {#if footer}{@render footer()}{:else}
         <div class='flex items-center p-4 border-(t-1px solid border-primary)'>
           <div class='flex items-center ml-auto gap-2'>
-            <Button text={cancelText} on:click={() => dispatcher('cancel')} />
+            <Button text={cancelText} onclick={oncancel} />
             <Button
               variant='success'
               disabled={confirmDisabled}
               text={confirmText}
-              on:click={() => dispatcher('confirm')}
+              onclick={onconfirm}
             />
           </div>
         </div>

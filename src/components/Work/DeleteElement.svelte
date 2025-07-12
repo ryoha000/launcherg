@@ -23,8 +23,8 @@
 
 <Modal
   {isOpen}
-  on:close={() => (isOpen = false)}
-  on:cancel={() => (isOpen = false)}
+  onclose={() => (isOpen = false)}
+  oncancel={() => (isOpen = false)}
   title='Delete game'
   withContentPadding={false}
   autofocusCloseButton
@@ -52,7 +52,7 @@
         variant='error'
         wrappable
         appendClass='w-full justify-center'
-        on:click={deleteGame}
+        onclick={deleteGame}
       />
     </div>
   {/snippet}

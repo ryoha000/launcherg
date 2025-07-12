@@ -13,7 +13,7 @@
     </div>
   </a>
   <ButtonBase
-    on:click={() => showSidebar.set(false)}
+    onclick={() => showSidebar.set(false)}
     appendClass='ml-auto border-0px p-1 bg-transparent'
     tooltip={{
       content: 'サイドバーを閉じる',
