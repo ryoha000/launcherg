@@ -15,7 +15,7 @@ export function showInfoToast(text: string, duration = 3000) {
   }).showToast()
 }
 
-export function showErrorToast(text: string) {
+export function showErrorToast(text: string, duration = 5000) {
   Toastify({
     text,
     duration: 5000,

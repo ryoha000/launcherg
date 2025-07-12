@@ -1,52 +1,23 @@
 <script lang='ts'>
   import type { AllGameCacheOne } from '@/lib/types'
-  import { listen } from '@tauri-apps/api/event'
-  import { onMount } from 'svelte'
+  import { onDestroy, onMount } from 'svelte'
+  import { useFileDrop } from '@/components/Home/fileDrop.svelte'
   import ImportManually from '@/components/Sidebar/ImportManually.svelte'
   import { commandUpsertCollectionElement } from '@/lib/command'
   import { registerCollectionElementDetails } from '@/lib/registerCollectionElementDetails'
-  import { showErrorToast, showInfoToast } from '@/lib/toast'
+  import { showInfoToast } from '@/lib/toast'
   import { sidebarCollectionElements } from '@/store/sidebarCollectionElements'
 
-  onMount(() =>
-    listen<string[]>('tauri://file-drop', (event) => {
-      importFileDropPaths = []
-      const files = event.payload
-      for (const file of files) {
-        const exts = ['exe', 'lnk', 'url']
-        let isIgnore = true
-        for (const ext of exts) {
-          if (file.toLowerCase().endsWith(ext)) {
-            isIgnore = false
-          }
-        }
-        if (isIgnore) {
-          showErrorToast(
-            'EXEファイルかショートカットファイルをドラッグアンドドロップしてください。フォルダから追加したい場合はサイドバーの Add ボタンから「自動でフォルダから追加」を選択してください。',
-          )
-          continue
-        }
-        importFileDropPaths.push(file)
-      }
-      if (importFileDropPaths.length !== 0) {
-        importFileDropPathIndex = 0
-        isOpenImportFileDrop = true
-      }
-    }),
-  )
+  const { targetFileAccessor, popToTargetFile, startListening, stopListening } = useFileDrop()
 
-  let isOpenImportFileDrop = $state(false)
-  let importFileDropPathIndex = $state(-1)
-  let importFileDropPaths: string[] = $state([])
+  onMount(startListening)
+  onDestroy(stopListening)
+
+  let isOpenImportFileDrop = $derived(targetFileAccessor() !== undefined)
+  $inspect(targetFileAccessor() , isOpenImportFileDrop)
 
   const next = () => {
-    if (importFileDropPathIndex < importFileDropPaths.length - 1) {
-      isOpenImportFileDrop = true
-      importFileDropPathIndex += 1
-    }
-    else {
-      importFileDropPathIndex = -1
-    }
+    popToTargetFile()
   }
   const importManually = async (
     exePath: string | null,
@@ -66,12 +37,10 @@
   }
 </script>
 
-{#if isOpenImportFileDrop && importFileDropPathIndex !== -1 && importFileDropPaths.length}
   <ImportManually
     bind:isOpen={isOpenImportFileDrop}
-    path={importFileDropPaths[importFileDropPathIndex]}
+    path={targetFileAccessor()}
     cancelText='Skip'
     onconfirm={importManually}
     oncancel={skipImport}
   />
-{/if}
