@@ -13,6 +13,16 @@ export type Tab = {
 const isValidTabType = (src: string): src is "works" | "memos" => {
   return src === "works" || src === "memos";
 };
+
+const extractId = (path: string) => {
+  const match = path.match(/^\/(works|memos)\/(\d+)$/);
+  if (match) {
+    return Number(match[2]); // match[2] にID（12345など）が入っている
+  } else {
+    return null; // マッチしなければ null を返す
+  }
+};
+
 const createTabs = () => {
   const [tabs, getTabs] = createLocalStorageWritable<Tab[]>("tabs", [
     { id: 0, workId: 7402, type: "works", scrollTo: 0, title: "G線上の魔王" },
@@ -37,18 +47,14 @@ const createTabs = () => {
 
   const routeLoaded: Hook = (event) => {
     console.log("routeLoaded", event);
-    const isHome = event.result.path.original === "/";
+    const path = event.result.path.original;
+    const isHome = path === "/";
     if (isHome) {
       selected.set(-1);
       return;
     }
 
-    const params = event.result.querystring.params;
-    if (!params) {
-      console.error("params is null (not home)");
-      return;
-    }
-    const id = +params["id"];
+    const id = extractId(path);
     if (!id || isNaN(id)) {
       console.error("params[id] is undefined (not home)");
       return;
@@ -64,7 +70,7 @@ const createTabs = () => {
       (v) => v.workId === id && v.type === tabType
     );
     if (tabIndex === -1) {
-      const searchParams = new URLSearchParams(event.result.querystring);
+      const searchParams = new URLSearchParams(event.result.querystring.params);
       const gamename = searchParams.get("gamename");
       if (!gamename) {
         console.error("tabs にないのに gamename の queryParam がない");
@@ -89,6 +95,8 @@ const createTabs = () => {
     } else {
       selected.set(tabIndex);
     }
+
+    return true;
   };
   const deleteTab = (id: number) => {
     const deleteIndex = getTabs().findIndex((v) => v.id === id);

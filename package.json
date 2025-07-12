@@ -1,14 +1,15 @@
 {
   "name": "launcherg",
-  "private": true,
-  "version": "0.0.0",
   "type": "module",
+  "version": "0.0.0",
+  "private": true,
   "scripts": {
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
     "check": "svelte-check --tsconfig ./tsconfig.json",
-    "lint": "eslint --ext .js,.ts,.svelte,.cjs src --fix",
+    "lint": "eslint .",
+    "format": "eslint --fix .",
     "tauri": "tauri"
   },
   "dependencies": {
@@ -33,6 +34,7 @@
     "wanakana": "5.3.1"
   },
   "devDependencies": {
+    "@antfu/eslint-config": "^4.16.2",
     "@iconify-json/iconoir": "1.2.7",
     "@iconify-json/material-symbols": "1.2.29",
     "@sveltejs/vite-plugin-svelte": "6.0.0",
@@ -52,6 +54,7 @@
     "@unocss/transformer-variant-group": "66.3.3",
     "autoprefixer": "10.4.21",
     "eslint": "9.31.0",
+    "eslint-config-prettier": "^10.1.5",
     "eslint-plugin-svelte": "3.10.1",
     "sass": "1.89.2",
     "svelte": "5.35.6",
@@ -59,6 +62,7 @@
     "svelte-preprocess": "6.0.3",
     "tslib": "2.8.1",
     "typescript": "5.8.3",
+    "typescript-eslint": "^8.36.0",
     "unocss": "66.3.3",
     "vite": "7.0.4",
     "vitest": "^3.2.4"
