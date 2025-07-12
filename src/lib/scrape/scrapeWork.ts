@@ -64,6 +64,9 @@ function getMusics(elements: HTMLCollectionOf<HTMLTableCellElement>) {
 }
 
 export async function getWorkByScrape(id: number) {
+  if (!id) {
+    return undefined
+  }
   const response = await fetch(`${BASE_REQUEST_PATH}/game.php?game=${id}`, {
     method: 'GET',
   })
