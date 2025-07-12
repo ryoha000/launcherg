@@ -30,7 +30,7 @@ export function useVirtualScroller() {
     notAppliedContentsScrollY = 0
   }
 
-  virtualHeight.subscribe((v) => {
+  virtualHeight.subscribe(() => {
     if (notAppliedContentsScrollY) {
       contentsScrollTo(notAppliedContentsScrollY)
     }

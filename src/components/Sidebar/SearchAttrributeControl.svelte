@@ -1,16 +1,21 @@
 <script lang='ts'>
-  import { createBubbler, stopPropagation } from 'svelte/legacy'
-
-  const bubble = createBubbler()
   import { fly } from 'svelte/transition'
 
   interface Props {
     appendClass: string
     back?: boolean
     show: boolean
+    onclick?: (e: Event) => void
   }
 
-  const { appendClass, back = false, show }: Props = $props()
+  const { appendClass, back = false, show, onclick }: Props = $props()
+
+  const wrappedOnclick = (e: Event) => {
+    e.stopPropagation()
+    if (onclick) {
+      onclick(e)
+    }
+  }
 </script>
 
 {#if show}
@@ -22,7 +27,8 @@
   >
     <button
       class='bg-transparent transition-all hover:bg-bg-button-hover rounded-full p-1'
-      onclick={stopPropagation(bubble('click'))}
+      onclick={wrappedOnclick}
+      aria-label="Scroll search attributes"
     >
       <div
         class='i-material-symbols-arrow-forward-ios-rounded w-4 h-4 color-text-primary'

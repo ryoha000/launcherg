@@ -14,7 +14,6 @@
   import {
     commandDeleteCollectionElement,
     commandGetCollectionElement,
-    commandGetPlayTomeMinutes,
     commandOpenFolder,
     commandPlayGame,
     commandUpdateElementLike,
@@ -76,7 +75,6 @@
     sidebarCollectionElements.updateLike(id, isLike)
   }
 
-  const playTimePromise = $derived(commandGetPlayTomeMinutes(id))
   const elementPromise = $derived((async () => {
     const element = await commandGetCollectionElement(id)
     isLike = !!element.likeAt
@@ -109,32 +107,22 @@
 
 {#await elementPromise then element}
   <div class='flex items-center gap-4 flex-wrap w-full min-w-0'>
-    <PlayButton on:play={e => play(e.detail.isAdmin)} />
+    <PlayButton play={({ isAdmin }) => play(isAdmin)} />
     <Button
       leftIcon='i-material-symbols-drive-file-rename-outline'
       text='Memo'
       on:click={() => goto(`/memos/${id}?gamename=${name}`)}
     />
-    <!-- <div class="flex items-end gap-2 h-8 min-w-0">
-      <div class="text-(text-primary body2) whitespace-nowrap">Time</div>
-      {#await playTimePromise then playTime}
-        <div class="text-(text-primary body)">
-          {`${`${Math.floor(playTime / 60)}`.padStart(2, "0")}:${`${Math.floor(
-            playTime % 60
-          )}`.padStart(2, "0")}`}
-        </div>
-      {/await}
-    </div> -->
     <div class='flex items-center gap-2 ml-auto'>
       <ButtonCancel
         icon='i-material-symbols-qr-code'
-        on:click={() => (isOpenQrCode = true)}
+        onclick={() => (isOpenQrCode = true)}
       />
       <ButtonCancel
         icon={isLike
           ? 'i-material-symbols-favorite-rounded'
           : 'i-material-symbols-favorite-outline-rounded'}
-        on:click={toggleLike}
+        onclick={toggleLike}
       />
       <APopover panelClass='right-0'>
         {#snippet button()}
@@ -142,12 +130,12 @@
         {/snippet}
         {#snippet children({ close })}
           <SettingPopover
-            on:close={() => close(null)}
-            on:selectChange={() => (isOpenImportManually = true)}
-            on:selectDelete={() => (isOpenDelete = true)}
-            on:selectOpen={() =>
+            onclose={() => close()}
+            onselectChange={() => (isOpenImportManually = true)}
+            onselectDelete={() => (isOpenDelete = true)}
+            onselectOpen={() =>
               commandOpenFolder(element.exePath ?? element.lnkPath)}
-            on:selectOtherInfomation={() => (isOpenOtherInformation = true)}
+            onselectOtherInfomation={() => (isOpenOtherInformation = true)}
           />
         {/snippet}
       </APopover>

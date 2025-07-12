@@ -18,7 +18,7 @@
     </div>
   {:else}
     <div class='w-full h-full flex items-center justify-center'>
-      <span class='text-red-500'>Work not found</span>
+      <span class='text-red-500'>作品が見つかりません</span>
     </div>
   {/if}
 {:catch error}

@@ -41,9 +41,9 @@
     {/snippet}
     {#snippet children({ close })}
       <ImportPopover
-        on:close={() => close(null)}
-        on:startAuto={() => (isOpenImportAutomatically = true)}
-        on:startManual={() => (isOpenImportManually = true)}
+        onclose={() => close(null)}
+        onstartAuto={() => (isOpenImportAutomatically = true)}
+        onstartManual={() => (isOpenImportManually = true)}
       />
     {/snippet}
   </APopover>

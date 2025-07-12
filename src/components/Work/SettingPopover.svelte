@@ -1,14 +1,13 @@
 <script lang='ts'>
-  import { createEventDispatcher } from 'svelte'
   import OptionButton from '@/components/UI/OptionButton.svelte'
 
-  const dispatcher = createEventDispatcher<{
-    selectChange: {}
-    selectDelete: {}
-    selectOpen: {}
-    selectOtherInfomation: {}
-    close: {}
-  }>()
+  let { onclose, onselectChange, onselectDelete, onselectOpen, onselectOtherInfomation }: { 
+    onclose: () => void,
+    onselectChange: () => void,
+    onselectDelete: () => void,
+    onselectOpen: () => void,
+    onselectOtherInfomation: () => void
+  } = $props()
 </script>
 
 <div>
@@ -17,36 +16,37 @@
   >
     <div class='whitespace-nowrap'>Select game option</div>
     <button
-      onclick={() => dispatcher('close')}
+      onclick={onclose}
       class='ml-auto w-5 h-5 i-iconoir-cancel color-text-tertiary hover:color-text-primary transition-all'
+      aria-label="Close options"
     ></button>
   </div>
   <OptionButton
     text='ゲームのフォルダーを開く'
-    on:click={() => {
-      dispatcher('close')
-      dispatcher('selectOpen')
+    onclick={() => {
+      onclose()
+      onselectOpen()
     }}
   />
   <OptionButton
     text='違うゲームに変更する'
-    on:click={() => {
-      dispatcher('close')
-      dispatcher('selectChange')
+    onclick={() => {
+      onclose()
+      onselectChange()
     }}
   />
   <OptionButton
     text='登録したゲームから削除する'
-    on:click={() => {
-      dispatcher('close')
-      dispatcher('selectDelete')
+    onclick={() => {
+      onclose()
+      onselectDelete()
     }}
   />
   <OptionButton
     text='その他の情報'
-    on:click={() => {
-      dispatcher('close')
-      dispatcher('selectOtherInfomation')
+    onclick={() => {
+      onclose()
+      onselectOtherInfomation()
     }}
   />
 </div>

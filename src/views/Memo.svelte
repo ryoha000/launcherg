@@ -12,16 +12,27 @@
   import { skyWay } from '@/store/skyway'
   import { startProcessMap } from '@/store/startProcessMap'
 
-  interface Props {
-    params: { id: string }
-  }
+  const { route }: { route?: { result: { path: { params: { id?: string } } } } } = $props()
+  const id = $derived(Number(route?.result?.path?.params?.id || ''))
 
-  const { params }: Props = $props()
-  const id = $derived(+params.id)
-
-  let height: number = $state()
+  let height: number = $state(0)
 
   const mde = (node: HTMLElement) => {
+    const insertImage = (easyMDE: EasyMDE, imagePath: string) => {
+      const cursor = easyMDE.codemirror.getCursor()
+      const prev = easyMDE.value()
+      const lines = prev.split('\n')
+      const newLines: string[] = []
+      for (let i = 0; i < lines.length; i++) {
+        newLines.push(lines[i])
+        if (i === cursor.line) {
+          newLines.push(`![](${imagePath})`)
+          newLines.push('')
+        }
+      }
+      easyMDE.codemirror.setValue(newLines.join('\n'))
+      easyMDE.codemirror.setCursor({ line: cursor.line + 2, ch: 0 })
+    }
     const easyMDE = new EasyMDE({
       element: node,
       spellChecker: false,
@@ -58,7 +69,7 @@
             if (selected === null || Array.isArray(selected)) {
               return
             }
-            insertImage(selected)
+            insertImage(easyMDE, selected)
           },
           className: 'fa fa-picture-o',
           title: 'Insert image',
@@ -72,7 +83,7 @@
                 id,
                 startProcessId,
               )
-              insertImage(screenshotPath)
+              insertImage(easyMDE, screenshotPath)
             }
             catch (e) {
               showErrorToast('スクリーンショットの取得に失敗しました')
@@ -107,24 +118,9 @@
         const base64Image = canvas.toDataURL('image/png').split(',')[1]
 
         const imagePath = await commandUploadImage(id, base64Image)
-        insertImage(imagePath)
+        insertImage(easyMDE, imagePath)
       }
       catch {}
-    }
-    const insertImage = (imagePath: string) => {
-      const cursor = easyMDE.codemirror.getCursor()
-      const prev = easyMDE.value()
-      const lines = prev.split('\n')
-      const newLines: string[] = []
-      for (let i = 0; i < lines.length; i++) {
-        newLines.push(lines[i])
-        if (i === cursor.line) {
-          newLines.push(`![](${imagePath})`)
-          newLines.push('')
-        }
-      }
-      easyMDE.codemirror.setValue(newLines.join('\n'))
-      easyMDE.codemirror.setCursor({ line: cursor.line + 2, ch: 0 })
     }
     const ele = document.querySelector('.EasyMDEContainer')
     ele?.addEventListener('paste', onPaste)

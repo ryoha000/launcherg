@@ -1,15 +1,14 @@
 <script lang='ts'>
   import type { SortOrder } from '@/components/Sidebar/sort'
-  import { createEventDispatcher } from 'svelte'
   import { SORT_LABELS } from '@/components/Sidebar/sort'
   import OptionButton from '@/components/UI/OptionButton.svelte'
 
   interface Props {
     value: SortOrder
+    onclose: () => void
   }
 
-  let { value = $bindable() }: Props = $props()
-  const dispatcher = createEventDispatcher<{ close: {} }>()
+  let { value = $bindable(), onclose }: Props = $props()
 
   const sortOrders: SortOrder[] = [
     'gamename-asc',
@@ -29,15 +28,16 @@
   >
     <div>Select sort option</div>
     <button
-      onclick={() => dispatcher('close')}
+      onclick={onclose}
       class='ml-auto w-5 h-5 i-iconoir-cancel color-text-tertiary hover:color-text-primary transition-all'
+      aria-label="Close options"
     ></button>
   </div>
   {#each sortOrders as sortOrder (sortOrder)}
     <OptionButton
-      on:click={() => {
+      onclick={() => {
         value = sortOrder
-        dispatcher('close')
+        onclose()
       }}
       selected={value === sortOrder}
       text={SORT_LABELS[sortOrder]}

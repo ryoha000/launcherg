@@ -1,12 +1,11 @@
 <script lang='ts'>
-  import { createEventDispatcher } from 'svelte'
   import OptionButton from '@/components/UI/OptionButton.svelte'
 
-  const dispatcher = createEventDispatcher<{
-    playAdmin: {}
-    play: {}
-    close: {}
-  }>()
+  const { close, play, playAdmin }: {
+    close: () => void
+    play: () => void
+    playAdmin: () => void
+  } = $props();
 </script>
 
 <div>
@@ -15,22 +14,23 @@
   >
     <div class='whitespace-nowrap'>Select game option</div>
     <button
-      onclick={() => dispatcher('close')}
+      onclick={close}
       class='ml-auto w-5 h-5 i-iconoir-cancel color-text-tertiary hover:color-text-primary transition-all'
+      aria-label="Close options"
     ></button>
   </div>
   <OptionButton
     text='管理者権限で起動'
-    on:click={() => {
-      dispatcher('close')
-      dispatcher('playAdmin')
+    onclick={() => {
+      close()
+      playAdmin()
     }}
   />
   <OptionButton
     text='現在のユーザーで起動'
-    on:click={() => {
-      dispatcher('close')
-      dispatcher('play')
+    onclick={() => {
+      close()
+      play()
     }}
   />
 </div>

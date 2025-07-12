@@ -37,7 +37,7 @@
     isShowForward = right > 0
   }
 
-  let scrollable: SvelteComponent = $state()
+  let scrollable: SvelteComponent | undefined = $state()
 </script>
 
 <div class='space-y-1 w-full'>
@@ -66,7 +66,7 @@
         </ButtonBase>
       {/snippet}
       {#snippet children({ close })}
-        <SortPopover bind:value={order} on:close={() => close(null)} />
+        <SortPopover bind:value={order} onclose={close} />
       {/snippet}
     </APopover>
   </div>
@@ -79,7 +79,7 @@
         {#each attributes as attribute (attribute.key)}
           <SearchAttribute
             {attribute}
-            on:click={() =>
+            onclick={() =>
               dispatcher('toggleAttributeEnabled', { key: attribute.key })}
           />
         {/each}
@@ -89,12 +89,12 @@
       appendClass='left-0'
       back
       show={isShowBack}
-      on:click={() => scrollable.scrollBy({ left: -100, behavior: 'smooth' })}
+      onclick={() => scrollable?.scrollBy({ left: -100, behavior: 'smooth' })}
     />
     <SearchAttrributeControl
       appendClass='right-0'
       show={isShowForward}
-      on:click={() => scrollable.scrollBy({ left: 100, behavior: 'smooth' })}
+      onclick={() => scrollable?.scrollBy({ left: 100, behavior: 'smooth' })}
     />
   </div>
 </div>

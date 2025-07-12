@@ -1,12 +1,10 @@
 <script lang='ts'>
-  import { createBubbler } from 'svelte/legacy'
-
-  const bubble = createBubbler()
   interface Props {
     selected?: boolean
     text: string
     withBorderTop?: boolean
     showIcon?: boolean
+    onclick?: (e: Event) => void
   }
 
   const {
@@ -14,11 +12,12 @@
     text,
     withBorderTop = true,
     showIcon = false,
+    onclick,
   }: Props = $props()
 </script>
 
 <button
-  onclick={bubble('click')}
+  {onclick}
   class="p-(x-4 y-2) flex items-center bg-transparent transition-all hover:(bg-bg-button-hover) w-full {withBorderTop
     && 'border-(t-1px solid border-primary)'}"
 >

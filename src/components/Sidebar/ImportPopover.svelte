@@ -1,12 +1,7 @@
 <script lang='ts'>
-  import { createEventDispatcher } from 'svelte'
   import OptionButton from '@/components/UI/OptionButton.svelte'
 
-  const dispatcher = createEventDispatcher<{
-    close: {}
-    startAuto: {}
-    startManual: {}
-  }>()
+  const { onclose, onstartAuto, onstartManual }: { onclose: () => void, onstartAuto: () => void, onstartManual: () => void } = $props()
 </script>
 
 <div>
@@ -15,22 +10,23 @@
   >
     <div class='whitespace-nowrap'>Select adding game option</div>
     <button
-      onclick={() => dispatcher('close')}
+      onclick={onclose}
       class='ml-auto w-5 h-5 i-iconoir-cancel color-text-tertiary hover:color-text-primary transition-all'
+      aria-label="Close options"
     ></button>
   </div>
   <OptionButton
     text='自動でフォルダから追加'
-    on:click={() => {
-      dispatcher('close')
-      dispatcher('startAuto')
+    onclick={() => {
+      onclose()
+      onstartAuto()
     }}
   />
   <OptionButton
     text='手動で追加'
-    on:click={() => {
-      dispatcher('close')
-      dispatcher('startManual')
+    onclick={() => {
+      onclose()
+      onstartManual()
     }}
   />
 </div>
