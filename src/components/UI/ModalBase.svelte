@@ -23,7 +23,8 @@
   $effect(() => {
     if (isOpen) {
       dialog.open()
-    } else {
+    }
+    else {
       dialog.close()
     }
   })
@@ -32,8 +33,6 @@
     e.preventDefault()
     onclose?.()
   }
-
-  $inspect(isOpen)
 </script>
 
 {#if isOpen}

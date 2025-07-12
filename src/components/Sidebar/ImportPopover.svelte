@@ -12,7 +12,7 @@
     <button
       onclick={onclose}
       class='ml-auto w-5 h-5 i-iconoir-cancel color-text-tertiary hover:color-text-primary transition-all'
-      aria-label="Close options"
+      aria-label='Close options'
     ></button>
   </div>
   <OptionButton

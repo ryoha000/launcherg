@@ -58,7 +58,7 @@
         onclick={onclose}
         class='ml-auto p-4 bg-transparent color-text-tertiary hover:color-text-primary transition-all'
         tabindex={autofocusCloseButton ? 0 : -1}
-        aria-label="Close modal"
+        aria-label='Close modal'
       >
         <div class='w-5 h-5 i-iconoir-cancel'></div>
       </button>

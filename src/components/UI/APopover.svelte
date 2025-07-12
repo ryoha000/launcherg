@@ -5,8 +5,8 @@
   interface Props {
     isRelativeRoot?: boolean
     panelClass?: string
-    button?: import('svelte').Snippet<[{ open: boolean; close: (v?: null) => void }]>
-    children?: import('svelte').Snippet<[{ open: boolean; close: (v?: null) => void }]>
+    button?: import('svelte').Snippet<[{ open: boolean, close: (v?: null) => void }]>
+    children?: import('svelte').Snippet<[{ open: boolean, close: (v?: null) => void }]>
   }
 
   const {

@@ -16,7 +16,7 @@
   const importManually = async (
     exePath: string | null,
     lnkPath: string | null,
-    gameCache: AllGameCacheOne
+    gameCache: AllGameCacheOne,
   ) => {
     await commandUpsertCollectionElement({ exePath, lnkPath, gameCache })
     await registerCollectionElementDetails()
@@ -24,7 +24,6 @@
     isOpenImportManually = false
     showInfoToast(`${gameCache.gamename}を登録しました。`)
   }
-  $inspect(isOpenImportAutomatically, isOpenImportManually)
 </script>
 
 <div class='mt-4 w-full px-2 flex items-center'>
@@ -49,10 +48,8 @@
   </APopover>
 </div>
 <ImportAutomatically bind:isOpen={isOpenImportAutomatically} />
-{#if isOpenImportManually}
-  <ImportManually
-    bind:isOpen={isOpenImportManually}
-    onconfirm={importManually}
-    oncancel={() => (isOpenImportManually = false)}
-  />
-{/if}
+<ImportManually
+  bind:isOpen={isOpenImportManually}
+  onconfirm={importManually}
+  oncancel={() => (isOpenImportManually = false)}
+/>

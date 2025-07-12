@@ -28,7 +28,7 @@
     <button
       class='bg-transparent transition-all hover:bg-bg-button-hover rounded-full p-1'
       onclick={wrappedOnclick}
-      aria-label="Scroll search attributes"
+      aria-label='Scroll search attributes'
     >
       <div
         class='i-material-symbols-arrow-forward-ios-rounded w-4 h-4 color-text-primary'

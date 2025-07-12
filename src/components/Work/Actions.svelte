@@ -85,7 +85,7 @@
   const onChangeGame = async (
     exePath: string | null,
     lnkPath: string | null,
-    gameCache: AllGameCacheOne
+    gameCache: AllGameCacheOne,
   ) => {
     const isChangedGameId = id !== gameCache.id
     if (isChangedGameId) {

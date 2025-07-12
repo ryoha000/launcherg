@@ -12,9 +12,6 @@ export function useFileDrop() {
 
   const targetFileAccessor = () => targetFile
 
-  const resetFilePaths = () => {
-    filePaths.splice(0, filePaths.length)
-  }
   const appendFilePaths = (paths: string[]) => {
     if (paths.length === 0) {
       return
@@ -23,7 +20,6 @@ export function useFileDrop() {
   }
 
   const popToTargetFile = () => {
-    console.log('popToTargetFile', filePaths, targetFile)
     if (filePaths.length === 0) {
       targetFile = undefined
       return
@@ -35,7 +31,6 @@ export function useFileDrop() {
   const startListening = async () => {
     stopListening = await listen<FileDropPayload>('tauri://drag-drop', (event) => {
       const files = event.payload.paths
-      console.log('FileDrop:', files)
       const ignoredPaths: string[] = []
       for (const file of files) {
         const exts = ['exe', 'lnk', 'url']
@@ -47,10 +42,10 @@ export function useFileDrop() {
         appendFilePaths([file])
       }
       if (ignoredPaths.length > 0) {
-          showErrorToast(
-            `EXEファイルかショートカットファイルをドラッグアンドドロップしてください。フォルダから追加したい場合はサイドバーの Add ボタンから「自動でフォルダから追加」を選択してください。(path: ${ignoredPaths.join(', ')})`,
-            10000
-          )
+        showErrorToast(
+          `EXEファイルかショートカットファイルをドラッグアンドドロップしてください。フォルダから追加したい場合はサイドバーの Add ボタンから「自動でフォルダから追加」を選択してください。(path: ${ignoredPaths.join(', ')})`,
+          10000,
+        )
       }
       if (targetFile === undefined) {
         popToTargetFile()

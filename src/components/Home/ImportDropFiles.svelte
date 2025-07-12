@@ -14,7 +14,7 @@
   onDestroy(stopListening)
 
   let isOpenImportFileDrop = $derived(targetFileAccessor() !== undefined)
-  $inspect(targetFileAccessor() , isOpenImportFileDrop)
+  $inspect(targetFileAccessor(), isOpenImportFileDrop)
 
   const next = () => {
     popToTargetFile()
@@ -37,10 +37,10 @@
   }
 </script>
 
-  <ImportManually
-    bind:isOpen={isOpenImportFileDrop}
-    path={targetFileAccessor()}
-    cancelText='Skip'
-    onconfirm={importManually}
-    oncancel={skipImport}
-  />
+<ImportManually
+  bind:isOpen={isOpenImportFileDrop}
+  path={targetFileAccessor()}
+  cancelText='Skip'
+  onconfirm={importManually}
+  oncancel={skipImport}
+/>

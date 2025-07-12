@@ -52,12 +52,14 @@
       {#snippet button({ open })}
         <ButtonBase
           appendClass='h-8 w-8 flex items-center justify-center'
-          tooltip={open ? undefined : {
-            content: 'ゲームの並べ替え',
-            placement: 'bottom',
-            theme: 'default',
-            delay: 1000,
-          }}
+          tooltip={open
+            ? undefined
+            : {
+              content: 'ゲームの並べ替え',
+              placement: 'bottom',
+              theme: 'default',
+              delay: 1000,
+            }}
         >
           <div
             class='color-ui-tertiary w-5 h-5 i-material-symbols-sort-rounded'

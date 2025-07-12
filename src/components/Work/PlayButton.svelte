@@ -19,12 +19,14 @@
     {#snippet button({ open })}
       <ButtonBase
         appendClass='h-8 w-8 flex items-center justify-center rounded-l-0'
-        tooltip={open ? undefined : {
-          content: 'このゲームの設定',
-          placement: 'bottom',
-          theme: 'default',
-          delay: 1000,
-        }}
+        tooltip={open
+          ? undefined
+          : {
+            content: 'このゲームの設定',
+            placement: 'bottom',
+            theme: 'default',
+            delay: 1000,
+          }}
         variant='success'
       >
         <div

@@ -1,11 +1,11 @@
 <script lang='ts'>
   import OptionButton from '@/components/UI/OptionButton.svelte'
 
-  let { onclose, onselectChange, onselectDelete, onselectOpen, onselectOtherInfomation }: { 
-    onclose: () => void,
-    onselectChange: () => void,
-    onselectDelete: () => void,
-    onselectOpen: () => void,
+  let { onclose, onselectChange, onselectDelete, onselectOpen, onselectOtherInfomation }: {
+    onclose: () => void
+    onselectChange: () => void
+    onselectDelete: () => void
+    onselectOpen: () => void
     onselectOtherInfomation: () => void
   } = $props()
 </script>
@@ -18,7 +18,7 @@
     <button
       onclick={onclose}
       class='ml-auto w-5 h-5 i-iconoir-cancel color-text-tertiary hover:color-text-primary transition-all'
-      aria-label="Close options"
+      aria-label='Close options'
     ></button>
   </div>
   <OptionButton
