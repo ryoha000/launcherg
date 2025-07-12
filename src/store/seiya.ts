@@ -1,5 +1,5 @@
 import { commandGetNearestKeyAndDistance } from "@/lib/command";
-import { getSeiyaDataPairs } from "@/lib/scrapeSeiya";
+import { getSeiyaDataPairs } from "@/lib/scrape/scrapeSeiya";
 import type { SeiyaDataPair } from "@/lib/types";
 import { createLocalStorageCache } from "@/lib/utils";
 

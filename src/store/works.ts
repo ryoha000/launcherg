@@ -1,4 +1,4 @@
-import { getWorkByScrape } from "@/lib/scrapeWork";
+import { getWorkByScrape } from "@/lib/scrape/scrapeWork";
 import type { Work } from "@/lib/types";
 import { createLocalStorageCache } from "@/lib/utils";
 

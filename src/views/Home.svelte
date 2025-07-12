@@ -12,7 +12,7 @@
   import VirtualScrollerMasonry from "@/components/UI/VirtualScrollerMasonry.svelte";
   import { derived } from "svelte/store";
   import Button from "@/components/UI/Button.svelte";
-  import { scrapeAllGameCacheOnes } from "@/lib/scrapeAllGame";
+  import { scrapeAllGameCacheOnes } from "@/lib/scrape/scrapeAllGame";
   import { showErrorToast, showInfoToast } from "@/lib/toast";
 
   const memoRegex = /^smde_memo-(\d+)$/;

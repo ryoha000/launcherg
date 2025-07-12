@@ -2,7 +2,7 @@ import {
   commandGetNotRegisterdDetailElementIds,
   commandCreateElementDetails,
 } from "@/lib/command";
-import { scrapeSql } from "@/lib/scrapeSql";
+import { scrapeSql } from "@/lib/scrape/scrapeSql";
 
 export const registerCollectionElementDetails = async () => {
   const ids = await commandGetNotRegisterdDetailElementIds();

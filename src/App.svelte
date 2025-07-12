@@ -5,7 +5,7 @@
   import { initialize, routeLoaded } from "@/store/tabs";
   import { registerCollectionElementDetails } from "@/lib/registerCollectionElementDetails";
   import { onMount } from "svelte";
-  import { initializeAllGameCache } from "@/lib/scrapeAllGame";
+  import { initializeAllGameCache } from "@/lib/scrape/scrapeAllGame";
   import ImportDropFiles from "@/components/Home/ImportDropFiles.svelte";
 
   $: setDetailPromise = registerCollectionElementDetails();

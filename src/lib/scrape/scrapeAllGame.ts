@@ -2,7 +2,7 @@ import {
   commandGetAllGameCacheLastUpdated,
   commandUpdateAllGameCache,
 } from "@/lib/command";
-import { scrapeSql } from "@/lib/scrapeSql";
+import { scrapeSql } from "./scrapeSql";
 import type { AllGameCacheOne } from "@/lib/types";
 import { fetch } from "@tauri-apps/plugin-http";
 

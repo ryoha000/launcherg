@@ -1,5 +1,5 @@
 import { commandGetExePathByLnk, commandGetGameCacheById } from "@/lib/command";
-import { scrapeSql } from "@/lib/scrapeSql";
+import { scrapeSql } from "@/lib/scrape/scrapeSql";
 import { showErrorToast } from "@/lib/toast";
 
 export const useImportManually = () => {
