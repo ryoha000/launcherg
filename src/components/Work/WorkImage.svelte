@@ -1,6 +1,10 @@
 <script lang="ts">
-  export let name: string;
-  export let src: string;
+  interface Props {
+    name: string;
+    src: string;
+  }
+
+  let { name, src }: Props = $props();
 </script>
 
 <img alt="{name}_icon" {src} class="object-contain w-full" />

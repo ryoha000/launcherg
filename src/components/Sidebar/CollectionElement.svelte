@@ -3,9 +3,13 @@
   import { convertFileSrc } from "@tauri-apps/api/core";
   import { route } from "@mateothegreat/svelte5-router";
 
-  export let collectionElement: CollectionElement;
+  interface Props {
+    collectionElement: CollectionElement;
+  }
 
-  $: iconSrc = convertFileSrc(collectionElement.icon);
+  let { collectionElement }: Props = $props();
+
+  let iconSrc = $derived(convertFileSrc(collectionElement.icon));
 </script>
 
 <div

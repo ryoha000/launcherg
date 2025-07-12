@@ -10,8 +10,8 @@
   import type { AllGameCacheOne } from "@/lib/types";
   import { sidebarCollectionElements } from "@/store/sidebarCollectionElements";
 
-  let isOpenImportAutomatically = false;
-  let isOpenImportManually = false;
+  let isOpenImportAutomatically = $state(false);
+  let isOpenImportManually = $state(false);
 
   const importManually = async (arg: {
     exePath: string | null;
@@ -30,19 +30,23 @@
   <div class="text-(text-primary body) font-bold pl-2 mr-auto">
     登録したゲーム
   </div>
-  <APopover panelClass="right-0" let:close>
-    <Button
-      text="Add"
-      leftIcon="i-material-symbols-computer-outline-rounded"
-      appendClass="ml-auto"
-      slot="button"
-    />
-    <ImportPopover
-      on:close={() => close(null)}
-      on:startAuto={() => (isOpenImportAutomatically = true)}
-      on:startManual={() => (isOpenImportManually = true)}
-    />
-  </APopover>
+  <APopover panelClass="right-0" >
+    {#snippet button()}
+        <Button
+        text="Add"
+        leftIcon="i-material-symbols-computer-outline-rounded"
+        appendClass="ml-auto"
+        
+      />
+      {/snippet}
+    {#snippet children({ close })}
+        <ImportPopover
+        on:close={() => close(null)}
+        on:startAuto={() => (isOpenImportAutomatically = true)}
+        on:startManual={() => (isOpenImportManually = true)}
+      />
+          {/snippet}
+    </APopover>
 </div>
 {#if isOpenImportAutomatically}
   <ImportAutomatically bind:isOpen={isOpenImportAutomatically} />

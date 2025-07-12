@@ -1,4 +1,4 @@
-<svelte:options accessors />
+<svelte:options />
 
 <script lang="ts">
   import SimpleBar from "simplebar";
@@ -6,7 +6,7 @@
 
   const dispatcher = createEventDispatcher<{ scroll: { event: Event } }>();
 
-  let isHover = false;
+  let isHover = $state(false);
 
   const simplebar = (node: HTMLElement) => {
     let simplebar = new SimpleBar(node, {
@@ -42,18 +42,22 @@
     };
   };
 
-  export let scrollBy = (options?: ScrollToOptions | undefined): void => {
+  let { scrollBy = $bindable((options?: ScrollToOptions | undefined): void => {
     console.warn("scrollBy is not initialized");
-  };
+  }), children } = $props();
+
+  export {
+  	scrollBy,
+  }
 </script>
 
 <div class="w-full min-w-0">
   <div
     use:simplebar
     class="overflow-x-auto scroll-smooth"
-    on:mouseenter={() => (isHover = true)}
-    on:mouseleave={() => (isHover = false)}
+    onmouseenter={() => (isHover = true)}
+    onmouseleave={() => (isHover = false)}
   >
-    <slot />
+    {@render children?.()}
   </div>
 </div>

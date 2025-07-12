@@ -4,7 +4,11 @@
   import SimpleBar from "simplebar";
   import ADisclosure from "@/components/UI/ADisclosure.svelte";
 
-  export let collectionElement: CollectionElementsWithLabel[];
+  interface Props {
+    collectionElement: CollectionElementsWithLabel[];
+  }
+
+  let { collectionElement }: Props = $props();
 
   const simplebar = (node: HTMLElement) => {
     new SimpleBar(node, { scrollbarMinSize: 64 });

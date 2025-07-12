@@ -2,9 +2,13 @@
   import { works } from "@/store/works";
   import Work from "@/components/Work/Work.svelte";
 
-  export let params: { id: string };
+  interface Props {
+    params: { id: string };
+  }
 
-  $: workPromise = works.get(+params.id);
+  let { params }: Props = $props();
+
+  let workPromise = $derived(works.get(+params.id));
 </script>
 
 {#await workPromise}

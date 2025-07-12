@@ -8,7 +8,7 @@
   import { initializeAllGameCache } from "@/lib/scrape/scrapeAllGame";
   import ImportDropFiles from "@/components/Home/ImportDropFiles.svelte";
 
-  $: setDetailPromise = registerCollectionElementDetails();
+  let setDetailPromise = $derived(registerCollectionElementDetails());
 
   onMount(() => {
     initialize();

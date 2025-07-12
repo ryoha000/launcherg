@@ -2,15 +2,26 @@
   import { createPopover } from "svelte-headlessui";
   import { fly } from "svelte/transition";
 
-  export let isRelativeRoot = true;
-  export let panelClass = "";
+  interface Props {
+    isRelativeRoot?: boolean;
+    panelClass?: string;
+    button?: import('svelte').Snippet<[any]>;
+    children?: import('svelte').Snippet<[any]>;
+  }
+
+  let {
+    isRelativeRoot = true,
+    panelClass = "",
+    button,
+    children
+  }: Props = $props();
 
   const popover = createPopover({});
 </script>
 
 <div class={isRelativeRoot ? "relative" : ""}>
   <div use:popover.button>
-    <slot name="button" open={$popover.expanded} close={popover.close} />
+    {@render button?.({ open: $popover.expanded, close: popover.close, })}
   </div>
   {#if $popover.expanded}
     <div
@@ -18,7 +29,7 @@
       class="absolute z-10000 mt-2 border border-(border-primary solid) rounded bg-bg-secondary {panelClass}"
     >
       <div use:popover.panel>
-        <slot open={$popover.expanded} close={popover.close} />
+        {@render children?.({ open: $popover.expanded, close: popover.close, })}
       </div>
     </div>
   {/if}

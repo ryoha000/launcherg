@@ -1,6 +1,11 @@
 <script lang="ts">
-  export let noBorder = false;
-  export let label: string;
+  interface Props {
+    noBorder?: boolean;
+    label: string;
+    children?: import('svelte').Snippet;
+  }
+
+  let { noBorder = false, label, children }: Props = $props();
 </script>
 
 <div
@@ -15,5 +20,5 @@
     ? 'border-0px'
     : 'border-t-1px'}"
 >
-  <slot />
+  {@render children?.()}
 </div>

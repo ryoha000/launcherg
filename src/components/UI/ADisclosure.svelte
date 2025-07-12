@@ -2,8 +2,13 @@
   import { createDisclosure } from "svelte-headlessui";
   import { fly } from "svelte/transition";
 
-  export let label: string;
-  export let defaultOpen = false;
+  interface Props {
+    label: string;
+    defaultOpen?: boolean;
+    children?: import('svelte').Snippet;
+  }
+
+  let { label, defaultOpen = false, children }: Props = $props();
 
   const disclosure = createDisclosure({
     expanded: defaultOpen,
@@ -21,13 +26,13 @@
       <div
         class="i-material-symbols-arrow-drop-down ml-auto h-5 w-5 color-text-primary transition-all flex-shrink-0"
         class:rotate-180={$disclosure.expanded}
-      />
+></div>
     </div>
   </button>
   {#if $disclosure.expanded}
     <div transition:fly={{ y: -40, duration: 150 }}>
       <div use:disclosure.panel>
-        <slot />
+        {@render children?.()}
       </div>
     </div>
   {/if}

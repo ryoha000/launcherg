@@ -3,17 +3,37 @@
   import ModalBase from "@/components/UI/ModalBase.svelte";
   import { createEventDispatcher } from "svelte";
 
-  export let isOpen = false;
-  export let autofocusCloseButton = false;
-  export let maxWidth = "";
-  export let headerClass = "";
-  export let title = "";
-  export let confirmText = "";
-  export let cancelText = "Cancel";
-  export let withFooter = true;
-  export let withContentPadding = true;
-  export let fullmodal = false;
-  export let confirmDisabled = false;
+  interface Props {
+    isOpen?: boolean;
+    autofocusCloseButton?: boolean;
+    maxWidth?: string;
+    headerClass?: string;
+    title?: string;
+    confirmText?: string;
+    cancelText?: string;
+    withFooter?: boolean;
+    withContentPadding?: boolean;
+    fullmodal?: boolean;
+    confirmDisabled?: boolean;
+    children?: import('svelte').Snippet;
+    footer?: import('svelte').Snippet;
+  }
+
+  let {
+    isOpen = false,
+    autofocusCloseButton = false,
+    maxWidth = "",
+    headerClass = "",
+    title = "",
+    confirmText = "",
+    cancelText = "Cancel",
+    withFooter = true,
+    withContentPadding = true,
+    fullmodal = false,
+    confirmDisabled = false,
+    children,
+    footer
+  }: Props = $props();
 
   const dispatcher = createEventDispatcher<{
     confirm: {};
@@ -36,18 +56,18 @@
         {title}
       </div>
       <button
-        on:click={() => dispatcher("close")}
+        onclick={() => dispatcher("close")}
         class="ml-auto p-4 bg-transparent color-text-tertiary hover:color-text-primary transition-all"
         tabindex={autofocusCloseButton ? 0 : -1}
       >
-        <div class="w-5 h-5 i-iconoir-cancel" />
+        <div class="w-5 h-5 i-iconoir-cancel"></div>
       </button>
     </div>
     <div class:p-4={withContentPadding} class="overflow-y-auto">
-      <slot />
+      {@render children?.()}
     </div>
     {#if withFooter}
-      <slot name="footer">
+      {#if footer}{@render footer()}{:else}
         <div class="flex items-center p-4 border-(t-1px solid border-primary)">
           <div class="flex items-center ml-auto gap-2">
             <Button text={cancelText} on:click={() => dispatcher("cancel")} />
@@ -59,7 +79,7 @@
             />
           </div>
         </div>
-      </slot>
+      {/if}
     {/if}
   </div>
 </ModalBase>

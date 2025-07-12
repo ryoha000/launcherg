@@ -1,25 +1,41 @@
 <script lang="ts">
+  import { run } from 'svelte/legacy';
+
   import ButtonBase from "@/components/UI/ButtonBase.svelte";
   import { type Props as TippyOption } from "tippy.js";
 
-  export let leftIcon = "";
-  export let rightIcon = "";
-  export let appendClass = "";
-  export let text = "";
-  export let type: "button" | "submit" | undefined = undefined;
-  export let tooltip: Partial<TippyOption> | undefined = undefined;
-  export let variant: Variant = "normal";
-  export let disabled = false;
-  export let wrappable = false;
+  interface Props {
+    leftIcon?: string;
+    rightIcon?: string;
+    appendClass?: string;
+    text?: string;
+    type?: "button" | "submit" | undefined;
+    tooltip?: Partial<TippyOption> | undefined;
+    variant?: Variant;
+    disabled?: boolean;
+    wrappable?: boolean;
+  }
+
+  let {
+    leftIcon = "",
+    rightIcon = "",
+    appendClass = "",
+    text = "",
+    type = undefined,
+    tooltip = undefined,
+    variant = "normal",
+    disabled = false,
+    wrappable = false
+  }: Props = $props();
 
   let iconSizeClass = "w-4 h-4";
 
-  let iconVarinatClass = "color-ui-tertiary";
-  $: {
+  let iconVarinatClass = $state("color-ui-tertiary");
+  run(() => {
     if (variant === "success") {
       iconVarinatClass = "color-text-white";
     }
-  }
+  });
 </script>
 
 <ButtonBase
@@ -33,7 +49,7 @@
   on:click
 >
   {#if leftIcon}
-    <div class={`${iconVarinatClass} ${iconSizeClass} ${leftIcon}`} />
+    <div class={`${iconVarinatClass} ${iconSizeClass} ${leftIcon}`}></div>
   {/if}
   {#if text}
     <div
@@ -43,6 +59,6 @@
     </div>
   {/if}
   {#if rightIcon}
-    <div class={`${iconVarinatClass} ${iconSizeClass} ${rightIcon}`} />
+    <div class={`${iconVarinatClass} ${iconSizeClass} ${rightIcon}`}></div>
   {/if}
 </ButtonBase>

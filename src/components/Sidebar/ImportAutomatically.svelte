@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { preventDefault } from 'svelte/legacy';
+
   import Button from "@/components/UI/Button.svelte";
   import Checkbox from "@/components/UI/Checkbox.svelte";
   import Modal from "@/components/UI/Modal.svelte";
@@ -16,13 +18,17 @@
   import { registerCollectionElementDetails } from "@/lib/registerCollectionElementDetails";
   import InputPath from "@/components/UI/InputPath.svelte";
 
-  let isLoading = false;
+  let isLoading = $state(false);
 
-  export let isOpen: boolean;
+  interface Props {
+    isOpen: boolean;
+  }
 
-  let inputContainer: HTMLDivElement | null = null;
+  let { isOpen = $bindable() }: Props = $props();
 
-  let useCache = true;
+  let inputContainer: HTMLDivElement | null = $state(null);
+
+  let useCache = $state(true);
   const [paths, getPaths] = createLocalStorageWritable<
     { id: number; path: string }[]
   >("auto-import-dir-paths", [
@@ -80,8 +86,8 @@
     isOpen = false;
   };
 
-  let processFileNums = 0;
-  let processedFileNums = 0;
+  let processFileNums = $state(0);
+  let processedFileNums = $state(0);
 
   onMount(async () => {
     const defaultPaths = await commandGetDefaultImportDirs();
@@ -146,7 +152,7 @@
         </div>
         <form
           class="flex flex-col gap-2"
-          on:submit|preventDefault={addEmptyPath}
+          onsubmit={preventDefault(addEmptyPath)}
         >
           {#each $paths as path, i (path.id)}
             <div class="flex items-end gap-8" bind:this={inputContainer}>
@@ -161,14 +167,14 @@
                 />
               </div>
               <button
-                on:click={() => removePath(i)}
+                onclick={() => removePath(i)}
                 type="button"
                 tabindex={-1}
                 class="ml-auto p-2 bg-transparent"
               >
                 <div
                   class="w-5 h-5 i-iconoir-cancel color-text-tertiary hover:color-text-primary transition-all"
-                />
+></div>
               </button>
             </div>
           {/each}
@@ -183,7 +189,7 @@
       </div>
       <div class="space-y-2">
         <div class="text-(text-primary h4) font-medium">オプション</div>
-        <!-- svelte-ignore a11y-label-has-associated-control -->
+        <!-- svelte-ignore a11y_label_has_associated_control -->
         <label class="flex gap-2 cursor-pointer">
           <Checkbox bind:value={useCache} />
           <div>
@@ -204,7 +210,7 @@
       <div class="flex-(~ col) items-center justify-center gap-5 w-full p-12">
         <div
           class="w-20 h-20 border-(12px solid #D9D9D9 t-#2D2D2D t-rounded) rounded-full animate-spin"
-        />
+></div>
         <div class="text-(text-primary h3) font-bold">処理中</div>
         {#if processFileNums}
           <div class="text-(text-primary body) font-medium">

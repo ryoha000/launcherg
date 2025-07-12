@@ -5,7 +5,11 @@
   import WorkMain from "@/components/Work/WorkMain.svelte";
   import type { Work } from "@/lib/types";
 
-  export let work: Work;
+  interface Props {
+    work: Work;
+  }
+
+  let { work }: Props = $props();
 </script>
 
 <div class="h-full w-full overflow-x-hidden overflow-y-auto">

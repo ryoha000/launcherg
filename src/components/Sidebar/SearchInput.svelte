@@ -1,12 +1,16 @@
 <script lang="ts">
-  export let value: string;
-  export let placeholder: string = "";
+  interface Props {
+    value: string;
+    placeholder?: string;
+  }
 
-  let input: HTMLInputElement | null = null;
+  let { value = $bindable(), placeholder = "" }: Props = $props();
+
+  let input: HTMLInputElement | null = $state(null);
 </script>
 
 <svelte:window
-  on:keydown={(e) => {
+  onkeydown={(e) => {
     if (e.key === "/") {
       const active = document.activeElement;
       if (
@@ -29,7 +33,7 @@
   <div
     class="group w-full flex items-center gap-2 px-2 py-1 border border-(border-primary solid) rounded bg-bg-secondary hover:bg-bg-primary focus-within:(border-transparent bg-bg-primary) transition-all relative"
   >
-    <div class="w-5 h-5 i-material-symbols-search color-text-primary" />
+    <div class="w-5 h-5 i-material-symbols-search color-text-primary"></div>
     <input
       bind:this={input}
       bind:value
@@ -38,9 +42,9 @@
     />
     {#if value !== ""}
       <button
-        on:click={() => (value = "")}
+        onclick={() => (value = "")}
         class="absolute right-2 w-5 h-5 i-material-symbols-cancel-outline-rounded color-text-primary"
-      />
+></button>
     {/if}
   </div>
 </div>

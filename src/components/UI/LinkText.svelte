@@ -4,10 +4,20 @@
 
   const dispatch = createEventDispatcher();
 
-  export let href: string;
-  export let text: string = "";
 
-  export let intercept: boolean = false;
+  interface Props {
+    href: string;
+    text?: string;
+    intercept?: boolean;
+    children?: import('svelte').Snippet;
+  }
+
+  let {
+    href,
+    text = "",
+    intercept = false,
+    children
+  }: Props = $props();
 
   const handleClick = () => {
     if (intercept) {
@@ -19,10 +29,10 @@
 </script>
 
 <button
-  on:click={handleClick}
+  onclick={handleClick}
   class="text-(body2 text-link) block whitespace-nowrap underline-text-link hover:underline bg-transparent transition-all underline-none"
 >
-  <slot>
+  {#if children}{@render children()}{:else}
     {text}
-  </slot>
+  {/if}
 </button>

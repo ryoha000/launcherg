@@ -6,10 +6,14 @@
   import type { Work } from "@/lib/types";
   import { seiya } from "@/store/seiya";
 
-  export let work: Work;
+  interface Props {
+    work: Work;
+  }
 
-  $: seiyaUrlPromise = seiya.getUrl(work.name);
-  $: summaryValue = [
+  let { work }: Props = $props();
+
+  let seiyaUrlPromise = $derived(seiya.getUrl(work.name));
+  let summaryValue = $derived([
     {
       label: "ブランド",
       value: work.brandName,
@@ -19,7 +23,7 @@
     { label: "平均プレイ時間", value: `${work.statistics.playTime}` },
     { label: "中央値", value: `${work.statistics.median}` },
     { label: "データ数", value: `${work.statistics.count}` },
-  ];
+  ]);
 </script>
 
 <div class="space-y-4 max-w-full">

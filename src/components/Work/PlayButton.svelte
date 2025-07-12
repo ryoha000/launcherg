@@ -18,31 +18,35 @@
     variant="success"
     on:click={() => dispather("play", { isAdmin: undefined })}
   />
-  <APopover let:open let:close>
-    <ButtonBase
-      appendClass="h-8 w-8 flex items-center justify-center rounded-l-0"
-      tooltip={{
-        content: "このゲームの設定",
-        placement: "bottom",
-        theme: "default",
-        delay: 1000,
-      }}
-      variant="success"
-      slot="button"
-    >
-      <div
-        class="color-text-white w-5 h-5 i-material-symbols-arrow-drop-down"
-        class:rotate-180={open}
+  <APopover  >
+    {#snippet button()}
+        <ButtonBase
+        appendClass="h-8 w-8 flex items-center justify-center rounded-l-0"
+        tooltip={{
+          content: "このゲームの設定",
+          placement: "bottom",
+          theme: "default",
+          delay: 1000,
+        }}
+        variant="success"
+        
+      >
+        <div
+          class="color-text-white w-5 h-5 i-material-symbols-arrow-drop-down"
+          class:rotate-180={open}
+  ></div>
+      </ButtonBase>
+      {/snippet}
+    {#snippet children({ open, close })}
+        <PlayPopover
+        on:close={() => close(null)}
+        on:play={() => {
+          dispather("play", { isAdmin: false });
+        }}
+        on:playAdmin={() => {
+          dispather("play", { isAdmin: true });
+        }}
       />
-    </ButtonBase>
-    <PlayPopover
-      on:close={() => close(null)}
-      on:play={() => {
-        dispather("play", { isAdmin: false });
-      }}
-      on:playAdmin={() => {
-        dispather("play", { isAdmin: true });
-      }}
-    />
-  </APopover>
+          {/snippet}
+    </APopover>
 </div>

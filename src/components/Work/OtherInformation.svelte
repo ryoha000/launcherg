@@ -10,10 +10,14 @@
   import { sidebarCollectionElements } from "@/store/sidebarCollectionElements";
   import { deleteTab, tabs, selected } from "@/store/tabs";
 
-  export let isOpen: boolean;
-  export let element: CollectionElement;
+  interface Props {
+    isOpen: boolean;
+    element: CollectionElement;
+  }
 
-  $: gameCache = commandGetGameCacheById(element.id);
+  let { isOpen = $bindable(), element }: Props = $props();
+
+  let gameCache = $derived(commandGetGameCacheById(element.id));
 </script>
 
 <Modal

@@ -27,9 +27,13 @@
   import QrCode from "@/components/Work/QRCode.svelte";
   import { startProcessMap } from "@/store/startProcessMap";
 
-  export let name: string;
-  export let id: number;
-  export let seiyaUrl: string;
+  interface Props {
+    name: string;
+    id: number;
+    seiyaUrl: string;
+  }
+
+  let { name, id, seiyaUrl }: Props = $props();
 
   const isAdminRecord = localStorageWritable<Record<number, boolean>>(
     "play-admin-cache",
@@ -63,7 +67,7 @@
     }
   };
 
-  let isLike = false;
+  let isLike = $state(false);
 
   const toggleLike = async () => {
     await commandUpdateElementLike(id, !isLike);
@@ -71,14 +75,14 @@
     sidebarCollectionElements.updateLike(id, isLike);
   };
 
-  $: playTimePromise = commandGetPlayTomeMinutes(id);
-  $: elementPromise = (async () => {
+  let playTimePromise = $derived(commandGetPlayTomeMinutes(id));
+  let elementPromise = $derived((async () => {
     const element = await commandGetCollectionElement(id);
     isLike = !!element.likeAt;
     return element;
-  })();
+  })());
 
-  let isOpenImportManually = false;
+  let isOpenImportManually = $state(false);
   const onChangeGame = async (arg: {
     exePath: string | null;
     lnkPath: string | null;
@@ -97,9 +101,9 @@
     isOpenImportManually = false;
   };
 
-  let isOpenDelete = false;
-  let isOpenOtherInformation = false;
-  let isOpenQrCode = false;
+  let isOpenDelete = $state(false);
+  let isOpenOtherInformation = $state(false);
+  let isOpenQrCode = $state(false);
 </script>
 
 {#await elementPromise then element}
@@ -131,17 +135,21 @@
           : "i-material-symbols-favorite-outline-rounded"}
         on:click={toggleLike}
       />
-      <APopover let:close panelClass="right-0">
-        <ButtonIcon icon="i-material-symbols-menu-rounded" slot="button" />
-        <SettingPopover
-          on:close={() => close(null)}
-          on:selectChange={() => (isOpenImportManually = true)}
-          on:selectDelete={() => (isOpenDelete = true)}
-          on:selectOpen={() =>
-            commandOpenFolder(element.exePath ?? element.lnkPath)}
-          on:selectOtherInfomation={() => (isOpenOtherInformation = true)}
-        />
-      </APopover>
+      <APopover  panelClass="right-0">
+        {#snippet button()}
+                <ButtonIcon icon="i-material-symbols-menu-rounded"  />
+              {/snippet}
+        {#snippet children({ close })}
+                <SettingPopover
+            on:close={() => close(null)}
+            on:selectChange={() => (isOpenImportManually = true)}
+            on:selectDelete={() => (isOpenDelete = true)}
+            on:selectOpen={() =>
+              commandOpenFolder(element.exePath ?? element.lnkPath)}
+            on:selectOtherInfomation={() => (isOpenOtherInformation = true)}
+          />
+                      {/snippet}
+            </APopover>
     </div>
   </div>
   <ImportManually

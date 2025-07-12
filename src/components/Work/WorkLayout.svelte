@@ -5,8 +5,12 @@
   import type { Work } from "@/lib/types";
   import { onMount } from "svelte";
 
-  export let work: Work;
-  let isLandscape = false;
+  interface Props {
+    work: Work;
+  }
+
+  let { work }: Props = $props();
+  let isLandscape = $state(false);
   onMount(() => {
     const image = new Image();
     image.addEventListener("load", () => {

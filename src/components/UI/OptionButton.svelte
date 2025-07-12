@@ -1,12 +1,24 @@
 <script lang="ts">
-  export let selected: boolean = false;
-  export let text: string;
-  export let withBorderTop = true;
-  export let showIcon = false;
+  import { createBubbler } from 'svelte/legacy';
+
+  const bubble = createBubbler();
+  interface Props {
+    selected?: boolean;
+    text: string;
+    withBorderTop?: boolean;
+    showIcon?: boolean;
+  }
+
+  let {
+    selected = false,
+    text,
+    withBorderTop = true,
+    showIcon = false
+  }: Props = $props();
 </script>
 
 <button
-  on:click
+  onclick={bubble('click')}
   class="p-(x-4 y-2) flex items-center bg-transparent transition-all hover:(bg-bg-button-hover) w-full {withBorderTop &&
     'border-(t-1px solid border-primary)'}"
 >
@@ -14,7 +26,7 @@
     <div
       class="h-5 w-5 color-text-primary"
       class:i-material-symbols-check-small-rounded={selected}
-    />
+></div>
   {/if}
   <div class="text-(text-primary body2) font-bold whitespace-nowrap">
     {text}

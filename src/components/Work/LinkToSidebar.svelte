@@ -1,7 +1,11 @@
 <script lang="ts">
   import LinkText from "@/components/UI/LinkText.svelte";
   import { query } from "@/store/query";
-  export let value: string;
+  interface Props {
+    value: string;
+  }
+
+  let { value }: Props = $props();
 
   const searchInSidebar = () => {
     query.set(value);

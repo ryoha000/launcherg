@@ -2,9 +2,13 @@
   import { onMount } from "svelte";
   // @ts-ignore
   import QRious from "qrious";
-  export let value: string;
+  interface Props {
+    value: string;
+  }
 
-  let canvas: HTMLCanvasElement | null = null;
+  let { value }: Props = $props();
+
+  let canvas: HTMLCanvasElement | null = $state(null);
 
   onMount(() => {
     if (canvas) {
@@ -18,4 +22,4 @@
   });
 </script>
 
-<canvas bind:this={canvas} />
+<canvas bind:this={canvas}></canvas>

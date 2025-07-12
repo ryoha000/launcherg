@@ -12,10 +12,14 @@
   import { startProcessMap } from "@/store/startProcessMap";
   import { showErrorToast } from "@/lib/toast";
 
-  export let params: { id: string };
-  $: id = +params.id;
+  interface Props {
+    params: { id: string };
+  }
 
-  let height: number;
+  let { params }: Props = $props();
+  let id = $derived(+params.id);
+
+  let height: number = $state();
 
   const mde = (node: HTMLElement) => {
     const easyMDE = new EasyMDE({
@@ -158,5 +162,5 @@
 </script>
 
 <div class="w-full h-full min-w-0" bind:clientHeight={height}>
-  <textarea id="mde" use:mde />
+  <textarea id="mde" use:mde></textarea>
 </div>

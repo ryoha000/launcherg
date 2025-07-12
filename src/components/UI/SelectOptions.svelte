@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { run } from 'svelte/legacy';
+
   import Input from "@/components/UI/Input.svelte";
   import { useFilter } from "@/lib/filter";
   import { type Option } from "@/lib/trieFilter";
@@ -7,18 +9,30 @@
   import SimpleBar from "simplebar";
   import { createEventDispatcher } from "svelte";
 
-  export let options: Option<string | number>[];
-  export let title: string | undefined = undefined;
-  export let enableFilter: boolean = false;
-  export let showSelectedCheck = true;
-  export let filterPlaceholder = "";
-  export let bottomCreateButtonText = "";
-  export let value: string | number;
+  interface Props {
+    options: Option<string | number>[];
+    title?: string | undefined;
+    enableFilter?: boolean;
+    showSelectedCheck?: boolean;
+    filterPlaceholder?: string;
+    bottomCreateButtonText?: string;
+    value: string | number;
+  }
+
+  let {
+    options,
+    title = undefined,
+    enableFilter = false,
+    showSelectedCheck = true,
+    filterPlaceholder = "",
+    bottomCreateButtonText = "",
+    value = $bindable()
+  }: Props = $props();
 
   const [writableOptions, getOptions] = createWritable(options);
-  $: {
+  run(() => {
     writableOptions.set(options);
-  }
+  });
 
   const { filtered } = useFilter(query, writableOptions, getOptions);
 
@@ -57,7 +71,7 @@
                     ? "border-(b-1px solid border-primary)"
                     : ""
                 } hover:bg-bg-tertiary w-full flex items-center gap-2 transition-all cursor-pointer`}
-        on:click={() => {
+        onclick={() => {
           value = option.value;
           dispatcher("select", { value: option.value });
           dispatcher("close");
@@ -68,7 +82,7 @@
             class="h-5 w-5 color-text-primary"
             class:i-material-symbols-check-small-rounded={value ===
               option.value}
-          />
+></div>
         {/if}
         <div class="text-(body2 text-primary) font-medium">
           {option.label}
@@ -79,9 +93,9 @@
   {#if bottomCreateButtonText}
     <button
       class="bg-transparent hover:bg-bg-tertiary transition-all w-full p-(l-4 r-5 y-2) flex items-center border-(t-1px solid border-primary)"
-      on:click={() => dispatcher("create")}
+      onclick={() => dispatcher("create")}
     >
-      <div class="w-5 h-5 i-iconoir-plus color-text-primary" />
+      <div class="w-5 h-5 i-iconoir-plus color-text-primary"></div>
       <div class="text-(text-primary body2 left) font-bold whitespace-nowrap">
         {bottomCreateButtonText}
       </div>

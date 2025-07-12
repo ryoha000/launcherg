@@ -1,9 +1,8 @@
 <script lang="ts">
+  import { run, createBubbler } from 'svelte/legacy';
+
+  const bubble = createBubbler();
   import tippy, { type Props as TippyOption } from "tippy.js";
-  export let appendClass = "";
-  export let type: "button" | "submit" | undefined = undefined;
-  export let tooltip: Partial<TippyOption> | undefined = undefined;
-  export let disabled = false;
 
   const tooltipAction = (node: HTMLElement) => {
     if (!tooltip) {
@@ -25,10 +24,26 @@
     };
   };
 
-  export let variant: Variant = "normal";
+  interface Props {
+    appendClass?: string;
+    type?: "button" | "submit" | undefined;
+    tooltip?: Partial<TippyOption> | undefined;
+    disabled?: boolean;
+    variant?: Variant;
+    children?: import('svelte').Snippet;
+  }
 
-  let buttonVariantClass = "";
-  $: {
+  let {
+    appendClass = "",
+    type = undefined,
+    tooltip = undefined,
+    disabled = false,
+    variant = "normal",
+    children
+  }: Props = $props();
+
+  let buttonVariantClass = $state("");
+  run(() => {
     switch (variant) {
       case "normal":
         buttonVariantClass =
@@ -51,7 +66,7 @@
         const _: never = variant;
         break;
     }
-  }
+  });
 </script>
 
 <button
@@ -59,7 +74,7 @@
   {type}
   {disabled}
   class={`rounded transition-all ${buttonVariantClass} ${appendClass}`}
-  on:click
+  onclick={bubble('click')}
 >
-  <slot />
+  {@render children?.()}
 </button>

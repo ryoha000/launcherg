@@ -1,9 +1,16 @@
 <script lang="ts">
+  import { createBubbler, stopPropagation } from 'svelte/legacy';
+
+  const bubble = createBubbler();
   import { fly } from "svelte/transition";
 
-  export let appendClass: string;
-  export let back: boolean = false;
-  export let show: boolean;
+  interface Props {
+    appendClass: string;
+    back?: boolean;
+    show: boolean;
+  }
+
+  let { appendClass, back = false, show }: Props = $props();
 </script>
 
 {#if show}
@@ -15,11 +22,11 @@
   >
     <button
       class="bg-transparent transition-all hover:bg-bg-button-hover rounded-full p-1"
-      on:click|stopPropagation
+      onclick={stopPropagation(bubble('click'))}
     >
       <div
         class="i-material-symbols-arrow-forward-ios-rounded w-4 h-4 color-text-primary"
-      />
+></div>
     </button>
   </div>
 {/if}

@@ -1,10 +1,17 @@
 <script lang="ts">
+  import { createBubbler } from 'svelte/legacy';
+
+  const bubble = createBubbler();
   import {
     ATTRIBUTE_LABELS,
     type Attribute,
   } from "@/components/Sidebar/searchAttributes";
 
-  export let attribute: Attribute;
+  interface Props {
+    attribute: Attribute;
+  }
+
+  let { attribute }: Props = $props();
 </script>
 
 <button
@@ -13,7 +20,7 @@
   class:hover:bg-bg-button-hover={!attribute.enabled}
   class:bg-text-primary={attribute.enabled}
   class:hover:bg-text-secondary={attribute.enabled}
-  on:click
+  onclick={bubble('click')}
 >
   <div
     class="text-(body3) whitespace-nowrap font-medium"

@@ -1,16 +1,22 @@
 <script lang="ts">
+  import { stopPropagation } from 'svelte/legacy';
+
   import { deleteTab, type Tab } from "@/store/tabs";
   import { goto } from "@mateothegreat/svelte5-router";
 
-  export let tab: Tab;
-  export let selected: boolean;
+  interface Props {
+    tab: Tab;
+    selected: boolean;
+  }
 
-  $: tabIcon =
-    tab.type === "works"
+  let { tab, selected }: Props = $props();
+
+  let tabIcon =
+    $derived(tab.type === "works"
       ? "i-material-symbols-computer-outline-rounded color-accent-accent"
       : tab.type === "memos"
         ? "i-material-symbols-drive-file-rename-outline color-accent-edit"
-        : "";
+        : "");
 
   const closeWheelClick = (e: MouseEvent) => {
     if (e.button === 1) {
@@ -19,17 +25,17 @@
   };
 </script>
 
-<!-- svelte-ignore a11y-click-events-have-key-events -->
+<!-- svelte-ignore a11y_click_events_have_key_events -->
 <div
-  on:click={() => goto(`/${tab.type}/${tab.workId}`)}
-  on:mousedown={closeWheelClick}
+  onclick={() => goto(`/${tab.type}/${tab.workId}`)}
+  onmousedown={closeWheelClick}
 >
   <div
     class="flex items-center gap-2 px-3 h-10 transition-all cursor-pointer border-(b-1px r-1px solid border-primary) group max-w-60 {selected
       ? 'bg-bg-primary border-b-transparent'
       : 'bg-bg-disabled hover:bg-bg-primary'}"
   >
-    <div class="{tabIcon} w-5 h-5 flex-shrink-0" />
+    <div class="{tabIcon} w-5 h-5 flex-shrink-0"></div>
     <div
       class="text-body2 whitespace-nowrap text-ellipsis overflow-hidden {selected
         ? 'text-text-primary'
@@ -44,8 +50,8 @@
         class="group-hover:opacity-100 opacity-0 transition-all w-5 h-5 i-iconoir-cancel {selected
           ? 'color-text-secondary'
           : 'color-text-tertiary'}"
-        on:click|stopPropagation={() => deleteTab(tab.id)}
-      />
+        onclick={stopPropagation(() => deleteTab(tab.id))}
+></button>
     </div>
   </div>
 </div>

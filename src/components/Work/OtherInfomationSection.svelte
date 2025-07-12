@@ -1,6 +1,10 @@
 <script lang="ts">
-  export let label: string;
-  export let value: string | number | undefined | null;
+  interface Props {
+    label: string;
+    value: string | number | undefined | null;
+  }
+
+  let { label, value }: Props = $props();
 </script>
 
 <div class="space-y-2">

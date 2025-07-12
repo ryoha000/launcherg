@@ -30,7 +30,7 @@
     $shown.flatMap((v) => v.elements)
   );
 
-  let disabledRefetchThumbnail = false;
+  let disabledRefetchThumbnail = $state(false);
   const refetchThumbnail = async () => {
     try {
       disabledRefetchThumbnail = true;
@@ -53,85 +53,89 @@
 
 <VirtualScroller
   className="p-8"
-  let:containerHeight
-  let:contentsWidth
-  let:contentsScrollY
-  let:setVirtualHeight
-  let:contentsScrollTo
+  
+  
+  
+  
+  
 >
-  <div class="space-y-8 mb-2" slot="header">
-    <div class="flex items-center gap-2 w-full">
-      <img src={Icon} alt="launcherg icon" class="h-12" />
-      <div class="font-logo text-(8 text-primary)">Launcherg</div>
-    </div>
-    {#if $sidebarCollectionElements.length === 0 && isOpenGettingStarted}
-      <div
-        class="space-y-2 p-4 border-(border-primary solid ~) rounded max-w-120"
-      >
-        <div class="flex items-center">
-          <div class="text-(text-primary h3) font-medium">Getting started</div>
-        </div>
-        <div class="text-(text-tertiary body)">
-          持っているゲームをこのランチャーに登録してみましょう。左のサイドバーにある「Add」ボタンから自動で追加できます。
-        </div>
+  {#snippet header()}
+    <div class="space-y-8 mb-2" >
+      <div class="flex items-center gap-2 w-full">
+        <img src={Icon} alt="launcherg icon" class="h-12" />
+        <div class="font-logo text-(8 text-primary)">Launcherg</div>
       </div>
-    {/if}
-    <div class="space-y-2">
-      <div class="text-(text-primary h3) font-medium">Help</div>
-      <LinkText
-        href="https://youtu.be/GCTj6eRRgAM?si=WRFuBgNErwTJsNnk"
-        text="1分でわかる Launcherg"
-      />
-      <LinkText
-        href="https://ryoha000.hatenablog.com/entry/2023/09/24/003605"
-        text="よくある Q&A"
-      />
-    </div>
-    <div class="space-y-2">
-      <div class="text-(text-primary h3) font-medium">Memo</div>
-      {#await memoPromises then elements}
-        {#if elements.length === 0 && $sidebarCollectionElements.length !== 0}
-          <div
-            class="space-y-2 p-4 border-(border-primary solid ~) rounded max-w-120"
-          >
-            <div class="flex items-center">
-              <div class="text-(text-primary h3) font-medium">メモ機能</div>
-            </div>
-            <div class="text-(text-tertiary body)">
-              このアプリにはメモ機能があります。サイドバーからゲームを選択して「Memo」ボタンを押すことでそのゲームについてメモを取ることができます。
-            </div>
+      {#if $sidebarCollectionElements.length === 0 && isOpenGettingStarted}
+        <div
+          class="space-y-2 p-4 border-(border-primary solid ~) rounded max-w-120"
+        >
+          <div class="flex items-center">
+            <div class="text-(text-primary h3) font-medium">Getting started</div>
           </div>
-        {:else}
-          <div class="gap-1 flex-(~ col)">
-            {#each elements as element (element.id)}
-              <a
-                use:route
-                href="/memos/{element.id}?gamename={element.gamename}"
-                class="text-(text-link body2) hover:underline-(1px text-link)"
-              >
-                メモ - {element.gamename}
-              </a>
-            {/each}
+          <div class="text-(text-tertiary body)">
+            持っているゲームをこのランチャーに登録してみましょう。左のサイドバーにある「Add」ボタンから自動で追加できます。
           </div>
-        {/if}
-      {/await}
+        </div>
+      {/if}
+      <div class="space-y-2">
+        <div class="text-(text-primary h3) font-medium">Help</div>
+        <LinkText
+          href="https://youtu.be/GCTj6eRRgAM?si=WRFuBgNErwTJsNnk"
+          text="1分でわかる Launcherg"
+        />
+        <LinkText
+          href="https://ryoha000.hatenablog.com/entry/2023/09/24/003605"
+          text="よくある Q&A"
+        />
+      </div>
+      <div class="space-y-2">
+        <div class="text-(text-primary h3) font-medium">Memo</div>
+        {#await memoPromises then elements}
+          {#if elements.length === 0 && $sidebarCollectionElements.length !== 0}
+            <div
+              class="space-y-2 p-4 border-(border-primary solid ~) rounded max-w-120"
+            >
+              <div class="flex items-center">
+                <div class="text-(text-primary h3) font-medium">メモ機能</div>
+              </div>
+              <div class="text-(text-tertiary body)">
+                このアプリにはメモ機能があります。サイドバーからゲームを選択して「Memo」ボタンを押すことでそのゲームについてメモを取ることができます。
+              </div>
+            </div>
+          {:else}
+            <div class="gap-1 flex-(~ col)">
+              {#each elements as element (element.id)}
+                <a
+                  use:route
+                  href="/memos/{element.id}?gamename={element.gamename}"
+                  class="text-(text-link body2) hover:underline-(1px text-link)"
+                >
+                  メモ - {element.gamename}
+                </a>
+              {/each}
+            </div>
+          {/if}
+        {/await}
+      </div>
+      <div class="flex items-center gap-4">
+        <h3 class="text-(text-primary h3) font-medium">登録したゲーム</h3>
+        <Button
+          leftIcon="i-material-symbols-refresh-rounded"
+          text="サムネイルを再取得する"
+          disabled={disabledRefetchThumbnail}
+          on:click={refetchThumbnail}
+        />
+      </div>
     </div>
-    <div class="flex items-center gap-4">
-      <h3 class="text-(text-primary h3) font-medium">登録したゲーム</h3>
-      <Button
-        leftIcon="i-material-symbols-refresh-rounded"
-        text="サムネイルを再取得する"
-        disabled={disabledRefetchThumbnail}
-        on:click={refetchThumbnail}
-      />
-    </div>
-  </div>
-  <VirtualScrollerMasonry
-    elements={flattenShown}
-    {setVirtualHeight}
-    {contentsScrollY}
-    {contentsWidth}
-    {containerHeight}
-    {contentsScrollTo}
-  />
+  {/snippet}
+  {#snippet children({ containerHeight, contentsWidth, contentsScrollY, setVirtualHeight, contentsScrollTo })}
+    <VirtualScrollerMasonry
+      elements={flattenShown}
+      {setVirtualHeight}
+      {contentsScrollY}
+      {contentsWidth}
+      {containerHeight}
+      {contentsScrollTo}
+    />
+  {/snippet}
 </VirtualScroller>

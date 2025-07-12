@@ -15,9 +15,9 @@
   >
     <div class="whitespace-nowrap">Select adding game option</div>
     <button
-      on:click={() => dispatcher("close")}
+      onclick={() => dispatcher("close")}
       class="ml-auto w-5 h-5 i-iconoir-cancel color-text-tertiary hover:color-text-primary transition-all"
-    />
+></button>
   </div>
   <OptionButton
     text="自動でフォルダから追加"

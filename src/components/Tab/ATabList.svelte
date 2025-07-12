@@ -13,6 +13,6 @@
     </div>
     <div
       class="w-full h-full bg-bg-disabled border-(b-1px solid border-primary)"
-    />
+></div>
   </div>
 </ScrollableHorizontal>

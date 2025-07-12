@@ -35,9 +35,9 @@
     })
   );
 
-  let isOpenImportFileDrop = false;
-  let importFileDropPathIndex = -1;
-  let importFileDropPaths: string[] = [];
+  let isOpenImportFileDrop = $state(false);
+  let importFileDropPathIndex = $state(-1);
+  let importFileDropPaths: string[] = $state([]);
 
   const next = () => {
     if (importFileDropPathIndex < importFileDropPaths.length - 1) {

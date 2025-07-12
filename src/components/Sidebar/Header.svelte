@@ -24,6 +24,6 @@
   >
     <div
       class="i-material-symbols-left-panel-close-outline w-6 h-6 color-text-primary"
-    />
+></div>
   </ButtonBase>
 </div>

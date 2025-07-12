@@ -13,16 +13,20 @@
   import ScrollableHorizontal from "@/components/UI/ScrollableHorizontal.svelte";
   import { createEventDispatcher, type SvelteComponent } from "svelte";
 
-  export let query: string;
-  export let order: SortOrder;
-  export let attributes: Attribute[];
+  interface Props {
+    query: string;
+    order: SortOrder;
+    attributes: Attribute[];
+  }
+
+  let { query = $bindable(), order = $bindable(), attributes }: Props = $props();
 
   const dispatcher = createEventDispatcher<{
     toggleAttributeEnabled: { key: AttributeKey };
   }>();
 
-  let isShowBack = false;
-  let isShowForward = true;
+  let isShowBack = $state(false);
+  let isShowForward = $state(true);
   const onScroll = (e: Event) => {
     const element = e.target as HTMLElement;
     const rect = element.getBoundingClientRect();
@@ -35,7 +39,7 @@
     isShowForward = right > 0;
   };
 
-  let scrollable: SvelteComponent;
+  let scrollable: SvelteComponent = $state();
 </script>
 
 <div class="space-y-1 w-full">
@@ -46,23 +50,27 @@
         placeholder="Filter by title, brand and more"
       />
     </div>
-    <APopover panelClass="right-0" let:close>
-      <ButtonBase
-        appendClass="h-8 w-8 flex items-center justify-center"
-        tooltip={{
-          content: "ゲームの並べ替え",
-          placement: "bottom",
-          theme: "default",
-          delay: 1000,
-        }}
-        slot="button"
-      >
-        <div
-          class="color-ui-tertiary w-5 h-5 i-material-symbols-sort-rounded"
-        />
-      </ButtonBase>
-      <SortPopover bind:value={order} on:close={() => close(null)} />
-    </APopover>
+    <APopover panelClass="right-0" >
+      {#snippet button()}
+            <ButtonBase
+          appendClass="h-8 w-8 flex items-center justify-center"
+          tooltip={{
+            content: "ゲームの並べ替え",
+            placement: "bottom",
+            theme: "default",
+            delay: 1000,
+          }}
+          
+        >
+          <div
+            class="color-ui-tertiary w-5 h-5 i-material-symbols-sort-rounded"
+  ></div>
+        </ButtonBase>
+          {/snippet}
+      {#snippet children({ close })}
+            <SortPopover bind:value={order} on:close={() => close(null)} />
+                {/snippet}
+        </APopover>
   </div>
   <div class="relative hide-scrollbar">
     <ScrollableHorizontal

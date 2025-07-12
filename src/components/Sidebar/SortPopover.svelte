@@ -3,7 +3,11 @@
   import OptionButton from "@/components/UI/OptionButton.svelte";
   import { createEventDispatcher } from "svelte";
 
-  export let value: SortOrder;
+  interface Props {
+    value: SortOrder;
+  }
+
+  let { value = $bindable() }: Props = $props();
   const dispatcher = createEventDispatcher<{ close: {} }>();
 
   const sortOrders: SortOrder[] = [
@@ -24,9 +28,9 @@
   >
     <div>Select sort option</div>
     <button
-      on:click={() => dispatcher("close")}
+      onclick={() => dispatcher("close")}
       class="ml-auto w-5 h-5 i-iconoir-cancel color-text-tertiary hover:color-text-primary transition-all"
-    />
+></button>
   </div>
   {#each sortOrders as sortOrder (sortOrder)}
     <OptionButton

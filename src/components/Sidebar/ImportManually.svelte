@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { run } from 'svelte/legacy';
+
   import Input from "@/components/UI/Input.svelte";
   import InputPath from "@/components/UI/InputPath.svelte";
   import Modal from "@/components/UI/Modal.svelte";
@@ -7,12 +9,22 @@
   import type { AllGameCacheOne } from "@/lib/types";
   import { createEventDispatcher } from "svelte";
 
-  export let isOpen: boolean;
-  export let withInputPath = true;
-  export let cancelText = "Cancel";
 
-  export let idInput = "";
-  export let path = "";
+  interface Props {
+    isOpen: boolean;
+    withInputPath?: boolean;
+    cancelText?: string;
+    idInput?: string;
+    path?: string;
+  }
+
+  let {
+    isOpen = $bindable(),
+    withInputPath = true,
+    cancelText = "Cancel",
+    idInput = $bindable(""),
+    path = $bindable("")
+  }: Props = $props();
 
   const dispather = createEventDispatcher<{
     confirm: {
@@ -23,8 +35,8 @@
     cancel: {};
   }>();
 
-  let candidates: [number, string][] = [];
-  $: {
+  let candidates: [number, string][] = $state([]);
+  run(() => {
     (async () => {
       if (!path) {
         candidates = [];
@@ -32,7 +44,7 @@
       }
       candidates = await commandGetGameCandidates(path);
     })();
-  }
+  });
   const clickCandidate = (id: number) => {
     idInput = `${id}`;
   };
@@ -81,7 +93,7 @@
                 class={`rounded hover:bg-bg-button-hover transition-all px-4 block max-w-full ${
                   idInput === `${id}` ? "bg-bg-button" : "bg-inherit"
                 }`}
-                on:click={() => clickCandidate(id)}
+                onclick={() => clickCandidate(id)}
               >
                 <div
                   class="text-(text-secondary left body2) overflow-ellipsis whitespace-nowrap overflow-hidden w-full"

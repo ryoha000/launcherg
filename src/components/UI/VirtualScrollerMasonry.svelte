@@ -5,12 +5,23 @@
   import { onDestroy, onMount } from "svelte";
   import type { Readable } from "svelte/store";
 
-  export let elements: Readable<CollectionElement[]>;
-  export let setVirtualHeight: (v: number) => void;
-  export let contentsWidth: Readable<number>;
-  export let contentsScrollY: Readable<number>;
-  export let containerHeight: Readable<number>;
-  export let contentsScrollTo: (v: number) => void;
+  interface Props {
+    elements: Readable<CollectionElement[]>;
+    setVirtualHeight: (v: number) => void;
+    contentsWidth: Readable<number>;
+    contentsScrollY: Readable<number>;
+    containerHeight: Readable<number>;
+    contentsScrollTo: (v: number) => void;
+  }
+
+  let {
+    elements,
+    setVirtualHeight,
+    contentsWidth,
+    contentsScrollY,
+    containerHeight,
+    contentsScrollTo
+  }: Props = $props();
 
   const { visibleLayouts } = useVirtualScrollerMasonry(
     elements,

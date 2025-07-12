@@ -1,10 +1,14 @@
 <script lang="ts">
-  export let title: string;
-  export let rows: {
+  interface Props {
+    title: string;
+    rows: {
     label: string;
     value: string;
     component?: any;
   }[];
+  }
+
+  let { title, rows }: Props = $props();
 </script>
 
 <div class="border-(~ solid border-primary) rounded-xl">
@@ -20,7 +24,7 @@
       </div>
       {#if row.component}
         <div class="p-4 border-(t-1px solid border-primary)">
-          <svelte:component this={row.component} value={row.value} />
+          <row.component value={row.value} />
         </div>
       {:else}
         <div

@@ -2,9 +2,13 @@
   import { route } from "@mateothegreat/svelte5-router";
   import type { CollectionElement } from "@/lib/types";
   import { convertFileSrc } from "@tauri-apps/api/core";
-  export let collectionElement: CollectionElement;
+  interface Props {
+    collectionElement: CollectionElement;
+  }
 
-  $: imgSrc = convertFileSrc(collectionElement.thumbnail);
+  let { collectionElement }: Props = $props();
+
+  let imgSrc = $derived(convertFileSrc(collectionElement.thumbnail));
 </script>
 
 <div

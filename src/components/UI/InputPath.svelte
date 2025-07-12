@@ -4,11 +4,21 @@
   import { open } from "@tauri-apps/plugin-dialog";
   import { createEventDispatcher } from "svelte";
 
-  export let path: string;
-  export let label: string;
-  export let placeholder: string = "";
-  export let withFilter = true;
-  export let directory = false;
+  interface Props {
+    path: string;
+    label: string;
+    placeholder?: string;
+    withFilter?: boolean;
+    directory?: boolean;
+  }
+
+  let {
+    path = $bindable(),
+    label,
+    placeholder = "",
+    withFilter = true,
+    directory = false
+  }: Props = $props();
 
   const dispatcher = createEventDispatcher<{ update: { value: string } }>();
 

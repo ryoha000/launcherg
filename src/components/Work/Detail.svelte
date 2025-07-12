@@ -7,7 +7,11 @@
     type Work,
   } from "@/lib/types";
 
-  export let work: Work;
+  interface Props {
+    work: Work;
+  }
+
+  let { work }: Props = $props();
 
   const getCreatorUrl = (id: number) =>
     `https://erogamescape.dyndns.org/~ap2/ero/toukei_kaiseki/creater.php?creater=${id}`;
@@ -67,7 +71,7 @@
                 )}
               >
                 <div class="flex gap-1 items-center">
-                  <div class="i-iconoir-youtube w-4 h-4 color-#cc0000" />
+                  <div class="i-iconoir-youtube w-4 h-4 color-#cc0000"></div>
                   {title}
                 </div>
               </LinkText>

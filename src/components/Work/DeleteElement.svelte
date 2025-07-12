@@ -6,8 +6,12 @@
   import { sidebarCollectionElements } from "@/store/sidebarCollectionElements";
   import { deleteTab, tabs, selected } from "@/store/tabs";
 
-  export let isOpen: boolean;
-  export let element: CollectionElement;
+  interface Props {
+    isOpen: boolean;
+    element: CollectionElement;
+  }
+
+  let { isOpen = $bindable(), element }: Props = $props();
 
   const deleteGame = async () => {
     await commandDeleteCollectionElement(element.id);
@@ -31,7 +35,7 @@
   >
     <div
       class="w-6 h-6 i-material-symbols-warning-outline-rounded color-accent-warning"
-    />
+></div>
     <div class="space-y-1">
       <div class="text-(body text-primary) font-medium">
         このゲームの登録を削除します
@@ -41,13 +45,15 @@
       </div>
     </div>
   </div>
-  <div class="p-4 max-w-full" slot="footer">
-    <Button
-      text="{element.gamename} を削除する"
-      variant="error"
-      wrappable
-      appendClass="w-full justify-center"
-      on:click={deleteGame}
-    />
-  </div>
+  {#snippet footer()}
+    <div class="p-4 max-w-full" >
+      <Button
+        text="{element.gamename} を削除する"
+        variant="error"
+        wrappable
+        appendClass="w-full justify-center"
+        on:click={deleteGame}
+      />
+    </div>
+  {/snippet}
 </Modal>
