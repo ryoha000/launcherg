@@ -7,10 +7,8 @@ import "simplebar/dist/simplebar.min.css";
 import "easymde/dist/easymde.min.css";
 import "./toast.scss";
 import App from "./App.svelte";
+import { mount } from "svelte";
 
-const app = new App({
-  // @ts-expect-error
-  target: document.getElementById("app"),
-});
+const app = mount(App, { target: document.getElementById("app")! });
 
 export default app;

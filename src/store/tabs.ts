@@ -1,5 +1,6 @@
 import { createLocalStorageWritable, localStorageWritable } from "@/lib/utils";
-import { push, type RouteLoadedEvent } from "svelte-spa-router";
+import { goto } from "@mateothegreat/svelte5-router";
+import type { Hook } from "@mateothegreat/svelte5-router/hooks";
 
 export type Tab = {
   id: number;
@@ -34,14 +35,15 @@ const createTabs = () => {
 
   const [selected, getSelected] = createLocalStorageWritable("tab-selected", 0);
 
-  const routeLoaded = (event: RouteLoadedEvent) => {
-    const isHome = event.detail.location === "/";
+  const routeLoaded: Hook = (event) => {
+    console.log("routeLoaded", event);
+    const isHome = event.result.path.original === "/";
     if (isHome) {
       selected.set(-1);
       return;
     }
 
-    const params = event.detail.params;
+    const params = event.result.querystring.params;
     if (!params) {
       console.error("params is null (not home)");
       return;
@@ -52,7 +54,7 @@ const createTabs = () => {
       return;
     }
 
-    const tabType = event.detail.location.split("/")[1];
+    const tabType = event.result.path.original.split("/")[1];
     if (!isValidTabType(tabType)) {
       console.error("tabType is invalid (not home)");
       return;
@@ -62,7 +64,7 @@ const createTabs = () => {
       (v) => v.workId === id && v.type === tabType
     );
     if (tabIndex === -1) {
-      const searchParams = new URLSearchParams(event.detail.querystring);
+      const searchParams = new URLSearchParams(event.result.querystring);
       const gamename = searchParams.get("gamename");
       if (!gamename) {
         console.error("tabs にないのに gamename の queryParam がない");
@@ -99,7 +101,7 @@ const createTabs = () => {
     tabs.update((v) => {
       const newTabs = v.filter((tab) => tab.id !== id);
       if (newTabs.length === 0) {
-        push("/");
+        goto("/");
       }
       return newTabs;
     });
@@ -112,7 +114,7 @@ const createTabs = () => {
     if (isCurrentTab) {
       const newIndex = isRightestTab ? currentIndex - 1 : currentIndex;
       const nextTab = getTabs()[newIndex];
-      push(`/${nextTab.type}/${nextTab.workId}`);
+      goto(`/${nextTab.type}/${nextTab.workId}`);
       return;
     }
 
@@ -130,15 +132,15 @@ const createTabs = () => {
         selected: getSelected(),
       });
       selected.set(-1);
-      push("/");
+      goto("/");
       return;
     }
     if (index < 0) {
-      push("/");
+      goto("/");
       return;
     }
     const tab = _tabs[index];
-    push(`/${tab.type}/${tab.workId}`);
+    goto(`/${tab.type}/${tab.workId}`);
   };
   const getSelectedTab = () => getTabs()[getSelected()];
   return {

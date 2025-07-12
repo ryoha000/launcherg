@@ -1,6 +1,6 @@
 <script lang="ts">
   import { deleteTab, type Tab } from "@/store/tabs";
-  import { push } from "svelte-spa-router";
+  import { goto } from "@mateothegreat/svelte5-router";
 
   export let tab: Tab;
   export let selected: boolean;
@@ -9,8 +9,8 @@
     tab.type === "works"
       ? "i-material-symbols-computer-outline-rounded color-accent-accent"
       : tab.type === "memos"
-      ? "i-material-symbols-drive-file-rename-outline color-accent-edit"
-      : "";
+        ? "i-material-symbols-drive-file-rename-outline color-accent-edit"
+        : "";
 
   const closeWheelClick = (e: MouseEvent) => {
     if (e.button === 1) {
@@ -21,7 +21,7 @@
 
 <!-- svelte-ignore a11y-click-events-have-key-events -->
 <div
-  on:click={() => push(`/${tab.type}/${tab.workId}`)}
+  on:click={() => goto(`/${tab.type}/${tab.workId}`)}
   on:mousedown={closeWheelClick}
 >
   <div

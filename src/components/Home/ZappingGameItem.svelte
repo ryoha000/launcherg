@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { link } from "svelte-spa-router";
+  import { route } from "@mateothegreat/svelte5-router";
   import type { CollectionElement } from "@/lib/types";
   import { convertFileSrc } from "@tauri-apps/api/core";
   export let collectionElement: CollectionElement;
@@ -13,7 +13,7 @@
   <a
     tabIndex={0}
     href={`/works/${collectionElement.id}?gamename=${collectionElement.gamename}`}
-    use:link
+    use:route
     class="block w-full h-full"
   >
     {#if collectionElement.thumbnailWidth && collectionElement.thumbnailHeight}

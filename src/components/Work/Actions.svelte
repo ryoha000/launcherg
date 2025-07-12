@@ -1,7 +1,7 @@
 <script lang="ts">
   import Button from "@/components/UI/Button.svelte";
   import PlayButton from "@/components/Work/PlayButton.svelte";
-  import { push } from "svelte-spa-router";
+  import { goto } from "@mateothegreat/svelte5-router";
   import {
     commandDeleteCollectionElement,
     commandGetCollectionElement,
@@ -108,7 +108,7 @@
     <Button
       leftIcon="i-material-symbols-drive-file-rename-outline"
       text="Memo"
-      on:click={() => push(`/memos/${id}?gamename=${name}`)}
+      on:click={() => goto(`/memos/${id}?gamename=${name}`)}
     />
     <!-- <div class="flex items-end gap-2 h-8 min-w-0">
       <div class="text-(text-primary body2) whitespace-nowrap">Time</div>

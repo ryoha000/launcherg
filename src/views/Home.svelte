@@ -5,7 +5,7 @@
     commandUpdateCollectionElementThumbnails,
   } from "@/lib/command";
   import Icon from "/icon.png";
-  import { link } from "svelte-spa-router";
+  import { route } from "@mateothegreat/svelte5-router";
   import LinkText from "@/components/UI/LinkText.svelte";
   import { sidebarCollectionElements } from "@/store/sidebarCollectionElements";
   import VirtualScroller from "@/components/UI/VirtualScroller.svelte";
@@ -105,7 +105,7 @@
           <div class="gap-1 flex-(~ col)">
             {#each elements as element (element.id)}
               <a
-                use:link
+                use:route
                 href="/memos/{element.id}?gamename={element.gamename}"
                 class="text-(text-link body2) hover:underline-(1px text-link)"
               >
