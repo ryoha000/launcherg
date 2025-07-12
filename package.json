@@ -10,7 +10,8 @@
     "check": "svelte-check --tsconfig ./tsconfig.json",
     "lint": "eslint .",
     "format": "eslint --fix .",
-    "tauri": "tauri"
+    "tauri": "tauri",
+    "precommit": "npm run check && npm run format && npm run lint"
   },
   "dependencies": {
     "@mateothegreat/svelte5-router": "^2.16.7",
