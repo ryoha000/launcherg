@@ -8,12 +8,13 @@
 </script>
 
 <div
-  class="hover:scale-115 hover:shadow-md focus-within:scale-110 focus-within:shadow-md transition-all cursor-pointer w-full h-full"
+  class="hover:scale-115 hover:shadow-md focus-within:scale-110 focus-within:shadow-md transition-all cursor-pointer w-full h-full relative hover:z-10"
 >
   <a
     tabIndex={0}
     href={`/works/${collectionElement.id}?gamename=${collectionElement.gamename}`}
     use:link
+    class="block w-full h-full"
   >
     {#if collectionElement.thumbnailWidth && collectionElement.thumbnailHeight}
       <img
