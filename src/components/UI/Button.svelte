@@ -1,48 +1,66 @@
-<script lang="ts">
-  import ButtonBase from "@/components/UI/ButtonBase.svelte";
-  import { type Props as TippyOption } from "tippy.js";
+<script lang='ts'>
+  import type { Props as TippyOption } from 'tippy.js'
 
-  export let leftIcon = "";
-  export let rightIcon = "";
-  export let appendClass = "";
-  export let text = "";
-  export let type: "button" | "submit" | undefined = undefined;
-  export let tooltip: Partial<TippyOption> | undefined = undefined;
-  export let variant: Variant = "normal";
-  export let disabled = false;
-  export let wrappable = false;
+  import { run } from 'svelte/legacy'
+  import ButtonBase from '@/components/UI/ButtonBase.svelte'
 
-  let iconSizeClass = "w-4 h-4";
-
-  let iconVarinatClass = "color-ui-tertiary";
-  $: {
-    if (variant === "success") {
-      iconVarinatClass = "color-text-white";
-    }
+  interface Props {
+    leftIcon?: string
+    rightIcon?: string
+    appendClass?: string
+    text?: string
+    type?: 'button' | 'submit' | undefined
+    tooltip?: Partial<TippyOption> | undefined
+    variant?: Variant
+    disabled?: boolean
+    wrappable?: boolean
+    onclick?: (e: Event) => void
   }
+
+  const {
+    leftIcon = '',
+    rightIcon = '',
+    appendClass = '',
+    text = '',
+    type = undefined,
+    tooltip = undefined,
+    variant = 'normal',
+    disabled = false,
+    wrappable = false,
+    onclick,
+  }: Props = $props()
+
+  const iconSizeClass = 'w-4 h-4'
+
+  let iconVarinatClass = $state('color-ui-tertiary')
+  run(() => {
+    if (variant === 'success') {
+      iconVarinatClass = 'color-text-white'
+    }
+  })
 </script>
 
 <ButtonBase
   appendClass={`${appendClass} ${
-    wrappable ? "" : "h-8"
+    wrappable ? '' : 'h-8'
   } px-3 gap-2 flex items-center`}
   {variant}
   {type}
   {tooltip}
   {disabled}
-  on:click
+  {onclick}
 >
   {#if leftIcon}
-    <div class={`${iconVarinatClass} ${iconSizeClass} ${leftIcon}`} />
+    <div class={`${iconVarinatClass} ${iconSizeClass} ${leftIcon}`}></div>
   {/if}
   {#if text}
     <div
-      class={`text-body2 font-medium ${wrappable ? "" : "whitespace-nowrap"}`}
+      class={`text-body2 font-medium ${wrappable ? '' : 'whitespace-nowrap'}`}
     >
       {text}
     </div>
   {/if}
   {#if rightIcon}
-    <div class={`${iconVarinatClass} ${iconSizeClass} ${rightIcon}`} />
+    <div class={`${iconVarinatClass} ${iconSizeClass} ${rightIcon}`}></div>
   {/if}
 </ButtonBase>

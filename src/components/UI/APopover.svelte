@@ -1,27 +1,36 @@
-<script lang="ts">
-  import {
-    Popover,
-    PopoverButton,
-    PopoverPanel,
-  } from "@rgossiaux/svelte-headlessui";
-  import { fly } from "svelte/transition";
+<script lang='ts'>
+  import { createPopover } from 'svelte-headlessui'
+  import { fly } from 'svelte/transition'
 
-  export let isRelativeRoot = true;
-  export let panelClass = "";
+  interface Props {
+    isRelativeRoot?: boolean
+    panelClass?: string
+    button?: import('svelte').Snippet<[{ open: boolean, close: (v?: null) => void }]>
+    children?: import('svelte').Snippet<[{ open: boolean, close: (v?: null) => void }]>
+  }
+
+  const {
+    isRelativeRoot = true,
+    panelClass = '',
+    button,
+    children,
+  }: Props = $props()
+
+  const popover = createPopover({})
 </script>
 
-<Popover class={isRelativeRoot ? "relative" : ""} let:open>
-  <PopoverButton as="div">
-    <slot name="button" {open} {close} />
-  </PopoverButton>
-  {#if open}
+<div class={isRelativeRoot ? 'relative' : ''}>
+  <div use:popover.button>
+    {@render button?.({ open: $popover.expanded, close: popover.close })}
+  </div>
+  {#if $popover.expanded}
     <div
       transition:fly={{ y: -40, duration: 150 }}
-      class="absolute z-10000 mt-2 border border-(border-primary solid) rounded bg-bg-secondary {panelClass}"
+      class='absolute z-10000 mt-2 border border-(border-primary solid) rounded bg-bg-secondary {panelClass}'
     >
-      <PopoverPanel static let:close>
-        <slot {open} {close} />
-      </PopoverPanel>
+      <div use:popover.panel>
+        {@render children?.({ open: $popover.expanded, close: popover.close })}
+      </div>
     </div>
   {/if}
-</Popover>
+</div>

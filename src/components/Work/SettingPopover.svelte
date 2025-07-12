@@ -1,52 +1,52 @@
-<script lang="ts">
-  import OptionButton from "@/components/UI/OptionButton.svelte";
-  import { createEventDispatcher } from "svelte";
+<script lang='ts'>
+  import OptionButton from '@/components/UI/OptionButton.svelte'
 
-  const dispatcher = createEventDispatcher<{
-    selectChange: {};
-    selectDelete: {};
-    selectOpen: {};
-    selectOtherInfomation: {};
-    close: {};
-  }>();
+  let { onclose, onselectChange, onselectDelete, onselectOpen, onselectOtherInfomation }: {
+    onclose: () => void
+    onselectChange: () => void
+    onselectDelete: () => void
+    onselectOpen: () => void
+    onselectOtherInfomation: () => void
+  } = $props()
 </script>
 
 <div>
   <div
-    class="font-bold text-(text-primary body3) p-(l-4 r-2 y-2) flex items-center gap-4"
+    class='font-bold text-(text-primary body3) p-(l-4 r-2 y-2) flex items-center gap-4'
   >
-    <div class="whitespace-nowrap">Select game option</div>
+    <div class='whitespace-nowrap'>Select game option</div>
     <button
-      on:click={() => dispatcher("close")}
-      class="ml-auto w-5 h-5 i-iconoir-cancel color-text-tertiary hover:color-text-primary transition-all"
-    />
+      onclick={onclose}
+      class='ml-auto w-5 h-5 i-iconoir-cancel color-text-tertiary hover:color-text-primary transition-all'
+      aria-label='Close options'
+    ></button>
   </div>
   <OptionButton
-    text="ゲームのフォルダーを開く"
-    on:click={() => {
-      dispatcher("close");
-      dispatcher("selectOpen");
+    text='ゲームのフォルダーを開く'
+    onclick={() => {
+      onclose()
+      onselectOpen()
     }}
   />
   <OptionButton
-    text="違うゲームに変更する"
-    on:click={() => {
-      dispatcher("close");
-      dispatcher("selectChange");
+    text='違うゲームに変更する'
+    onclick={() => {
+      onclose()
+      onselectChange()
     }}
   />
   <OptionButton
-    text="登録したゲームから削除する"
-    on:click={() => {
-      dispatcher("close");
-      dispatcher("selectDelete");
+    text='登録したゲームから削除する'
+    onclick={() => {
+      onclose()
+      onselectDelete()
     }}
   />
   <OptionButton
-    text="その他の情報"
-    on:click={() => {
-      dispatcher("close");
-      dispatcher("selectOtherInfomation");
+    text='その他の情報'
+    onclick={() => {
+      onclose()
+      onselectOtherInfomation()
     }}
   />
 </div>

@@ -1,16 +1,16 @@
-import { getWorkByScrape } from "@/lib/scrapeWork";
-import type { Work } from "@/lib/types";
-import { createLocalStorageCache } from "@/lib/utils";
+import type { Work } from '@/lib/types'
+import { getWorkByScrape } from '@/lib/scrape/scrapeWork'
+import { createLocalStorageCache } from '@/lib/utils'
 
-const createWorks = () => {
-  const getter = createLocalStorageCache<number, Work>(
-    "works-cache",
-    getWorkByScrape
-  );
+function createWorks() {
+  const getter = createLocalStorageCache<number, Work | undefined>(
+    'works-cache',
+    getWorkByScrape,
+  )
 
   return {
     get: getter,
-  };
-};
+  }
+}
 
-export const works = createWorks();
+export const works = createWorks()

@@ -1,3 +1,3 @@
-import { localStorageWritable } from "@/lib/utils";
+import { localStorageWritable } from '@/lib/utils'
 
-export const showSidebar = localStorageWritable("show-sidebar", true);
+export const showSidebar = localStorageWritable('show-sidebar', true)

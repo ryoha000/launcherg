@@ -1,26 +1,32 @@
-<script lang="ts">
-  import { createEventDispatcher } from "svelte";
+<script lang='ts'>
+  import { createEventDispatcher } from 'svelte'
 
-  export let value: boolean;
+  import { run } from 'svelte/legacy'
 
-  const dispather = createEventDispatcher<{ update: { value: boolean } }>();
-  $: {
-    dispather("update", { value });
+  interface Props {
+    value: boolean
   }
+
+  let { value = $bindable() }: Props = $props()
+
+  const dispather = createEventDispatcher<{ update: { value: boolean } }>()
+  run(() => {
+    dispather('update', { value })
+  })
 </script>
 
 <input
-  type="checkbox"
+  type='checkbox'
   checked={value}
-  on:change={(e) => (value = e.currentTarget.checked)}
-  class="hidden"
+  onchange={e => (value = e.currentTarget.checked)}
+  class='hidden'
 />
 {#if value}
   <div
-    class="i-material-symbols-check-box-rounded color-border-button w-6 h-6"
-  />
+    class='i-material-symbols-check-box-rounded color-border-button w-6 h-6'
+  ></div>
 {:else}
   <div
-    class="i-material-symbols-check-box-outline-blank color-border-button w-6 h-6"
-  />
+    class='i-material-symbols-check-box-outline-blank color-border-button w-6 h-6'
+  ></div>
 {/if}
