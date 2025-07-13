@@ -9,6 +9,3 @@ export type {
 
 // メインのcomposable
 export { useEvent } from './useEvent.svelte'
-
-// 専用composable
-export { useProgressListener } from './useProgressListener.svelte'

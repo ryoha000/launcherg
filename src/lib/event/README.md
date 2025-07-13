@@ -1,12 +1,10 @@
-# Event Listener Composables
+# Event Listener Composable
 
 型安全なTauriイベントリスナーを提供するシンプルなライブラリです。
 
 ## 基本的な使い方
 
-### useEvent - メインのcomposable
-
-ほとんどの用途に対応できるシンプルで型安全なイベントリスナーです。
+### useEvent - 型安全なイベントリスナー
 
 ```typescript
 import { useEvent } from '$lib/event'
@@ -21,7 +19,12 @@ await event.startListen('progress', (payload) => {
 
 await event.startListen('progresslive', (payload) => {
   // payload は自動的に ProgressLivePayload 型
-  console.log(payload.max)
+  if (payload.max) {
+    console.log(`総ファイル数: ${payload.max}`)
+  }
+  else {
+    console.log('ファイル処理完了')
+  }
 })
 
 // 特定のイベントを停止
@@ -31,26 +34,52 @@ event.stopListen('progress')
 event.stopAll()
 ```
 
-### useProgressListener - 進捗専用composable
-
-進捗管理に特化した便利機能付きのcomposableです。
+## 実装例：進捗管理
 
 ```typescript
-import { useProgressListener } from '$lib/event'
+import { useEvent } from '$lib/event'
 
-const progress = useProgressListener()
+export function useImportProgress() {
+  let totalFiles = $state(0)
+  let processedFiles = $state(0)
+  let currentMessage = $state('')
 
-await progress.startListen()
+  const event = useEvent()
 
-// リアクティブな状態にアクセス
-$effect(() => {
-  console.log(`進捗: ${progress.processedFiles()}/${progress.totalFiles()}`)
-  console.log(`進捗率: ${progress.progressPercentage()}%`)
-  console.log(`メッセージ: ${progress.currentMessage()}`)
-})
+  const startListening = async () => {
+    await event.startListen('progresslive', (payload) => {
+      if (payload.max) {
+        totalFiles = payload.max
+      }
+      else {
+        processedFiles++
+      }
+    })
 
-progress.stopListen()
-progress.resetProgress()
+    await event.startListen('progress', (payload) => {
+      currentMessage = payload.message
+    })
+  }
+
+  const stopListening = () => {
+    event.stopAll()
+  }
+
+  const progressPercentage = () => {
+    if (totalFiles === 0)
+      return 0
+    return Math.round((processedFiles / totalFiles) * 100)
+  }
+
+  return {
+    totalFiles: () => totalFiles,
+    processedFiles: () => processedFiles,
+    currentMessage: () => currentMessage,
+    progressPercentage,
+    startListening,
+    stopListening,
+  }
+}
 ```
 
 ## 型定義
@@ -69,7 +98,7 @@ export interface EventPayloadMap {
 ## 特徴
 
 - 🔒 **型安全**: コンパイル時に型チェック
-- 🎯 **シンプル**: メインは`useEvent`一つだけ
+- 🎯 **シンプル**: 単一のAPIですべてをカバー
 - 🔄 **リアクティブ**: Svelte 5の$stateと統合
 - 🧹 **自動管理**: リスナーの適切な停止処理
 
@@ -77,8 +106,7 @@ export interface EventPayloadMap {
 
 ```
 src/lib/event/
-├── useEvent.svelte.ts           # メインのcomposable
-├── useProgressListener.svelte.ts # 進捗専用composable
-├── types.ts                     # 型定義
-└── index.ts                     # エクスポート
+├── useEvent.svelte.ts  # メインのcomposable
+├── types.ts           # 型定義
+└── index.ts          # エクスポート
 ```
