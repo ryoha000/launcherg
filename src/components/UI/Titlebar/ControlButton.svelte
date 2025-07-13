@@ -19,6 +19,6 @@
   })
 </script>
 
-<button {onclick} class='h-full w-12 flex cursor-default items-center justify-center rounded-none bg-transparent {colorClass} transition-all' tabindex="{-1}">
+<button {onclick} class='h-full w-12 flex cursor-default items-center justify-center rounded-none bg-transparent {colorClass} transition-all' tabindex={-1}>
   {@render children?.()}
 </button>

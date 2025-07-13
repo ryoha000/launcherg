@@ -16,6 +16,8 @@
       ? 'i-material-symbols-computer-outline-rounded color-accent-accent'
       : tab.type === 'memos'
       ? 'i-material-symbols-drive-file-rename-outline color-accent-edit'
+      : tab.type === 'settings'
+      ? 'i-material-symbols-settings-outline-rounded color-text-disabled'
       : '')
 
   const closeWheelClick = (e: MouseEvent) => {
@@ -33,7 +35,7 @@
 <!-- svelte-ignore a11y_click_events_have_key_events -->
 <!-- svelte-ignore a11y_no_static_element_interactions -->
 <div
-  onclick={() => goto(`/${tab.type}/${tab.workId}`)}
+  onclick={() => tab.type === 'settings' ? goto('/settings') : goto(`/${tab.type}/${tab.workId}`)}
   onmousedown={closeWheelClick}
 >
   <div

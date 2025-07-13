@@ -5,16 +5,20 @@ import { createLocalStorageWritable } from '@/lib/utils'
 export interface Tab {
   id: number
   workId: number
-  type: 'works' | 'memos'
+  type: 'works' | 'memos' | 'settings'
   scrollTo: number
   title: string
 }
 
-function isValidTabType(src: string): src is 'works' | 'memos' {
-  return src === 'works' || src === 'memos'
+function isValidTabType(src: string): src is 'works' | 'memos' | 'settings' {
+  return src === 'works' || src === 'memos' || src === 'settings'
 }
 
 function extractId(path: string) {
+  // 設定ページの場合は特別なIDを返す
+  if (path === '/settings') {
+    return -1
+  }
   const match = path.match(/^\/(works|memos)\/(\d+)$/)
   if (match) {
     return Number(match[2]) // match[2] にID（12345など）が入っている
@@ -51,6 +55,31 @@ function createTabs() {
     const isHome = path === '/'
     if (isHome) {
       selected.set(-1)
+      return
+    }
+
+    // 設定ページの場合の処理
+    if (path === '/settings') {
+      const settingsTabIndex = getTabs().findIndex(
+        v => v.type === 'settings',
+      )
+      if (settingsTabIndex === -1) {
+        const newTab: Tab = {
+          id: new Date().getTime(),
+          type: 'settings',
+          workId: -1,
+          scrollTo: 0,
+          title: '設定',
+        }
+        tabs.update((v) => {
+          return [...v, newTab]
+        })
+        const newSelected = getTabs().length - 1
+        selected.set(newSelected)
+      }
+      else {
+        selected.set(settingsTabIndex)
+      }
       return
     }
 
