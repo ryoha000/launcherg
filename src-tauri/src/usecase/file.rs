@@ -66,18 +66,18 @@ const IGNORE_WORD_WHEN_CONFLICT: [&str; 29] = [
 
 const SHOULD_UPDATE_WORD_WHEN_CONFLICT: [&str; 6] = ["adv", "64", "cmvs", "bgi", "実行", "起動"];
 
-fn emit_progress_with_time(
-    f: Arc<impl Fn(String) -> anyhow::Result<()>>,
+fn emit_progress_with_time<P: PubSubService>(
+    pubsub: &P,
     start: Instant,
     base_announce: &str,
 ) -> anyhow::Result<()> {
     let end = start.elapsed();
-    f(format!(
+    pubsub.notify("progress", crate::interface::models::collection::ProgressPayload::new(format!(
         "{}累計{}.{:03}秒経過しました.",
         base_announce,
         end.as_secs(),
         end.subsec_nanos() / 1_000_000
-    ))
+    )))
 }
 
 impl<R: ExplorersExt> FileUseCase<R> {
@@ -201,7 +201,6 @@ impl<R: ExplorersExt> FileUseCase<R> {
         handle: &Arc<AppHandle>,
         files: Vec<String>,
         all_game_cache: AllGameCache,
-        emit_progress: Arc<impl Fn(String) -> anyhow::Result<()>>,
         pubsub: Arc<P>,
     ) -> anyhow::Result<Vec<NewCollectionElement>> {
         let start = Instant::now();
@@ -224,14 +223,14 @@ impl<R: ExplorersExt> FileUseCase<R> {
             .concurency_get_path_game_map(
                 normalized_all_games,
                 files,
-                pubsub,
+                pubsub.clone(),
             )
             .await?
             .into_iter()
             .partition(|(_id, path)| path.to_lowercase().ends_with("exe"));
 
         emit_progress_with_time(
-            emit_progress.clone(),
+            pubsub.as_ref(),
             start,
             ".lnk, .exe ファイルのゲームとの紐づけが完了しました。",
         )?;
@@ -242,9 +241,9 @@ impl<R: ExplorersExt> FileUseCase<R> {
             .collect();
         let lnk_metadatas = get_lnk_metadatas(lnk_path_vec)?;
         if lnk_id_path_vec.len() != lnk_metadatas.len() {
-            emit_progress(format!(
+            pubsub.notify("progress", crate::interface::models::collection::ProgressPayload::new(format!(
                 "lnk ファイルの数と lnk のターゲットファイルの数が一致しません。リンクファイル数: {}, ターゲットファイル数: {}", lnk_id_path_vec.len(), lnk_metadatas.len()
-            ))?;
+            )))?;
         }
 
         let mut collection_elements = vec![];
@@ -299,7 +298,7 @@ impl<R: ExplorersExt> FileUseCase<R> {
             .into_iter()
             .collect::<anyhow::Result<()>>()?;
 
-        emit_progress_with_time(emit_progress.clone(), start, "icon の保存が完了しました。")?;
+        emit_progress_with_time(pubsub.as_ref(), start, "icon の保存が完了しました。")?;
 
         Ok(collection_elements)
     }

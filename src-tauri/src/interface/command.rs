@@ -1,6 +1,5 @@
 use std::sync::Arc;
 use tauri::AppHandle;
-use tauri::Emitter;
 use tauri::State;
 
 use super::models::all_game_cache::AllGameCacheOne;
@@ -32,12 +31,6 @@ pub async fn create_elements_in_pc(
 ) -> anyhow::Result<Vec<String>, CommandError> {
     let handle = Arc::new(handle);
     let pubsub = modules.pubsub();
-    let emit_progress = Arc::new(|message| {
-        if let Err(e) = handle.emit("progress", ProgressPayload::new(message)) {
-            return Err(anyhow::anyhow!(e.to_string()));
-        }
-        Ok(())
-    });
 
     let explored_caches = modules.explored_cache_use_case().get_cache().await?;
     let explore_files: Vec<String> = modules
@@ -51,10 +44,12 @@ pub async fn create_elements_in_pc(
         })
         .collect();
 
-    emit_progress(format!(
+    if let Err(e) = pubsub.notify("progress", ProgressPayload::new(format!(
         "指定したフォルダの .lnk .exe ファイルを取得しました。ファイル数: {}",
         explore_files.len()
-    ))?;
+    ))) {
+        return Err(CommandError::Anyhow(anyhow::anyhow!(e.to_string())));
+    }
     if let Err(e) = pubsub.notify(
         "progresslive",
         ProgressLivePayload::new(Some(explore_files.len() as i32)),
@@ -73,7 +68,6 @@ pub async fn create_elements_in_pc(
             &handle,
             explore_files.clone(),
             all_game_cache,
-            emit_progress,
             Arc::new(pubsub.clone()),
         )
         .await?;
