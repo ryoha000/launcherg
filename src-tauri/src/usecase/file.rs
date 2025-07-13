@@ -9,7 +9,7 @@ use crate::domain::file::{
     get_file_created_at_sync, get_file_name_without_extension, get_game_candidates_by_exe_path,
     PlayHistory,
 };
-use crate::domain::pubsub::PubSubService;
+use crate::domain::pubsub::{ProgressLivePayload, ProgressPayload, PubSubService};
 use crate::{
     domain::{
         collection::{CollectionElement, NewCollectionElement},
@@ -72,7 +72,7 @@ fn emit_progress_with_time<P: PubSubService>(
     base_announce: &str,
 ) -> anyhow::Result<()> {
     let end = start.elapsed();
-    pubsub.notify("progress", crate::interface::models::collection::ProgressPayload::new(format!(
+    pubsub.notify("progress", ProgressPayload::new(format!(
         "{}累計{}.{:03}秒経過しました.",
         base_announce,
         end.as_secs(),
@@ -166,7 +166,7 @@ impl<R: ExplorersExt> FileUseCase<R> {
             let pubsub_clone = Arc::clone(&pubsub);
             tauri::async_runtime::spawn(async move {
                 let res = get_most_probable_game_candidate(&all, path)?;
-                if let Err(e) = pubsub_clone.notify("progresslive", crate::interface::models::collection::ProgressLivePayload::new(None)) {
+                if let Err(e) = pubsub_clone.notify("progresslive", ProgressLivePayload::new(None)) {
                     return Err(e);
                 }
                 Ok(res)
@@ -241,7 +241,7 @@ impl<R: ExplorersExt> FileUseCase<R> {
             .collect();
         let lnk_metadatas = get_lnk_metadatas(lnk_path_vec)?;
         if lnk_id_path_vec.len() != lnk_metadatas.len() {
-            pubsub.notify("progress", crate::interface::models::collection::ProgressPayload::new(format!(
+            pubsub.notify("progress", ProgressPayload::new(format!(
                 "lnk ファイルの数と lnk のターゲットファイルの数が一致しません。リンクファイル数: {}, ターゲットファイル数: {}", lnk_id_path_vec.len(), lnk_metadatas.len()
             )))?;
         }

@@ -3,20 +3,18 @@ use tauri::AppHandle;
 use tauri::State;
 
 use super::models::all_game_cache::AllGameCacheOne;
-use super::models::collection::ProgressLivePayload;
 use super::{
     error::CommandError,
     models::collection::CollectionElement,
     module::{Modules, ModulesExt},
 };
 use crate::domain::file::get_lnk_metadatas;
-use crate::interface::models::collection::ProgressPayload;
 use crate::{
     domain::{
         collection::NewCollectionElement,
         distance::get_comparable_distance,
         file::{get_file_created_at_sync, normalize},
-        pubsub::PubSubService,
+        pubsub::{ProgressLivePayload, ProgressPayload, PubSubService},
         Id,
     },
     usecase::models::collection::CreateCollectionElementDetail,
