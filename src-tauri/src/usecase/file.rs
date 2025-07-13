@@ -1,5 +1,4 @@
 use std::io::prelude::*;
-use std::sync::Mutex;
 use std::{collections::HashMap, sync::Arc, time::Instant};
 
 use derive_new::new;
@@ -10,6 +9,7 @@ use crate::domain::file::{
     get_file_created_at_sync, get_file_name_without_extension, get_game_candidates_by_exe_path,
     PlayHistory,
 };
+use crate::domain::pubsub::{ProgressLivePayload, ProgressPayload, PubSubService};
 use crate::{
     domain::{
         collection::{CollectionElement, NewCollectionElement},
@@ -66,18 +66,18 @@ const IGNORE_WORD_WHEN_CONFLICT: [&str; 29] = [
 
 const SHOULD_UPDATE_WORD_WHEN_CONFLICT: [&str; 6] = ["adv", "64", "cmvs", "bgi", "実行", "起動"];
 
-fn emit_progress_with_time(
-    f: Arc<impl Fn(String) -> anyhow::Result<()>>,
+fn emit_progress_with_time<P: PubSubService>(
+    pubsub: &P,
     start: Instant,
     base_announce: &str,
 ) -> anyhow::Result<()> {
     let end = start.elapsed();
-    f(format!(
+    pubsub.notify("progress", ProgressPayload::new(format!(
         "{}累計{}.{:03}秒経過しました.",
         base_announce,
         end.as_secs(),
         end.subsec_nanos() / 1_000_000
-    ))
+    )))
 }
 
 impl<R: ExplorersExt> FileUseCase<R> {
@@ -155,28 +155,21 @@ impl<R: ExplorersExt> FileUseCase<R> {
         }
         res
     }
-    pub async fn concurency_get_path_game_map<F: Fn() -> anyhow::Result<()> + Send + 'static>(
+    pub async fn concurency_get_path_game_map<P: PubSubService + 'static>(
         &self,
         normalized_all_games: Arc<AllGameCache>,
         files: Vec<String>,
-        callback: Arc<Mutex<F>>,
+        pubsub: Arc<P>,
     ) -> anyhow::Result<HashMap<ErogamescapeID, FilePathString>> {
         let get_game_id_tasks = files.into_iter().map(|path| {
             let all = normalized_all_games.clone();
-            let mutex_cb = Arc::clone(&callback);
+            let pubsub_clone = Arc::clone(&pubsub);
             tauri::async_runtime::spawn(async move {
                 let res = get_most_probable_game_candidate(&all, path)?;
-                match mutex_cb.lock() {
-                    Ok(cb) => {
-                        if let Err(e) = cb() {
-                            return Err(e);
-                        };
-                        Ok(res)
-                    }
-                    Err(e) => {
-                        return Err(anyhow::anyhow!(e.to_string()));
-                    }
+                if let Err(e) = pubsub_clone.notify("progresslive", ProgressLivePayload::new(None)) {
+                    return Err(e);
                 }
+                Ok(res)
             })
         });
 
@@ -203,15 +196,12 @@ impl<R: ExplorersExt> FileUseCase<R> {
             .collect::<AllGameCache>();
         get_game_candidates_by_exe_path(&normalized_all_games, &file, 0.2, 5)
     }
-    pub async fn filter_files_to_collection_elements<
-        F: Fn() -> anyhow::Result<()> + Send + 'static,
-    >(
+    pub async fn filter_files_to_collection_elements<P: PubSubService + 'static>(
         &self,
         handle: &Arc<AppHandle>,
         files: Vec<String>,
         all_game_cache: AllGameCache,
-        emit_progress: Arc<impl Fn(String) -> anyhow::Result<()>>,
-        process_each_game_file_callback: Arc<Mutex<F>>,
+        pubsub: Arc<P>,
     ) -> anyhow::Result<Vec<NewCollectionElement>> {
         let start = Instant::now();
 
@@ -233,14 +223,14 @@ impl<R: ExplorersExt> FileUseCase<R> {
             .concurency_get_path_game_map(
                 normalized_all_games,
                 files,
-                process_each_game_file_callback,
+                pubsub.clone(),
             )
             .await?
             .into_iter()
             .partition(|(_id, path)| path.to_lowercase().ends_with("exe"));
 
         emit_progress_with_time(
-            emit_progress.clone(),
+            pubsub.as_ref(),
             start,
             ".lnk, .exe ファイルのゲームとの紐づけが完了しました。",
         )?;
@@ -251,9 +241,9 @@ impl<R: ExplorersExt> FileUseCase<R> {
             .collect();
         let lnk_metadatas = get_lnk_metadatas(lnk_path_vec)?;
         if lnk_id_path_vec.len() != lnk_metadatas.len() {
-            emit_progress(format!(
+            pubsub.notify("progress", ProgressPayload::new(format!(
                 "lnk ファイルの数と lnk のターゲットファイルの数が一致しません。リンクファイル数: {}, ターゲットファイル数: {}", lnk_id_path_vec.len(), lnk_metadatas.len()
-            ))?;
+            )))?;
         }
 
         let mut collection_elements = vec![];
@@ -308,7 +298,7 @@ impl<R: ExplorersExt> FileUseCase<R> {
             .into_iter()
             .collect::<anyhow::Result<()>>()?;
 
-        emit_progress_with_time(emit_progress.clone(), start, "icon の保存が完了しました。")?;
+        emit_progress_with_time(pubsub.as_ref(), start, "icon の保存が完了しました。")?;
 
         Ok(collection_elements)
     }

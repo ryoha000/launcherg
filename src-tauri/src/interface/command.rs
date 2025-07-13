@@ -1,23 +1,20 @@
 use std::sync::Arc;
-use std::sync::Mutex;
 use tauri::AppHandle;
-use tauri::Emitter;
 use tauri::State;
 
 use super::models::all_game_cache::AllGameCacheOne;
-use super::models::collection::ProgressLivePayload;
 use super::{
     error::CommandError,
     models::collection::CollectionElement,
     module::{Modules, ModulesExt},
 };
 use crate::domain::file::get_lnk_metadatas;
-use crate::interface::models::collection::ProgressPayload;
 use crate::{
     domain::{
         collection::NewCollectionElement,
         distance::get_comparable_distance,
         file::{get_file_created_at_sync, normalize},
+        pubsub::{ProgressLivePayload, ProgressPayload, PubSubService},
         Id,
     },
     usecase::models::collection::CreateCollectionElementDetail,
@@ -31,19 +28,7 @@ pub async fn create_elements_in_pc(
     use_cache: bool,
 ) -> anyhow::Result<Vec<String>, CommandError> {
     let handle = Arc::new(handle);
-    let emit_progress = Arc::new(|message| {
-        if let Err(e) = handle.emit("progress", ProgressPayload::new(message)) {
-            return Err(anyhow::anyhow!(e.to_string()));
-        }
-        Ok(())
-    });
-    let cloned_handle = handle.clone();
-    let process_each_game_file_callback = Arc::new(Mutex::new(move || {
-        if let Err(e) = cloned_handle.emit("progresslive", ProgressLivePayload::new(None)) {
-            return Err(anyhow::anyhow!(e.to_string()));
-        }
-        Ok(())
-    }));
+    let pubsub = modules.pubsub();
 
     let explored_caches = modules.explored_cache_use_case().get_cache().await?;
     let explore_files: Vec<String> = modules
@@ -57,11 +42,13 @@ pub async fn create_elements_in_pc(
         })
         .collect();
 
-    emit_progress(format!(
+    if let Err(e) = pubsub.notify("progress", ProgressPayload::new(format!(
         "指定したフォルダの .lnk .exe ファイルを取得しました。ファイル数: {}",
         explore_files.len()
-    ))?;
-    if let Err(e) = handle.emit(
+    ))) {
+        return Err(CommandError::Anyhow(anyhow::anyhow!(e.to_string())));
+    }
+    if let Err(e) = pubsub.notify(
         "progresslive",
         ProgressLivePayload::new(Some(explore_files.len() as i32)),
     ) {
@@ -79,8 +66,7 @@ pub async fn create_elements_in_pc(
             &handle,
             explore_files.clone(),
             all_game_cache,
-            emit_progress,
-            process_each_game_file_callback,
+            Arc::new(pubsub.clone()),
         )
         .await?;
 

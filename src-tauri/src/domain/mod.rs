@@ -10,6 +10,7 @@ pub mod explored_cache;
 pub mod file;
 pub mod network;
 pub mod process;
+pub mod pubsub;
 
 pub mod explorer;
 pub mod repository;

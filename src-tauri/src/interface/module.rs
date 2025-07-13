@@ -5,6 +5,7 @@ use tauri::AppHandle;
 use crate::{
     infrastructure::{
         explorerimpl::explorer::{Explorers, ExplorersExt},
+        pubsubimpl::pubsub::{PubSub, PubSubExt},
         repositoryimpl::{
             driver::Db,
             repository::{Repositories, RepositoriesExt},
@@ -25,11 +26,13 @@ pub struct Modules {
     file_use_case: FileUseCase<Explorers>,
     all_game_cache_use_case: AllGameCacheUseCase<Repositories>,
     process_use_case: ProcessUseCase<Windows>,
+    pubsub: PubSub,
 }
 pub trait ModulesExt {
     type Repositories: RepositoriesExt;
     type Explorers: ExplorersExt;
     type Windows: WindowsExt;
+    type PubSub: PubSubExt;
 
     fn collection_use_case(&self) -> &CollectionUseCase<Self::Repositories>;
     fn explored_cache_use_case(&self) -> &ExploredCacheUseCase<Self::Repositories>;
@@ -37,12 +40,14 @@ pub trait ModulesExt {
     fn network_use_case(&self) -> &NetworkUseCase<Self::Explorers>;
     fn file_use_case(&self) -> &FileUseCase<Self::Explorers>;
     fn process_use_case(&self) -> &ProcessUseCase<Self::Windows>;
+    fn pubsub(&self) -> &Self::PubSub;
 }
 
 impl ModulesExt for Modules {
     type Repositories = Repositories;
     type Explorers = Explorers;
     type Windows = Windows;
+    type PubSub = PubSub;
 
     fn collection_use_case(&self) -> &CollectionUseCase<Self::Repositories> {
         &self.collection_use_case
@@ -62,6 +67,9 @@ impl ModulesExt for Modules {
     fn process_use_case(&self) -> &ProcessUseCase<Self::Windows> {
         &self.process_use_case
     }
+    fn pubsub(&self) -> &Self::PubSub {
+        &self.pubsub
+    }
 }
 
 impl Modules {
@@ -71,6 +79,7 @@ impl Modules {
         let repositories = Arc::new(Repositories::new(db.clone()));
         let explorers = Arc::new(Explorers::new());
         let windows = Arc::new(Windows::new());
+        let pubsub = PubSub::new(Arc::new(handle.clone()));
 
         let collection_use_case = CollectionUseCase::new(repositories.clone());
         let explored_cache_use_case = ExploredCacheUseCase::new(repositories.clone());
@@ -89,6 +98,7 @@ impl Modules {
             network_use_case,
             file_use_case,
             process_use_case,
+            pubsub,
         }
     }
 }
