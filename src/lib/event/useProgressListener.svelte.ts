@@ -1,12 +1,5 @@
 import type { ProgressLivePayload, ProgressPayload } from './types'
-import { useMultiEventListener } from './useMultiEventListener.svelte'
-
-export interface ProgressState {
-  totalFiles: number
-  processedFiles: number
-  currentMessage: string
-  isListening: boolean
-}
+import { useEvent } from './useEvent.svelte'
 
 export function useProgressListener() {
   let totalFiles = $state(0)
@@ -14,13 +7,13 @@ export function useProgressListener() {
   let currentMessage = $state('')
   let isListening = $state(false)
 
-  const eventListener = useMultiEventListener()
+  const event = useEvent()
 
   const startListen = async () => {
     if (isListening)
       return
 
-    await eventListener.startListen('progresslive', (payload: ProgressLivePayload) => {
+    await event.startListen('progresslive', (payload: ProgressLivePayload) => {
       if (payload.max) {
         totalFiles = payload.max
       }
@@ -29,7 +22,7 @@ export function useProgressListener() {
       }
     })
 
-    await eventListener.startListen('progress', (payload: ProgressPayload) => {
+    await event.startListen('progress', (payload: ProgressPayload) => {
       currentMessage = payload.message
     })
 
@@ -40,7 +33,7 @@ export function useProgressListener() {
     if (!isListening)
       return
 
-    eventListener.stopAllListeners()
+    event.stopAll()
     isListening = false
   }
 

@@ -1,78 +1,39 @@
 # Event Listener Composables
 
-型安全なTauriイベントリスナーを提供するcomposableライブラリです。
+型安全なTauriイベントリスナーを提供するシンプルなライブラリです。
 
-## 使用可能なComposables
+## 基本的な使い方
 
-### 1. useEventListener
-単一イベント用のシンプルなリスナー
+### useEvent - メインのcomposable
+
+ほとんどの用途に対応できるシンプルで型安全なイベントリスナーです。
 
 ```typescript
-import { useEventListener } from '$lib/event'
+import { useEvent } from '$lib/event'
 
-const eventListener = useEventListener()
+const event = useEvent()
 
 // 型安全なイベントリスニング
-await eventListener.startListen('progress', (payload) => {
+await event.startListen('progress', (payload) => {
   // payload は自動的に ProgressPayload 型
   console.log(payload.message)
 })
 
-eventListener.stopListen()
-```
-
-### 2. useTypedEventListener
-より強い型制約を持つEventListenerのラッパー
-
-```typescript
-import { useTypedEventListener } from '$lib/event'
-
-// イベント名を固定することでより型安全に
-const progressListener = useTypedEventListener('progress')
-
-await progressListener.startListen((payload) => {
-  // payload は自動的に ProgressPayload 型になる
-  console.log(payload.message)
-})
-```
-
-### 3. useMultiEventListener
-複数イベントを同時に管理
-
-```typescript
-import { useMultiEventListener } from '$lib/event'
-
-const eventListener = useMultiEventListener()
-
-// 個別にリスナーを追加
-await eventListener.startListen('progress', (payload) => {
-  console.log(payload.message)
-})
-await eventListener.startListen('progresslive', (payload) => {
+await event.startListen('progresslive', (payload) => {
+  // payload は自動的に ProgressLivePayload 型
   console.log(payload.max)
 })
 
-// または一括で追加
-await eventListener.startMultipleListen([
-  {
-    eventName: 'progress',
-    handler: payload => console.log(payload.message)
-  },
-  {
-    eventName: 'progresslive',
-    handler: payload => console.log(payload.max)
-  }
-])
-
 // 特定のイベントを停止
-eventListener.stopListen('progress')
+event.stopListen('progress')
 
-// すべて停止
-eventListener.stopAllListeners()
+// すべてのイベントを停止
+event.stopAll()
 ```
 
-### 4. useProgressListener
-progress/progressliveイベント専用の高機能リスナー
+### useProgressListener - 進捗専用composable
+
+進捗管理に特化した便利機能付きのcomposableです。
 
 ```typescript
 import { useProgressListener } from '$lib/event'
@@ -94,7 +55,7 @@ progress.resetProgress()
 
 ## 型定義
 
-サポートされているイベントは `types.ts` で定義されています：
+サポートされているイベント:
 
 ```typescript
 export interface EventPayloadMap {
@@ -103,12 +64,21 @@ export interface EventPayloadMap {
 }
 ```
 
-新しいイベント型を追加する場合は、`EventPayloadMap` にエントリを追加してください。
+新しいイベント型を追加する場合は、`types.ts`の`EventPayloadMap`にエントリを追加してください。
 
 ## 特徴
 
-- 🔒 **型安全**: TypeScriptによる完全な型安全性
-- 🎯 **柔軟性**: 単一イベントから複数イベントまで対応
+- 🔒 **型安全**: コンパイル時に型チェック
+- 🎯 **シンプル**: メインは`useEvent`一つだけ
 - 🔄 **リアクティブ**: Svelte 5の$stateと統合
-- 🧹 **自動クリーンアップ**: リスナーの適切な停止処理
-- 📊 **進捗管理**: 進捗率計算などの便利機能
+- 🧹 **自動管理**: リスナーの適切な停止処理
+
+## ファイル構成
+
+```
+src/lib/event/
+├── useEvent.svelte.ts           # メインのcomposable
+├── useProgressListener.svelte.ts # 進捗専用composable
+├── types.ts                     # 型定義
+└── index.ts                     # エクスポート
+```

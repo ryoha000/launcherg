@@ -2,14 +2,16 @@ import type { UnlistenFn } from '@tauri-apps/api/event'
 import type { EventName, EventPayloadMap, TypedEventHandler } from './types'
 import { listen } from '@tauri-apps/api/event'
 
-export interface TypedEventListener<T extends EventName = EventName> {
-  eventName: T
-  handler: TypedEventHandler<T>
-}
-
-export function useMultiEventListener() {
+/**
+ * 型安全なTauriイベントリスナー
+ * シンプルで使いやすい単一のAPI
+ */
+export function useEvent() {
   const listeners = new Map<string, UnlistenFn>()
 
+  /**
+   * イベントリスナーを開始
+   */
   const startListen = async <T extends EventName>(
     eventName: T,
     handler: TypedEventHandler<T>,
@@ -27,6 +29,9 @@ export function useMultiEventListener() {
     listeners.set(eventName, unlistenFn)
   }
 
+  /**
+   * 特定のイベントリスナーを停止
+   */
   const stopListen = (eventName: string) => {
     const unlistenFn = listeners.get(eventName)
     if (unlistenFn) {
@@ -35,23 +40,19 @@ export function useMultiEventListener() {
     }
   }
 
-  const stopAllListeners = () => {
+  /**
+   * すべてのイベントリスナーを停止
+   */
+  const stopAll = () => {
     for (const [_eventName, unlistenFn] of listeners) {
       unlistenFn()
     }
     listeners.clear()
   }
 
-  const startMultipleListen = async (eventListeners: TypedEventListener[]) => {
-    for (const { eventName, handler } of eventListeners) {
-      await startListen(eventName, handler as TypedEventHandler<typeof eventName>)
-    }
-  }
-
   return {
     startListen,
     stopListen,
-    stopAllListeners,
-    startMultipleListen,
+    stopAll,
   }
 }
