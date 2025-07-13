@@ -1,5 +1,4 @@
 use std::io::prelude::*;
-use std::sync::Mutex;
 use std::{collections::HashMap, sync::Arc, time::Instant};
 
 use derive_new::new;
@@ -10,6 +9,7 @@ use crate::domain::file::{
     get_file_created_at_sync, get_file_name_without_extension, get_game_candidates_by_exe_path,
     PlayHistory,
 };
+use crate::domain::pubsub::PubSubService;
 use crate::{
     domain::{
         collection::{CollectionElement, NewCollectionElement},
@@ -155,28 +155,21 @@ impl<R: ExplorersExt> FileUseCase<R> {
         }
         res
     }
-    pub async fn concurency_get_path_game_map<F: Fn() -> anyhow::Result<()> + Send + 'static>(
+    pub async fn concurency_get_path_game_map<P: PubSubService + 'static>(
         &self,
         normalized_all_games: Arc<AllGameCache>,
         files: Vec<String>,
-        callback: Arc<Mutex<F>>,
+        pubsub: Arc<P>,
     ) -> anyhow::Result<HashMap<ErogamescapeID, FilePathString>> {
         let get_game_id_tasks = files.into_iter().map(|path| {
             let all = normalized_all_games.clone();
-            let mutex_cb = Arc::clone(&callback);
+            let pubsub_clone = Arc::clone(&pubsub);
             tauri::async_runtime::spawn(async move {
                 let res = get_most_probable_game_candidate(&all, path)?;
-                match mutex_cb.lock() {
-                    Ok(cb) => {
-                        if let Err(e) = cb() {
-                            return Err(e);
-                        };
-                        Ok(res)
-                    }
-                    Err(e) => {
-                        return Err(anyhow::anyhow!(e.to_string()));
-                    }
+                if let Err(e) = pubsub_clone.notify("progresslive", crate::interface::models::collection::ProgressLivePayload::new(None)) {
+                    return Err(e);
                 }
+                Ok(res)
             })
         });
 
@@ -203,15 +196,13 @@ impl<R: ExplorersExt> FileUseCase<R> {
             .collect::<AllGameCache>();
         get_game_candidates_by_exe_path(&normalized_all_games, &file, 0.2, 5)
     }
-    pub async fn filter_files_to_collection_elements<
-        F: Fn() -> anyhow::Result<()> + Send + 'static,
-    >(
+    pub async fn filter_files_to_collection_elements<P: PubSubService + 'static>(
         &self,
         handle: &Arc<AppHandle>,
         files: Vec<String>,
         all_game_cache: AllGameCache,
         emit_progress: Arc<impl Fn(String) -> anyhow::Result<()>>,
-        process_each_game_file_callback: Arc<Mutex<F>>,
+        pubsub: Arc<P>,
     ) -> anyhow::Result<Vec<NewCollectionElement>> {
         let start = Instant::now();
 
@@ -233,7 +224,7 @@ impl<R: ExplorersExt> FileUseCase<R> {
             .concurency_get_path_game_map(
                 normalized_all_games,
                 files,
-                process_each_game_file_callback,
+                pubsub,
             )
             .await?
             .into_iter()
