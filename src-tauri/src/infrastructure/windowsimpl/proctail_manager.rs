@@ -4,6 +4,7 @@ use std::sync::Arc;
 use std::{fs, io};
 
 use serde::{Deserialize, Serialize};
+use sysinfo::{System, SystemExt, ProcessExt};
 use tauri::AppHandle;
 use tokio::sync::Mutex;
 
@@ -72,10 +73,20 @@ impl<T: AppConfigProvider> ProcTailManager<T> {
         self.get_proctail_version_dir(version).join("host").join(PROCTAIL_EXECUTABLE)
     }
 
+    pub fn get_proctail_appsettings_path(&self, version: &str) -> PathBuf {
+        self.get_proctail_version_dir(version).join("host").join("appsettings.Production.json")
+    }
+
     pub async fn get_current_proctail_executable_path(&self) -> Result<PathBuf, ProcTailManagerError> {
         let current_version = self.get_current_version().await?
             .ok_or_else(|| ProcTailManagerError::Process("No version installed".to_string()))?;
         Ok(self.get_proctail_executable_path(&current_version))
+    }
+
+    pub async fn get_current_proctail_appsettings_path(&self) -> Result<PathBuf, ProcTailManagerError> {
+        let current_version = self.get_current_version().await?
+            .ok_or_else(|| ProcTailManagerError::Process("No version installed".to_string()))?;
+        Ok(self.get_proctail_appsettings_path(&current_version))
     }
 
 
@@ -209,6 +220,13 @@ impl<T: AppConfigProvider> ProcTailManager<T> {
             ));
         }
 
+        let appsettings_path = self.get_current_proctail_appsettings_path().await?;
+        if !appsettings_path.exists() {
+            return Err(ProcTailManagerError::Process(
+                "ProcTail appsettings.Production.json not found".to_string(),
+            ));
+        }
+
         let mut process_guard = self.process.lock().await;
         
         // Check if process is already running
@@ -228,8 +246,11 @@ impl<T: AppConfigProvider> ProcTailManager<T> {
             }
         }
 
+        let working_dir = executable_path.parent()
+            .ok_or_else(|| ProcTailManagerError::Process("Executable path has no parent directory".to_string()))?;
         // Start new process
-        let child = Command::new(executable_path)
+        let child = Command::new(&executable_path)
+            .current_dir(working_dir)
             .spawn()
             .map_err(|e| ProcTailManagerError::Process(format!("Failed to start ProcTail: {}", e)))?;
 
@@ -252,6 +273,7 @@ impl<T: AppConfigProvider> ProcTailManager<T> {
     }
 
     pub async fn is_running(&self) -> bool {
+        // Check if we have a managed process
         let mut process_guard = self.process.lock().await;
         
         if let Some(ref mut child) = *process_guard {
@@ -259,21 +281,34 @@ impl<T: AppConfigProvider> ProcTailManager<T> {
                 Ok(Some(_)) => {
                     // Process has exited
                     *process_guard = None;
-                    false
                 }
                 Ok(None) => {
-                    // Process is still running
-                    true
+                    // Process is still running under our management
+                    return true;
                 }
                 Err(_) => {
-                    // Error checking process, assume not running
+                    // Error checking process, clear the reference
                     *process_guard = None;
-                    false
                 }
             }
-        } else {
-            false
         }
+        
+        // If no managed process or managed process failed, check system processes
+        self.is_proctail_running_in_system()
+    }
+    
+    fn is_proctail_running_in_system(&self) -> bool {
+        let mut system = System::new_all();
+        system.refresh_all();
+        
+        // Look for ProcTail.Host.exe process
+        for process in system.processes().values() {
+            if process.name() == "ProcTail.Host.exe" {
+                return true;
+            }
+        }
+        
+        false
     }
 
     pub async fn get_status(&self) -> Result<ProcTailManagerStatus, ProcTailManagerError> {

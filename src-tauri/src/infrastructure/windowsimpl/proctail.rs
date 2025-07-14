@@ -11,7 +11,8 @@ use tokio::net::windows::named_pipe::{ClientOptions, NamedPipeClient};
 use tokio::sync::Mutex;
 use tokio::time::{timeout, Duration};
 
-const DEFAULT_PIPE_NAME: &str = r"\\.\pipe\ProcTailIPC";
+const DEFAULT_PIPE_NAME: &str = r"\\.\pipe\ProcTail";
+const ALTERNATIVE_PIPE_NAME: &str = r"\\.\pipe\proctail";
 const DEFAULT_TIMEOUT_MS: u64 = 5000;
 
 #[derive(Debug, Serialize)]
@@ -108,6 +109,36 @@ impl ProcTailImpl {
         }
     }
 
+    pub async fn detect_pipe_name(&self) -> Option<String> {
+        let candidate_pipes = vec![
+            DEFAULT_PIPE_NAME.to_string(),
+            ALTERNATIVE_PIPE_NAME.to_string(),
+        ];
+        
+        for pipe_name in candidate_pipes {
+            if self.test_pipe_exists(&pipe_name).await {
+                return Some(pipe_name);
+            }
+        }
+        
+        None
+    }
+
+    async fn test_pipe_exists(&self, pipe_name: &str) -> bool {
+        match timeout(
+            Duration::from_millis(1000),
+            async {
+                ClientOptions::new().open(pipe_name)
+            },
+        )
+        .await
+        {
+            Ok(Ok(_)) => true,
+            Ok(Err(_)) => false,
+            Err(_) => false,
+        }
+    }
+
     pub fn with_config(pipe_name: String, timeout_ms: u64) -> Self {
         Self {
             pipe_name,
@@ -191,18 +222,52 @@ impl ProcTailImpl {
 
     async fn connect_to_pipe(&self) -> Result<NamedPipeClient, ProcTailError> {
         let pipe_name = self.pipe_name.clone();
-        let client = timeout(
-            Duration::from_millis(self.timeout_ms),
-            async move {
-                ClientOptions::new().open(&pipe_name)
-            },
-        )
-        .await
-        .map_err(|_| ProcTailError::Timeout)?
-        .map_err(|e| ProcTailError::ConnectionFailed(format!("Failed to connect to pipe: {}", e)))?;
-
-        Ok(client)
+        let pipe_name_for_error = pipe_name.clone();
+        
+        // Retry connection with exponential backoff for OS error 233
+        let max_retries = 3;
+        let mut retry_count = 0;
+        
+        while retry_count < max_retries {
+            let result = timeout(
+                Duration::from_millis(self.timeout_ms),
+                async {
+                    ClientOptions::new().open(&pipe_name)
+                },
+            )
+            .await;
+            
+            match result {
+                Ok(Ok(client)) => return Ok(client),
+                Ok(Err(e)) => {
+                    // Check for OS error 233 (ERROR_PIPE_NOT_CONNECTED)
+                    if e.raw_os_error() == Some(233) {
+                        retry_count += 1;
+                        if retry_count < max_retries {
+                            // Wait before retry with exponential backoff
+                            let delay = Duration::from_millis(100 * (1 << retry_count));
+                            tokio::time::sleep(delay).await;
+                            continue;
+                        }
+                    }
+                    
+                    return Err(ProcTailError::ConnectionFailed(format!(
+                        "Pipe {} connection failed. Please ensure ProcTail service is fully initialized. Error: {}", 
+                        pipe_name_for_error, e
+                    )));
+                }
+                Err(_) => {
+                    return Err(ProcTailError::Timeout);
+                }
+            }
+        }
+        
+        Err(ProcTailError::ConnectionFailed(format!(
+            "Failed to connect to pipe {} after {} retries. ProcTail service may not be responding.", 
+            pipe_name_for_error, max_retries
+        )))
     }
+
 
     async fn send_on_pipe(&self, client: &mut NamedPipeClient, request: &str) -> Result<String, ProcTailError> {
         // Send request
@@ -330,15 +395,52 @@ impl ProcTail for ProcTailImpl {
     }
 
     async fn health_check(&self) -> Result<HealthCheckResult, ProcTailError> {
+        // Try with current pipe name first
         let parameters = serde_json::json!({});
-        let data: HealthCheckData = self.send_request("HealthCheck", parameters).await?;
+        let result = self.send_request("HealthCheck", parameters.clone()).await;
         
+        // If failed, try to detect alternative pipe name
+        if let Err(ref err) = result {
+            // Check if it's OS error 233 - service may be starting up
+            if let ProcTailError::IoError(io_err) = err {
+                if io_err.raw_os_error() == Some(233) {
+                    // Wait a bit and retry once for service initialization
+                    tokio::time::sleep(Duration::from_millis(500)).await;
+                    let retry_result = self.send_request("HealthCheck", parameters.clone()).await;
+                    if retry_result.is_ok() {
+                        let data: HealthCheckData = retry_result?;
+                        return Ok(HealthCheckResult {
+                            status: data.status,
+                            check_time: data.check_time,
+                            details: data.details,
+                        });
+                    }
+                }
+            }
+            
+            // Try alternative pipe name detection
+            if let Some(detected_pipe) = self.detect_pipe_name().await {
+                if detected_pipe != self.pipe_name {
+                    // Create a new instance with the detected pipe name
+                    let alternative_impl = ProcTailImpl::with_config(detected_pipe, self.timeout_ms);
+                    return alternative_impl.send_request("HealthCheck", parameters).await
+                        .map(|data: HealthCheckData| HealthCheckResult {
+                            status: data.status,
+                            check_time: data.check_time,
+                            details: data.details,
+                        });
+                }
+            }
+        }
+        
+        let data: HealthCheckData = result?;
         Ok(HealthCheckResult {
             status: data.status,
             check_time: data.check_time,
             details: data.details,
         })
     }
+
 
     async fn is_service_available(&self) -> bool {
         matches!(self.health_check().await, Ok(result) if result.status == "Healthy")
