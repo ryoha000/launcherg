@@ -9,6 +9,7 @@ use super::{
     module::{Modules, ModulesExt},
 };
 use crate::domain::file::get_lnk_metadatas;
+use crate::domain::windows::proctail::{ProcTailEvent, ServiceStatus, WatchTarget, HealthCheckResult};
 use crate::{
     domain::{
         collection::NewCollectionElement,
@@ -480,4 +481,92 @@ pub async fn save_screenshot_by_pid(
         .save_screenshot_by_pid(process_id, &upload_path)
         .await?;
     Ok(upload_path)
+}
+
+// ProcTail commands
+#[tauri::command]
+pub async fn proctail_add_watch_target(
+    modules: State<'_, Arc<Modules>>,
+    process_id: u32,
+    tag: String,
+) -> anyhow::Result<WatchTarget, CommandError> {
+    Ok(modules
+        .process_use_case()
+        .proctail_add_watch_target(process_id, &tag)
+        .await?)
+}
+
+#[tauri::command]
+pub async fn proctail_remove_watch_target(
+    modules: State<'_, Arc<Modules>>,
+    tag: String,
+) -> anyhow::Result<u32, CommandError> {
+    Ok(modules
+        .process_use_case()
+        .proctail_remove_watch_target(&tag)
+        .await?)
+}
+
+#[tauri::command]
+pub async fn proctail_get_watch_targets(
+    modules: State<'_, Arc<Modules>>,
+) -> anyhow::Result<Vec<WatchTarget>, CommandError> {
+    Ok(modules
+        .process_use_case()
+        .proctail_get_watch_targets()
+        .await?)
+}
+
+#[tauri::command]
+pub async fn proctail_get_recorded_events(
+    modules: State<'_, Arc<Modules>>,
+    tag: String,
+    count: Option<u32>,
+    event_type: Option<String>,
+) -> anyhow::Result<Vec<ProcTailEvent>, CommandError> {
+    Ok(modules
+        .process_use_case()
+        .proctail_get_recorded_events(&tag, count, event_type.as_deref())
+        .await?)
+}
+
+#[tauri::command]
+pub async fn proctail_clear_events(
+    modules: State<'_, Arc<Modules>>,
+    tag: String,
+) -> anyhow::Result<u32, CommandError> {
+    Ok(modules
+        .process_use_case()
+        .proctail_clear_events(&tag)
+        .await?)
+}
+
+#[tauri::command]
+pub async fn proctail_get_status(
+    modules: State<'_, Arc<Modules>>,
+) -> anyhow::Result<ServiceStatus, CommandError> {
+    Ok(modules
+        .process_use_case()
+        .proctail_get_status()
+        .await?)
+}
+
+#[tauri::command]
+pub async fn proctail_health_check(
+    modules: State<'_, Arc<Modules>>,
+) -> anyhow::Result<HealthCheckResult, CommandError> {
+    Ok(modules
+        .process_use_case()
+        .proctail_health_check()
+        .await?)
+}
+
+#[tauri::command]
+pub async fn proctail_is_service_available(
+    modules: State<'_, Arc<Modules>>,
+) -> anyhow::Result<bool, CommandError> {
+    Ok(modules
+        .process_use_case()
+        .proctail_is_service_available()
+        .await?)
 }

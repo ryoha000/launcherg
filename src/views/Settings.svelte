@@ -1,4 +1,5 @@
 <script lang='ts'>
+  import { goto } from '@mateothegreat/svelte5-router'
   import Button from '@/components/UI/Button.svelte'
   import Input from '@/components/UI/Input.svelte'
 
@@ -22,6 +23,10 @@
       defaultDirectory: '',
       maxRecentGames: '10',
     }
+  }
+
+  function navigateToProcTailDebug() {
+    goto('/debug/proctail')
   }
 </script>
 
@@ -67,6 +72,14 @@
         <div>
           <Input bind:value={settings.maxRecentGames} placeholder='10' />
         </div>
+      </div>
+    </div>
+
+    <!-- デバッグ設定 -->
+    <div>
+      <h2 class='text-lg font-semibold mb-3 text-(text-primary)'>デバッグ</h2>
+      <div class='space-y-3'>
+        <Button variant='normal' onclick={navigateToProcTailDebug} text='ProcTailデバッグ画面' />
       </div>
     </div>
 
