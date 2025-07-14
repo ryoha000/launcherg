@@ -10,6 +10,7 @@ use super::{
 };
 use crate::domain::file::get_lnk_metadatas;
 use crate::domain::windows::proctail::{ProcTailEvent, ServiceStatus, WatchTarget, HealthCheckResult};
+use crate::infrastructure::windowsimpl::proctail_manager::{ProcTailManagerStatus, ProcTailVersion};
 use crate::{
     domain::{
         collection::NewCollectionElement,
@@ -568,5 +569,76 @@ pub async fn proctail_is_service_available(
     Ok(modules
         .process_use_case()
         .proctail_is_service_available()
+        .await?)
+}
+
+// ProcTail Manager commands
+#[tauri::command]
+pub async fn proctail_manager_get_status(
+    modules: State<'_, Arc<Modules>>,
+) -> anyhow::Result<ProcTailManagerStatus, CommandError> {
+    Ok(modules
+        .process_use_case()
+        .proctail_manager_get_status()
+        .await?)
+}
+
+#[tauri::command]
+pub async fn proctail_manager_get_latest_version(
+    modules: State<'_, Arc<Modules>>,
+) -> anyhow::Result<ProcTailVersion, CommandError> {
+    Ok(modules
+        .process_use_case()
+        .proctail_manager_get_latest_version()
+        .await?)
+}
+
+#[tauri::command]
+pub async fn proctail_manager_is_update_available(
+    modules: State<'_, Arc<Modules>>,
+) -> anyhow::Result<bool, CommandError> {
+    Ok(modules
+        .process_use_case()
+        .proctail_manager_is_update_available()
+        .await?)
+}
+
+#[tauri::command]
+pub async fn proctail_manager_download_and_install(
+    modules: State<'_, Arc<Modules>>,
+) -> anyhow::Result<(), CommandError> {
+    Ok(modules
+        .process_use_case()
+        .proctail_manager_download_and_install()
+        .await?)
+}
+
+#[tauri::command]
+pub async fn proctail_manager_start(
+    modules: State<'_, Arc<Modules>>,
+) -> anyhow::Result<(), CommandError> {
+    Ok(modules
+        .process_use_case()
+        .proctail_manager_start()
+        .await?)
+}
+
+#[tauri::command]
+pub async fn proctail_manager_stop(
+    modules: State<'_, Arc<Modules>>,
+) -> anyhow::Result<(), CommandError> {
+    Ok(modules
+        .process_use_case()
+        .proctail_manager_stop()
+        .await?)
+}
+
+#[tauri::command]
+pub async fn proctail_manager_is_running(
+    modules: State<'_, Arc<Modules>>,
+) -> anyhow::Result<bool, CommandError> {
+    Ok(modules
+        .process_use_case()
+        .proctail_manager_is_running()
         .await?)
 }

@@ -9,6 +9,8 @@ import type {
   GetEventsRequest,
   HealthCheckResult,
   ProcTailEvent,
+  ProcTailManagerStatus,
+  ProcTailVersion,
   RemoveWatchTargetRequest,
   ServiceStatus,
   WatchTarget,
@@ -175,4 +177,33 @@ export async function commandProcTailHealthCheck() {
 
 export async function commandProcTailIsServiceAvailable() {
   return await invoke<boolean>('proctail_is_service_available')
+}
+
+// ProcTail Manager Commands
+export async function commandProcTailManagerGetStatus() {
+  return await invoke<ProcTailManagerStatus>('proctail_manager_get_status')
+}
+
+export async function commandProcTailManagerGetLatestVersion() {
+  return await invoke<ProcTailVersion>('proctail_manager_get_latest_version')
+}
+
+export async function commandProcTailManagerIsUpdateAvailable() {
+  return await invoke<boolean>('proctail_manager_is_update_available')
+}
+
+export async function commandProcTailManagerDownloadAndInstall() {
+  return await invoke<void>('proctail_manager_download_and_install')
+}
+
+export async function commandProcTailManagerStart() {
+  return await invoke<void>('proctail_manager_start')
+}
+
+export async function commandProcTailManagerStop() {
+  return await invoke<void>('proctail_manager_stop')
+}
+
+export async function commandProcTailManagerIsRunning() {
+  return await invoke<boolean>('proctail_manager_is_running')
 }

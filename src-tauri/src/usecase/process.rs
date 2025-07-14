@@ -6,6 +6,7 @@ use crate::{
     domain::windows::process::ProcessWindows, 
     domain::windows::proctail::{ProcTail, ProcTailEvent, ServiceStatus, WatchTarget, HealthCheckResult},
     infrastructure::windowsimpl::windows::WindowsExt,
+    infrastructure::windowsimpl::proctail_manager::{ProcTailManagerStatus, ProcTailVersion},
 };
 
 #[derive(new)]
@@ -90,6 +91,63 @@ impl<R: WindowsExt> ProcessUseCase<R> {
         Ok(self.windows
             .proctail()
             .is_service_available()
+            .await)
+    }
+
+    // ProcTail Manager methods
+    pub async fn proctail_manager_get_status(&self) -> anyhow::Result<ProcTailManagerStatus> {
+        Ok(self.windows
+            .proctail_manager()
+            .get_status()
+            .await?)
+    }
+
+    pub async fn proctail_manager_get_latest_version(&self) -> anyhow::Result<ProcTailVersion> {
+        Ok(self.windows
+            .proctail_manager()
+            .get_latest_version()
+            .await?)
+    }
+
+    pub async fn proctail_manager_is_update_available(&self) -> anyhow::Result<bool> {
+        Ok(self.windows
+            .proctail_manager()
+            .is_update_available()
+            .await?)
+    }
+
+    pub async fn proctail_manager_download_and_install(&self) -> anyhow::Result<()> {
+        let latest_version = self.windows
+            .proctail_manager()
+            .get_latest_version()
+            .await?;
+        
+        self.windows
+            .proctail_manager()
+            .download_and_install(&latest_version)
+            .await?;
+        
+        Ok(())
+    }
+
+    pub async fn proctail_manager_start(&self) -> anyhow::Result<()> {
+        Ok(self.windows
+            .proctail_manager()
+            .start_proctail()
+            .await?)
+    }
+
+    pub async fn proctail_manager_stop(&self) -> anyhow::Result<()> {
+        Ok(self.windows
+            .proctail_manager()
+            .stop_proctail()
+            .await?)
+    }
+
+    pub async fn proctail_manager_is_running(&self) -> anyhow::Result<bool> {
+        Ok(self.windows
+            .proctail_manager()
+            .is_running()
             .await)
     }
 }

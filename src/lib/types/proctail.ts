@@ -116,3 +116,16 @@ export interface GetEventsForm {
 export interface ProcTailError {
   message: string
 }
+
+// ProcTail Manager types
+export interface ProcTailManagerStatus {
+  current_version: string | null
+  is_running: boolean
+  executable_exists: boolean
+  update_available: boolean
+}
+
+export interface ProcTailVersion {
+  version: string
+  download_url: string
+}

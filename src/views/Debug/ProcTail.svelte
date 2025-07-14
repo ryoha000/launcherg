@@ -7,6 +7,8 @@
     GetEventsRequest,
     HealthCheckResult,
     ProcTailEvent,
+    ProcTailManagerStatus,
+    ProcTailVersion,
     RemoveWatchTargetRequest,
     ServiceStatus,
     WatchTarget,
@@ -22,6 +24,11 @@
     commandProcTailGetWatchTargets,
     commandProcTailHealthCheck,
     commandProcTailIsServiceAvailable,
+    commandProcTailManagerDownloadAndInstall,
+    commandProcTailManagerGetLatestVersion,
+    commandProcTailManagerGetStatus,
+    commandProcTailManagerStart,
+    commandProcTailManagerStop,
     commandProcTailRemoveWatchTarget,
   } from '@/lib/command'
 
@@ -33,6 +40,11 @@
   let healthCheck: HealthCheckResult | null = null
   let error: string | null = null
   let loading = false
+
+  // ProcTail Manager State
+  let managerStatus: ProcTailManagerStatus | null = null
+  let latestVersion: ProcTailVersion | null = null
+  let downloading = false
 
   // Form data
   let addTargetForm: AddTargetForm = {
@@ -49,6 +61,8 @@
 
   // Initialize
   onMount(async () => {
+    await loadManagerStatus()
+    await loadLatestVersion()
     await checkServiceAvailability()
     await loadWatchTargets()
     await loadServiceStatus()
@@ -263,6 +277,89 @@
     }
     return ''
   }
+
+  // ProcTail Manager functions
+  async function loadManagerStatus() {
+    loading = true
+    try {
+      managerStatus = await commandProcTailManagerGetStatus()
+      error = null
+    }
+    catch (e: unknown) {
+      const errorMessage = e instanceof Error ? e.message : String(e)
+      error = `マネージャー状態取得エラー: ${errorMessage}`
+      managerStatus = null
+    }
+    finally {
+      loading = false
+    }
+  }
+
+  async function loadLatestVersion() {
+    loading = true
+    try {
+      latestVersion = await commandProcTailManagerGetLatestVersion()
+      error = null
+    }
+    catch (e: unknown) {
+      const errorMessage = e instanceof Error ? e.message : String(e)
+      error = `最新バージョン取得エラー: ${errorMessage}`
+      latestVersion = null
+    }
+    finally {
+      loading = false
+    }
+  }
+
+  async function downloadAndInstall() {
+    downloading = true
+    try {
+      await commandProcTailManagerDownloadAndInstall()
+      await loadManagerStatus()
+      error = null
+    }
+    catch (e: unknown) {
+      const errorMessage = e instanceof Error ? e.message : String(e)
+      error = `ダウンロード・インストールエラー: ${errorMessage}`
+    }
+    finally {
+      downloading = false
+    }
+  }
+
+  async function startProcTail() {
+    loading = true
+    try {
+      await commandProcTailManagerStart()
+      await loadManagerStatus()
+      await checkServiceAvailability()
+      error = null
+    }
+    catch (e: unknown) {
+      const errorMessage = e instanceof Error ? e.message : String(e)
+      error = `ProcTail起動エラー: ${errorMessage}`
+    }
+    finally {
+      loading = false
+    }
+  }
+
+  async function stopProcTail() {
+    loading = true
+    try {
+      await commandProcTailManagerStop()
+      await loadManagerStatus()
+      await checkServiceAvailability()
+      error = null
+    }
+    catch (e: unknown) {
+      const errorMessage = e instanceof Error ? e.message : String(e)
+      error = `ProcTail停止エラー: ${errorMessage}`
+    }
+    finally {
+      loading = false
+    }
+  }
 </script>
 
 <div class='p-6 max-w-4xl mx-auto h-full overflow-y-auto'>
@@ -283,6 +380,58 @@
     {#if error}
       <div class='bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded'>
         {error}
+      </div>
+    {/if}
+
+    <!-- ProcTail Manager Status -->
+    {#if managerStatus}
+      <div class='bg-(bg-secondary) border border-(border-primary) rounded p-4'>
+        <h3 class='text-lg font-semibold mb-3 text-(text-primary)'>ProcTail マネージャー</h3>
+        <div class='grid grid-cols-2 gap-4 text-sm mb-4'>
+          <div>
+            <span class='font-medium text-(text-secondary)'>現在のバージョン:</span>
+            <span class='text-(text-primary)'>{managerStatus.current_version || '未インストール'}</span>
+          </div>
+          <div>
+            <span class='font-medium text-(text-secondary)'>実行可能ファイル:</span>
+            <span class='text-(text-primary)'>{managerStatus.executable_exists ? '存在' : '不存在'}</span>
+          </div>
+          <div>
+            <span class='font-medium text-(text-secondary)'>プロセス状態:</span>
+            <span class='text-(text-primary)'>{managerStatus.is_running ? '実行中' : '停止中'}</span>
+          </div>
+          <div>
+            <span class='font-medium text-(text-secondary)'>アップデート:</span>
+            <span class='text-(text-primary)'>{managerStatus.update_available ? '利用可能' : '最新'}</span>
+          </div>
+        </div>
+
+        {#if latestVersion}
+          <div class='mb-4'>
+            <span class='font-medium text-(text-secondary)'>最新バージョン:</span>
+            <span class='text-(text-primary)'>{latestVersion.version}</span>
+          </div>
+        {/if}
+
+        <div class='flex gap-2 flex-wrap'>
+          {#if managerStatus.update_available}
+            <Button
+              onclick={downloadAndInstall}
+              text={downloading ? 'ダウンロード中...' : 'ダウンロード・インストール'}
+              disabled={downloading || loading}
+            />
+          {/if}
+
+          {#if managerStatus.executable_exists}
+            {#if managerStatus.is_running}
+              <Button variant='normal' onclick={stopProcTail} text='ProcTail停止' disabled={loading} />
+            {:else}
+              <Button onclick={startProcTail} text='ProcTail起動' disabled={loading} />
+            {/if}
+          {/if}
+
+          <Button variant='normal' onclick={loadManagerStatus} text='状態更新' disabled={loading} />
+        </div>
       </div>
     {/if}
 

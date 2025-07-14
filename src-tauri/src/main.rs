@@ -91,6 +91,13 @@ fn main() {
             command::proctail_get_status,
             command::proctail_health_check,
             command::proctail_is_service_available,
+            command::proctail_manager_get_status,
+            command::proctail_manager_get_latest_version,
+            command::proctail_manager_is_update_available,
+            command::proctail_manager_download_and_install,
+            command::proctail_manager_start,
+            command::proctail_manager_stop,
+            command::proctail_manager_is_running,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
