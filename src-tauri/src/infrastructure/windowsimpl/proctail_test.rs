@@ -171,18 +171,10 @@ mod tests {
             }
         }
         
-        println!("ファイルイベント数: {}", file_events);
-        println!("プロセス開始イベント数: {}", process_start_events);
-        println!("プロセス終了イベント数: {}", process_end_events);
-        
         // 少なくとも何らかのイベントが記録されていることを確認
         // 注意: ProcTailがすべてのイベントをキャッチできるとは限らないため、
         // 厳密な数のチェックではなく、0より大きいことを確認
-        if events.len() > 0 {
-            println!("✓ イベントが正常に記録されました");
-        } else {
-            println!("⚠ イベントが記録されませんでした（ProcTailサービスの設定を確認してください）");
-        }
+        assert!(events.len() > 0, "イベントが記録されませんでした（ProcTailサービスの設定を確認してください）");
         
         // クリーンアップ: 一時ディレクトリを削除
         let _ = std::fs::remove_dir_all(&temp_dir);
@@ -249,15 +241,8 @@ mod tests {
         println!("クリア後のイベント数: {}", events_after.len());
         
         // クリア動作の確認
-        if events_before.len() > 0 {
-            if events_after.len() < events_before.len() {
-                println!("✓ イベントのクリア操作が正常に動作しました");
-            } else {
-                println!("⚠ クリア操作後もイベント数が変化していません");
-            }
-        } else {
-            println!("⚠ クリア前にイベントが記録されていませんでした");
-        }
+        assert!(events_before.len() > 0, "クリア前にイベントが記録されていませんでした");
+        assert!(events_after.len() < events_before.len(), "クリア操作後もイベント数が変化していません");
         
         // クリーンアップ: 一時ディレクトリを削除
         let _ = std::fs::remove_dir_all(&temp_dir);
