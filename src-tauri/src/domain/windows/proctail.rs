@@ -9,8 +9,8 @@ pub enum ProcTailError {
     ConnectionFailed(String),
     #[error("ProcTail service error: {0}")]
     ServiceError(String),
-    #[error("Invalid response from ProcTail service")]
-    InvalidResponse,
+    #[error("Invalid response from ProcTail service: {0}")]
+    InvalidResponse(String),
     #[error("Process not found: {0}")]
     ProcessNotFound(u32),
     #[error("Tag not found: {0}")]
