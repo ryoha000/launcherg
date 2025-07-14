@@ -33,31 +33,31 @@
   } from '@/lib/command'
 
   // State
-  let isServiceAvailable = false
-  let serviceStatus: ServiceStatus | null = null
-  let watchTargets: WatchTarget[] = []
-  let events: ProcTailEvent[] = []
-  let healthCheck: HealthCheckResult | null = null
-  let error: string | null = null
-  let loading = false
+  let isServiceAvailable = $state(false)
+  let serviceStatus = $state<ServiceStatus | null>(null)
+  let watchTargets = $state<WatchTarget[]>([])
+  let events = $state<ProcTailEvent[]>([])
+  let healthCheck = $state<HealthCheckResult | null>(null)
+  let error = $state<string | null>(null)
+  let loading = $state(false)
 
   // ProcTail Manager State
-  let managerStatus: ProcTailManagerStatus | null = null
-  let latestVersion: ProcTailVersion | null = null
-  let downloading = false
+  let managerStatus = $state<ProcTailManagerStatus | null>(null)
+  let latestVersion = $state<ProcTailVersion | null>(null)
+  let downloading = $state(false)
 
   // Form data
-  let addTargetForm: AddTargetForm = {
+  let addTargetForm = $state<AddTargetForm>({
     processId: '',
     tag: '',
-  }
-  let removeTargetTag = ''
-  let getEventsForm: GetEventsForm = {
+  })
+  let removeTargetTag = $state('')
+  let getEventsForm = $state<GetEventsForm>({
     tag: '',
     count: '50',
     eventType: '',
-  }
-  let clearEventsTag = ''
+  })
+  let clearEventsTag = $state('')
 
   // Initialize
   onMount(async () => {
@@ -253,13 +253,13 @@
   // Get event details
   function getEventDetails(event: ProcTailEvent): string {
     if ('File' in event) {
-      return `${event.File.operation}: ${event.File.file_path}`
+      return `${event.File.Operation}: ${event.File.FilePath}`
     }
     if ('ProcessStart' in event) {
-      return `${event.ProcessStart.process_name} (PID: ${event.ProcessStart.process_id})`
+      return `${event.ProcessStart.ProcessName} (PID: ${event.ProcessStart.ProcessId})`
     }
     if ('ProcessEnd' in event) {
-      return `${event.ProcessEnd.process_name} (終了コード: ${event.ProcessEnd.exit_code})`
+      return `${event.ProcessEnd.ProcessName} (終了コード: ${event.ProcessEnd.ExitCode})`
     }
     return ''
   }
@@ -267,13 +267,13 @@
   // Get event timestamp
   function getEventTimestamp(event: ProcTailEvent): string {
     if ('File' in event) {
-      return event.File.timestamp
+      return event.File.Timestamp
     }
     if ('ProcessStart' in event) {
-      return event.ProcessStart.timestamp
+      return event.ProcessStart.Timestamp
     }
     if ('ProcessEnd' in event) {
-      return event.ProcessEnd.timestamp
+      return event.ProcessEnd.Timestamp
     }
     return ''
   }
@@ -316,6 +316,7 @@
     try {
       await commandProcTailManagerDownloadAndInstall()
       await loadManagerStatus()
+      await loadLatestVersion()
       error = null
     }
     catch (e: unknown) {
@@ -442,35 +443,35 @@
         <div class='grid grid-cols-2 gap-4 text-sm'>
           <div>
             <span class='font-medium text-(text-secondary)'>状態:</span>
-            <span class='text-(text-primary)'>{serviceStatus.service.status}</span>
+            <span class='text-(text-primary)'>{serviceStatus.Service.Status}</span>
           </div>
           <div>
             <span class='font-medium text-(text-secondary)'>バージョン:</span>
-            <span class='text-(text-primary)'>{serviceStatus.service.version}</span>
+            <span class='text-(text-primary)'>{serviceStatus.Service.Version}</span>
           </div>
           <div>
             <span class='font-medium text-(text-secondary)'>起動時間:</span>
-            <span class='text-(text-primary)'>{serviceStatus.service.start_time}</span>
+            <span class='text-(text-primary)'>{serviceStatus.Service.StartTime}</span>
           </div>
           <div>
             <span class='font-medium text-(text-secondary)'>稼働時間:</span>
-            <span class='text-(text-primary)'>{serviceStatus.service.uptime}</span>
+            <span class='text-(text-primary)'>{serviceStatus.Service.Uptime}</span>
           </div>
           <div>
             <span class='font-medium text-(text-secondary)'>アクティブタグ:</span>
-            <span class='text-(text-primary)'>{serviceStatus.monitoring.active_tags}</span>
+            <span class='text-(text-primary)'>{serviceStatus.Monitoring.ActiveTags}</span>
           </div>
           <div>
             <span class='font-medium text-(text-secondary)'>監視プロセス:</span>
-            <span class='text-(text-primary)'>{serviceStatus.monitoring.active_processes}</span>
+            <span class='text-(text-primary)'>{serviceStatus.Monitoring.ActiveProcesses}</span>
           </div>
           <div>
             <span class='font-medium text-(text-secondary)'>総イベント数:</span>
-            <span class='text-(text-primary)'>{serviceStatus.monitoring.total_events}</span>
+            <span class='text-(text-primary)'>{serviceStatus.Monitoring.TotalEvents}</span>
           </div>
           <div>
             <span class='font-medium text-(text-secondary)'>メモリ使用量:</span>
-            <span class='text-(text-primary)'>{serviceStatus.resources.memory_usage_mb.toFixed(1)} MB</span>
+            <span class='text-(text-primary)'>{serviceStatus.Resources.MemoryUsageMB.toFixed(1)} MB</span>
           </div>
         </div>
       </div>
@@ -483,16 +484,16 @@
         <div class='space-y-2'>
           <div>
             <span class='font-medium text-(text-secondary)'>状態:</span>
-            <span class='text-(text-primary)'>{healthCheck.status}</span>
+            <span class='text-(text-primary)'>{healthCheck.Status}</span>
           </div>
           <div>
             <span class='font-medium text-(text-secondary)'>チェック時間:</span>
-            <span class='text-(text-primary)'>{healthCheck.check_time}</span>
+            <span class='text-(text-primary)'>{healthCheck.CheckTime}</span>
           </div>
           <div class='mt-3'>
             <span class='font-medium text-(text-secondary)'>詳細:</span>
             <div class='mt-1 space-y-1'>
-              {#each Object.entries(healthCheck.details) as [key, value]}
+              {#each Object.entries(healthCheck.Details) as [key, value]}
                 <div class='flex justify-between'>
                   <span class='text-(text-secondary)'>{key}:</span>
                   <span class='text-(text-primary)'>{value}</span>
@@ -511,19 +512,22 @@
       <!-- Add Watch Target -->
       <div class='mb-4 p-3 bg-(bg-tertiary) rounded'>
         <h4 class='font-medium mb-2 text-(text-secondary)'>監視対象を追加</h4>
-        <div class='flex gap-2'>
-          <Input bind:value={addTargetForm.processId} placeholder='プロセスID' />
-          <Input bind:value={addTargetForm.tag} placeholder='タグ' />
+        <div class='grid grid-cols-1 md:grid-cols-3 gap-2'>
+          <Input bind:value={addTargetForm.processId} placeholder='プロセスID (例: 1234)' />
+          <Input bind:value={addTargetForm.tag} placeholder='タグ (例: game-process)' />
           <Button onclick={addWatchTarget} text='追加' disabled={loading} />
+        </div>
+        <div class='text-xs text-(text-tertiary) mt-2'>
+          プロセスIDはタスクマネージャーで確認できます
         </div>
       </div>
 
       <!-- Remove Watch Target -->
       <div class='mb-4 p-3 bg-(bg-tertiary) rounded'>
         <h4 class='font-medium mb-2 text-(text-secondary)'>監視対象を削除</h4>
-        <div class='flex gap-2'>
-          <Input bind:value={removeTargetTag} placeholder='タグ' />
-          <Button onclick={removeWatchTarget} text='削除' disabled={loading} />
+        <div class='grid grid-cols-1 md:grid-cols-2 gap-2'>
+          <Input bind:value={removeTargetTag} placeholder='削除するタグ名' />
+          <Button onclick={removeWatchTarget} text='削除' disabled={loading} variant='error' />
         </div>
       </div>
 
@@ -531,20 +535,52 @@
       {#if watchTargets.length > 0}
         <div class='space-y-2'>
           {#each watchTargets as target}
-            <div class='flex items-center justify-between p-2 bg-(bg-tertiary) rounded'>
-              <div>
-                <span class='font-medium text-(text-primary)'>{target.tag}</span>
-                <span class='text-(text-secondary) ml-2'>({target.process_name} - PID: {target.process_id})</span>
-              </div>
-              <div class='flex items-center gap-2'>
-                <div class='w-2 h-2 rounded-full' class:bg-green-500={target.is_running} class:bg-red-500={!target.is_running}></div>
-                <span class='text-sm text-(text-secondary)'>{target.is_running ? '実行中' : '停止'}</span>
+            <div class='flex items-center justify-between p-3 bg-(bg-tertiary) rounded border border-(border-secondary)'>
+              <div class='flex flex-col gap-2'>
+                <div class='flex items-center justify-between'>
+                  <div class='flex items-center gap-2'>
+                    <span class='text-(text-secondary) text-xs font-medium'>タグ:</span>
+                    <span class='font-semibold text-(text-primary) text-sm bg-(bg-primary) text-(bg-secondary) px-3 py-1 rounded font-mono'>{target.Tag}</span>
+                  </div>
+                  <div class='flex items-center gap-1'>
+                    <div class='w-3 h-3 rounded-full' class:bg-green-500={target.IsRunning} class:bg-red-500={!target.IsRunning}></div>
+                    <span class='text-sm font-medium' class:text-green-700={target.IsRunning} class:text-red-700={!target.IsRunning}>
+                      {target.IsRunning ? '実行中' : '停止'}
+                    </span>
+                  </div>
+                </div>
+                <div class='grid grid-cols-1 md:grid-cols-3 gap-3 text-sm'>
+                  <div class='flex flex-col gap-1'>
+                    <span class='text-(text-secondary) text-xs'>プロセス名</span>
+                    <span class='text-(text-primary) font-medium'>{target.ProcessName || '(不明)'}</span>
+                  </div>
+                  <div class='flex flex-col gap-1'>
+                    <span class='text-(text-secondary) text-xs'>プロセスID</span>
+                    <span class='text-(text-primary) font-mono'>{target.ProcessId || 'N/A'}</span>
+                  </div>
+                  <div class='flex flex-col gap-1'>
+                    <span class='text-(text-secondary) text-xs'>開始時刻</span>
+                    <span class='text-(text-primary) text-xs'>
+                      {target.StartTime && !Number.isNaN(new Date(target.StartTime).getTime())
+                        ? new Date(target.StartTime).toLocaleString()
+                        : 'N/A'}
+                    </span>
+                  </div>
+                </div>
+                {#if !target.IsRunning}
+                  <div class='mt-2 text-xs text-(text-tertiary) bg-orange-100 text-orange-800 px-2 py-1 rounded'>
+                    ⚠️ このプロセスは終了していますが、監視対象として登録されたままです。イベント履歴は保持されています。
+                  </div>
+                {/if}
               </div>
             </div>
           {/each}
         </div>
       {:else}
-        <p class='text-(text-secondary)'>監視対象がありません</p>
+        <div class='text-center py-8'>
+          <p class='text-(text-secondary) text-lg'>監視対象がありません</p>
+          <p class='text-(text-tertiary) text-sm mt-1'>上記のフォームからプロセスを追加してください</p>
+        </div>
       {/if}
 
       <div class='mt-4'>
@@ -559,40 +595,65 @@
       <!-- Get Events -->
       <div class='mb-4 p-3 bg-(bg-tertiary) rounded'>
         <h4 class='font-medium mb-2 text-(text-secondary)'>イベントを取得</h4>
-        <div class='flex gap-2'>
+        <div class='grid grid-cols-1 md:grid-cols-4 gap-2'>
           <Input bind:value={getEventsForm.tag} placeholder='タグ' />
-          <Input bind:value={getEventsForm.count} placeholder='件数 (デフォルト: 50)' />
-          <Input bind:value={getEventsForm.eventType} placeholder='イベントタイプ (オプション)' />
+          <Input bind:value={getEventsForm.count} placeholder='件数 (50)' />
+          <Input bind:value={getEventsForm.eventType} placeholder='イベントタイプ' />
           <Button onclick={getEvents} text='取得' disabled={loading} />
+        </div>
+        <div class='text-xs text-(text-tertiary) mt-2'>
+          イベントタイプ: File, ProcessStart, ProcessEnd など
         </div>
       </div>
 
       <!-- Clear Events -->
       <div class='mb-4 p-3 bg-(bg-tertiary) rounded'>
         <h4 class='font-medium mb-2 text-(text-secondary)'>イベントをクリア</h4>
-        <div class='flex gap-2'>
-          <Input bind:value={clearEventsTag} placeholder='タグ' />
-          <Button onclick={clearEvents} text='クリア' disabled={loading} />
+        <div class='grid grid-cols-1 md:grid-cols-2 gap-2'>
+          <Input bind:value={clearEventsTag} placeholder='クリアするタグ名' />
+          <Button onclick={clearEvents} text='クリア' disabled={loading} variant='error' />
+        </div>
+        <div class='text-xs text-(text-tertiary) mt-2'>
+          指定したタグのすべてのイベントが削除されます
         </div>
       </div>
 
       <!-- Events List -->
       {#if events.length > 0}
-        <div class='space-y-2 max-h-96 overflow-y-auto'>
-          {#each events as event}
-            <div class='p-2 bg-(bg-tertiary) rounded'>
-              <div class='flex items-center justify-between'>
-                <span class='font-medium text-(text-primary)'>{formatEventType(event)}</span>
-                <span class='text-sm text-(text-secondary)'>{getEventTimestamp(event)}</span>
+        <div class='space-y-2 max-h-96 overflow-y-auto border border-(border-secondary) rounded p-2'>
+          <div class='text-sm text-(text-secondary) mb-2 px-2'>
+            {events.length}件のイベントが見つかりました
+          </div>
+          {#each events as event, index}
+            <div class='p-3 bg-(bg-tertiary) rounded border border-(border-secondary) hover:bg-(bg-secondary) transition-colors'>
+              <div class='flex items-center justify-between mb-2'>
+                <div class='flex items-center gap-2'>
+                  <span class='text-xs text-(text-tertiary) font-mono'>#{events.length - index}</span>
+                  <span class='font-medium text-(text-primary) px-2 py-1 rounded text-xs'
+                        class:bg-blue-100={formatEventType(event) === 'ファイル操作'}
+                        class:bg-green-100={formatEventType(event) === 'プロセス開始'}
+                        class:bg-red-100={formatEventType(event) === 'プロセス終了'}
+                        class:text-blue-800={formatEventType(event) === 'ファイル操作'}
+                        class:text-green-800={formatEventType(event) === 'プロセス開始'}
+                        class:text-red-800={formatEventType(event) === 'プロセス終了'}>
+                    {formatEventType(event)}
+                  </span>
+                </div>
+                <span class='text-xs text-(text-secondary) font-mono'>
+                  {new Date(getEventTimestamp(event)).toLocaleString()}
+                </span>
               </div>
-              <div class='text-sm text-(text-secondary) mt-1'>
+              <div class='text-sm text-(text-primary) bg-(bg-quaternary) p-2 rounded font-mono text-wrap break-all'>
                 {getEventDetails(event)}
               </div>
             </div>
           {/each}
         </div>
       {:else}
-        <p class='text-(text-secondary)'>イベントがありません</p>
+        <div class='text-center py-8 border border-(border-secondary) rounded bg-(bg-tertiary)'>
+          <p class='text-(text-secondary) text-lg'>イベントがありません</p>
+          <p class='text-(text-tertiary) text-sm mt-1'>上記のフォームからイベントを取得してください</p>
+        </div>
       {/if}
     </div>
 

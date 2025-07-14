@@ -148,11 +148,11 @@ export async function commandUpdateCollectionElementThumbnails(ids: number[]) {
 
 // ProcTail Commands
 export async function commandProcTailAddWatchTarget(request: AddWatchTargetRequest) {
-  return await invoke<WatchTarget>('proctail_add_watch_target', request)
+  return await invoke<WatchTarget>('proctail_add_watch_target', { request })
 }
 
 export async function commandProcTailRemoveWatchTarget(request: RemoveWatchTargetRequest) {
-  return await invoke<number>('proctail_remove_watch_target', request)
+  return await invoke<number>('proctail_remove_watch_target', { request })
 }
 
 export async function commandProcTailGetWatchTargets() {
@@ -160,11 +160,11 @@ export async function commandProcTailGetWatchTargets() {
 }
 
 export async function commandProcTailGetRecordedEvents(request: GetEventsRequest) {
-  return await invoke<ProcTailEvent[]>('proctail_get_recorded_events', request)
+  return await invoke<ProcTailEvent[]>('proctail_get_recorded_events', { request })
 }
 
 export async function commandProcTailClearEvents(request: ClearEventsRequest) {
-  return await invoke<number>('proctail_clear_events', request)
+  return await invoke<number>('proctail_clear_events', { request })
 }
 
 export async function commandProcTailGetStatus() {

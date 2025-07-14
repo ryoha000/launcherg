@@ -96,18 +96,25 @@ impl<T: AppConfigProvider> ProcTailManager<T> {
             return Ok(None);
         }
 
-        // Check for version directories
+        // Check for version directories and find the latest one
         let entries = fs::read_dir(proctail_dir)?;
+        let mut versions = Vec::new();
+        
         for entry in entries {
             let entry = entry?;
             if entry.file_type()?.is_dir() {
                 let dir_name = entry.file_name().to_string_lossy().to_string();
-                // Return the first version directory found
-                return Ok(Some(dir_name));
+                versions.push(dir_name);
             }
         }
         
-        Ok(None)
+        if versions.is_empty() {
+            return Ok(None);
+        }
+        
+        // Sort versions lexicographically to get the latest
+        versions.sort();
+        Ok(versions.last().cloned())
     }
 
     pub async fn get_latest_version(&self) -> Result<ProcTailVersion, ProcTailManagerError> {
@@ -120,9 +127,16 @@ impl<T: AppConfigProvider> ProcTailManager<T> {
 
         let release_info: serde_json::Value = response.json().await?;
         
+        // デバッグ用: APIレスポンスの内容をログ出力
+        eprintln!("GitHub API Response: {}", serde_json::to_string_pretty(&release_info).unwrap_or_default());
+        
         let version = release_info["tag_name"]
             .as_str()
-            .ok_or_else(|| ProcTailManagerError::Download("No version found".to_string()))?
+            .ok_or_else(|| {
+                let error_msg = format!("No version found in response. Available keys: {:?}", 
+                    release_info.as_object().map(|obj| obj.keys().collect::<Vec<_>>()).unwrap_or_default());
+                ProcTailManagerError::Download(error_msg)
+            })?
             .to_string();
 
         let assets = release_info["assets"]
@@ -150,6 +164,9 @@ impl<T: AppConfigProvider> ProcTailManager<T> {
     }
 
     pub async fn download_and_install(&self, version_info: &ProcTailVersion) -> Result<(), ProcTailManagerError> {
+        // Stop any running ProcTail process before updating
+        self.stop_proctail().await?;
+        
         let version_dir = self.get_proctail_version_dir(&version_info.version);
         fs::create_dir_all(&version_dir)?;
 

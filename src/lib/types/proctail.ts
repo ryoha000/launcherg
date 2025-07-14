@@ -1,32 +1,32 @@
 // ProcTail type definitions for frontend
 
 export interface FileEventData {
-  timestamp: string
-  process_id: number
-  event_type: string
-  file_path: string
-  operation: string
-  file_size: number
-  file_attributes?: string
+  Timestamp: string
+  ProcessId: number
+  EventType: string
+  FilePath: string
+  Operation: string
+  FileSize: number
+  FileAttributes?: string
 }
 
 export interface ProcessStartEventData {
-  timestamp: string
-  process_id: number
-  event_type: string
-  process_name: string
-  parent_process_id: number
-  command_line: string
-  executable_path?: string
+  Timestamp: string
+  ProcessId: number
+  EventType: string
+  ProcessName: string
+  ParentProcessId: number
+  CommandLine: string
+  ExecutablePath?: string
 }
 
 export interface ProcessEndEventData {
-  timestamp: string
-  process_id: number
-  event_type: string
-  process_name: string
-  exit_code: number
-  execution_time: string
+  Timestamp: string
+  ProcessId: number
+  EventType: string
+  ProcessName: string
+  ExitCode: number
+  ExecutionTime: string
 }
 
 export type ProcTailEvent
@@ -35,50 +35,50 @@ export type ProcTailEvent
     | { ProcessEnd: ProcessEndEventData }
 
 export interface WatchTarget {
-  tag: string
-  process_id: number
-  process_name: string
-  start_time: string
-  is_running: boolean
+  Tag: string
+  ProcessId: number
+  ProcessName: string
+  StartTime: string
+  IsRunning: boolean
 }
 
 export interface ServiceInfo {
-  status: string
-  version: string
-  start_time: string
-  uptime: string
+  Status: string
+  Version: string
+  StartTime: string
+  Uptime: string
 }
 
 export interface MonitoringInfo {
-  etw_session_active: boolean
-  active_tags: number
-  active_processes: number
-  total_events: number
+  EtwSessionActive: boolean
+  ActiveTags: number
+  ActiveProcesses: number
+  TotalEvents: number
 }
 
 export interface ResourceInfo {
-  memory_usage_mb: number
-  cpu_usage_percent: number
-  estimated_memory_usage: number
+  MemoryUsageMB: number
+  CpuUsagePercent: number
+  EstimatedMemoryUsage: number
 }
 
 export interface IpcInfo {
-  named_pipe_active: boolean
-  connected_clients: number
-  total_requests: number
+  NamedPipeActive: boolean
+  ConnectedClients: number
+  TotalRequests: number
 }
 
 export interface ServiceStatus {
-  service: ServiceInfo
-  monitoring: MonitoringInfo
-  resources: ResourceInfo
-  ipc: IpcInfo
+  Service: ServiceInfo
+  Monitoring: MonitoringInfo
+  Resources: ResourceInfo
+  Ipc: IpcInfo
 }
 
 export interface HealthCheckResult {
-  status: string
-  check_time: string
-  details: Record<string, string>
+  Status: string
+  CheckTime: string
+  Details: Record<string, string>
 }
 
 export interface AddWatchTargetRequest extends Record<string, unknown> {

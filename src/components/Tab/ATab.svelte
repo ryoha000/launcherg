@@ -30,12 +30,24 @@
     e.stopPropagation()
     deleteTab(tab.id)
   }
+
+  const navigate = () => {
+    if (tab.type === 'settings') {
+      goto('/settings')
+    }
+    else if (tab.type.startsWith('debug-')) {
+      goto(`/debug/${tab.type.split('-')[1]}`)
+    }
+    else {
+      goto(`/${tab.type}/${tab.workId}`)
+    }
+  }
 </script>
 
 <!-- svelte-ignore a11y_click_events_have_key_events -->
 <!-- svelte-ignore a11y_no_static_element_interactions -->
 <div
-  onclick={() => tab.type === 'settings' ? goto('/settings') : goto(`/${tab.type}/${tab.workId}`)}
+  onclick={navigate}
   onmousedown={closeWheelClick}
 >
   <div

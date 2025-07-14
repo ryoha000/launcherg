@@ -5,20 +5,16 @@ import { createLocalStorageWritable } from '@/lib/utils'
 export interface Tab {
   id: number
   workId: number
-  type: 'works' | 'memos' | 'settings'
+  type: 'works' | 'memos' | 'settings' | 'debug' | `debug-${string}`
   scrollTo: number
   title: string
 }
 
-function isValidTabType(src: string): src is 'works' | 'memos' | 'settings' {
-  return src === 'works' || src === 'memos' || src === 'settings'
+function isValidTabType(src: string): src is 'works' | 'memos' | 'settings' | 'debug' {
+  return src === 'works' || src === 'memos' || src === 'settings' || src === 'debug'
 }
 
 function extractId(path: string) {
-  // 設定ページの場合は特別なIDを返す
-  if (path === '/settings') {
-    return -1
-  }
   const match = path.match(/^\/(works|memos)\/(\d+)$/)
   if (match) {
     return Number(match[2]) // match[2] にID（12345など）が入っている
@@ -79,6 +75,32 @@ function createTabs() {
       }
       else {
         selected.set(settingsTabIndex)
+      }
+      return
+    }
+
+    // デバッグページの場合の処理
+    if (path.startsWith('/debug')) {
+      const debugType = path.split('/')[2] // '/debug/proctail' の 'proctail' 部分を取得
+      const debugTabIndex = getTabs().findIndex(
+        v => v.type === `debug-${debugType}`,
+      )
+      if (debugTabIndex === -1) {
+        const newTab: Tab = {
+          id: new Date().getTime(),
+          type: `debug-${debugType}`,
+          workId: -2,
+          scrollTo: 0,
+          title: `${debugType} デバッグ`,
+        }
+        tabs.update((v) => {
+          return [...v, newTab]
+        })
+        const newSelected = getTabs().length - 1
+        selected.set(newSelected)
+      }
+      else {
+        selected.set(debugTabIndex)
       }
       return
     }
@@ -158,7 +180,15 @@ function createTabs() {
     if (isCurrentTab) {
       const newIndex = isRightestTab ? currentIndex - 1 : currentIndex
       const nextTab = getTabs()[newIndex]
-      goto(`/${nextTab.type}/${nextTab.workId}`)
+      if (nextTab.type === 'settings') {
+        goto('/settings')
+      }
+      else if (nextTab.type.startsWith('debug-')) {
+        goto(`/debug/${nextTab.type.split('-')[1]}`)
+      }
+      else {
+        goto(`/${nextTab.type}/${nextTab.workId}`)
+      }
       return
     }
 
@@ -183,7 +213,15 @@ function createTabs() {
       return
     }
     const tab = _tabs[index]
-    goto(`/${tab.type}/${tab.workId}`)
+    if (tab.type === 'settings') {
+      goto('/settings')
+    }
+    else if (tab.type.startsWith('debug-')) {
+      goto(`/debug/${tab.type.split('-')[1]}`)
+    }
+    else {
+      goto(`/${tab.type}/${tab.workId}`)
+    }
   }
   const getSelectedTab = () => getTabs()[getSelected()]
   return {

@@ -368,12 +368,17 @@ impl ProcTail for ProcTailImpl {
         }
         
         // WatchTargetDataをWatchTargetに変換
-        let targets = response.data.watch_targets.into_iter().map(|data| WatchTarget {
-            tag: data.tag_name,
-            process_id: data.process_id,
-            process_name: data.process_name,
-            start_time: data.start_time,
-            is_running: true, // 監視中なのでtrueと仮定
+        let targets = response.data.watch_targets.into_iter().map(|data| {
+            // プロセスが実行中かどうかを確認
+            let is_running = data.process_id > 0 && !data.process_name.is_empty() && !data.start_time.is_empty();
+            
+            WatchTarget {
+                tag: data.tag_name,
+                process_id: data.process_id,
+                process_name: data.process_name,
+                start_time: data.start_time,
+                is_running,
+            }
         }).collect();
         
         Ok(targets)
