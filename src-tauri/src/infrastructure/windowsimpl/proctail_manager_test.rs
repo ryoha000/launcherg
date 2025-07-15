@@ -80,28 +80,84 @@ mod tests {
         assert_eq!(result, Some("v1.0.0".to_string()));
     }
 
-    /// バージョンファイルに空白文字や改行が含まれる場合の処理テスト
+    /// セマンティックバージョニングの正しい動作テスト
     /// 
     /// 検証内容:
-    /// - バージョンファイルに空白文字や改行が含まれる場合のtrim処理を確認
-    /// - 実際のファイル操作では空白文字が混入する可能性があるため重要
+    /// - 複数のバージョンが存在する場合のセマンティックバージョン比較
+    /// - v1.10.0がv1.9.0より新しいと正しく判定されることを確認
+    /// - 文字列ソートではなくセマンティックバージョニングが使用されることを確認
     /// 
-    /// セットアップ: "  v1.0.0  \n"を書き込んだファイルを作成
-    /// 期待結果: トリムされてSome("v1.0.0")
+    /// セットアップ: v1.0.0, v2.0.0, v1.10.0, v1.9.0ディレクトリを作成
+    /// 期待結果: Some("v2.0.0")（最新バージョン）
     #[tokio::test]
     async fn test_get_current_version_with_multiple_versions() {
         let (manager, _temp_dir) = create_test_manager();
         
-        // 複数のバージョンディレクトリを作成
+        // 複数のバージョンディレクトリを作成（セマンティックバージョニングのテスト）
         let version_dir1 = manager.get_proctail_version_dir("v1.0.0");
         let version_dir2 = manager.get_proctail_version_dir("v2.0.0");
+        let version_dir3 = manager.get_proctail_version_dir("v1.10.0");
+        let version_dir4 = manager.get_proctail_version_dir("v1.9.0");
+        std::fs::create_dir_all(&version_dir1).unwrap();
+        std::fs::create_dir_all(&version_dir2).unwrap();
+        std::fs::create_dir_all(&version_dir3).unwrap();
+        std::fs::create_dir_all(&version_dir4).unwrap();
+        
+        let result = manager.get_current_version().await.unwrap();
+        assert!(result.is_some());
+        let version = result.unwrap();
+        // セマンティックバージョニングにより、v2.0.0が最新として選ばれるべき
+        assert_eq!(version, "v2.0.0");
+    }
+
+    /// セマンティックバージョニングのエッジケーステスト
+    /// 
+    /// 検証内容:
+    /// - マイナーバージョンの比較（v1.10.0 > v1.9.0）が正しく動作することを確認
+    /// - 文字列ソートでは誤判定される典型的なケースのテスト
+    /// 
+    /// セットアップ: v1.9.0, v1.10.0ディレクトリを作成
+    /// 期待結果: Some("v1.10.0")（v1.10.0がv1.9.0より新しい）
+    #[tokio::test]
+    async fn test_get_current_version_minor_version_comparison() {
+        let (manager, _temp_dir) = create_test_manager();
+        
+        // 文字列ソートでは誤判定されるケースをテスト
+        let version_dir1 = manager.get_proctail_version_dir("v1.9.0");
+        let version_dir2 = manager.get_proctail_version_dir("v1.10.0");
         std::fs::create_dir_all(&version_dir1).unwrap();
         std::fs::create_dir_all(&version_dir2).unwrap();
         
         let result = manager.get_current_version().await.unwrap();
         assert!(result.is_some());
         let version = result.unwrap();
-        assert!(version == "v1.0.0" || version == "v2.0.0");
+        // セマンティックバージョニングにより、v1.10.0が最新として選ばれるべき
+        assert_eq!(version, "v1.10.0");
+    }
+
+    /// 不正なバージョン形式が含まれる場合のテスト
+    /// 
+    /// 検証内容:
+    /// - セマンティックバージョンとして解析できないディレクトリが存在する場合の動作
+    /// - 有効なバージョンのみが考慮されることを確認
+    /// 
+    /// セットアップ: v1.0.0（有効）とinvalid-version（無効）ディレクトリを作成
+    /// 期待結果: Some("v1.0.0")（有効なバージョンのみ考慮）
+    #[tokio::test]
+    async fn test_get_current_version_with_invalid_versions() {
+        let (manager, _temp_dir) = create_test_manager();
+        
+        // 有効なバージョンと無効なバージョンを混在させる
+        let valid_version_dir = manager.get_proctail_version_dir("v1.0.0");
+        let invalid_version_dir = manager.get_proctail_version_dir("invalid-version");
+        std::fs::create_dir_all(&valid_version_dir).unwrap();
+        std::fs::create_dir_all(&invalid_version_dir).unwrap();
+        
+        let result = manager.get_current_version().await.unwrap();
+        assert!(result.is_some());
+        let version = result.unwrap();
+        // 有効なバージョンのみが考慮されるべき
+        assert_eq!(version, "v1.0.0");
     }
 
     // =============================================================================

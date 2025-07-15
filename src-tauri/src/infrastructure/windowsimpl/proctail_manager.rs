@@ -3,6 +3,7 @@ use std::process::{Child, Command};
 use std::sync::Arc;
 use std::{fs, io};
 
+use semver::Version;
 use serde::{Deserialize, Serialize};
 use sysinfo::{System, SystemExt, ProcessExt};
 use tauri::AppHandle;
@@ -112,9 +113,24 @@ impl<T: AppConfigProvider> ProcTailManager<T> {
             return Ok(None);
         }
         
-        // Sort versions lexicographically to get the latest
-        versions.sort();
-        Ok(versions.last().cloned())
+        // Sort versions using semantic versioning to get the latest
+        let mut parsed_versions: Vec<(Version, String)> = Vec::new();
+        
+        for version_str in versions {
+            // Try to parse as semantic version (remove 'v' prefix if present)
+            let clean_version = version_str.strip_prefix('v').unwrap_or(&version_str);
+            if let Ok(parsed) = Version::parse(clean_version) {
+                parsed_versions.push((parsed, version_str));
+            }
+        }
+        
+        if parsed_versions.is_empty() {
+            return Ok(None);
+        }
+        
+        // Sort by semantic version and get the latest
+        parsed_versions.sort_by(|a, b| a.0.cmp(&b.0));
+        Ok(parsed_versions.last().map(|(_, version_str)| version_str.clone()))
     }
 
     pub async fn get_latest_version(&self) -> Result<ProcTailVersion, ProcTailManagerError> {
@@ -213,7 +229,16 @@ impl<T: AppConfigProvider> ProcTailManager<T> {
         let latest_version = self.get_latest_version().await?;
 
         match current_version {
-            Some(current) => Ok(current != latest_version.version),
+            Some(current) => {
+                // Parse both versions and compare semantically
+                let current_clean = current.strip_prefix('v').unwrap_or(&current);
+                let latest_clean = latest_version.version.strip_prefix('v').unwrap_or(&latest_version.version);
+                
+                match (Version::parse(current_clean), Version::parse(latest_clean)) {
+                    (Ok(current_ver), Ok(latest_ver)) => Ok(current_ver < latest_ver),
+                    _ => Ok(current != latest_version.version), // Fallback to string comparison
+                }
+            },
             None => Ok(true), // No version installed, update available
         }
     }
