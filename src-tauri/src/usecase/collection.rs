@@ -7,7 +7,7 @@ use tauri::AppHandle;
 use super::error::UseCaseError;
 use crate::{
     domain::{
-        collection::{CollectionElement, NewCollectionElement, NewCollectionElementDetail, NewCollectionElementWithData},
+        collection::{CollectionElement, NewCollectionElement, NewCollectionElementWithData},
         file::{
             get_icon_path, get_thumbnail_path, save_thumbnail,
         },
@@ -294,19 +294,10 @@ impl<R: RepositoriesExt> CollectionUseCase<R> {
     ) -> anyhow::Result<Vec<Id<CollectionElement>>> {
         self.repositories
             .collection_repository()
-            .get_not_registered_detail_element_ids()
+            .get_not_registered_info_element_ids()
             .await
     }
 
-    pub async fn create_element_details(
-        &self,
-        details: Vec<NewCollectionElementDetail>,
-    ) -> anyhow::Result<()> {
-        self.repositories
-            .collection_repository()
-            .create_element_details(details)
-            .await
-    }
 
     pub async fn update_element_last_play_at(
         &self,

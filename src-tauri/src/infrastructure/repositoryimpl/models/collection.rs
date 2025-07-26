@@ -10,7 +10,6 @@ use crate::domain::{
     Id,
 };
 
-// リファクタリング後のテーブルモデル
 #[derive(FromRow, Clone)]
 pub struct CollectionElementTable {
     pub id: i32,

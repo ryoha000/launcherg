@@ -9,7 +9,6 @@ pub struct NewCollection {
     pub name: String,
 }
 
-// リファクタリング後のCollectionElement
 #[derive(new, Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CollectionElement {
@@ -157,13 +156,3 @@ pub struct NewCollectionElementThumbnail {
     pub thumbnail_height: Option<i32>,
 }
 
-// 後方互換性のために残す（将来的に削除予定）
-#[derive(new, Debug, Clone, Serialize, Deserialize)]
-pub struct NewCollectionElementDetail {
-    pub collection_element_id: Id<CollectionElement>,
-    pub gamename_ruby: String,
-    pub brandname: String,
-    pub brandname_ruby: String,
-    pub sellday: String,
-    pub is_nukige: bool,
-}

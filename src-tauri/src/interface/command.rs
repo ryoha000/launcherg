@@ -19,7 +19,6 @@ use crate::{
         pubsub::{ProgressLivePayload, ProgressPayload, PubSubService},
         Id,
     },
-    usecase::models::collection::CreateCollectionElementDetail,
 };
 
 #[tauri::command]
@@ -348,16 +347,6 @@ pub async fn get_not_registered_detail_element_ids(
         .collect())
 }
 
-#[tauri::command]
-pub async fn create_element_details(
-    modules: State<'_, Arc<Modules>>,
-    details: Vec<CreateCollectionElementDetail>,
-) -> anyhow::Result<(), CommandError> {
-    Ok(modules
-        .collection_use_case()
-        .create_element_details(details.into_iter().map(|v| v.into()).collect())
-        .await?)
-}
 
 #[tauri::command]
 pub async fn get_all_elements(

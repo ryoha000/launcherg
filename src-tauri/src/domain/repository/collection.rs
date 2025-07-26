@@ -2,7 +2,7 @@ use crate::domain::{
     collection::{
         CollectionElement, CollectionElementInfo, CollectionElementInstall, CollectionElementLike,
         CollectionElementPaths, CollectionElementPlay, CollectionElementThumbnail,
-        NewCollectionElement, NewCollectionElementDetail, NewCollectionElementInfo,
+        NewCollectionElement, NewCollectionElementInfo,
         NewCollectionElementInstall, NewCollectionElementLike, NewCollectionElementPaths,
         NewCollectionElementPlay, NewCollectionElementThumbnail,
     },
@@ -112,7 +112,4 @@ pub trait CollectionRepository {
     // その他のユーティリティ操作
     async fn remove_conflict_maps(&self) -> Result<()>;
 
-    // 後方互換性のために残す（将来的に削除予定）
-    async fn get_not_registered_detail_element_ids(&self) -> Result<Vec<Id<CollectionElement>>>;
-    async fn create_element_details(&self, details: Vec<NewCollectionElementDetail>) -> Result<()>;
 }

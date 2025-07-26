@@ -14,7 +14,7 @@ use crate::domain::{
     collection::{
         CollectionElement, CollectionElementInfo, CollectionElementInstall, CollectionElementLike,
         CollectionElementPaths, CollectionElementPlay, CollectionElementThumbnail,
-        NewCollectionElement, NewCollectionElementDetail, NewCollectionElementInfo,
+        NewCollectionElement, NewCollectionElementInfo,
         NewCollectionElementInstall, NewCollectionElementLike, NewCollectionElementPaths,
         NewCollectionElementPlay, NewCollectionElementThumbnail,
     },
@@ -521,26 +521,4 @@ impl CollectionRepository for RepositoryImpl<CollectionElement> {
         Ok(())
     }
 
-    // 後方互換性のために残す（将来的に削除予定）
-    async fn get_not_registered_detail_element_ids(&self) -> anyhow::Result<Vec<Id<CollectionElement>>> {
-        // 新しい実装では collection_element_info_by_erogamescape テーブルを使用
-        self.get_not_registered_info_element_ids().await
-    }
-
-    async fn create_element_details(&self, details: Vec<NewCollectionElementDetail>) -> anyhow::Result<()> {
-        // 新しい実装では collection_element_info_by_erogamescape テーブルに変換して保存
-        for detail in details {
-            let info = NewCollectionElementInfo::new(
-                detail.collection_element_id,
-                "".to_string(), // gamenameは空文字（後で更新される想定）
-                detail.gamename_ruby,
-                detail.brandname,
-                detail.brandname_ruby,
-                detail.sellday,
-                detail.is_nukige,
-            );
-            self.upsert_collection_element_info(&info).await?;
-        }
-        Ok(())
-    }
 }
