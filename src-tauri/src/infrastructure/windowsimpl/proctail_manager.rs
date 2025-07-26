@@ -143,9 +143,6 @@ impl<T: AppConfigProvider> ProcTailManager<T> {
 
         let release_info: serde_json::Value = response.json().await?;
         
-        // デバッグ用: APIレスポンスの内容をログ出力
-        eprintln!("GitHub API Response: {}", serde_json::to_string_pretty(&release_info).unwrap_or_default());
-        
         let version = release_info["tag_name"]
             .as_str()
             .ok_or_else(|| {
