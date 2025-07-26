@@ -9,7 +9,7 @@ use crate::{
     domain::{
         collection::{CollectionElement, NewCollectionElement, NewCollectionElementDetail},
         file::{
-            get_icon_path, get_lnk_metadatas, get_thumbnail_path, save_icon_to_png, save_thumbnail,
+            get_icon_path, get_thumbnail_path, save_thumbnail,
         },
         repository::collection::CollectionRepository,
         Id,
@@ -125,26 +125,11 @@ impl<R: RepositoriesExt> CollectionUseCase<R> {
         handle: &Arc<AppHandle>,
         element: &NewCollectionElement,
     ) -> anyhow::Result<()> {
-        let id = &element.id;
-        let icon_path;
-        if let Some(lnk_path) = element.lnk_path.clone() {
-            let metadatas = get_lnk_metadatas(vec![lnk_path.as_str()])?;
-            let metadata = metadatas
-                .get(lnk_path.as_str())
-                .ok_or(anyhow::anyhow!("metadata cannot get"))?;
-            if metadata.icon.to_lowercase().ends_with("ico") {
-                println!("icon is ico");
-                icon_path = metadata.icon.clone();
-            } else {
-                icon_path = metadata.path.clone();
-            }
-        } else if let Some(exe_path) = element.exe_path.clone() {
-            icon_path = exe_path;
-        } else {
-            eprintln!("lnk_path and exe_path are None");
-            return Ok(());
-        }
-        Ok(save_icon_to_png(handle, &icon_path, id)?.await??)
+        let _id = &element.id;
+        // TODO: リファクタリング後はパス情報を別途取得する必要がある
+        // 現在は一時的に処理をスキップ
+        eprintln!("save_element_icon: リファクタリング後は実装が必要");
+        Ok(())
     }
 
     pub async fn save_element_thumbnail(

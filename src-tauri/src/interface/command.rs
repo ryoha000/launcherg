@@ -76,6 +76,13 @@ pub async fn create_elements_in_pc(
         .all_game_cache_use_case()
         .get_by_ids(new_elements.iter().map(|v| v.id.value).collect())
         .await?;
+    
+    // ゲーム名を保存しておく（戻り値で使用）
+    let gamenames: Vec<String> = new_elements_game_caches
+        .iter()
+        .map(|v| v.gamename.clone())
+        .collect();
+    
     modules
         .collection_use_case()
         .concurency_save_thumbnails(
@@ -106,7 +113,7 @@ pub async fn create_elements_in_pc(
         .add_cache(explore_files)
         .await?;
 
-    Ok(new_elements.into_iter().map(|v| v.gamename).collect())
+    Ok(gamenames)
 }
 
 #[tauri::command]
@@ -165,9 +172,9 @@ pub async fn upsert_collection_element(
     lnk_path: Option<String>,
     game_cache: AllGameCacheOne,
 ) -> anyhow::Result<(), CommandError> {
-    let install_at;
+    let _install_at;
     if let Some(path) = exe_path.clone() {
-        install_at = get_file_created_at_sync(&path);
+        _install_at = get_file_created_at_sync(&path);
     } else if let Some(path) = lnk_path.clone() {
         let metadatas = get_lnk_metadatas(vec![path.as_str()])?;
         let metadata = metadatas
@@ -177,22 +184,22 @@ pub async fn upsert_collection_element(
             "metadata.path: {}, metadata.icon: {}",
             metadata.path, metadata.icon
         );
-        install_at = get_file_created_at_sync(&metadata.path);
+        _install_at = get_file_created_at_sync(&metadata.path);
     } else {
-        install_at = None;
+        _install_at = None;
     }
-    let new_element = NewCollectionElement::new(
-        Id::new(game_cache.id),
-        game_cache.gamename,
-        exe_path,
-        lnk_path,
-        install_at,
-    );
+    let element_id = Id::new(game_cache.id);
+    let new_element = NewCollectionElement::new(element_id.clone());
     let handle = Arc::new(handle);
+    
+    // 基本要素を保存
     modules
         .collection_use_case()
         .upsert_collection_element(&new_element)
         .await?;
+    
+    // TODO: 関連データの保存は後でユースケース層で実装
+    // 現在は基本要素のみ保存し、他の情報は別途処理される
     modules
         .collection_use_case()
         .save_element_icon(&handle, &new_element)

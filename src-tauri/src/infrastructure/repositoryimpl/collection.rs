@@ -1,12 +1,12 @@
 use async_trait::async_trait;
 use chrono::{DateTime, Local};
-use sqlx::{query, query_as};
+use sqlx::{query, query_as, Row};
 
 use super::{
     models::collection::{
         CollectionElementInfoTable, CollectionElementInstallTable, CollectionElementLikeTable,
         CollectionElementPathsTable, CollectionElementPlayTable, CollectionElementTable,
-        CollectionElementThumbnailTable, LegacyCollectionElementTable,
+        CollectionElementThumbnailTable,
     },
     repository::RepositoryImpl,
 };

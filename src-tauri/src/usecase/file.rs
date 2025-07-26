@@ -254,20 +254,16 @@ impl<R: ExplorersExt> FileUseCase<R> {
             save_icon_tasks.push(task);
 
             // new collection element
-            if let Some(gamename) = all_erogamescape_game_map.get(&id) {
-                let install_at = get_file_created_at_sync(&exe_path);
+            if let Some(_gamename) = all_erogamescape_game_map.get(&id) {
+                let _install_at = get_file_created_at_sync(&exe_path);
                 collection_elements.push(NewCollectionElement::new(
                     Id::new(id),
-                    gamename.clone(),
-                    Some(exe_path),
-                    None,
-                    install_at,
                 ));
             }
         }
         for (id, lnk_path) in lnk_id_path_vec.iter() {
             let id = Id::new(*id);
-            let install_at;
+            let _install_at;
             // icon
             if let Some(metadata) = lnk_metadatas.get(lnk_path.as_str()) {
                 let task;
@@ -278,18 +274,14 @@ impl<R: ExplorersExt> FileUseCase<R> {
                 }
                 save_icon_tasks.push(task);
 
-                install_at = get_file_created_at_sync(&metadata.path);
+                _install_at = get_file_created_at_sync(&metadata.path);
             } else {
-                install_at = None;
+                _install_at = None;
             }
 
-            if let Some(gamename) = all_erogamescape_game_map.get(&id.value) {
+            if let Some(_gamename) = all_erogamescape_game_map.get(&id.value) {
                 collection_elements.push(NewCollectionElement::new(
                     id,
-                    gamename.clone(),
-                    None,
-                    Some(lnk_path.clone()),
-                    install_at,
                 ));
             }
         }
@@ -331,10 +323,15 @@ impl<R: ExplorersExt> FileUseCase<R> {
         collection_element: CollectionElement,
         is_run_as_admin: bool,
     ) -> anyhow::Result<Option<u32>> {
+        let (exe_path, lnk_path) = if let Some(paths) = &collection_element.paths {
+            (paths.exe_path.clone(), paths.lnk_path.clone())
+        } else {
+            (None, None)
+        };
         start_process(
             is_run_as_admin,
-            collection_element.exe_path,
-            collection_element.lnk_path,
+            exe_path,
+            lnk_path,
         )
     }
     pub fn get_play_time_minutes(
