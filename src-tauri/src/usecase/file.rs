@@ -334,8 +334,18 @@ impl<R: ExplorersExt> FileUseCase<R> {
         let (exe_path, lnk_path) = if let Some(paths) = &collection_element.paths {
             (paths.exe_path.clone(), paths.lnk_path.clone())
         } else {
-            (None, None)
+            return Err(anyhow::anyhow!(
+                "ゲームの実行ファイルパスが設定されていません。ゲームを再スキャンしてください。"
+            ));
         };
+
+        // 両方のパスがNoneの場合もエラー
+        if exe_path.is_none() && lnk_path.is_none() {
+            return Err(anyhow::anyhow!(
+                "ゲームの実行ファイルパスが設定されていません。ゲームを再スキャンしてください。"
+            ));
+        }
+
         start_process(
             is_run_as_admin,
             exe_path,

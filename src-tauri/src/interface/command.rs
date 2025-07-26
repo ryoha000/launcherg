@@ -353,7 +353,6 @@ pub async fn create_element_details(
     modules: State<'_, Arc<Modules>>,
     details: Vec<CreateCollectionElementDetail>,
 ) -> anyhow::Result<(), CommandError> {
-    // 新しいテーブル構造に対応した実装
     for detail in details {
         let info = crate::domain::collection::NewCollectionElementInfo::new(
             Id::new(detail.collection_element_id),
