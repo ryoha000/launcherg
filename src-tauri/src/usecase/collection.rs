@@ -34,6 +34,18 @@ impl<R: RepositoriesExt> CollectionUseCase<R> {
         Ok(())
     }
 
+    // スクレイピング情報を保存
+    pub async fn upsert_collection_element_info(
+        &self,
+        info: &crate::domain::collection::NewCollectionElementInfo,
+    ) -> anyhow::Result<()> {
+        self.repositories
+            .collection_repository()
+            .upsert_collection_element_info(info)
+            .await?;
+        Ok(())
+    }
+
     // 関連データを含むコレクション要素を作成
     pub async fn create_collection_element_with_data(
         &self,

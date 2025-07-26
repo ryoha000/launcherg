@@ -19,6 +19,7 @@ use crate::{
         pubsub::{ProgressLivePayload, ProgressPayload, PubSubService},
         Id,
     },
+    usecase::models::collection::CreateCollectionElementDetail,
 };
 
 #[tauri::command]
@@ -347,6 +348,29 @@ pub async fn get_not_registered_detail_element_ids(
         .collect())
 }
 
+#[tauri::command]
+pub async fn create_element_details(
+    modules: State<'_, Arc<Modules>>,
+    details: Vec<CreateCollectionElementDetail>,
+) -> anyhow::Result<(), CommandError> {
+    // 新しいテーブル構造に対応した実装
+    for detail in details {
+        let info = crate::domain::collection::NewCollectionElementInfo::new(
+            Id::new(detail.collection_element_id),
+            "".to_string(), // gamenameは空文字（後で更新される想定）
+            detail.gamename_ruby,
+            detail.brandname,
+            detail.brandname_ruby,
+            detail.sellday,
+            detail.is_nukige,
+        );
+        modules
+            .collection_use_case()
+            .upsert_collection_element_info(&info)
+            .await?;
+    }
+    Ok(())
+}
 
 #[tauri::command]
 pub async fn get_all_elements(
