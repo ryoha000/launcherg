@@ -357,7 +357,7 @@ pub async fn create_element_details(
     for detail in details {
         let info = crate::domain::collection::NewCollectionElementInfo::new(
             Id::new(detail.collection_element_id),
-            "".to_string(), // gamenameは空文字（後で更新される想定）
+            detail.gamename,
             detail.gamename_ruby,
             detail.brandname,
             detail.brandname_ruby,
