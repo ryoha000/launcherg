@@ -218,7 +218,6 @@ impl<R: RepositoriesExt> CollectionUseCase<R> {
     ) -> anyhow::Result<()> {
         let id = &element.id;
         
-        // 新しい構造ではパス情報を別途取得
         let paths = self.repositories
             .collection_repository()
             .get_element_paths_by_element_id(id)
