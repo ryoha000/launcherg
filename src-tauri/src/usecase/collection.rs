@@ -7,7 +7,7 @@ use tauri::AppHandle;
 use super::error::UseCaseError;
 use crate::{
     domain::{
-        collection::{CollectionElement, NewCollectionElement, NewCollectionElementDetail, NewCompleteCollectionElement},
+        collection::{CollectionElement, NewCollectionElement, NewCollectionElementDetail, NewCollectionElementWithData},
         file::{
             get_icon_path, get_thumbnail_path, save_thumbnail,
         },
@@ -34,8 +34,8 @@ impl<R: RepositoriesExt> CollectionUseCase<R> {
         Ok(())
     }
 
-    // 関連データを含む完全なコレクション要素を作成
-    pub async fn create_complete_collection_element(
+    // 関連データを含むコレクション要素を作成
+    pub async fn create_collection_element_with_data(
         &self,
         element_id: &Id<CollectionElement>,
         gamename: String,
@@ -158,14 +158,14 @@ impl<R: RepositoriesExt> CollectionUseCase<R> {
         Ok(())
     }
 
-    // 完全なコレクション要素リストを一括保存
-    pub async fn upsert_complete_collection_elements(
+    // 関連データ付きコレクション要素リストを一括保存
+    pub async fn upsert_collection_elements_with_data(
         &self,
-        source: &Vec<NewCompleteCollectionElement>,
+        source: &Vec<NewCollectionElementWithData>,
     ) -> anyhow::Result<()> {
         
         for element in source.iter() {
-            self.create_complete_collection_element(
+            self.create_collection_element_with_data(
                 &element.id,
                 element.gamename.clone(),
                 element.exe_path.clone(),

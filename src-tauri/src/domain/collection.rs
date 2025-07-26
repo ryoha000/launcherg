@@ -104,9 +104,9 @@ pub struct NewCollectionElement {
     pub id: Id<CollectionElement>,
 }
 
-// ファイルスキャン用の完全なコレクション要素データ
+// ファイルスキャン用の関連データ付きコレクション要素
 #[derive(new, Debug)]
-pub struct NewCompleteCollectionElement {
+pub struct NewCollectionElementWithData {
     pub id: Id<CollectionElement>,
     pub gamename: String,
     pub exe_path: Option<String>,

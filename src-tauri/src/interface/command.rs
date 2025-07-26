@@ -62,7 +62,7 @@ pub async fn create_elements_in_pc(
         .get_all_game_cache()
         .await?;
 
-    let new_complete_elements = modules
+    let new_elements_with_data = modules
         .file_use_case()
         .filter_files_to_collection_elements(
             &handle,
@@ -74,7 +74,7 @@ pub async fn create_elements_in_pc(
 
     let new_elements_game_caches = modules
         .all_game_cache_use_case()
-        .get_by_ids(new_complete_elements.iter().map(|v| v.id.value).collect())
+        .get_by_ids(new_elements_with_data.iter().map(|v| v.id.value).collect())
         .await?;
     
     // ゲーム名を保存しておく（戻り値で使用）
@@ -96,10 +96,10 @@ pub async fn create_elements_in_pc(
 
     modules
         .collection_use_case()
-        .upsert_complete_collection_elements(&new_complete_elements)
+        .upsert_collection_elements_with_data(&new_elements_with_data)
         .await?;
 
-    let new_element_ids = new_complete_elements
+    let new_element_ids = new_elements_with_data
         .iter()
         .map(|v| v.id.clone())
         .collect::<Vec<Id<_>>>();
@@ -191,10 +191,10 @@ pub async fn upsert_collection_element(
     let element_id = Id::new(game_cache.id);
     let handle = Arc::new(handle);
     
-    // 関連データを含む完全なコレクション要素を作成
+    // 関連データを含むコレクション要素を作成
     modules
         .collection_use_case()
-        .create_complete_collection_element(
+        .create_collection_element_with_data(
             &element_id,
             game_cache.gamename,
             exe_path,
