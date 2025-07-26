@@ -12,7 +12,7 @@ use crate::domain::file::{
 use crate::domain::pubsub::{ProgressLivePayload, ProgressPayload, PubSubService};
 use crate::{
     domain::{
-        collection::{CollectionElement, NewCollectionElement},
+        collection::{CollectionElement, NewCompleteCollectionElement},
         distance::get_comparable_distance,
         explorer::file::FileExplorer,
         file::{
@@ -202,7 +202,7 @@ impl<R: ExplorersExt> FileUseCase<R> {
         files: Vec<String>,
         all_game_cache: AllGameCache,
         pubsub: Arc<P>,
-    ) -> anyhow::Result<Vec<NewCollectionElement>> {
+    ) -> anyhow::Result<Vec<NewCompleteCollectionElement>> {
         let start = Instant::now();
 
         let normalized_all_games = Arc::new(
@@ -254,10 +254,14 @@ impl<R: ExplorersExt> FileUseCase<R> {
             save_icon_tasks.push(task);
 
             // new collection element
-            if let Some(_gamename) = all_erogamescape_game_map.get(&id) {
-                let _install_at = get_file_created_at_sync(&exe_path);
-                collection_elements.push(NewCollectionElement::new(
+            if let Some(gamename) = all_erogamescape_game_map.get(&id) {
+                let install_at = get_file_created_at_sync(&exe_path);
+                collection_elements.push(NewCompleteCollectionElement::new(
                     Id::new(id),
+                    gamename.clone(),
+                    Some(exe_path),
+                    None,
+                    install_at,
                 ));
             }
         }
@@ -279,9 +283,13 @@ impl<R: ExplorersExt> FileUseCase<R> {
                 _install_at = None;
             }
 
-            if let Some(_gamename) = all_erogamescape_game_map.get(&id.value) {
-                collection_elements.push(NewCollectionElement::new(
+            if let Some(gamename) = all_erogamescape_game_map.get(&id.value) {
+                collection_elements.push(NewCompleteCollectionElement::new(
                     id,
+                    gamename.clone(),
+                    None,
+                    Some(lnk_path.clone()),
+                    _install_at,
                 ));
             }
         }

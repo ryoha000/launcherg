@@ -62,7 +62,7 @@ pub async fn create_elements_in_pc(
         .get_all_game_cache()
         .await?;
 
-    let new_elements = modules
+    let new_complete_elements = modules
         .file_use_case()
         .filter_files_to_collection_elements(
             &handle,
@@ -74,7 +74,7 @@ pub async fn create_elements_in_pc(
 
     let new_elements_game_caches = modules
         .all_game_cache_use_case()
-        .get_by_ids(new_elements.iter().map(|v| v.id.value).collect())
+        .get_by_ids(new_complete_elements.iter().map(|v| v.id.value).collect())
         .await?;
     
     // ゲーム名を保存しておく（戻り値で使用）
@@ -96,10 +96,10 @@ pub async fn create_elements_in_pc(
 
     modules
         .collection_use_case()
-        .upsert_collection_elements(&new_elements)
+        .upsert_complete_collection_elements(&new_complete_elements)
         .await?;
 
-    let new_element_ids = new_elements
+    let new_element_ids = new_complete_elements
         .iter()
         .map(|v| v.id.clone())
         .collect::<Vec<Id<_>>>();
@@ -189,17 +189,22 @@ pub async fn upsert_collection_element(
         _install_at = None;
     }
     let element_id = Id::new(game_cache.id);
-    let new_element = NewCollectionElement::new(element_id.clone());
     let handle = Arc::new(handle);
     
-    // 基本要素を保存
+    // 関連データを含む完全なコレクション要素を作成
     modules
         .collection_use_case()
-        .upsert_collection_element(&new_element)
+        .create_complete_collection_element(
+            &element_id,
+            game_cache.gamename,
+            exe_path,
+            lnk_path,
+            _install_at,
+        )
         .await?;
     
-    // TODO: 関連データの保存は後でユースケース層で実装
-    // 現在は基本要素のみ保存し、他の情報は別途処理される
+    // アイコンを保存
+    let new_element = NewCollectionElement::new(element_id.clone());
     modules
         .collection_use_case()
         .save_element_icon(&handle, &new_element)

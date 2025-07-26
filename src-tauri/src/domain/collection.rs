@@ -104,6 +104,16 @@ pub struct NewCollectionElement {
     pub id: Id<CollectionElement>,
 }
 
+// ファイルスキャン用の完全なコレクション要素データ
+#[derive(new, Debug)]
+pub struct NewCompleteCollectionElement {
+    pub id: Id<CollectionElement>,
+    pub gamename: String,
+    pub exe_path: Option<String>,
+    pub lnk_path: Option<String>,
+    pub install_at: Option<DateTime<Local>>,
+}
+
 #[derive(new, Debug)]
 pub struct NewCollectionElementInfo {
     pub collection_element_id: Id<CollectionElement>,
