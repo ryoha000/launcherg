@@ -5,13 +5,13 @@ import { createLocalStorageWritable } from '@/lib/utils'
 export interface Tab {
   id: number
   workId: number
-  type: 'works' | 'memos'
+  type: 'works' | 'memos' | 'settings' | 'debug' | `debug-${string}`
   scrollTo: number
   title: string
 }
 
-function isValidTabType(src: string): src is 'works' | 'memos' {
-  return src === 'works' || src === 'memos'
+function isValidTabType(src: string): src is 'works' | 'memos' | 'settings' | 'debug' {
+  return src === 'works' || src === 'memos' || src === 'settings' || src === 'debug'
 }
 
 function extractId(path: string) {
@@ -51,6 +51,57 @@ function createTabs() {
     const isHome = path === '/'
     if (isHome) {
       selected.set(-1)
+      return
+    }
+
+    // 設定ページの場合の処理
+    if (path === '/settings') {
+      const settingsTabIndex = getTabs().findIndex(
+        v => v.type === 'settings',
+      )
+      if (settingsTabIndex === -1) {
+        const newTab: Tab = {
+          id: new Date().getTime(),
+          type: 'settings',
+          workId: -1,
+          scrollTo: 0,
+          title: '設定',
+        }
+        tabs.update((v) => {
+          return [...v, newTab]
+        })
+        const newSelected = getTabs().length - 1
+        selected.set(newSelected)
+      }
+      else {
+        selected.set(settingsTabIndex)
+      }
+      return
+    }
+
+    // デバッグページの場合の処理
+    if (path.startsWith('/debug')) {
+      const debugType = path.split('/')[2] // '/debug/proctail' の 'proctail' 部分を取得
+      const debugTabIndex = getTabs().findIndex(
+        v => v.type === `debug-${debugType}`,
+      )
+      if (debugTabIndex === -1) {
+        const newTab: Tab = {
+          id: new Date().getTime(),
+          type: `debug-${debugType}`,
+          workId: -2,
+          scrollTo: 0,
+          title: `${debugType} デバッグ`,
+        }
+        tabs.update((v) => {
+          return [...v, newTab]
+        })
+        const newSelected = getTabs().length - 1
+        selected.set(newSelected)
+      }
+      else {
+        selected.set(debugTabIndex)
+      }
       return
     }
 
@@ -129,7 +180,15 @@ function createTabs() {
     if (isCurrentTab) {
       const newIndex = isRightestTab ? currentIndex - 1 : currentIndex
       const nextTab = getTabs()[newIndex]
-      goto(`/${nextTab.type}/${nextTab.workId}`)
+      if (nextTab.type === 'settings') {
+        goto('/settings')
+      }
+      else if (nextTab.type.startsWith('debug-')) {
+        goto(`/debug/${nextTab.type.split('-')[1]}`)
+      }
+      else {
+        goto(`/${nextTab.type}/${nextTab.workId}`)
+      }
       return
     }
 
@@ -154,7 +213,15 @@ function createTabs() {
       return
     }
     const tab = _tabs[index]
-    goto(`/${tab.type}/${tab.workId}`)
+    if (tab.type === 'settings') {
+      goto('/settings')
+    }
+    else if (tab.type.startsWith('debug-')) {
+      goto(`/debug/${tab.type.split('-')[1]}`)
+    }
+    else {
+      goto(`/${tab.type}/${tab.workId}`)
+    }
   }
   const getSelectedTab = () => getTabs()[getSelected()]
   return {

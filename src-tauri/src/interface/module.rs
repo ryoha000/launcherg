@@ -78,7 +78,7 @@ impl Modules {
 
         let repositories = Arc::new(Repositories::new(db.clone()));
         let explorers = Arc::new(Explorers::new());
-        let windows = Arc::new(Windows::new());
+        let windows = Arc::new(Windows::new(Arc::new(handle.clone())));
         let pubsub = PubSub::new(Arc::new(handle.clone()));
 
         let collection_use_case = CollectionUseCase::new(repositories.clone());

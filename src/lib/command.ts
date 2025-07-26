@@ -3,6 +3,18 @@ import type {
   CollectionElement,
   CollectionElementDetail,
 } from '@/lib/types'
+import type {
+  AddWatchTargetRequest,
+  ClearEventsRequest,
+  GetEventsRequest,
+  HealthCheckResult,
+  ProcTailEvent,
+  ProcTailManagerStatus,
+  ProcTailVersion,
+  RemoveWatchTargetRequest,
+  ServiceStatus,
+  WatchTarget,
+} from '@/lib/types/proctail'
 import { invoke } from '@tauri-apps/api/core'
 
 export async function commandCreateElementsInPc(exploreDirPaths: string[], useCache: boolean) {
@@ -132,4 +144,66 @@ export async function commandUpdateCollectionElementThumbnails(ids: number[]) {
   return await invoke<void>('update_collection_element_thumbnails', {
     ids,
   })
+}
+
+// ProcTail Commands
+export async function commandProcTailAddWatchTarget(request: AddWatchTargetRequest) {
+  return await invoke<WatchTarget>('proctail_add_watch_target', { request })
+}
+
+export async function commandProcTailRemoveWatchTarget(request: RemoveWatchTargetRequest) {
+  return await invoke<number>('proctail_remove_watch_target', { request })
+}
+
+export async function commandProcTailGetWatchTargets() {
+  return await invoke<WatchTarget[]>('proctail_get_watch_targets')
+}
+
+export async function commandProcTailGetRecordedEvents(request: GetEventsRequest) {
+  return await invoke<ProcTailEvent[]>('proctail_get_recorded_events', { request })
+}
+
+export async function commandProcTailClearEvents(request: ClearEventsRequest) {
+  return await invoke<number>('proctail_clear_events', { request })
+}
+
+export async function commandProcTailGetStatus() {
+  return await invoke<ServiceStatus>('proctail_get_status')
+}
+
+export async function commandProcTailHealthCheck() {
+  return await invoke<HealthCheckResult>('proctail_health_check')
+}
+
+export async function commandProcTailIsServiceAvailable() {
+  return await invoke<boolean>('proctail_is_service_available')
+}
+
+// ProcTail Manager Commands
+export async function commandProcTailManagerGetStatus() {
+  return await invoke<ProcTailManagerStatus>('proctail_manager_get_status')
+}
+
+export async function commandProcTailManagerGetLatestVersion() {
+  return await invoke<ProcTailVersion>('proctail_manager_get_latest_version')
+}
+
+export async function commandProcTailManagerIsUpdateAvailable() {
+  return await invoke<boolean>('proctail_manager_is_update_available')
+}
+
+export async function commandProcTailManagerDownloadAndInstall() {
+  return await invoke<void>('proctail_manager_download_and_install')
+}
+
+export async function commandProcTailManagerStart() {
+  return await invoke<void>('proctail_manager_start')
+}
+
+export async function commandProcTailManagerStop() {
+  return await invoke<void>('proctail_manager_stop')
+}
+
+export async function commandProcTailManagerIsRunning() {
+  return await invoke<boolean>('proctail_manager_is_running')
 }
