@@ -12,7 +12,7 @@ use crate::domain::file::{
 use crate::domain::pubsub::{ProgressLivePayload, ProgressPayload, PubSubService};
 use crate::{
     domain::{
-        collection::{CollectionElement, NewCollectionElement},
+        collection::{CollectionElement, NewCollectionElementWithData},
         distance::get_comparable_distance,
         explorer::file::FileExplorer,
         file::{
@@ -202,7 +202,7 @@ impl<R: ExplorersExt> FileUseCase<R> {
         files: Vec<String>,
         all_game_cache: AllGameCache,
         pubsub: Arc<P>,
-    ) -> anyhow::Result<Vec<NewCollectionElement>> {
+    ) -> anyhow::Result<Vec<NewCollectionElementWithData>> {
         let start = Instant::now();
 
         let normalized_all_games = Arc::new(
@@ -256,7 +256,7 @@ impl<R: ExplorersExt> FileUseCase<R> {
             // new collection element
             if let Some(gamename) = all_erogamescape_game_map.get(&id) {
                 let install_at = get_file_created_at_sync(&exe_path);
-                collection_elements.push(NewCollectionElement::new(
+                collection_elements.push(NewCollectionElementWithData::new(
                     Id::new(id),
                     gamename.clone(),
                     Some(exe_path),
@@ -267,7 +267,7 @@ impl<R: ExplorersExt> FileUseCase<R> {
         }
         for (id, lnk_path) in lnk_id_path_vec.iter() {
             let id = Id::new(*id);
-            let install_at;
+            let _install_at;
             // icon
             if let Some(metadata) = lnk_metadatas.get(lnk_path.as_str()) {
                 let task;
@@ -278,18 +278,18 @@ impl<R: ExplorersExt> FileUseCase<R> {
                 }
                 save_icon_tasks.push(task);
 
-                install_at = get_file_created_at_sync(&metadata.path);
+                _install_at = get_file_created_at_sync(&metadata.path);
             } else {
-                install_at = None;
+                _install_at = None;
             }
 
             if let Some(gamename) = all_erogamescape_game_map.get(&id.value) {
-                collection_elements.push(NewCollectionElement::new(
+                collection_elements.push(NewCollectionElementWithData::new(
                     id,
                     gamename.clone(),
                     None,
                     Some(lnk_path.clone()),
-                    install_at,
+                    _install_at,
                 ));
             }
         }
@@ -331,10 +331,15 @@ impl<R: ExplorersExt> FileUseCase<R> {
         collection_element: CollectionElement,
         is_run_as_admin: bool,
     ) -> anyhow::Result<Option<u32>> {
+        let (exe_path, lnk_path) = if let Some(paths) = &collection_element.paths {
+            (paths.exe_path.clone(), paths.lnk_path.clone())
+        } else {
+            (None, None)
+        };
         start_process(
             is_run_as_admin,
-            collection_element.exe_path,
-            collection_element.lnk_path,
+            exe_path,
+            lnk_path,
         )
     }
     pub fn get_play_time_minutes(

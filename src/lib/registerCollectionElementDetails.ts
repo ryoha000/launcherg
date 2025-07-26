@@ -10,18 +10,19 @@ export async function registerCollectionElementDetails() {
     return
   }
 
-  const query = `select gamelist.id, gamelist.furigana, gamelist.sellday, gamelist.okazu, brandlist.brandname, brandlist.brandfurigana from gamelist inner join brandlist on brandlist.id = gamelist.brandname where gamelist.id IN (${ids.join(
+  const query = `select gamelist.id, gamelist.gamename, gamelist.furigana, gamelist.sellday, gamelist.okazu, brandlist.brandname, brandlist.brandfurigana from gamelist inner join brandlist on brandlist.id = gamelist.brandname where gamelist.id IN (${ids.join(
     ', ',
   )});`
-  const rows = await scrapeSql(query, 6)
+  const rows = await scrapeSql(query, 7)
   await commandCreateElementDetails(
     rows.map(row => ({
       collectionElementId: +row[0],
-      gamenameRuby: row[1],
-      sellday: row[2],
-      isNukige: row[3].includes('t'),
-      brandname: row[4],
-      brandnameRuby: row[5],
+      gamename: row[1],
+      gamenameRuby: row[2],
+      sellday: row[3],
+      isNukige: row[4].includes('t'),
+      brandname: row[5],
+      brandnameRuby: row[6],
     })),
   )
 }
