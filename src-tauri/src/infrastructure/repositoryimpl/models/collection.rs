@@ -10,14 +10,13 @@ use crate::domain::{
     Id,
 };
 
-#[derive(FromRow, Clone)]
+#[derive(FromRow)]
 pub struct CollectionElementTable {
     pub id: i32,
     pub created_at: NaiveDateTime,
     pub updated_at: NaiveDateTime,
 }
 
-#[derive(FromRow, Clone)]
 pub struct CollectionElementInfoTable {
     pub id: i32,
     pub collection_element_id: i32,
@@ -31,7 +30,7 @@ pub struct CollectionElementInfoTable {
     pub updated_at: NaiveDateTime,
 }
 
-#[derive(FromRow, Clone)]
+#[derive(FromRow)]
 pub struct CollectionElementPathsTable {
     pub id: i32,
     pub collection_element_id: i32,
@@ -41,7 +40,7 @@ pub struct CollectionElementPathsTable {
     pub updated_at: NaiveDateTime,
 }
 
-#[derive(FromRow, Clone)]
+#[derive(FromRow)]
 pub struct CollectionElementInstallTable {
     pub id: i32,
     pub collection_element_id: i32,
@@ -50,7 +49,7 @@ pub struct CollectionElementInstallTable {
     pub updated_at: NaiveDateTime,
 }
 
-#[derive(FromRow, Clone)]
+#[derive(FromRow)]
 pub struct CollectionElementPlayTable {
     pub id: i32,
     pub collection_element_id: i32,
@@ -59,7 +58,7 @@ pub struct CollectionElementPlayTable {
     pub updated_at: NaiveDateTime,
 }
 
-#[derive(FromRow, Clone)]
+#[derive(FromRow)]
 pub struct CollectionElementLikeTable {
     pub id: i32,
     pub collection_element_id: i32,
@@ -68,7 +67,7 @@ pub struct CollectionElementLikeTable {
     pub updated_at: NaiveDateTime,
 }
 
-#[derive(FromRow, Clone)]
+#[derive(FromRow)]
 pub struct CollectionElementThumbnailTable {
     pub id: i32,
     pub collection_element_id: i32,
