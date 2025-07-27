@@ -97,7 +97,6 @@ pub struct CollectionElementThumbnail {
     pub updated_at: DateTime<Local>,
 }
 
-// 新規作成用の構造体も更新
 #[derive(new, Debug)]
 pub struct NewCollectionElement {
     pub id: Id<CollectionElement>,
@@ -105,7 +104,7 @@ pub struct NewCollectionElement {
 
 // ファイルスキャン用の関連データ付きコレクション要素
 #[derive(new, Debug)]
-pub struct NewCollectionElementWithData {
+pub struct ScannedGameElement {
     pub id: Id<CollectionElement>,
     pub gamename: String,
     pub exe_path: Option<String>,

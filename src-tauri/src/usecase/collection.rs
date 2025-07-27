@@ -7,7 +7,7 @@ use tauri::AppHandle;
 use super::error::UseCaseError;
 use crate::{
     domain::{
-        collection::{CollectionElement, NewCollectionElement, NewCollectionElementWithData},
+        collection::{CollectionElement, NewCollectionElement, ScannedGameElement},
         file::{
             get_icon_path, get_thumbnail_path, save_thumbnail,
         },
@@ -173,7 +173,7 @@ impl<R: RepositoriesExt> CollectionUseCase<R> {
     // 関連データ付きコレクション要素リストを一括保存
     pub async fn upsert_collection_elements_with_data(
         &self,
-        source: &Vec<NewCollectionElementWithData>,
+        source: &Vec<ScannedGameElement>,
     ) -> anyhow::Result<()> {
         
         for element in source.iter() {

@@ -12,7 +12,7 @@ use crate::domain::file::{
 use crate::domain::pubsub::{ProgressLivePayload, ProgressPayload, PubSubService};
 use crate::{
     domain::{
-        collection::{CollectionElement, NewCollectionElementWithData},
+        collection::{CollectionElement, ScannedGameElement},
         distance::get_comparable_distance,
         explorer::file::FileExplorer,
         file::{
@@ -202,7 +202,7 @@ impl<R: ExplorersExt> FileUseCase<R> {
         files: Vec<String>,
         all_game_cache: AllGameCache,
         pubsub: Arc<P>,
-    ) -> anyhow::Result<Vec<NewCollectionElementWithData>> {
+    ) -> anyhow::Result<Vec<ScannedGameElement>> {
         let start = Instant::now();
 
         let normalized_all_games = Arc::new(
@@ -256,7 +256,7 @@ impl<R: ExplorersExt> FileUseCase<R> {
             // new collection element
             if let Some(gamename) = all_erogamescape_game_map.get(&id) {
                 let install_at = get_file_created_at_sync(&exe_path);
-                collection_elements.push(NewCollectionElementWithData::new(
+                collection_elements.push(ScannedGameElement::new(
                     Id::new(id),
                     gamename.clone(),
                     Some(exe_path),
@@ -284,7 +284,7 @@ impl<R: ExplorersExt> FileUseCase<R> {
             }
 
             if let Some(gamename) = all_erogamescape_game_map.get(&id.value) {
-                collection_elements.push(NewCollectionElementWithData::new(
+                collection_elements.push(ScannedGameElement::new(
                     id,
                     gamename.clone(),
                     None,
