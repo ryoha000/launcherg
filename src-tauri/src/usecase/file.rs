@@ -72,12 +72,15 @@ fn emit_progress_with_time<P: PubSubService>(
     base_announce: &str,
 ) -> anyhow::Result<()> {
     let end = start.elapsed();
-    pubsub.notify("progress", ProgressPayload::new(format!(
-        "{}累計{}.{:03}秒経過しました.",
-        base_announce,
-        end.as_secs(),
-        end.subsec_nanos() / 1_000_000
-    )))
+    pubsub.notify(
+        "progress",
+        ProgressPayload::new(format!(
+            "{}累計{}.{:03}秒経過しました.",
+            base_announce,
+            end.as_secs(),
+            end.subsec_nanos() / 1_000_000
+        )),
+    )
 }
 
 impl<R: ExplorersExt> FileUseCase<R> {
@@ -166,7 +169,8 @@ impl<R: ExplorersExt> FileUseCase<R> {
             let pubsub_clone = Arc::clone(&pubsub);
             tauri::async_runtime::spawn(async move {
                 let res = get_most_probable_game_candidate(&all, path)?;
-                if let Err(e) = pubsub_clone.notify("progresslive", ProgressLivePayload::new(None)) {
+                if let Err(e) = pubsub_clone.notify("progresslive", ProgressLivePayload::new(None))
+                {
                     return Err(e);
                 }
                 Ok(res)
@@ -220,11 +224,7 @@ impl<R: ExplorersExt> FileUseCase<R> {
             .collect();
 
         let (exe_id_path_vec, lnk_id_path_vec): (Vec<(i32, String)>, Vec<(i32, String)>) = self
-            .concurency_get_path_game_map(
-                normalized_all_games,
-                files,
-                pubsub.clone(),
-            )
+            .concurency_get_path_game_map(normalized_all_games, files, pubsub.clone())
             .await?
             .into_iter()
             .partition(|(_id, path)| path.to_lowercase().ends_with("exe"));
@@ -346,11 +346,7 @@ impl<R: ExplorersExt> FileUseCase<R> {
             ));
         }
 
-        start_process(
-            is_run_as_admin,
-            exe_path,
-            lnk_path,
-        )
+        start_process(is_run_as_admin, exe_path, lnk_path)
     }
     pub fn get_play_time_minutes(
         &self,

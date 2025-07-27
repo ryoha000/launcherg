@@ -8,9 +8,7 @@ use super::error::UseCaseError;
 use crate::{
     domain::{
         collection::{CollectionElement, NewCollectionElement, ScannedGameElement},
-        file::{
-            get_icon_path, get_thumbnail_path, save_thumbnail,
-        },
+        file::{get_icon_path, get_thumbnail_path, save_thumbnail},
         repository::collection::CollectionRepository,
         Id,
     },
@@ -52,8 +50,7 @@ impl<R: RepositoriesExt> CollectionUseCase<R> {
         element: &ScannedGameElement,
     ) -> anyhow::Result<()> {
         use crate::domain::collection::{
-            NewCollectionElement, NewCollectionElementPaths, 
-            NewCollectionElementInstall
+            NewCollectionElement, NewCollectionElementInstall, NewCollectionElementPaths,
         };
 
         // 1. 基本要素を作成
@@ -78,10 +75,7 @@ impl<R: RepositoriesExt> CollectionUseCase<R> {
 
         // 4. インストール情報を保存
         if let Some(install_time) = element.install_at {
-            let new_install = NewCollectionElementInstall::new(
-                element.id.clone(),
-                install_time,
-            );
+            let new_install = NewCollectionElementInstall::new(element.id.clone(), install_time);
             self.repositories
                 .collection_repository()
                 .upsert_collection_element_install(&new_install)
@@ -147,7 +141,6 @@ impl<R: RepositoriesExt> CollectionUseCase<R> {
         &self,
         source: &Vec<ScannedGameElement>,
     ) -> anyhow::Result<()> {
-        
         for element in source.iter() {
             self.create_collection_element(element).await?;
         }
@@ -183,12 +176,13 @@ impl<R: RepositoriesExt> CollectionUseCase<R> {
         element: &NewCollectionElement,
     ) -> anyhow::Result<()> {
         let id = &element.id;
-        
-        let paths = self.repositories
+
+        let paths = self
+            .repositories
             .collection_repository()
             .get_element_paths_by_element_id(id)
             .await?;
-        
+
         let icon_path = if let Some(paths) = paths {
             if let Some(lnk_path) = paths.lnk_path {
                 // lnkファイルからメタデータを取得してアイコンパスを決定
@@ -274,7 +268,6 @@ impl<R: RepositoriesExt> CollectionUseCase<R> {
             .get_not_registered_info_element_ids()
             .await
     }
-
 
     pub async fn update_element_last_play_at(
         &self,

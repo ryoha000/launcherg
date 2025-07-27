@@ -1,7 +1,6 @@
 use derive_new::new;
 use serde::{Deserialize, Serialize};
 
-
 #[derive(new, Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CreateCollectionElementDetail {
@@ -13,4 +12,3 @@ pub struct CreateCollectionElementDetail {
     pub sellday: String,
     pub is_nukige: bool,
 }
-

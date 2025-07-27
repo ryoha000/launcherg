@@ -2,7 +2,9 @@ use derive_new::new;
 use std::marker::PhantomData;
 use std::sync::Arc;
 
-use crate::domain::{process::Process, windows::process::ProcessWindows, windows::proctail::ProcTail};
+use crate::domain::{
+    process::Process, windows::process::ProcessWindows, windows::proctail::ProcTail,
+};
 use crate::infrastructure::windowsimpl::proctail::ProcTailImpl;
 use crate::infrastructure::windowsimpl::proctail_manager::AppHandleProcTailManager;
 use tauri::AppHandle;
@@ -49,6 +51,10 @@ impl Windows {
         let proctail = ProcTailImpl::new();
         let proctail_manager = AppHandleProcTailManager::new(app_handle);
 
-        Self { process, proctail, proctail_manager }
+        Self {
+            process,
+            proctail,
+            proctail_manager,
+        }
     }
 }

@@ -14,9 +14,9 @@ use crate::domain::{
     collection::{
         CollectionElement, CollectionElementInfo, CollectionElementInstall, CollectionElementLike,
         CollectionElementPaths, CollectionElementPlay, CollectionElementThumbnail,
-        NewCollectionElement, NewCollectionElementInfo,
-        NewCollectionElementInstall, NewCollectionElementLike, NewCollectionElementPaths,
-        NewCollectionElementPlay, NewCollectionElementThumbnail,
+        NewCollectionElement, NewCollectionElementInfo, NewCollectionElementInstall,
+        NewCollectionElementLike, NewCollectionElementPaths, NewCollectionElementPlay,
+        NewCollectionElementThumbnail,
     },
     repository::collection::CollectionRepository,
     Id,
@@ -42,7 +42,9 @@ impl CollectionRepository for RepositoryImpl<CollectionElement> {
             element.install = self.get_element_install_by_element_id(&element_id).await?;
             element.play = self.get_element_play_by_element_id(&element_id).await?;
             element.like = self.get_element_like_by_element_id(&element_id).await?;
-            element.thumbnail = self.get_element_thumbnail_by_element_id(&element_id).await?;
+            element.thumbnail = self
+                .get_element_thumbnail_by_element_id(&element_id)
+                .await?;
 
             result.push(element);
         }
@@ -54,7 +56,7 @@ impl CollectionRepository for RepositoryImpl<CollectionElement> {
         id: &Id<CollectionElement>,
     ) -> anyhow::Result<Option<CollectionElement>> {
         let pool = self.pool.0.clone();
-        
+
         let row = query(
             "SELECT 
                 ce.id, ce.created_at, ce.updated_at,
@@ -101,8 +103,12 @@ impl CollectionRepository for RepositoryImpl<CollectionElement> {
                 row.get("brandname_ruby"),
                 row.get("sellday"),
                 row.get::<i32, _>("is_nukige") != 0,
-                row.get::<chrono::NaiveDateTime, _>("info_created_at").and_utc().with_timezone(&chrono::Local),
-                row.get::<chrono::NaiveDateTime, _>("info_updated_at").and_utc().with_timezone(&chrono::Local),
+                row.get::<chrono::NaiveDateTime, _>("info_created_at")
+                    .and_utc()
+                    .with_timezone(&chrono::Local),
+                row.get::<chrono::NaiveDateTime, _>("info_updated_at")
+                    .and_utc()
+                    .with_timezone(&chrono::Local),
             ))
         } else {
             None
@@ -114,8 +120,12 @@ impl CollectionRepository for RepositoryImpl<CollectionElement> {
                 id.clone(),
                 row.get("exe_path"),
                 row.get("lnk_path"),
-                row.get::<chrono::NaiveDateTime, _>("paths_created_at").and_utc().with_timezone(&chrono::Local),
-                row.get::<chrono::NaiveDateTime, _>("paths_updated_at").and_utc().with_timezone(&chrono::Local),
+                row.get::<chrono::NaiveDateTime, _>("paths_created_at")
+                    .and_utc()
+                    .with_timezone(&chrono::Local),
+                row.get::<chrono::NaiveDateTime, _>("paths_updated_at")
+                    .and_utc()
+                    .with_timezone(&chrono::Local),
             ))
         } else {
             None
@@ -125,9 +135,15 @@ impl CollectionRepository for RepositoryImpl<CollectionElement> {
             Some(CollectionElementInstall::new(
                 Id::new(install_id),
                 id.clone(),
-                row.get::<chrono::NaiveDateTime, _>("install_at").and_utc().with_timezone(&chrono::Local),
-                row.get::<chrono::NaiveDateTime, _>("install_created_at").and_utc().with_timezone(&chrono::Local),
-                row.get::<chrono::NaiveDateTime, _>("install_updated_at").and_utc().with_timezone(&chrono::Local),
+                row.get::<chrono::NaiveDateTime, _>("install_at")
+                    .and_utc()
+                    .with_timezone(&chrono::Local),
+                row.get::<chrono::NaiveDateTime, _>("install_created_at")
+                    .and_utc()
+                    .with_timezone(&chrono::Local),
+                row.get::<chrono::NaiveDateTime, _>("install_updated_at")
+                    .and_utc()
+                    .with_timezone(&chrono::Local),
             ))
         } else {
             None
@@ -137,9 +153,15 @@ impl CollectionRepository for RepositoryImpl<CollectionElement> {
             Some(CollectionElementPlay::new(
                 Id::new(play_id),
                 id.clone(),
-                row.get::<chrono::NaiveDateTime, _>("last_play_at").and_utc().with_timezone(&chrono::Local),
-                row.get::<chrono::NaiveDateTime, _>("play_created_at").and_utc().with_timezone(&chrono::Local),
-                row.get::<chrono::NaiveDateTime, _>("play_updated_at").and_utc().with_timezone(&chrono::Local),
+                row.get::<chrono::NaiveDateTime, _>("last_play_at")
+                    .and_utc()
+                    .with_timezone(&chrono::Local),
+                row.get::<chrono::NaiveDateTime, _>("play_created_at")
+                    .and_utc()
+                    .with_timezone(&chrono::Local),
+                row.get::<chrono::NaiveDateTime, _>("play_updated_at")
+                    .and_utc()
+                    .with_timezone(&chrono::Local),
             ))
         } else {
             None
@@ -149,9 +171,15 @@ impl CollectionRepository for RepositoryImpl<CollectionElement> {
             Some(CollectionElementLike::new(
                 Id::new(like_id),
                 id.clone(),
-                row.get::<chrono::NaiveDateTime, _>("like_at").and_utc().with_timezone(&chrono::Local),
-                row.get::<chrono::NaiveDateTime, _>("like_created_at").and_utc().with_timezone(&chrono::Local),
-                row.get::<chrono::NaiveDateTime, _>("like_updated_at").and_utc().with_timezone(&chrono::Local),
+                row.get::<chrono::NaiveDateTime, _>("like_at")
+                    .and_utc()
+                    .with_timezone(&chrono::Local),
+                row.get::<chrono::NaiveDateTime, _>("like_created_at")
+                    .and_utc()
+                    .with_timezone(&chrono::Local),
+                row.get::<chrono::NaiveDateTime, _>("like_updated_at")
+                    .and_utc()
+                    .with_timezone(&chrono::Local),
             ))
         } else {
             None
@@ -163,8 +191,12 @@ impl CollectionRepository for RepositoryImpl<CollectionElement> {
                 id.clone(),
                 row.get("thumbnail_width"),
                 row.get("thumbnail_height"),
-                row.get::<chrono::NaiveDateTime, _>("thumbnail_created_at").and_utc().with_timezone(&chrono::Local),
-                row.get::<chrono::NaiveDateTime, _>("thumbnail_updated_at").and_utc().with_timezone(&chrono::Local),
+                row.get::<chrono::NaiveDateTime, _>("thumbnail_created_at")
+                    .and_utc()
+                    .with_timezone(&chrono::Local),
+                row.get::<chrono::NaiveDateTime, _>("thumbnail_updated_at")
+                    .and_utc()
+                    .with_timezone(&chrono::Local),
             ))
         } else {
             None
@@ -173,7 +205,10 @@ impl CollectionRepository for RepositoryImpl<CollectionElement> {
         Ok(Some(element))
     }
 
-    async fn upsert_collection_element(&self, new_element: &NewCollectionElement) -> anyhow::Result<()> {
+    async fn upsert_collection_element(
+        &self,
+        new_element: &NewCollectionElement,
+    ) -> anyhow::Result<()> {
         let pool = self.pool.0.clone();
         query(
             "INSERT INTO collection_elements (id) VALUES (?) 
@@ -185,7 +220,10 @@ impl CollectionRepository for RepositoryImpl<CollectionElement> {
         Ok(())
     }
 
-    async fn delete_collection_element(&self, element_id: &Id<CollectionElement>) -> anyhow::Result<()> {
+    async fn delete_collection_element(
+        &self,
+        element_id: &Id<CollectionElement>,
+    ) -> anyhow::Result<()> {
         let pool = self.pool.0.clone();
         query("DELETE FROM collection_elements WHERE id = ?")
             .bind(element_id.value)
@@ -199,7 +237,10 @@ impl CollectionRepository for RepositoryImpl<CollectionElement> {
     }
 
     // CollectionElementInfo操作
-    async fn upsert_collection_element_info(&self, info: &NewCollectionElementInfo) -> anyhow::Result<()> {
+    async fn upsert_collection_element_info(
+        &self,
+        info: &NewCollectionElementInfo,
+    ) -> anyhow::Result<()> {
         let pool = self.pool.0.clone();
         query(
             "INSERT INTO collection_element_info_by_erogamescape 
@@ -244,9 +285,10 @@ impl CollectionRepository for RepositoryImpl<CollectionElement> {
             None => Ok(None),
         }
     }
-    
 
-    async fn get_not_registered_info_element_ids(&self) -> anyhow::Result<Vec<Id<CollectionElement>>> {
+    async fn get_not_registered_info_element_ids(
+        &self,
+    ) -> anyhow::Result<Vec<Id<CollectionElement>>> {
         let pool = self.pool.0.clone();
         let ids: Vec<(i32,)> = sqlx::query_as(
             "SELECT ce.id
@@ -330,7 +372,10 @@ impl CollectionRepository for RepositoryImpl<CollectionElement> {
     }
 
     // CollectionElementPaths操作
-    async fn upsert_collection_element_paths(&self, paths: &NewCollectionElementPaths) -> anyhow::Result<()> {
+    async fn upsert_collection_element_paths(
+        &self,
+        paths: &NewCollectionElementPaths,
+    ) -> anyhow::Result<()> {
         let pool = self.pool.0.clone();
         query(
             "INSERT INTO collection_element_paths (collection_element_id, exe_path, lnk_path) 
@@ -404,19 +449,23 @@ impl CollectionRepository for RepositoryImpl<CollectionElement> {
         }
     }
 
-    async fn get_element_ids_by_install_at_not_null(&self) -> anyhow::Result<Vec<Id<CollectionElement>>> {
+    async fn get_element_ids_by_install_at_not_null(
+        &self,
+    ) -> anyhow::Result<Vec<Id<CollectionElement>>> {
         let pool = self.pool.0.clone();
-        let ids: Vec<(i32,)> = sqlx::query_as(
-            "SELECT collection_element_id FROM collection_element_installs"
-        )
-        .fetch_all(&*pool)
-        .await?;
+        let ids: Vec<(i32,)> =
+            sqlx::query_as("SELECT collection_element_id FROM collection_element_installs")
+                .fetch_all(&*pool)
+                .await?;
 
         Ok(ids.into_iter().map(|v| Id::new(v.0)).collect())
     }
 
     // CollectionElementPlay操作
-    async fn upsert_collection_element_play(&self, play: &NewCollectionElementPlay) -> anyhow::Result<()> {
+    async fn upsert_collection_element_play(
+        &self,
+        play: &NewCollectionElementPlay,
+    ) -> anyhow::Result<()> {
         let pool = self.pool.0.clone();
         query(
             "INSERT INTO collection_element_plays (collection_element_id, last_play_at) 
@@ -460,7 +509,10 @@ impl CollectionRepository for RepositoryImpl<CollectionElement> {
     }
 
     // CollectionElementLike操作
-    async fn upsert_collection_element_like(&self, like: &NewCollectionElementLike) -> anyhow::Result<()> {
+    async fn upsert_collection_element_like(
+        &self,
+        like: &NewCollectionElementLike,
+    ) -> anyhow::Result<()> {
         let pool = self.pool.0.clone();
         query(
             "INSERT INTO collection_element_likes (collection_element_id, like_at) 
@@ -570,7 +622,9 @@ impl CollectionRepository for RepositoryImpl<CollectionElement> {
         self.upsert_collection_element_thumbnail(&thumbnail).await
     }
 
-    async fn get_null_thumbnail_size_element_ids(&self) -> anyhow::Result<Vec<Id<CollectionElement>>> {
+    async fn get_null_thumbnail_size_element_ids(
+        &self,
+    ) -> anyhow::Result<Vec<Id<CollectionElement>>> {
         let pool = self.pool.0.clone();
         let ids: Vec<(i32,)> = sqlx::query_as(
             "SELECT ce.id 
@@ -610,5 +664,4 @@ impl CollectionRepository for RepositoryImpl<CollectionElement> {
         query.execute(&*pool).await?;
         Ok(())
     }
-
 }

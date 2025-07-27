@@ -2,9 +2,9 @@ use crate::domain::{
     collection::{
         CollectionElement, CollectionElementInfo, CollectionElementInstall, CollectionElementLike,
         CollectionElementPaths, CollectionElementPlay, CollectionElementThumbnail,
-        NewCollectionElement, NewCollectionElementInfo,
-        NewCollectionElementInstall, NewCollectionElementLike, NewCollectionElementPaths,
-        NewCollectionElementPlay, NewCollectionElementThumbnail,
+        NewCollectionElement, NewCollectionElementInfo, NewCollectionElementInstall,
+        NewCollectionElementLike, NewCollectionElementPaths, NewCollectionElementPlay,
+        NewCollectionElementThumbnail,
     },
     Id,
 };
@@ -47,7 +47,10 @@ pub trait CollectionRepository {
     ) -> Result<Vec<Id<CollectionElement>>>;
 
     // CollectionElementPaths操作
-    async fn upsert_collection_element_paths(&self, paths: &NewCollectionElementPaths) -> Result<()>;
+    async fn upsert_collection_element_paths(
+        &self,
+        paths: &NewCollectionElementPaths,
+    ) -> Result<()>;
     async fn get_element_paths_by_element_id(
         &self,
         id: &Id<CollectionElement>,
@@ -111,5 +114,4 @@ pub trait CollectionRepository {
 
     // その他のユーティリティ操作
     async fn remove_conflict_maps(&self) -> Result<()>;
-
 }

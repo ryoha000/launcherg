@@ -34,7 +34,7 @@ pub struct CollectionElement {
 impl CollectionElement {
     pub fn from_domain(handle: &Arc<AppHandle>, st: domain::collection::CollectionElement) -> Self {
         // 新しい構造から情報を取得
-        let (gamename, gamename_ruby, brandname, brandname_ruby, sellday, is_nukige) = 
+        let (gamename, gamename_ruby, brandname, brandname_ruby, sellday, is_nukige) =
             if let Some(info) = &st.info {
                 (
                     info.gamename.clone(),
@@ -45,7 +45,14 @@ impl CollectionElement {
                     info.is_nukige,
                 )
             } else {
-                ("".to_string(), "".to_string(), "".to_string(), "".to_string(), "".to_string(), false)
+                (
+                    "".to_string(),
+                    "".to_string(),
+                    "".to_string(),
+                    "".to_string(),
+                    "".to_string(),
+                    false,
+                )
             };
 
         let (exe_path, lnk_path) = if let Some(paths) = &st.paths {
@@ -91,4 +98,3 @@ pub struct CalculateDistanceKV {
     pub key: String,
     pub value: String,
 }
-

@@ -154,4 +154,3 @@ pub struct NewCollectionElementThumbnail {
     pub thumbnail_width: Option<i32>,
     pub thumbnail_height: Option<i32>,
 }
-

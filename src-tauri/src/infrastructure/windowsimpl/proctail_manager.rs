@@ -5,7 +5,7 @@ use std::{fs, io};
 
 use semver::Version;
 use serde::{Deserialize, Serialize};
-use sysinfo::{System, SystemExt, ProcessExt};
+use sysinfo::{ProcessExt, System, SystemExt};
 use tauri::AppHandle;
 use tokio::sync::Mutex;
 
@@ -71,25 +71,36 @@ impl<T: AppConfigProvider> ProcTailManager<T> {
     }
 
     pub fn get_proctail_executable_path(&self, version: &str) -> PathBuf {
-        self.get_proctail_version_dir(version).join("host").join(PROCTAIL_EXECUTABLE)
+        self.get_proctail_version_dir(version)
+            .join("host")
+            .join(PROCTAIL_EXECUTABLE)
     }
 
     pub fn get_proctail_appsettings_path(&self, version: &str) -> PathBuf {
-        self.get_proctail_version_dir(version).join("host").join("appsettings.Production.json")
+        self.get_proctail_version_dir(version)
+            .join("host")
+            .join("appsettings.Production.json")
     }
 
-    pub async fn get_current_proctail_executable_path(&self) -> Result<PathBuf, ProcTailManagerError> {
-        let current_version = self.get_current_version().await?
+    pub async fn get_current_proctail_executable_path(
+        &self,
+    ) -> Result<PathBuf, ProcTailManagerError> {
+        let current_version = self
+            .get_current_version()
+            .await?
             .ok_or_else(|| ProcTailManagerError::Process("No version installed".to_string()))?;
         Ok(self.get_proctail_executable_path(&current_version))
     }
 
-    pub async fn get_current_proctail_appsettings_path(&self) -> Result<PathBuf, ProcTailManagerError> {
-        let current_version = self.get_current_version().await?
+    pub async fn get_current_proctail_appsettings_path(
+        &self,
+    ) -> Result<PathBuf, ProcTailManagerError> {
+        let current_version = self
+            .get_current_version()
+            .await?
             .ok_or_else(|| ProcTailManagerError::Process("No version installed".to_string()))?;
         Ok(self.get_proctail_appsettings_path(&current_version))
     }
-
 
     pub async fn get_current_version(&self) -> Result<Option<String>, ProcTailManagerError> {
         let proctail_dir = self.get_proctail_dir();
@@ -100,7 +111,7 @@ impl<T: AppConfigProvider> ProcTailManager<T> {
         // Check for version directories and find the latest one
         let entries = fs::read_dir(proctail_dir)?;
         let mut versions = Vec::new();
-        
+
         for entry in entries {
             let entry = entry?;
             if entry.file_type()?.is_dir() {
@@ -108,14 +119,14 @@ impl<T: AppConfigProvider> ProcTailManager<T> {
                 versions.push(dir_name);
             }
         }
-        
+
         if versions.is_empty() {
             return Ok(None);
         }
-        
+
         // Sort versions using semantic versioning to get the latest
         let mut parsed_versions: Vec<(Version, String)> = Vec::new();
-        
+
         for version_str in versions {
             // Try to parse as semantic version (remove 'v' prefix if present)
             let clean_version = version_str.strip_prefix('v').unwrap_or(&version_str);
@@ -123,14 +134,16 @@ impl<T: AppConfigProvider> ProcTailManager<T> {
                 parsed_versions.push((parsed, version_str));
             }
         }
-        
+
         if parsed_versions.is_empty() {
             return Ok(None);
         }
-        
+
         // Sort by semantic version and get the latest
         parsed_versions.sort_by(|a, b| a.0.cmp(&b.0));
-        Ok(parsed_versions.last().map(|(_, version_str)| version_str.clone()))
+        Ok(parsed_versions
+            .last()
+            .map(|(_, version_str)| version_str.clone()))
     }
 
     pub async fn get_latest_version(&self) -> Result<ProcTailVersion, ProcTailManagerError> {
@@ -142,12 +155,17 @@ impl<T: AppConfigProvider> ProcTailManager<T> {
             .await?;
 
         let release_info: serde_json::Value = response.json().await?;
-        
+
         let version = release_info["tag_name"]
             .as_str()
             .ok_or_else(|| {
-                let error_msg = format!("No version found in response. Available keys: {:?}", 
-                    release_info.as_object().map(|obj| obj.keys().collect::<Vec<_>>()).unwrap_or_default());
+                let error_msg = format!(
+                    "No version found in response. Available keys: {:?}",
+                    release_info
+                        .as_object()
+                        .map(|obj| obj.keys().collect::<Vec<_>>())
+                        .unwrap_or_default()
+                );
                 ProcTailManagerError::Download(error_msg)
             })?
             .to_string();
@@ -159,9 +177,9 @@ impl<T: AppConfigProvider> ProcTailManager<T> {
         let windows_asset = assets
             .iter()
             .find(|asset| {
-                asset["name"]
-                    .as_str()
-                    .map_or(false, |name| name.contains("self-contained-win-x64") && name.ends_with(".zip"))
+                asset["name"].as_str().map_or(false, |name| {
+                    name.contains("self-contained-win-x64") && name.ends_with(".zip")
+                })
             })
             .ok_or_else(|| ProcTailManagerError::Download("No Windows asset found".to_string()))?;
 
@@ -176,10 +194,13 @@ impl<T: AppConfigProvider> ProcTailManager<T> {
         })
     }
 
-    pub async fn download_and_install(&self, version_info: &ProcTailVersion) -> Result<(), ProcTailManagerError> {
+    pub async fn download_and_install(
+        &self,
+        version_info: &ProcTailVersion,
+    ) -> Result<(), ProcTailManagerError> {
         // Stop any running ProcTail process before updating
         self.stop_proctail().await?;
-        
+
         let version_dir = self.get_proctail_version_dir(&version_info.version);
         fs::create_dir_all(&version_dir)?;
 
@@ -192,16 +213,17 @@ impl<T: AppConfigProvider> ProcTailManager<T> {
             .await?;
 
         let zip_data = response.bytes().await?;
-        
+
         // Extract the zip file
         let cursor = std::io::Cursor::new(zip_data);
         let mut archive = zip::ZipArchive::new(cursor)
             .map_err(|e| ProcTailManagerError::Download(format!("Failed to open zip: {}", e)))?;
 
         for i in 0..archive.len() {
-            let mut file = archive.by_index(i)
-                .map_err(|e| ProcTailManagerError::Download(format!("Failed to read zip entry: {}", e)))?;
-            
+            let mut file = archive.by_index(i).map_err(|e| {
+                ProcTailManagerError::Download(format!("Failed to read zip entry: {}", e))
+            })?;
+
             let file_name = file.name().to_string();
             let file_path = version_dir.join(&file_name);
 
@@ -229,13 +251,16 @@ impl<T: AppConfigProvider> ProcTailManager<T> {
             Some(current) => {
                 // Parse both versions and compare semantically
                 let current_clean = current.strip_prefix('v').unwrap_or(&current);
-                let latest_clean = latest_version.version.strip_prefix('v').unwrap_or(&latest_version.version);
-                
+                let latest_clean = latest_version
+                    .version
+                    .strip_prefix('v')
+                    .unwrap_or(&latest_version.version);
+
                 match (Version::parse(current_clean), Version::parse(latest_clean)) {
                     (Ok(current_ver), Ok(latest_ver)) => Ok(current_ver < latest_ver),
                     _ => Ok(current != latest_version.version), // Fallback to string comparison
                 }
-            },
+            }
             None => Ok(true), // No version installed, update available
         }
     }
@@ -267,7 +292,7 @@ impl<T: AppConfigProvider> ProcTailManager<T> {
         }
 
         let mut process_guard = self.process.lock().await;
-        
+
         // Check if process is already running
         if let Some(ref mut child) = *process_guard {
             match child.try_wait() {
@@ -280,18 +305,24 @@ impl<T: AppConfigProvider> ProcTailManager<T> {
                     return Ok(());
                 }
                 Err(e) => {
-                    return Err(ProcTailManagerError::Process(format!("Failed to check process status: {}", e)));
+                    return Err(ProcTailManagerError::Process(format!(
+                        "Failed to check process status: {}",
+                        e
+                    )));
                 }
             }
         }
 
-        let working_dir = executable_path.parent()
-            .ok_or_else(|| ProcTailManagerError::Process("Executable path has no parent directory".to_string()))?;
+        let working_dir = executable_path.parent().ok_or_else(|| {
+            ProcTailManagerError::Process("Executable path has no parent directory".to_string())
+        })?;
         // Start new process
         let child = Command::new(&executable_path)
             .current_dir(working_dir)
             .spawn()
-            .map_err(|e| ProcTailManagerError::Process(format!("Failed to start ProcTail: {}", e)))?;
+            .map_err(|e| {
+                ProcTailManagerError::Process(format!("Failed to start ProcTail: {}", e))
+            })?;
 
         *process_guard = Some(child);
         Ok(())
@@ -299,22 +330,24 @@ impl<T: AppConfigProvider> ProcTailManager<T> {
 
     pub async fn stop_proctail(&self) -> Result<(), ProcTailManagerError> {
         let mut process_guard = self.process.lock().await;
-        
+
         if let Some(mut child) = process_guard.take() {
-            child.kill()
-                .map_err(|e| ProcTailManagerError::Process(format!("Failed to kill ProcTail: {}", e)))?;
-            
-            child.wait()
-                .map_err(|e| ProcTailManagerError::Process(format!("Failed to wait for ProcTail: {}", e)))?;
+            child.kill().map_err(|e| {
+                ProcTailManagerError::Process(format!("Failed to kill ProcTail: {}", e))
+            })?;
+
+            child.wait().map_err(|e| {
+                ProcTailManagerError::Process(format!("Failed to wait for ProcTail: {}", e))
+            })?;
         }
-        
+
         Ok(())
     }
 
     pub async fn is_running(&self) -> bool {
         // Check if we have a managed process
         let mut process_guard = self.process.lock().await;
-        
+
         if let Some(ref mut child) = *process_guard {
             match child.try_wait() {
                 Ok(Some(_)) => {
@@ -331,34 +364,35 @@ impl<T: AppConfigProvider> ProcTailManager<T> {
                 }
             }
         }
-        
+
         // If no managed process or managed process failed, check system processes
         self.is_proctail_running_in_system()
     }
-    
+
     fn is_proctail_running_in_system(&self) -> bool {
         let mut system = System::new_all();
         system.refresh_all();
-        
+
         // Look for ProcTail.Host.exe process
         for process in system.processes().values() {
             if process.name() == "ProcTail.Host.exe" {
                 return true;
             }
         }
-        
+
         false
     }
 
     pub async fn get_status(&self) -> Result<ProcTailManagerStatus, ProcTailManagerError> {
         let current_version = self.get_current_version().await?;
         let is_running = self.is_running().await;
-        let executable_exists = if let Ok(path) = self.get_current_proctail_executable_path().await {
+        let executable_exists = if let Ok(path) = self.get_current_proctail_executable_path().await
+        {
             path.exists()
         } else {
             false
         };
-        
+
         let update_available = if executable_exists {
             self.is_update_available().await.unwrap_or(false)
         } else {
@@ -384,4 +418,3 @@ pub struct ProcTailManagerStatus {
 
 // AppHandleを使う場合の型エイリアス
 pub type AppHandleProcTailManager = ProcTailManager<AppHandle>;
-

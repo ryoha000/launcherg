@@ -146,7 +146,11 @@ pub struct HealthCheckResult {
 #[async_trait]
 pub trait ProcTail: Send + Sync {
     /// Add a process to monitoring targets
-    async fn add_watch_target(&self, process_id: u32, tag: &str) -> Result<WatchTarget, ProcTailError>;
+    async fn add_watch_target(
+        &self,
+        process_id: u32,
+        tag: &str,
+    ) -> Result<WatchTarget, ProcTailError>;
 
     /// Remove a watch target by tag
     async fn remove_watch_target(&self, tag: &str) -> Result<u32, ProcTailError>;
