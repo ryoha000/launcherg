@@ -150,6 +150,7 @@ impl CollectionRepository for RepositoryImpl<CollectionElement> {
             None => Ok(None),
         }
     }
+    
 
     async fn get_not_registered_info_element_ids(&self) -> anyhow::Result<Vec<Id<CollectionElement>>> {
         let pool = self.pool.0.clone();

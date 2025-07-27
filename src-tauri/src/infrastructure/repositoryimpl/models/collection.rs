@@ -17,6 +17,7 @@ pub struct CollectionElementTable {
     pub updated_at: NaiveDateTime,
 }
 
+#[derive(FromRow)]
 pub struct CollectionElementInfoTable {
     pub id: i32,
     pub collection_element_id: i32,
