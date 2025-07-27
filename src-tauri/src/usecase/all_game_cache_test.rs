@@ -9,7 +9,7 @@ mod tests {
             },
             repository::all_game_cache::MockAllGameCacheRepository,
         },
-        infrastructure::repositoryimpl::repository::MockRepositoriesExtMock,
+        infrastructure::repositorymock::MockRepositoriesExtMock,
         usecase::all_game_cache::AllGameCacheUseCase,
     };
 

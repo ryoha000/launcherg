@@ -7,7 +7,7 @@ use crate::{
     domain::windows::proctail::{
         HealthCheckResult, ProcTail, ProcTailEvent, ServiceStatus, WatchTarget,
     },
-    infrastructure::windowsimpl::proctail_manager::{ProcTailManagerStatus, ProcTailVersion},
+    infrastructure::windowsimpl::proctail_manager::{ProcTailManagerStatus, ProcTailVersion, ProcTailManagerTrait},
     infrastructure::windowsimpl::windows::WindowsExt,
 };
 

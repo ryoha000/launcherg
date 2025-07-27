@@ -15,7 +15,7 @@ mod tests {
             repository::collection::MockCollectionRepository,
             Id,
         },
-        infrastructure::repositoryimpl::repository::MockRepositoriesExtMock,
+        infrastructure::repositorymock::MockRepositoriesExtMock,
         usecase::{collection::CollectionUseCase, error::UseCaseError},
     };
 

@@ -7,7 +7,7 @@ mod tests {
         domain::{
             explored_cache::ExploredCache, repository::explored_cache::MockExploredCacheRepository,
         },
-        infrastructure::repositoryimpl::repository::MockRepositoriesExtMock,
+        infrastructure::repositorymock::MockRepositoriesExtMock,
         usecase::explored_cache::ExploredCacheUseCase,
     };
 

@@ -24,17 +24,6 @@ pub trait ExplorersExt {
     fn network_explorer(&self) -> &Self::NetworkExplorer;
 }
 
-#[cfg(test)]
-mockall::mock! {
-    pub ExplorersExtMock {}
-    impl ExplorersExt for ExplorersExtMock {
-        type FileExplorer = crate::domain::explorer::file::MockFileExplorer;
-        type NetworkExplorer = crate::domain::explorer::network::MockNetworkExplorer;
-
-        fn file_explorer(&self) -> &Self::FileExplorer;
-        fn network_explorer(&self) -> &Self::NetworkExplorer;
-    }
-}
 
 impl ExplorersExt for Explorers {
     type FileExplorer = ExplorerImpl<File>;

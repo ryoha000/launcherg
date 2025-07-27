@@ -4,7 +4,7 @@ mod tests {
 
     use crate::{
         domain::{explorer::network::MockNetworkExplorer, network::ErogamescapeIDNamePair},
-        infrastructure::explorerimpl::explorer::MockExplorersExtMock,
+        infrastructure::explorermock::MockExplorersExtMock,
         usecase::network::NetworkUseCase,
     };
 
