@@ -13,7 +13,7 @@ use crate::domain::windows::proctail::{ProcTailEvent, ServiceStatus, WatchTarget
 use crate::infrastructure::windowsimpl::proctail_manager::{ProcTailManagerStatus, ProcTailVersion};
 use crate::{
     domain::{
-        collection::NewCollectionElement,
+        collection::{NewCollectionElement, ScannedGameElement},
         distance::get_comparable_distance,
         file::{get_file_created_at_sync, normalize},
         pubsub::{ProgressLivePayload, ProgressPayload, PubSubService},
@@ -96,7 +96,7 @@ pub async fn create_elements_in_pc(
 
     modules
         .collection_use_case()
-        .upsert_collection_elements_with_data(&new_elements_with_data)
+        .upsert_collection_elements(&new_elements_with_data)
         .await?;
 
     let new_element_ids = new_elements_with_data
@@ -191,16 +191,19 @@ pub async fn upsert_collection_element(
     let element_id = Id::new(game_cache.id);
     let handle = Arc::new(handle);
     
+    // ScannedGameElementを作成
+    let scanned_element = ScannedGameElement::new(
+        element_id.clone(),
+        game_cache.gamename,
+        exe_path,
+        lnk_path,
+        _install_at,
+    );
+    
     // 関連データを含むコレクション要素を作成
     modules
         .collection_use_case()
-        .create_collection_element_with_data(
-            &element_id,
-            game_cache.gamename,
-            exe_path,
-            lnk_path,
-            _install_at,
-        )
+        .create_collection_element(&scanned_element)
         .await?;
     
     // アイコンを保存

@@ -1,6 +1,6 @@
 use std::{fs, sync::Arc};
 
-use chrono::{DateTime, Local};
+use chrono::Local;
 use derive_new::new;
 use tauri::AppHandle;
 
@@ -47,13 +47,9 @@ impl<R: RepositoriesExt> CollectionUseCase<R> {
     }
 
     // 関連データを含むコレクション要素を作成
-    pub async fn create_collection_element_with_data(
+    pub async fn create_collection_element(
         &self,
-        element_id: &Id<CollectionElement>,
-        gamename: String,
-        exe_path: Option<String>,
-        lnk_path: Option<String>,
-        install_at: Option<DateTime<Local>>,
+        element: &ScannedGameElement,
     ) -> anyhow::Result<()> {
         use crate::domain::collection::{
             NewCollectionElement, NewCollectionElementInfo, NewCollectionElementPaths, 
@@ -61,13 +57,13 @@ impl<R: RepositoriesExt> CollectionUseCase<R> {
         };
 
         // 1. 基本要素を作成
-        let new_element = NewCollectionElement::new(element_id.clone());
+        let new_element = NewCollectionElement::new(element.id.clone());
         self.upsert_collection_element(&new_element).await?;
 
         // 2. スクレイピング情報を保存
         let new_info = NewCollectionElementInfo::new(
-            element_id.clone(),
-            gamename,
+            element.id.clone(),
+            element.gamename.clone(),
             "".to_string(), // gamename_ruby は空で初期化
             "".to_string(), // brandname は空で初期化
             "".to_string(), // brandname_ruby は空で初期化
@@ -80,11 +76,11 @@ impl<R: RepositoriesExt> CollectionUseCase<R> {
             .await?;
 
         // 3. パス情報を保存
-        if exe_path.is_some() || lnk_path.is_some() {
+        if element.exe_path.is_some() || element.lnk_path.is_some() {
             let new_paths = NewCollectionElementPaths::new(
-                element_id.clone(),
-                exe_path,
-                lnk_path,
+                element.id.clone(),
+                element.exe_path.clone(),
+                element.lnk_path.clone(),
             );
             self.repositories
                 .collection_repository()
@@ -93,9 +89,9 @@ impl<R: RepositoriesExt> CollectionUseCase<R> {
         }
 
         // 4. インストール情報を保存
-        if let Some(install_time) = install_at {
+        if let Some(install_time) = element.install_at {
             let new_install = NewCollectionElementInstall::new(
-                element_id.clone(),
+                element.id.clone(),
                 install_time,
             );
             self.repositories
@@ -157,33 +153,15 @@ impl<R: RepositoriesExt> CollectionUseCase<R> {
             .await;
         Ok(())
     }
-    pub async fn upsert_collection_elements(
-        &self,
-        source: &Vec<NewCollectionElement>,
-    ) -> anyhow::Result<()> {
-        for v in source.into_iter() {
-            self.repositories
-                .collection_repository()
-                .upsert_collection_element(v)
-                .await?
-        }
-        Ok(())
-    }
 
     // 関連データ付きコレクション要素リストを一括保存
-    pub async fn upsert_collection_elements_with_data(
+    pub async fn upsert_collection_elements(
         &self,
         source: &Vec<ScannedGameElement>,
     ) -> anyhow::Result<()> {
         
         for element in source.iter() {
-            self.create_collection_element_with_data(
-                &element.id,
-                element.gamename.clone(),
-                element.exe_path.clone(),
-                element.lnk_path.clone(),
-                element.install_at,
-            ).await?;
+            self.create_collection_element(element).await?;
         }
         Ok(())
     }
