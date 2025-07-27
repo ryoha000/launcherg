@@ -54,18 +54,19 @@ impl CollectionRepository for RepositoryImpl<CollectionElement> {
         id: &Id<CollectionElement>,
     ) -> anyhow::Result<Option<CollectionElement>> {
         let pool = self.pool.0.clone();
-        let elements = query_as::<_, CollectionElementTable>(
+        let element_table = query_as::<_, CollectionElementTable>(
             "SELECT * FROM collection_elements WHERE id = ?",
         )
         .bind(id.value)
-        .fetch_all(&*pool)
+        .fetch_optional(&*pool)
         .await?;
 
-        if elements.is_empty() {
-            return Ok(None);
-        }
+        let element_table = match element_table {
+            Some(table) => table,
+            None => return Ok(None),
+        };
 
-        let mut element: CollectionElement = elements[0].clone().try_into()?;
+        let mut element: CollectionElement = element_table.try_into()?;
 
         // 関連データを取得して設定
         element.info = self.get_element_info_by_element_id(id).await?;
@@ -137,17 +138,16 @@ impl CollectionRepository for RepositoryImpl<CollectionElement> {
         id: &Id<CollectionElement>,
     ) -> anyhow::Result<Option<CollectionElementInfo>> {
         let pool = self.pool.0.clone();
-        let infos = query_as::<_, CollectionElementInfoTable>(
+        let info_table = query_as::<_, CollectionElementInfoTable>(
             "SELECT * FROM collection_element_info_by_erogamescape WHERE collection_element_id = ?",
         )
         .bind(id.value)
-        .fetch_all(&*pool)
+        .fetch_optional(&*pool)
         .await?;
 
-        if infos.is_empty() {
-            Ok(None)
-        } else {
-            Ok(Some(infos[0].clone().try_into()?))
+        match info_table {
+            Some(table) => Ok(Some(table.try_into()?)),
+            None => Ok(None),
         }
     }
 
@@ -258,17 +258,16 @@ impl CollectionRepository for RepositoryImpl<CollectionElement> {
         id: &Id<CollectionElement>,
     ) -> anyhow::Result<Option<CollectionElementPaths>> {
         let pool = self.pool.0.clone();
-        let paths = query_as::<_, CollectionElementPathsTable>(
+        let paths_table = query_as::<_, CollectionElementPathsTable>(
             "SELECT * FROM collection_element_paths WHERE collection_element_id = ?",
         )
         .bind(id.value)
-        .fetch_all(&*pool)
+        .fetch_optional(&*pool)
         .await?;
 
-        if paths.is_empty() {
-            Ok(None)
-        } else {
-            Ok(Some(paths[0].clone().try_into()?))
+        match paths_table {
+            Some(table) => Ok(Some(table.try_into()?)),
+            None => Ok(None),
         }
     }
 
@@ -297,17 +296,16 @@ impl CollectionRepository for RepositoryImpl<CollectionElement> {
         id: &Id<CollectionElement>,
     ) -> anyhow::Result<Option<CollectionElementInstall>> {
         let pool = self.pool.0.clone();
-        let installs = query_as::<_, CollectionElementInstallTable>(
+        let install_table = query_as::<_, CollectionElementInstallTable>(
             "SELECT * FROM collection_element_installs WHERE collection_element_id = ?",
         )
         .bind(id.value)
-        .fetch_all(&*pool)
+        .fetch_optional(&*pool)
         .await?;
 
-        if installs.is_empty() {
-            Ok(None)
-        } else {
-            Ok(Some(installs[0].clone().try_into()?))
+        match install_table {
+            Some(table) => Ok(Some(table.try_into()?)),
+            None => Ok(None),
         }
     }
 
@@ -344,17 +342,16 @@ impl CollectionRepository for RepositoryImpl<CollectionElement> {
         id: &Id<CollectionElement>,
     ) -> anyhow::Result<Option<CollectionElementPlay>> {
         let pool = self.pool.0.clone();
-        let plays = query_as::<_, CollectionElementPlayTable>(
+        let play_table = query_as::<_, CollectionElementPlayTable>(
             "SELECT * FROM collection_element_plays WHERE collection_element_id = ?",
         )
         .bind(id.value)
-        .fetch_all(&*pool)
+        .fetch_optional(&*pool)
         .await?;
 
-        if plays.is_empty() {
-            Ok(None)
-        } else {
-            Ok(Some(plays[0].clone().try_into()?))
+        match play_table {
+            Some(table) => Ok(Some(table.try_into()?)),
+            None => Ok(None),
         }
     }
 
@@ -401,17 +398,16 @@ impl CollectionRepository for RepositoryImpl<CollectionElement> {
         id: &Id<CollectionElement>,
     ) -> anyhow::Result<Option<CollectionElementLike>> {
         let pool = self.pool.0.clone();
-        let likes = query_as::<_, CollectionElementLikeTable>(
+        let like_table = query_as::<_, CollectionElementLikeTable>(
             "SELECT * FROM collection_element_likes WHERE collection_element_id = ?",
         )
         .bind(id.value)
-        .fetch_all(&*pool)
+        .fetch_optional(&*pool)
         .await?;
 
-        if likes.is_empty() {
-            Ok(None)
-        } else {
-            Ok(Some(likes[0].clone().try_into()?))
+        match like_table {
+            Some(table) => Ok(Some(table.try_into()?)),
+            None => Ok(None),
         }
     }
 
@@ -456,17 +452,16 @@ impl CollectionRepository for RepositoryImpl<CollectionElement> {
         id: &Id<CollectionElement>,
     ) -> anyhow::Result<Option<CollectionElementThumbnail>> {
         let pool = self.pool.0.clone();
-        let thumbnails = query_as::<_, CollectionElementThumbnailTable>(
+        let thumbnail_table = query_as::<_, CollectionElementThumbnailTable>(
             "SELECT * FROM collection_element_thumbnails WHERE collection_element_id = ?",
         )
         .bind(id.value)
-        .fetch_all(&*pool)
+        .fetch_optional(&*pool)
         .await?;
 
-        if thumbnails.is_empty() {
-            Ok(None)
-        } else {
-            Ok(Some(thumbnails[0].clone().try_into()?))
+        match thumbnail_table {
+            Some(table) => Ok(Some(table.try_into()?)),
+            None => Ok(None),
         }
     }
 
