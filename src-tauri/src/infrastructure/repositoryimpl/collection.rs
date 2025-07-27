@@ -1,4 +1,3 @@
-use async_trait::async_trait;
 use chrono::{DateTime, Local};
 use sqlx::{query, query_as, Row};
 
@@ -22,7 +21,6 @@ use crate::domain::{
     Id,
 };
 
-#[async_trait]
 impl CollectionRepository for RepositoryImpl<CollectionElement> {
     // CollectionElement基本操作
     async fn get_all_elements(&self) -> anyhow::Result<Vec<CollectionElement>> {

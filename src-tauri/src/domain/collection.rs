@@ -9,7 +9,7 @@ pub struct NewCollection {
     pub name: String,
 }
 
-#[derive(new, Debug, Clone, Serialize, Deserialize)]
+#[derive(new, Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct CollectionElement {
     pub id: Id<CollectionElement>,
@@ -25,7 +25,7 @@ pub struct CollectionElement {
 }
 
 // スクレイピング情報（erogamescape由来）
-#[derive(new, Debug, Clone, Serialize, Deserialize)]
+#[derive(new, Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct CollectionElementInfo {
     pub id: Id<CollectionElementInfo>,
@@ -41,7 +41,7 @@ pub struct CollectionElementInfo {
 }
 
 // パス情報
-#[derive(new, Debug, Clone, Serialize, Deserialize)]
+#[derive(new, Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct CollectionElementPaths {
     pub id: Id<CollectionElementPaths>,
@@ -53,7 +53,7 @@ pub struct CollectionElementPaths {
 }
 
 // インストール情報
-#[derive(new, Debug, Clone, Serialize, Deserialize)]
+#[derive(new, Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct CollectionElementInstall {
     pub id: Id<CollectionElementInstall>,
@@ -64,7 +64,7 @@ pub struct CollectionElementInstall {
 }
 
 // プレイ情報
-#[derive(new, Debug, Clone, Serialize, Deserialize)]
+#[derive(new, Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct CollectionElementPlay {
     pub id: Id<CollectionElementPlay>,
@@ -75,7 +75,7 @@ pub struct CollectionElementPlay {
 }
 
 // いいね情報
-#[derive(new, Debug, Clone, Serialize, Deserialize)]
+#[derive(new, Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct CollectionElementLike {
     pub id: Id<CollectionElementLike>,
@@ -86,7 +86,7 @@ pub struct CollectionElementLike {
 }
 
 // サムネイル情報
-#[derive(new, Debug, Clone, Serialize, Deserialize)]
+#[derive(new, Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct CollectionElementThumbnail {
     pub id: Id<CollectionElementThumbnail>,

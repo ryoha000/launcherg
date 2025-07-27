@@ -2,7 +2,6 @@ use std::io::Write;
 use std::sync::Arc;
 use std::{fs, path::Path};
 
-use async_trait::async_trait;
 use base64::{engine::general_purpose, Engine as _};
 use tauri::AppHandle;
 use uuid::Uuid;
@@ -17,7 +16,6 @@ use super::explorer::ExplorerImpl;
 const MEMOS_ROOT_DIR: &str = "game-memos";
 const SCREENSHOTS_ROOT_DIR: &str = "screenshots";
 
-#[async_trait]
 impl FileExplorer for ExplorerImpl<File> {
     fn save_base64_image(&self, path: &str, data: String) -> anyhow::Result<()> {
         let decoded_data = general_purpose::STANDARD_NO_PAD.decode(data)?;

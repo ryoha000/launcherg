@@ -34,6 +34,20 @@ pub trait RepositoriesExt {
     fn all_game_cache_repository(&self) -> &Self::AllGameCacheRepo;
 }
 
+#[cfg(test)]
+mockall::mock! {
+    pub RepositoriesExtMock {}
+    impl RepositoriesExt for RepositoriesExtMock {
+        type CollectionRepo = crate::domain::repository::collection::MockCollectionRepository;
+        type ExploredCacheRepo = crate::domain::repository::explored_cache::MockExploredCacheRepository;
+        type AllGameCacheRepo = crate::domain::repository::all_game_cache::MockAllGameCacheRepository;
+
+        fn collection_repository(&self) -> &Self::CollectionRepo;
+        fn explored_cache_repository(&self) -> &Self::ExploredCacheRepo;
+        fn all_game_cache_repository(&self) -> &Self::AllGameCacheRepo;
+    }
+}
+
 impl RepositoriesExt for Repositories {
     type CollectionRepo = RepositoryImpl<CollectionElement>;
     type ExploredCacheRepo = RepositoryImpl<ExploredCache>;

@@ -2,7 +2,6 @@ use crate::domain::windows::proctail::{
     HealthCheckResult, IpcInfo, MonitoringInfo, ProcTail, ProcTailError, ProcTailEvent,
     ResourceInfo, ServiceInfo, ServiceStatus, WatchTarget,
 };
-use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
@@ -298,7 +297,6 @@ impl ProcTailImpl {
     }
 }
 
-#[async_trait]
 impl ProcTail for ProcTailImpl {
     async fn add_watch_target(
         &self,

@@ -9,10 +9,9 @@ use crate::domain::{
     Id,
 };
 use anyhow::Result;
-use async_trait::async_trait;
 use chrono::{DateTime, Local};
 
-#[async_trait]
+#[cfg_attr(test, mockall::automock)]
 pub trait CollectionRepository {
     // CollectionElement基本操作
     async fn get_all_elements(&self) -> Result<Vec<CollectionElement>>;

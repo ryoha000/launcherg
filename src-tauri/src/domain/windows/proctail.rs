@@ -1,4 +1,3 @@
-use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use thiserror::Error;
@@ -143,7 +142,7 @@ pub struct HealthCheckResult {
 }
 
 // Main ProcTail trait
-#[async_trait]
+#[cfg_attr(test, mockall::automock)]
 pub trait ProcTail: Send + Sync {
     /// Add a process to monitoring targets
     async fn add_watch_target(

@@ -6,7 +6,9 @@ use crate::domain::{
     process::Process, windows::process::ProcessWindows, windows::proctail::ProcTail,
 };
 use crate::infrastructure::windowsimpl::proctail::ProcTailImpl;
-use crate::infrastructure::windowsimpl::proctail_manager::AppHandleProcTailManager;
+use crate::infrastructure::windowsimpl::proctail_manager::{
+    AppHandleProcTailManager, ProcTailManagerTrait,
+};
 use tauri::AppHandle;
 
 #[derive(new)]
@@ -22,15 +24,31 @@ pub struct Windows {
 pub trait WindowsExt {
     type ProcessWindows: ProcessWindows;
     type ProcTail: ProcTail;
+    type ProcTailManager: ProcTailManagerTrait;
 
     fn process(&self) -> &Self::ProcessWindows;
     fn proctail(&self) -> &Self::ProcTail;
-    fn proctail_manager(&self) -> &AppHandleProcTailManager;
+    fn proctail_manager(&self) -> &Self::ProcTailManager;
+}
+
+#[cfg(test)]
+mockall::mock! {
+    pub WindowsExtMock {}
+    impl WindowsExt for WindowsExtMock {
+        type ProcessWindows = crate::domain::windows::process::MockProcessWindows;
+        type ProcTail = crate::domain::windows::proctail::MockProcTail;
+        type ProcTailManager = crate::infrastructure::windowsimpl::proctail_manager::MockProcTailManagerTrait;
+
+        fn process(&self) -> &Self::ProcessWindows;
+        fn proctail(&self) -> &Self::ProcTail;
+        fn proctail_manager(&self) -> &Self::ProcTailManager;
+    }
 }
 
 impl WindowsExt for Windows {
     type ProcessWindows = WindowsImpl<Process>;
     type ProcTail = ProcTailImpl;
+    type ProcTailManager = AppHandleProcTailManager;
 
     fn process(&self) -> &Self::ProcessWindows {
         &self.process
@@ -40,7 +58,7 @@ impl WindowsExt for Windows {
         &self.proctail
     }
 
-    fn proctail_manager(&self) -> &AppHandleProcTailManager {
+    fn proctail_manager(&self) -> &Self::ProcTailManager {
         &self.proctail_manager
     }
 }

@@ -1,10 +1,9 @@
+use semver::Version;
+use serde::{Deserialize, Serialize};
 use std::path::{Path, PathBuf};
 use std::process::{Child, Command};
 use std::sync::Arc;
 use std::{fs, io};
-
-use semver::Version;
-use serde::{Deserialize, Serialize};
 use sysinfo::{ProcessExt, System, SystemExt};
 use tauri::AppHandle;
 use tokio::sync::Mutex;
@@ -414,6 +413,55 @@ pub struct ProcTailManagerStatus {
     pub is_running: bool,
     pub executable_exists: bool,
     pub update_available: bool,
+}
+
+// ProcTailManagerのtrait定義
+#[cfg_attr(test, mockall::automock)]
+pub trait ProcTailManagerTrait {
+    async fn get_status(&self) -> Result<ProcTailManagerStatus, ProcTailManagerError>;
+    async fn get_latest_version(&self) -> Result<ProcTailVersion, ProcTailManagerError>;
+    async fn is_update_available(&self) -> Result<bool, ProcTailManagerError>;
+    async fn download_and_install(
+        &self,
+        version: &ProcTailVersion,
+    ) -> Result<(), ProcTailManagerError>;
+    async fn start_proctail(&self) -> Result<(), ProcTailManagerError>;
+    async fn stop_proctail(&self) -> Result<(), ProcTailManagerError>;
+    async fn is_running(&self) -> bool;
+}
+
+// ProcTailManagerにtraitを実装
+impl<T: AppConfigProvider + Send + Sync> ProcTailManagerTrait for ProcTailManager<T> {
+    async fn get_status(&self) -> Result<ProcTailManagerStatus, ProcTailManagerError> {
+        self.get_status().await
+    }
+
+    async fn get_latest_version(&self) -> Result<ProcTailVersion, ProcTailManagerError> {
+        self.get_latest_version().await
+    }
+
+    async fn is_update_available(&self) -> Result<bool, ProcTailManagerError> {
+        self.is_update_available().await
+    }
+
+    async fn download_and_install(
+        &self,
+        version: &ProcTailVersion,
+    ) -> Result<(), ProcTailManagerError> {
+        self.download_and_install(version).await
+    }
+
+    async fn start_proctail(&self) -> Result<(), ProcTailManagerError> {
+        self.start_proctail().await
+    }
+
+    async fn stop_proctail(&self) -> Result<(), ProcTailManagerError> {
+        self.stop_proctail().await
+    }
+
+    async fn is_running(&self) -> bool {
+        self.is_running().await
+    }
 }
 
 // AppHandleを使う場合の型エイリアス
