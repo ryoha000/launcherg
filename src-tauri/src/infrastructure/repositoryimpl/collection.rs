@@ -54,27 +54,121 @@ impl CollectionRepository for RepositoryImpl<CollectionElement> {
         id: &Id<CollectionElement>,
     ) -> anyhow::Result<Option<CollectionElement>> {
         let pool = self.pool.0.clone();
-        let element_table = query_as::<_, CollectionElementTable>(
-            "SELECT * FROM collection_elements WHERE id = ?",
+        
+        let row = query(
+            "SELECT 
+                ce.id, ce.created_at, ce.updated_at,
+                cei.id as info_id, cei.gamename, cei.gamename_ruby, cei.sellday, cei.is_nukige, cei.brandname, cei.brandname_ruby, cei.created_at as info_created_at, cei.updated_at as info_updated_at,
+                cep.id as paths_id, cep.exe_path, cep.lnk_path, cep.created_at as paths_created_at, cep.updated_at as paths_updated_at,
+                cei_install.id as install_id, cei_install.install_at, cei_install.created_at as install_created_at, cei_install.updated_at as install_updated_at,
+                cei_play.id as play_id, cei_play.last_play_at, cei_play.created_at as play_created_at, cei_play.updated_at as play_updated_at,
+                cei_like.id as like_id, cei_like.like_at, cei_like.created_at as like_created_at, cei_like.updated_at as like_updated_at,
+                cet.id as thumbnail_id, cet.thumbnail_width, cet.thumbnail_height, cet.created_at as thumbnail_created_at, cet.updated_at as thumbnail_updated_at
+            FROM collection_elements ce
+            LEFT JOIN collection_element_info_by_erogamescape cei ON ce.id = cei.collection_element_id
+            LEFT JOIN collection_element_paths cep ON ce.id = cep.collection_element_id
+            LEFT JOIN collection_element_installs cei_install ON ce.id = cei_install.collection_element_id
+            LEFT JOIN collection_element_plays cei_play ON ce.id = cei_play.collection_element_id
+            LEFT JOIN collection_element_likes cei_like ON ce.id = cei_like.collection_element_id
+            LEFT JOIN collection_element_thumbnails cet ON ce.id = cet.collection_element_id
+            WHERE ce.id = ?"
         )
         .bind(id.value)
         .fetch_optional(&*pool)
         .await?;
 
-        let element_table = match element_table {
-            Some(table) => table,
+        let row = match row {
+            Some(row) => row,
             None => return Ok(None),
         };
 
+        // CollectionElementを構築
+        let element_table = CollectionElementTable {
+            id: row.get("id"),
+            created_at: row.get("created_at"),
+            updated_at: row.get("updated_at"),
+        };
         let mut element: CollectionElement = element_table.try_into()?;
 
-        // 関連データを取得して設定
-        element.info = self.get_element_info_by_element_id(id).await?;
-        element.paths = self.get_element_paths_by_element_id(id).await?;
-        element.install = self.get_element_install_by_element_id(id).await?;
-        element.play = self.get_element_play_by_element_id(id).await?;
-        element.like = self.get_element_like_by_element_id(id).await?;
-        element.thumbnail = self.get_element_thumbnail_by_element_id(id).await?;
+        // 関連データを設定
+        element.info = if let Some(info_id) = row.get::<Option<i32>, _>("info_id") {
+            Some(CollectionElementInfo::new(
+                Id::new(info_id),
+                id.clone(),
+                row.get("gamename"),
+                row.get("gamename_ruby"),
+                row.get("brandname"),
+                row.get("brandname_ruby"),
+                row.get("sellday"),
+                row.get::<i32, _>("is_nukige") != 0,
+                row.get::<chrono::NaiveDateTime, _>("info_created_at").and_utc().with_timezone(&chrono::Local),
+                row.get::<chrono::NaiveDateTime, _>("info_updated_at").and_utc().with_timezone(&chrono::Local),
+            ))
+        } else {
+            None
+        };
+
+        element.paths = if let Some(paths_id) = row.get::<Option<i32>, _>("paths_id") {
+            Some(CollectionElementPaths::new(
+                Id::new(paths_id),
+                id.clone(),
+                row.get("exe_path"),
+                row.get("lnk_path"),
+                row.get::<chrono::NaiveDateTime, _>("paths_created_at").and_utc().with_timezone(&chrono::Local),
+                row.get::<chrono::NaiveDateTime, _>("paths_updated_at").and_utc().with_timezone(&chrono::Local),
+            ))
+        } else {
+            None
+        };
+
+        element.install = if let Some(install_id) = row.get::<Option<i32>, _>("install_id") {
+            Some(CollectionElementInstall::new(
+                Id::new(install_id),
+                id.clone(),
+                row.get::<chrono::NaiveDateTime, _>("install_at").and_utc().with_timezone(&chrono::Local),
+                row.get::<chrono::NaiveDateTime, _>("install_created_at").and_utc().with_timezone(&chrono::Local),
+                row.get::<chrono::NaiveDateTime, _>("install_updated_at").and_utc().with_timezone(&chrono::Local),
+            ))
+        } else {
+            None
+        };
+
+        element.play = if let Some(play_id) = row.get::<Option<i32>, _>("play_id") {
+            Some(CollectionElementPlay::new(
+                Id::new(play_id),
+                id.clone(),
+                row.get::<chrono::NaiveDateTime, _>("last_play_at").and_utc().with_timezone(&chrono::Local),
+                row.get::<chrono::NaiveDateTime, _>("play_created_at").and_utc().with_timezone(&chrono::Local),
+                row.get::<chrono::NaiveDateTime, _>("play_updated_at").and_utc().with_timezone(&chrono::Local),
+            ))
+        } else {
+            None
+        };
+
+        element.like = if let Some(like_id) = row.get::<Option<i32>, _>("like_id") {
+            Some(CollectionElementLike::new(
+                Id::new(like_id),
+                id.clone(),
+                row.get::<chrono::NaiveDateTime, _>("like_at").and_utc().with_timezone(&chrono::Local),
+                row.get::<chrono::NaiveDateTime, _>("like_created_at").and_utc().with_timezone(&chrono::Local),
+                row.get::<chrono::NaiveDateTime, _>("like_updated_at").and_utc().with_timezone(&chrono::Local),
+            ))
+        } else {
+            None
+        };
+
+        element.thumbnail = if let Some(thumbnail_id) = row.get::<Option<i32>, _>("thumbnail_id") {
+            Some(CollectionElementThumbnail::new(
+                Id::new(thumbnail_id),
+                id.clone(),
+                row.get("thumbnail_width"),
+                row.get("thumbnail_height"),
+                row.get::<chrono::NaiveDateTime, _>("thumbnail_created_at").and_utc().with_timezone(&chrono::Local),
+                row.get::<chrono::NaiveDateTime, _>("thumbnail_updated_at").and_utc().with_timezone(&chrono::Local),
+            ))
+        } else {
+            None
+        };
 
         Ok(Some(element))
     }
