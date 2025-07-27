@@ -52,7 +52,7 @@ impl<R: RepositoriesExt> CollectionUseCase<R> {
         element: &ScannedGameElement,
     ) -> anyhow::Result<()> {
         use crate::domain::collection::{
-            NewCollectionElement, NewCollectionElementInfo, NewCollectionElementPaths, 
+            NewCollectionElement, NewCollectionElementPaths, 
             NewCollectionElementInstall
         };
 
@@ -60,20 +60,8 @@ impl<R: RepositoriesExt> CollectionUseCase<R> {
         let new_element = NewCollectionElement::new(element.id.clone());
         self.upsert_collection_element(&new_element).await?;
 
-        // 2. スクレイピング情報を保存
-        let new_info = NewCollectionElementInfo::new(
-            element.id.clone(),
-            element.gamename.clone(),
-            "".to_string(), // gamename_ruby は空で初期化
-            "".to_string(), // brandname は空で初期化
-            "".to_string(), // brandname_ruby は空で初期化
-            "".to_string(), // sellday は空で初期化
-            false,          // is_nukige は false で初期化
-        );
-        self.repositories
-            .collection_repository()
-            .upsert_collection_element_info(&new_info)
-            .await?;
+        // 2. スクレイピング情報は初期登録時には作成しない
+        // （後でregisterCollectionElementDetailsから取得される）
 
         // 3. パス情報を保存
         if element.exe_path.is_some() || element.lnk_path.is_some() {
