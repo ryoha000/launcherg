@@ -2,6 +2,20 @@
 -- collection_elementsは id, created_at, updated_at のみ保持し、
 -- 他のデータは専用テーブルに分離する
 
+-- まず、collection_elementsテーブルを一時的にリネーム
+ALTER TABLE collection_elements RENAME TO collection_elements_old;
+
+-- 新しいスキーマでcollection_elementsテーブルを作成（id, created_at, updated_atのみ）
+CREATE TABLE collection_elements (
+    id INTEGER PRIMARY KEY,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 既存のデータからidとタイムスタンプをコピー
+INSERT INTO collection_elements (id, created_at, updated_at)
+SELECT id, created_at, updated_at FROM collection_elements_old;
+
 -- スクレイピングデータ（erogamescape由来）
 -- gamename + 既存のcollection_element_detailsの内容を統合
 CREATE TABLE IF NOT EXISTS collection_element_info_by_erogamescape (

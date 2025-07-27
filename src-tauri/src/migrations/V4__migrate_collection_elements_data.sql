@@ -23,7 +23,7 @@ SELECT
     COALESCE(ced.brandname_ruby, ''),
     ce.created_at,
     ce.updated_at
-FROM collection_elements ce
+FROM collection_elements_old ce
 LEFT JOIN collection_element_details ced ON ce.id = ced.collection_element_id;
 
 -- 2. collection_element_pathsにデータ移行
@@ -40,7 +40,7 @@ SELECT
     lnk_path,
     created_at,
     updated_at
-FROM collection_elements
+FROM collection_elements_old
 WHERE exe_path IS NOT NULL OR lnk_path IS NOT NULL;
 
 -- 3. collection_element_installsにデータ移行
@@ -55,7 +55,7 @@ SELECT
     install_at,
     created_at,
     updated_at
-FROM collection_elements
+FROM collection_elements_old
 WHERE install_at IS NOT NULL;
 
 -- 4. collection_element_playsにデータ移行
@@ -70,7 +70,7 @@ SELECT
     last_play_at,
     created_at,
     updated_at
-FROM collection_elements
+FROM collection_elements_old
 WHERE last_play_at IS NOT NULL;
 
 -- 5. collection_element_likesにデータ移行
@@ -85,7 +85,7 @@ SELECT
     like_at,
     created_at,
     updated_at
-FROM collection_elements
+FROM collection_elements_old
 WHERE like_at IS NOT NULL;
 
 -- 6. collection_element_thumbnailsにデータ移行
@@ -102,5 +102,5 @@ SELECT
     thumbnail_height,
     created_at,
     updated_at
-FROM collection_elements
+FROM collection_elements_old
 WHERE thumbnail_width IS NOT NULL OR thumbnail_height IS NOT NULL;
