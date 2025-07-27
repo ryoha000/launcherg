@@ -179,24 +179,3 @@ impl TryFrom<CollectionElementThumbnailTable> for CollectionElementThumbnail {
         ))
     }
 }
-
-// 旧モデル（後方互換性のために残す）
-#[derive(FromRow)]
-pub struct LegacyCollectionElementTable {
-    pub id: i32,
-    pub gamename: String,
-    pub gamename_ruby: String,
-    pub brandname: String,
-    pub brandname_ruby: String,
-    pub sellday: String,
-    pub is_nukige: i32,
-    pub exe_path: Option<String>,
-    pub lnk_path: Option<String>,
-    pub install_at: Option<NaiveDateTime>,
-    pub last_play_at: Option<NaiveDateTime>,
-    pub like_at: Option<NaiveDateTime>,
-    pub thumbnail_width: Option<i32>,
-    pub thumbnail_height: Option<i32>,
-    pub created_at: NaiveDateTime,
-    pub updated_at: NaiveDateTime,
-}
