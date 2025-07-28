@@ -2,277 +2,182 @@
 
 ## 概要
 
-Launchergに、DMMやDLsiteなどのデジタルダウンロード版ゲームを管理する機能を追加する。ユーザーが購入済みのDL版ゲームを一覧表示し、未インストール・インストール済みの状態管理を行う。
+Launchergにおいて、DMMやDLsiteで購入したダウンロード版ゲームを管理し、ユーザーが購入済みゲームのインストール・起動を効率的に行えるようにする機能を設計する。
 
 ## 目標
 
-- DL版で購入済みのゲームをライブラリに表示
-- 未インストールの場合はInstallボタンを表示
-- Installボタンで販売サイトのブラウザページを開く
-- インストール済みの場合はPlayボタンを表示
-- 認証情報を保持せず、ブラウザ操作によるデータ同期
+- 購入済みDL版ゲームのリスト表示
+- 未インストールゲームに対するInstallボタンの提供
+- インストール済みゲームに対するPlayボタンの提供
+- ブラウザベースでのデータ同期（認証情報を保持しない）
+
+## システム要件
+
+### 機能要件
+
+1. **DL版ゲーム情報の管理**
+   - 購入済みゲームのメタデータ保存
+   - インストール状態の追跡
+   - 販売サイト情報の関連付け
+
+2. **UI/UX**
+   - 既存のPlayボタンと統一された見た目のInstallボタン
+   - インストール状態に応じたボタンの自動切り替え
+   - 購入済みゲームの視覚的識別
+
+3. **ブラウザ連携**
+   - DMMやDLsiteのゲームページへの直接リンク
+   - ユーザーが手動でダウンロード・インストールを実行
+
+### 非機能要件
+
+- セキュリティ：認証情報を保持しない
+- プライバシー：ユーザーの購入履歴は本人が管理
+- 拡張性：新しい販売サイトの追加が容易
 
 ## アーキテクチャ設計
 
-### 1. データモデル拡張
+### データモデル
 
-#### DownloadEditionGame (新規ドメインモデル)
+#### DLStoreGame（新規）
 ```rust
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct DownloadEditionGame {
-    pub id: Id<DownloadEditionGame>,
-    pub platform: DownloadPlatform,      // DMM, DLsite, etc.
-    pub platform_game_id: String,       // プラットフォーム固有のゲームID
-    pub game_title: String,
-    pub game_title_ruby: String,
-    pub brand_name: String,
-    pub brand_name_ruby: String,
-    pub purchase_date: Option<DateTime<Local>>,
-    pub local_installation_status: InstallationStatus,
-    pub local_exe_path: Option<String>,  // インストール後のパス
-    pub local_lnk_path: Option<String>,  // ショートカットパス
-    pub platform_url: String,           // 販売ページURL
-    pub thumbnail_url: Option<String>,
-    pub created_at: DateTime<Local>,
-    pub updated_at: DateTime<Local>,
+pub struct DLStoreGame {
+    pub id: i64,
+    pub title: String,
+    pub store_id: String,     // DMMやDLsiteでのゲームID
+    pub store_type: DLStoreType,
+    pub purchase_url: String,  // ゲームページのURL
+    pub install_path: Option<String>, // インストール済みの場合のパス
+    pub is_installed: bool,
+    pub created_at: String,
+    pub updated_at: String,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub enum DownloadPlatform {
+pub enum DLStoreType {
     DMM,
-    DLsite,
-    // 将来的に他のプラットフォームを追加
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub enum InstallationStatus {
-    NotInstalled,    // 未インストール
-    Installed,       // インストール済み
-    Unknown,         // 状態不明
+    DLSite,
 }
 ```
 
 #### CollectionElement拡張
-既存の`CollectionElement`に以下のフィールドを追加：
+既存のCollectionElementにDL版情報を関連付け：
 ```rust
-pub download_edition_id: Option<Id<DownloadEditionGame>>,
-pub source_type: GameSourceType,  // Local, DownloadEdition
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub enum GameSourceType {
-    Local,           // ローカル検出ゲーム
-    DownloadEdition, // DL版ゲーム
+pub struct CollectionElement {
+    // 既存フィールド...
+    pub dl_store_game_id: Option<i64>, // DLStoreGameとの関連
 }
 ```
 
-### 2. データ同期機能
+### データベース設計
 
-#### DownloadEditionSyncService
-```rust
-pub trait DownloadEditionSyncService {
-    async fn sync_platform_library(&self, platform: DownloadPlatform) -> Result<Vec<DownloadEditionGame>>;
-    async fn update_installation_status(&self, game_id: Id<DownloadEditionGame>) -> Result<()>;
-}
-```
-
-実装方針：
-- **ブラウザ自動化は行わない** - セキュリティとプライバシーを重視
-- **手動インポート機能** - ユーザーがJSONファイルやCSVでライブラリをインポート
-- **ローカル検出機能** - インストール済みゲームの自動検出
-
-#### 同期フロー
-1. **手動インポート**
-   - ユーザーが購入済みゲームリストをJSONまたはCSVで用意
-   - インポート機能でLaunchergに取り込み
-
-2. **ローカルインストール検出**
-   - 既知のインストールパス（DMMゲームプレイヤー、DLsitePlayなど）をスキャン
-   - レジストリ検索でインストール済みゲームを検出
-   - ユーザーが手動でパスを指定
-
-### 3. UI/UX設計
-
-#### ゲーム一覧画面での表示
-- 既存の`CollectionElement`リストにDL版ゲームも統合表示
-- ゲームカードに`source_type`に応じたバッジを表示
-- ローカルゲーム: "LOCAL"バッジ
-- DL版ゲーム: プラットフォーム名バッジ（"DMM", "DLsite"）
-
-#### ボタン状態管理
-```typescript
-interface GameActionButton {
-  type: 'play' | 'install' | 'disabled'
-  label: string
-  action: () => void
-}
-
-function getGameActionButton(game: CollectionElement): GameActionButton {
-  if (game.sourceType === 'Local'
-    || (game.sourceType === 'DownloadEdition'
-      && game.downloadEdition?.localInstallationStatus === 'Installed')) {
-    return {
-      type: 'play',
-      label: 'Play',
-      action: () => launchGame(game)
-    }
-  }
-
-  if (game.sourceType === 'DownloadEdition'
-    && game.downloadEdition?.localInstallationStatus === 'NotInstalled') {
-    return {
-      type: 'install',
-      label: 'Install',
-      action: () => openPlatformPage(game.downloadEdition.platformUrl)
-    }
-  }
-
-  return {
-    type: 'disabled',
-    label: 'Unknown',
-    action: () => {}
-  }
-}
-```
-
-#### 新規UI要素
-1. **DL版ライブラリ管理画面**
-   - サイドバーに「DL版ライブラリ」セクションを追加
-   - プラットフォーム別フィルタリング
-   - インストール状態別フィルタリング
-
-2. **インポート機能UI**
-   - サイドバーの「インポート」メニューにDL版インポートを追加
-   - ドラッグ&ドロップでJSONファイルインポート
-   - プラットフォーム選択とプレビュー機能
-
-3. **インストール検出UI**
-   - 設定画面に「DL版ゲーム検出」セクションを追加
-   - 自動検出の実行ボタン
-   - 手動パス指定機能
-
-### 4. 実装手順
-
-#### Phase 1: データモデルとリポジトリ
-1. `DownloadEditionGame`ドメインモデルの追加
-2. データベースマイグレーション作成
-3. リポジトリインターフェースと実装
-
-#### Phase 2: 同期サービス
-1. `DownloadEditionSyncService`の実装
-2. JSONインポート機能
-3. ローカルインストール検出機能
-
-#### Phase 3: UI統合
-1. 既存ゲーム一覧へのDL版ゲーム統合
-2. Playボタン/Installボタンの状態管理
-3. プラットフォームページ開く機能
-
-#### Phase 4: ライブラリ管理UI
-1. DL版ライブラリ専用画面
-2. インポート/エクスポート機能
-3. インストール検出UI
-
-### 5. セキュリティとプライバシー
-
-#### プライバシー保護
-- **認証情報の非保存**: ログインクッキーやトークンは保存しない
-- **ローカル処理**: すべてのデータ処理をローカルで完結
-- **最小権限**: 必要最小限のファイルアクセス権限のみ
-
-#### データ保護
-- **暗号化**: 購入履歴などの機密情報はローカル暗号化
-- **匿名化**: 不要な個人情報は保存しない
-- **ユーザー制御**: データの削除・エクスポート機能を提供
-
-### 6. 技術実装詳細
-
-#### ファイル配置
-```
-src-tauri/src/
-├── domain/
-│   ├── download_edition.rs          # 新規: DL版ゲームドメイン
-│   └── repository/
-│       └── download_edition.rs      # 新規: リポジトリインターフェース
-├── infrastructure/
-│   └── repositoryimpl/
-│       ├── download_edition.rs      # 新規: リポジトリ実装
-│       └── models/
-│           └── download_edition.rs  # 新規: DBモデル
-├── usecase/
-│   ├── download_edition.rs          # 新規: ユースケース
-│   └── models/
-│       └── download_edition.rs      # 新規: ユースケースモデル
-└── interface/
-    ├── command.rs                    # 既存: コマンド追加
-    └── models/
-        └── download_edition.rs       # 新規: APIモデル
-
-src/
-├── components/
-│   ├── Work/
-│   │   ├── InstallButton.svelte     # 新規: インストールボタン
-│   │   └── PlatformBadge.svelte     # 新規: プラットフォームバッジ
-│   └── DownloadEdition/
-│       ├── ImportWizard.svelte      # 新規: インポートウィザード
-│       ├── LibraryView.svelte       # 新規: DL版ライブラリ画面
-│       └── DetectionSettings.svelte # 新規: 検出設定
-├── lib/
-│   └── downloadEdition/
-│       ├── import.ts                # 新規: インポート機能
-│       ├── detection.ts             # 新規: ローカル検出
-│       └── types.ts                 # 新規: 型定義
-└── store/
-    └── downloadEdition.ts           # 新規: DL版ゲーム状態管理
-```
-
-#### データベーススキーマ
+#### 新規テーブル：dl_store_games
 ```sql
--- V3__download_edition.sql
-CREATE TABLE download_edition_games (
-    id TEXT PRIMARY KEY,
-    platform TEXT NOT NULL,
-    platform_game_id TEXT NOT NULL,
-    game_title TEXT NOT NULL,
-    game_title_ruby TEXT NOT NULL,
-    brand_name TEXT NOT NULL,
-    brand_name_ruby TEXT NOT NULL,
-    purchase_date TIMESTAMP NULL,
-    local_installation_status TEXT NOT NULL DEFAULT 'Unknown',
-    local_exe_path TEXT NULL,
-    local_lnk_path TEXT NULL,
-    platform_url TEXT NOT NULL,
-    thumbnail_url TEXT NULL,
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE(platform, platform_game_id)
+CREATE TABLE dl_store_games (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    title TEXT NOT NULL,
+    store_id TEXT NOT NULL,
+    store_type TEXT NOT NULL, -- 'DMM' or 'DLSite'
+    purchase_url TEXT NOT NULL,
+    install_path TEXT,
+    is_installed BOOLEAN NOT NULL DEFAULT FALSE,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    UNIQUE(store_id, store_type)
 );
-
--- collection_elementsテーブルの拡張
-ALTER TABLE collection_elements
-ADD COLUMN download_edition_id TEXT NULL,
-ADD COLUMN source_type TEXT NOT NULL DEFAULT 'Local',
-ADD FOREIGN KEY (download_edition_id) REFERENCES download_edition_games(id);
 ```
 
-## 将来的な拡張
+#### collection_elements テーブル拡張
+```sql
+ALTER TABLE collection_elements
+ADD COLUMN dl_store_game_id INTEGER REFERENCES dl_store_games(id);
+```
 
-### 自動同期機能
-- ブラウザ拡張機能による購入情報の自動収集
-- WebDriver APIを使った自動ライブラリ同期
-- プラットフォームAPIの公式サポート時の連携
+### バックエンド実装
 
-### 高度なインストール管理
-- ゲームの自動アップデート検出
-- インストール容量の管理
-- バックアップ・復元機能
+#### Repository層
+- `DLStoreGameRepository`: DL版ゲーム情報のCRUD操作
+- `CollectionRepository`拡張: DL版情報との関連付け
 
-### プラットフォーム拡張
-- Steam、Epic Games Store等の既存プラットフォーム対応
-- 海外プラットフォーム（itch.io、GOG等）対応
-- 同人・インディゲームプラットフォーム対応
+#### UseCase層
+- `DLStoreGameUseCase`: DL版ゲームの管理ロジック
+- `CollectionUseCase`拡張: 統合されたゲーム表示ロジック
 
-## まとめ
+#### Interface層
+- Tauriコマンドでフロントエンドとの連携
+- ブラウザ起動機能の提供
 
-このデザインは、ユーザーのプライバシーとセキュリティを最優先に、DL版ゲームを既存のローカルゲーム管理と統合する形で設計している。手動インポートとローカル検出を中心とした実装により、認証情報を保持することなく安全にDL版ゲームライブラリを管理できる。
+### フロントエンド実装
 
-実装は段階的に行い、まずは基本的なデータモデルと手動インポート機能から開始し、徐々にUI機能とローカル検出機能を追加していく予定である。
+#### コンポーネント拡張
+
+1. **PlayButton.svelte → GameActionButton.svelte**
+   - PlayボタンとInstallボタンを統合
+   - ゲームの状態に応じた表示切り替え
+
+2. **Work.svelte拡張**
+   - DL版情報の表示
+   - インストール状態の視覚的表示
+
+#### 新規コンポーネント
+
+1. **DLStoreGameManager.svelte**
+   - DL版ゲーム一覧の管理
+   - ブラウザでのデータ同期UI
+
+2. **InstallButton.svelte**
+   - Installボタンの実装
+   - ブラウザページ起動機能
+
+### データ同期フロー
+
+1. **初回セットアップ**
+   - ユーザーがブラウザでDMM/DLsiteにログイン
+   - 購入済みゲーム情報を手動でインポート（JSON/CSVファイル経由）
+
+2. **定期同期**
+   - ユーザーが手動でブラウザから購入履歴を確認
+   - 新規購入ゲームの手動追加
+
+3. **インストール検出**
+   - ファイルシステムの変更監視
+   - ユーザーによる手動パス指定
+
+## 実装段階
+
+### Phase 1: 基盤実装
+- データモデル・スキーマ作成
+- Repository・UseCase実装
+- 基本的なCRUD操作
+
+### Phase 2: UI実装
+- GameActionButtonコンポーネント
+- DL版ゲーム管理画面
+- ブラウザ連携機能
+
+### Phase 3: 統合・テスト
+- 既存機能との統合
+- エンドツーエンドテスト
+- ユーザビリティ改善
+
+## セキュリティ考慮事項
+
+- 認証情報は一切保存しない
+- ブラウザ起動時はユーザーの明示的な操作のみ
+- ファイルパス情報は暗号化して保存（将来的検討）
+
+## 今後の拡張可能性
+
+- Steam、Epic Games Store等の対応
+- 自動インストール検出の精度向上
+- クラウド同期機能（オプション）
+- 統計・レポート機能
+
+## リスク
+
+- ブラウザAPI変更によるデータ取得方法の影響
+- 販売サイト側の仕様変更
+- ユーザーの手動操作に依存する部分の使いやすさ
+
+## 結論
+
+本設計により、セキュアかつ拡張可能なDL版ゲーム管理機能を実現する。ユーザーのプライバシーを保護しながら、購入済みゲームの効率的な管理を可能にする。
