@@ -407,10 +407,19 @@ mod tests {
             .expect_upsert_collection_element()
             .times(2)
             .returning(|_| Ok(()));
+        mock_repo
+            .expect_upsert_collection_element_paths()
+            .times(2)
+            .returning(|_| Ok(()));
+        mock_repo
+            .expect_upsert_collection_element_install()
+            .times(2)
+            .returning(|_| Ok(()));
 
         let mut mock_repositories = MockRepositoriesExtMock::new();
         mock_repositories
             .expect_collection_repository()
+            .times(6) // upsert_collection_element (2) + upsert_collection_element_paths (2) + upsert_collection_element_install (2)
             .return_const(mock_repo);
 
         let use_case = CollectionUseCase::new(Arc::new(mock_repositories));
