@@ -1,4 +1,3 @@
-use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use thiserror::Error;
@@ -143,10 +142,14 @@ pub struct HealthCheckResult {
 }
 
 // Main ProcTail trait
-#[async_trait]
+#[cfg_attr(test, mockall::automock)]
 pub trait ProcTail: Send + Sync {
     /// Add a process to monitoring targets
-    async fn add_watch_target(&self, process_id: u32, tag: &str) -> Result<WatchTarget, ProcTailError>;
+    async fn add_watch_target(
+        &self,
+        process_id: u32,
+        tag: &str,
+    ) -> Result<WatchTarget, ProcTailError>;
 
     /// Remove a watch target by tag
     async fn remove_watch_target(&self, tag: &str) -> Result<u32, ProcTailError>;
@@ -155,11 +158,11 @@ pub trait ProcTail: Send + Sync {
     async fn get_watch_targets(&self) -> Result<Vec<WatchTarget>, ProcTailError>;
 
     /// Get recorded events for a specific tag
-    async fn get_recorded_events(
+    async fn get_recorded_events<'a>(
         &self,
         tag: &str,
         count: Option<u32>,
-        event_type: Option<&str>,
+        event_type: Option<&'a str>,
     ) -> Result<Vec<ProcTailEvent>, ProcTailError>;
 
     /// Clear events for a specific tag

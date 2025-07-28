@@ -1,4 +1,3 @@
-use async_trait::async_trait;
 use chrono::{DateTime, Local, NaiveDateTime};
 use sqlx::{query_as, QueryBuilder, Row};
 
@@ -9,7 +8,6 @@ use crate::domain::{
 
 use super::{models::all_game_cache::AllGameCacheTable, repository::RepositoryImpl};
 
-#[async_trait]
 impl AllGameCacheRepository for RepositoryImpl<AllGameCache> {
     async fn get_by_ids(
         &self,

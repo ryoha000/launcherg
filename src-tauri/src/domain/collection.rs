@@ -8,21 +8,89 @@ use super::Id;
 pub struct NewCollection {
     pub name: String,
 }
-#[derive(new, Debug, Clone, Serialize, Deserialize)]
+
+#[derive(new, Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct CollectionElement {
     pub id: Id<CollectionElement>,
+    pub created_at: DateTime<Local>,
+    pub updated_at: DateTime<Local>,
+    // 関連データ
+    pub info: Option<CollectionElementInfo>,
+    pub paths: Option<CollectionElementPaths>,
+    pub install: Option<CollectionElementInstall>,
+    pub play: Option<CollectionElementPlay>,
+    pub like: Option<CollectionElementLike>,
+    pub thumbnail: Option<CollectionElementThumbnail>,
+}
+
+// スクレイピング情報（erogamescape由来）
+#[derive(new, Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct CollectionElementInfo {
+    pub id: Id<CollectionElementInfo>,
+    pub collection_element_id: Id<CollectionElement>,
     pub gamename: String,
     pub gamename_ruby: String,
     pub brandname: String,
     pub brandname_ruby: String,
     pub sellday: String,
     pub is_nukige: bool,
+    pub created_at: DateTime<Local>,
+    pub updated_at: DateTime<Local>,
+}
+
+// パス情報
+#[derive(new, Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct CollectionElementPaths {
+    pub id: Id<CollectionElementPaths>,
+    pub collection_element_id: Id<CollectionElement>,
     pub exe_path: Option<String>,
     pub lnk_path: Option<String>,
-    pub install_at: Option<DateTime<Local>>,
-    pub last_play_at: Option<DateTime<Local>>,
-    pub like_at: Option<DateTime<Local>>,
+    pub created_at: DateTime<Local>,
+    pub updated_at: DateTime<Local>,
+}
+
+// インストール情報
+#[derive(new, Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct CollectionElementInstall {
+    pub id: Id<CollectionElementInstall>,
+    pub collection_element_id: Id<CollectionElement>,
+    pub install_at: DateTime<Local>,
+    pub created_at: DateTime<Local>,
+    pub updated_at: DateTime<Local>,
+}
+
+// プレイ情報
+#[derive(new, Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct CollectionElementPlay {
+    pub id: Id<CollectionElementPlay>,
+    pub collection_element_id: Id<CollectionElement>,
+    pub last_play_at: DateTime<Local>,
+    pub created_at: DateTime<Local>,
+    pub updated_at: DateTime<Local>,
+}
+
+// いいね情報
+#[derive(new, Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct CollectionElementLike {
+    pub id: Id<CollectionElementLike>,
+    pub collection_element_id: Id<CollectionElement>,
+    pub like_at: DateTime<Local>,
+    pub created_at: DateTime<Local>,
+    pub updated_at: DateTime<Local>,
+}
+
+// サムネイル情報
+#[derive(new, Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct CollectionElementThumbnail {
+    pub id: Id<CollectionElementThumbnail>,
+    pub collection_element_id: Id<CollectionElement>,
     pub thumbnail_width: Option<i32>,
     pub thumbnail_height: Option<i32>,
     pub created_at: DateTime<Local>,
@@ -32,18 +100,57 @@ pub struct CollectionElement {
 #[derive(new, Debug)]
 pub struct NewCollectionElement {
     pub id: Id<CollectionElement>,
+}
+
+// ファイルスキャン用の関連データ付きコレクション要素
+#[derive(new, Debug)]
+pub struct ScannedGameElement {
+    pub id: Id<CollectionElement>,
     pub gamename: String,
     pub exe_path: Option<String>,
     pub lnk_path: Option<String>,
     pub install_at: Option<DateTime<Local>>,
 }
 
-#[derive(new, Debug, Clone, Serialize, Deserialize)]
-pub struct NewCollectionElementDetail {
+#[derive(new, Debug)]
+pub struct NewCollectionElementInfo {
     pub collection_element_id: Id<CollectionElement>,
+    pub gamename: String,
     pub gamename_ruby: String,
     pub brandname: String,
     pub brandname_ruby: String,
     pub sellday: String,
     pub is_nukige: bool,
+}
+
+#[derive(new, Debug)]
+pub struct NewCollectionElementPaths {
+    pub collection_element_id: Id<CollectionElement>,
+    pub exe_path: Option<String>,
+    pub lnk_path: Option<String>,
+}
+
+#[derive(new, Debug)]
+pub struct NewCollectionElementInstall {
+    pub collection_element_id: Id<CollectionElement>,
+    pub install_at: DateTime<Local>,
+}
+
+#[derive(new, Debug)]
+pub struct NewCollectionElementPlay {
+    pub collection_element_id: Id<CollectionElement>,
+    pub last_play_at: DateTime<Local>,
+}
+
+#[derive(new, Debug)]
+pub struct NewCollectionElementLike {
+    pub collection_element_id: Id<CollectionElement>,
+    pub like_at: DateTime<Local>,
+}
+
+#[derive(new, Debug)]
+pub struct NewCollectionElementThumbnail {
+    pub collection_element_id: Id<CollectionElement>,
+    pub thumbnail_width: Option<i32>,
+    pub thumbnail_height: Option<i32>,
 }

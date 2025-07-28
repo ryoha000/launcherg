@@ -3,3 +3,10 @@ pub mod pubsubimpl;
 pub mod repositoryimpl;
 pub mod util;
 pub mod windowsimpl;
+
+#[cfg(test)]
+pub mod explorermock;
+#[cfg(test)]
+pub mod repositorymock;
+#[cfg(test)]
+pub mod windowsmock;

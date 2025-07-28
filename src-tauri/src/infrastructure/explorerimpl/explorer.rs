@@ -24,6 +24,7 @@ pub trait ExplorersExt {
     fn network_explorer(&self) -> &Self::NetworkExplorer;
 }
 
+
 impl ExplorersExt for Explorers {
     type FileExplorer = ExplorerImpl<File>;
     type NetworkExplorer = ExplorerImpl<NetWork>;

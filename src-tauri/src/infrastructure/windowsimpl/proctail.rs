@@ -2,7 +2,6 @@ use crate::domain::windows::proctail::{
     HealthCheckResult, IpcInfo, MonitoringInfo, ProcTail, ProcTailError, ProcTailEvent,
     ResourceInfo, ServiceInfo, ServiceStatus, WatchTarget,
 };
-use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
@@ -137,7 +136,7 @@ impl ProcTailImpl {
 
     async fn send_raw_request(&self, request: &str) -> Result<String, ProcTailError> {
         let mut retries = 2;
-        
+
         while retries > 0 {
             match self.try_send_request(request).await {
                 Ok(response) => return Ok(response),
@@ -153,12 +152,14 @@ impl ProcTailImpl {
             }
         }
 
-        Err(ProcTailError::ServiceError("Failed after retries".to_string()))
+        Err(ProcTailError::ServiceError(
+            "Failed after retries".to_string(),
+        ))
     }
 
     async fn try_send_request(&self, request: &str) -> Result<String, ProcTailError> {
         let mut cache = self.connection_cache.lock().await;
-        
+
         // Try to use cached connection first
         if let Some(mut client) = cache.take() {
             match self.send_on_pipe(&mut client, request).await {
@@ -176,25 +177,22 @@ impl ProcTailImpl {
         // Create new connection
         let mut client = self.connect_to_pipe().await?;
         let response = self.send_on_pipe(&mut client, request).await?;
-        
+
         // Cache the connection for future use
         *cache = Some(client);
-        
+
         Ok(response)
     }
 
     async fn connect_to_pipe(&self) -> Result<NamedPipeClient, ProcTailError> {
         let pipe_name = self.pipe_name.clone();
         let pipe_name_for_error = pipe_name.clone();
-        
-        let result = timeout(
-            Duration::from_millis(self.timeout_ms),
-            async {
-                ClientOptions::new().open(&pipe_name)
-            },
-        )
+
+        let result = timeout(Duration::from_millis(self.timeout_ms), async {
+            ClientOptions::new().open(&pipe_name)
+        })
         .await;
-        
+
         match result {
             Ok(Ok(client)) => Ok(client),
             Ok(Err(e)) => {
@@ -209,12 +207,16 @@ impl ProcTailImpl {
         }
     }
 
-    async fn send_on_pipe(&self, client: &mut NamedPipeClient, request: &str) -> Result<String, ProcTailError> {
+    async fn send_on_pipe(
+        &self,
+        client: &mut NamedPipeClient,
+        request: &str,
+    ) -> Result<String, ProcTailError> {
         // Send message length first (as in C# implementation)
         let request_bytes = request.as_bytes();
         let message_length = request_bytes.len() as i32;
         let length_bytes = message_length.to_le_bytes();
-        
+
         // Send message length
         timeout(
             Duration::from_millis(self.timeout_ms),
@@ -223,7 +225,7 @@ impl ProcTailImpl {
         .await
         .map_err(|_| ProcTailError::Timeout)?
         .map_err(|e| ProcTailError::IoError(e))?;
-        
+
         // Send message body
         timeout(
             Duration::from_millis(self.timeout_ms),
@@ -232,20 +234,17 @@ impl ProcTailImpl {
         .await
         .map_err(|_| ProcTailError::Timeout)?
         .map_err(|e| ProcTailError::IoError(e))?;
-        
+
         // Flush the stream
-        timeout(
-            Duration::from_millis(self.timeout_ms),
-            client.flush(),
-        )
-        .await
-        .map_err(|_| ProcTailError::Timeout)?
-        .map_err(|e| ProcTailError::IoError(e))?;
+        timeout(Duration::from_millis(self.timeout_ms), client.flush())
+            .await
+            .map_err(|_| ProcTailError::Timeout)?
+            .map_err(|e| ProcTailError::IoError(e))?;
 
         // Read message length (4 bytes)
         let mut length_buffer = [0u8; 4];
         let mut bytes_read = 0;
-        
+
         while bytes_read < 4 {
             let read = timeout(
                 Duration::from_millis(self.timeout_ms),
@@ -254,23 +253,28 @@ impl ProcTailImpl {
             .await
             .map_err(|_| ProcTailError::Timeout)?
             .map_err(|e| ProcTailError::IoError(e))?;
-            
+
             if read == 0 {
-                return Err(ProcTailError::ServiceError("メッセージ長の受信が予期せず終了しました".to_string()));
+                return Err(ProcTailError::ServiceError(
+                    "メッセージ長の受信が予期せず終了しました".to_string(),
+                ));
             }
             bytes_read += read;
         }
 
         let message_length = i32::from_le_bytes(length_buffer);
-        
+
         if message_length <= 0 || message_length > 10 * 1024 * 1024 {
-            return Err(ProcTailError::ServiceError(format!("無効なメッセージ長: {}", message_length)));
+            return Err(ProcTailError::ServiceError(format!(
+                "無効なメッセージ長: {}",
+                message_length
+            )));
         }
 
         // Read message body
         let mut message_buffer = vec![0u8; message_length as usize];
         let mut bytes_read = 0;
-        
+
         while bytes_read < message_length as usize {
             let read = timeout(
                 Duration::from_millis(self.timeout_ms),
@@ -279,9 +283,11 @@ impl ProcTailImpl {
             .await
             .map_err(|_| ProcTailError::Timeout)?
             .map_err(|e| ProcTailError::IoError(e))?;
-            
+
             if read == 0 {
-                return Err(ProcTailError::ServiceError("メッセージ受信が予期せず終了しました".to_string()));
+                return Err(ProcTailError::ServiceError(
+                    "メッセージ受信が予期せず終了しました".to_string(),
+                ));
             }
             bytes_read += read;
         }
@@ -291,9 +297,12 @@ impl ProcTailImpl {
     }
 }
 
-#[async_trait]
 impl ProcTail for ProcTailImpl {
-    async fn add_watch_target(&self, process_id: u32, tag: &str) -> Result<WatchTarget, ProcTailError> {
+    async fn add_watch_target(
+        &self,
+        process_id: u32,
+        tag: &str,
+    ) -> Result<WatchTarget, ProcTailError> {
         let request = AddWatchTargetRequest {
             request_type: "AddWatchTarget".to_string(),
             payload: AddWatchTargetPayload {
@@ -302,21 +311,30 @@ impl ProcTail for ProcTailImpl {
             },
         };
 
-        let request_json = serde_json::to_string(&request)
-            .map_err(|e| ProcTailError::ServiceError(format!("Failed to serialize request: {}", e)))?;
+        let request_json = serde_json::to_string(&request).map_err(|e| {
+            ProcTailError::ServiceError(format!("Failed to serialize request: {}", e))
+        })?;
 
         let response_json = self.send_raw_request(&request_json).await?;
-        
-        let basic_response: BasicResponse = serde_json::from_str(&response_json)
-            .map_err(|e| ProcTailError::InvalidResponse(format!("Failed to parse JSON response: {}. Original response: {}", e, response_json)))?;
-        
+
+        let basic_response: BasicResponse = serde_json::from_str(&response_json).map_err(|e| {
+            ProcTailError::InvalidResponse(format!(
+                "Failed to parse JSON response: {}. Original response: {}",
+                e, response_json
+            ))
+        })?;
+
         if !basic_response.success {
-            return Err(ProcTailError::ServiceError(basic_response.error_message.unwrap_or_else(|| "Unknown error".to_string())));
+            return Err(ProcTailError::ServiceError(
+                basic_response
+                    .error_message
+                    .unwrap_or_else(|| "Unknown error".to_string()),
+            ));
         }
-        
+
         // 成功時は現在のプロセス情報から推測してWatchTargetを作成
         let process_name = format!("process_{}", process_id);
-        
+
         Ok(WatchTarget {
             tag: tag.to_string(),
             process_id,
@@ -334,18 +352,27 @@ impl ProcTail for ProcTailImpl {
             },
         };
 
-        let request_json = serde_json::to_string(&request)
-            .map_err(|e| ProcTailError::ServiceError(format!("Failed to serialize request: {}", e)))?;
+        let request_json = serde_json::to_string(&request).map_err(|e| {
+            ProcTailError::ServiceError(format!("Failed to serialize request: {}", e))
+        })?;
 
         let response_json = self.send_raw_request(&request_json).await?;
-        
-        let basic_response: BasicResponse = serde_json::from_str(&response_json)
-            .map_err(|e| ProcTailError::InvalidResponse(format!("Failed to parse JSON response: {}. Original response: {}", e, response_json)))?;
-        
+
+        let basic_response: BasicResponse = serde_json::from_str(&response_json).map_err(|e| {
+            ProcTailError::InvalidResponse(format!(
+                "Failed to parse JSON response: {}. Original response: {}",
+                e, response_json
+            ))
+        })?;
+
         if !basic_response.success {
-            return Err(ProcTailError::ServiceError(basic_response.error_message.unwrap_or_else(|| "Unknown error".to_string())));
+            return Err(ProcTailError::ServiceError(
+                basic_response
+                    .error_message
+                    .unwrap_or_else(|| "Unknown error".to_string()),
+            ));
         }
-        
+
         Ok(1) // 成功時は1を返す
     }
 
@@ -355,32 +382,49 @@ impl ProcTail for ProcTailImpl {
             payload: EmptyPayload {},
         };
 
-        let request_json = serde_json::to_string(&request)
-            .map_err(|e| ProcTailError::ServiceError(format!("Failed to serialize request: {}", e)))?;
+        let request_json = serde_json::to_string(&request).map_err(|e| {
+            ProcTailError::ServiceError(format!("Failed to serialize request: {}", e))
+        })?;
 
         let response_json = self.send_raw_request(&request_json).await?;
-        
-        let response: GetWatchTargetsResponse = serde_json::from_str(&response_json)
-            .map_err(|e| ProcTailError::InvalidResponse(format!("Failed to parse JSON response: {}. Original response: {}", e, response_json)))?;
-        
+
+        let response: GetWatchTargetsResponse =
+            serde_json::from_str(&response_json).map_err(|e| {
+                ProcTailError::InvalidResponse(format!(
+                    "Failed to parse JSON response: {}. Original response: {}",
+                    e, response_json
+                ))
+            })?;
+
         if !response.success {
-            return Err(ProcTailError::ServiceError(response.error_message.unwrap_or_else(|| "Unknown error".to_string())));
+            return Err(ProcTailError::ServiceError(
+                response
+                    .error_message
+                    .unwrap_or_else(|| "Unknown error".to_string()),
+            ));
         }
-        
+
         // WatchTargetDataをWatchTargetに変換
-        let targets = response.data.watch_targets.into_iter().map(|data| {
-            // プロセスが実行中かどうかを確認
-            let is_running = data.process_id > 0 && !data.process_name.is_empty() && !data.start_time.is_empty();
-            
-            WatchTarget {
-                tag: data.tag_name,
-                process_id: data.process_id,
-                process_name: data.process_name,
-                start_time: data.start_time,
-                is_running,
-            }
-        }).collect();
-        
+        let targets = response
+            .data
+            .watch_targets
+            .into_iter()
+            .map(|data| {
+                // プロセスが実行中かどうかを確認
+                let is_running = data.process_id > 0
+                    && !data.process_name.is_empty()
+                    && !data.start_time.is_empty();
+
+                WatchTarget {
+                    tag: data.tag_name,
+                    process_id: data.process_id,
+                    process_name: data.process_name,
+                    start_time: data.start_time,
+                    is_running,
+                }
+            })
+            .collect();
+
         Ok(targets)
     }
 
@@ -398,18 +442,28 @@ impl ProcTail for ProcTailImpl {
             },
         };
 
-        let request_json = serde_json::to_string(&request)
-            .map_err(|e| ProcTailError::ServiceError(format!("Failed to serialize request: {}", e)))?;
+        let request_json = serde_json::to_string(&request).map_err(|e| {
+            ProcTailError::ServiceError(format!("Failed to serialize request: {}", e))
+        })?;
 
         let response_json = self.send_raw_request(&request_json).await?;
-        
-        let response: GetRecordedEventsResponse = serde_json::from_str(&response_json)
-            .map_err(|e| ProcTailError::InvalidResponse(format!("Failed to parse JSON response: {}. Original response: {}", e, response_json)))?;
-        
+
+        let response: GetRecordedEventsResponse =
+            serde_json::from_str(&response_json).map_err(|e| {
+                ProcTailError::InvalidResponse(format!(
+                    "Failed to parse JSON response: {}. Original response: {}",
+                    e, response_json
+                ))
+            })?;
+
         if !response.success {
-            return Err(ProcTailError::ServiceError(response.error_message.unwrap_or_else(|| "Unknown error".to_string())));
+            return Err(ProcTailError::ServiceError(
+                response
+                    .error_message
+                    .unwrap_or_else(|| "Unknown error".to_string()),
+            ));
         }
-        
+
         Ok(response.data.events)
     }
 
@@ -421,18 +475,27 @@ impl ProcTail for ProcTailImpl {
             },
         };
 
-        let request_json = serde_json::to_string(&request)
-            .map_err(|e| ProcTailError::ServiceError(format!("Failed to serialize request: {}", e)))?;
+        let request_json = serde_json::to_string(&request).map_err(|e| {
+            ProcTailError::ServiceError(format!("Failed to serialize request: {}", e))
+        })?;
 
         let response_json = self.send_raw_request(&request_json).await?;
-        
-        let basic_response: BasicResponse = serde_json::from_str(&response_json)
-            .map_err(|e| ProcTailError::InvalidResponse(format!("Failed to parse JSON response: {}. Original response: {}", e, response_json)))?;
-        
+
+        let basic_response: BasicResponse = serde_json::from_str(&response_json).map_err(|e| {
+            ProcTailError::InvalidResponse(format!(
+                "Failed to parse JSON response: {}. Original response: {}",
+                e, response_json
+            ))
+        })?;
+
         if !basic_response.success {
-            return Err(ProcTailError::ServiceError(basic_response.error_message.unwrap_or_else(|| "Unknown error".to_string())));
+            return Err(ProcTailError::ServiceError(
+                basic_response
+                    .error_message
+                    .unwrap_or_else(|| "Unknown error".to_string()),
+            ));
         }
-        
+
         Ok(0) // 成功時は0を返す（クリアされた数は不明）
     }
 
@@ -442,22 +505,36 @@ impl ProcTail for ProcTailImpl {
             payload: EmptyPayload {},
         };
 
-        let request_json = serde_json::to_string(&request)
-            .map_err(|e| ProcTailError::ServiceError(format!("Failed to serialize request: {}", e)))?;
+        let request_json = serde_json::to_string(&request).map_err(|e| {
+            ProcTailError::ServiceError(format!("Failed to serialize request: {}", e))
+        })?;
 
         let response_json = self.send_raw_request(&request_json).await?;
-        
-        let status_response: ServiceStatusResponse = serde_json::from_str(&response_json)
-            .map_err(|e| ProcTailError::InvalidResponse(format!("Failed to parse JSON response: {}. Original response: {}", e, response_json)))?;
-        
+
+        let status_response: ServiceStatusResponse =
+            serde_json::from_str(&response_json).map_err(|e| {
+                ProcTailError::InvalidResponse(format!(
+                    "Failed to parse JSON response: {}. Original response: {}",
+                    e, response_json
+                ))
+            })?;
+
         if !status_response.success {
-            return Err(ProcTailError::ServiceError(status_response.error_message.unwrap_or_else(|| "Unknown error".to_string())));
+            return Err(ProcTailError::ServiceError(
+                status_response
+                    .error_message
+                    .unwrap_or_else(|| "Unknown error".to_string()),
+            ));
         }
-        
+
         // ServiceStatusResponseから必要なフィールドを抽出してServiceStatusに変換
         Ok(ServiceStatus {
             service: ServiceInfo {
-                status: if status_response.data.is_running { "Running".to_string() } else { "Stopped".to_string() },
+                status: if status_response.data.is_running {
+                    "Running".to_string()
+                } else {
+                    "Stopped".to_string()
+                },
                 version: "Unknown".to_string(),
                 start_time: "Unknown".to_string(),
                 uptime: "Unknown".to_string(),
@@ -486,18 +563,28 @@ impl ProcTail for ProcTailImpl {
             request_type: "GetStatus".to_string(), // Use GetStatus instead of HealthCheck
             payload: EmptyPayload {},
         };
-        
-        let request_json = serde_json::to_string(&request)
-            .map_err(|e| ProcTailError::ServiceError(format!("Failed to serialize request: {}", e)))?;
+
+        let request_json = serde_json::to_string(&request).map_err(|e| {
+            ProcTailError::ServiceError(format!("Failed to serialize request: {}", e))
+        })?;
 
         let response_json = self.send_raw_request(&request_json).await;
-        
+
         let response_json = response_json?;
-        let status_response: ServiceStatusResponse = serde_json::from_str(&response_json)
-            .map_err(|e| ProcTailError::InvalidResponse(format!("Failed to parse JSON response: {}. Original response: {}", e, response_json)))?;
-        
+        let status_response: ServiceStatusResponse =
+            serde_json::from_str(&response_json).map_err(|e| {
+                ProcTailError::InvalidResponse(format!(
+                    "Failed to parse JSON response: {}. Original response: {}",
+                    e, response_json
+                ))
+            })?;
+
         Ok(HealthCheckResult {
-            status: if status_response.data.is_running { "Healthy".to_string() } else { "Unhealthy".to_string() },
+            status: if status_response.data.is_running {
+                "Healthy".to_string()
+            } else {
+                "Unhealthy".to_string()
+            },
             check_time: chrono::Utc::now().to_rfc3339(),
             details: std::collections::HashMap::new(),
         })

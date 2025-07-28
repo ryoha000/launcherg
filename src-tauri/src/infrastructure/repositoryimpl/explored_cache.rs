@@ -1,4 +1,3 @@
-use async_trait::async_trait;
 use sqlx::QueryBuilder;
 
 use crate::domain::{
@@ -7,7 +6,6 @@ use crate::domain::{
 
 use super::repository::RepositoryImpl;
 
-#[async_trait]
 impl ExploredCacheRepository for RepositoryImpl<ExploredCache> {
     async fn get_all(&self) -> anyhow::Result<ExploredCache> {
         let pool = self.pool.0.clone();

@@ -16,7 +16,7 @@ pub mod explorer;
 pub mod repository;
 pub mod windows;
 
-#[derive(new, Debug, Clone, Copy, Serialize, Deserialize)]
+#[derive(new, Debug, Clone, Copy, Serialize, Deserialize, PartialEq)]
 pub struct Id<T> {
     pub value: i32,
     _marker: PhantomData<T>,

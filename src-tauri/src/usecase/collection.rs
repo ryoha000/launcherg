@@ -7,10 +7,8 @@ use tauri::AppHandle;
 use super::error::UseCaseError;
 use crate::{
     domain::{
-        collection::{CollectionElement, NewCollectionElement, NewCollectionElementDetail},
-        file::{
-            get_icon_path, get_lnk_metadatas, get_thumbnail_path, save_icon_to_png, save_thumbnail,
-        },
+        collection::{CollectionElement, NewCollectionElement, ScannedGameElement},
+        file::{get_icon_path, get_thumbnail_path, save_thumbnail},
         repository::collection::CollectionRepository,
         Id,
     },
@@ -31,6 +29,59 @@ impl<R: RepositoriesExt> CollectionUseCase<R> {
             .collection_repository()
             .upsert_collection_element(source)
             .await?;
+        Ok(())
+    }
+
+    // スクレイピング情報を保存
+    pub async fn upsert_collection_element_info(
+        &self,
+        info: &crate::domain::collection::NewCollectionElementInfo,
+    ) -> anyhow::Result<()> {
+        self.repositories
+            .collection_repository()
+            .upsert_collection_element_info(info)
+            .await?;
+        Ok(())
+    }
+
+    // 関連データを含むコレクション要素を作成
+    pub async fn create_collection_element(
+        &self,
+        element: &ScannedGameElement,
+    ) -> anyhow::Result<()> {
+        use crate::domain::collection::{
+            NewCollectionElement, NewCollectionElementInstall, NewCollectionElementPaths,
+        };
+
+        // 1. 基本要素を作成
+        let new_element = NewCollectionElement::new(element.id.clone());
+        self.upsert_collection_element(&new_element).await?;
+
+        // 2. スクレイピング情報は初期登録時には作成しない
+        // （後でregisterCollectionElementDetailsから取得される）
+
+        // 3. パス情報を保存
+        if element.exe_path.is_some() || element.lnk_path.is_some() {
+            let new_paths = NewCollectionElementPaths::new(
+                element.id.clone(),
+                element.exe_path.clone(),
+                element.lnk_path.clone(),
+            );
+            self.repositories
+                .collection_repository()
+                .upsert_collection_element_paths(&new_paths)
+                .await?;
+        }
+
+        // 4. インストール情報を保存
+        if let Some(install_time) = element.install_at {
+            let new_install = NewCollectionElementInstall::new(element.id.clone(), install_time);
+            self.repositories
+                .collection_repository()
+                .upsert_collection_element_install(&new_install)
+                .await?;
+        }
+
         Ok(())
     }
     pub async fn upsert_collection_element_thumbnail_size(
@@ -84,15 +135,14 @@ impl<R: RepositoriesExt> CollectionUseCase<R> {
             .await;
         Ok(())
     }
+
+    // 関連データ付きコレクション要素リストを一括保存
     pub async fn upsert_collection_elements(
         &self,
-        source: &Vec<NewCollectionElement>,
+        source: &Vec<ScannedGameElement>,
     ) -> anyhow::Result<()> {
-        for v in source.into_iter() {
-            self.repositories
-                .collection_repository()
-                .upsert_collection_element(v)
-                .await?
+        for element in source.iter() {
+            self.create_collection_element(element).await?;
         }
         Ok(())
     }
@@ -126,24 +176,39 @@ impl<R: RepositoriesExt> CollectionUseCase<R> {
         element: &NewCollectionElement,
     ) -> anyhow::Result<()> {
         let id = &element.id;
-        let icon_path;
-        if let Some(lnk_path) = element.lnk_path.clone() {
-            let metadatas = get_lnk_metadatas(vec![lnk_path.as_str()])?;
-            let metadata = metadatas
-                .get(lnk_path.as_str())
-                .ok_or(anyhow::anyhow!("metadata cannot get"))?;
-            if metadata.icon.to_lowercase().ends_with("ico") {
-                println!("icon is ico");
-                icon_path = metadata.icon.clone();
+
+        let paths = self
+            .repositories
+            .collection_repository()
+            .get_element_paths_by_element_id(id)
+            .await?;
+
+        let icon_path = if let Some(paths) = paths {
+            if let Some(lnk_path) = paths.lnk_path {
+                // lnkファイルからメタデータを取得してアイコンパスを決定
+                use crate::domain::file::get_lnk_metadatas;
+                let metadatas = get_lnk_metadatas(vec![lnk_path.as_str()])?;
+                let metadata = metadatas
+                    .get(lnk_path.as_str())
+                    .ok_or(anyhow::anyhow!("metadata cannot get"))?;
+                if metadata.icon.to_lowercase().ends_with("ico") {
+                    println!("icon is ico");
+                    metadata.icon.clone()
+                } else {
+                    metadata.path.clone()
+                }
+            } else if let Some(exe_path) = paths.exe_path {
+                exe_path
             } else {
-                icon_path = metadata.path.clone();
+                eprintln!("lnk_path and exe_path are None");
+                return Ok(());
             }
-        } else if let Some(exe_path) = element.exe_path.clone() {
-            icon_path = exe_path;
         } else {
-            eprintln!("lnk_path and exe_path are None");
+            eprintln!("No paths found for element {}", id.value);
             return Ok(());
-        }
+        };
+
+        use crate::domain::file::save_icon_to_png;
         Ok(save_icon_to_png(handle, &icon_path, id)?.await??)
     }
 
@@ -200,17 +265,7 @@ impl<R: RepositoriesExt> CollectionUseCase<R> {
     ) -> anyhow::Result<Vec<Id<CollectionElement>>> {
         self.repositories
             .collection_repository()
-            .get_not_registered_detail_element_ids()
-            .await
-    }
-
-    pub async fn create_element_details(
-        &self,
-        details: Vec<NewCollectionElementDetail>,
-    ) -> anyhow::Result<()> {
-        self.repositories
-            .collection_repository()
-            .create_element_details(details)
+            .get_not_registered_info_element_ids()
             .await
     }
 

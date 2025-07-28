@@ -9,11 +9,15 @@ use super::{
     module::{Modules, ModulesExt},
 };
 use crate::domain::file::get_lnk_metadatas;
-use crate::domain::windows::proctail::{ProcTailEvent, ServiceStatus, WatchTarget, HealthCheckResult};
-use crate::infrastructure::windowsimpl::proctail_manager::{ProcTailManagerStatus, ProcTailVersion};
+use crate::domain::windows::proctail::{
+    HealthCheckResult, ProcTailEvent, ServiceStatus, WatchTarget,
+};
+use crate::infrastructure::windowsimpl::proctail_manager::{
+    ProcTailManagerStatus, ProcTailVersion,
+};
 use crate::{
     domain::{
-        collection::NewCollectionElement,
+        collection::{NewCollectionElement, ScannedGameElement},
         distance::get_comparable_distance,
         file::{get_file_created_at_sync, normalize},
         pubsub::{ProgressLivePayload, ProgressPayload, PubSubService},
@@ -44,10 +48,13 @@ pub async fn create_elements_in_pc(
         })
         .collect();
 
-    if let Err(e) = pubsub.notify("progress", ProgressPayload::new(format!(
-        "指定したフォルダの .lnk .exe ファイルを取得しました。ファイル数: {}",
-        explore_files.len()
-    ))) {
+    if let Err(e) = pubsub.notify(
+        "progress",
+        ProgressPayload::new(format!(
+            "指定したフォルダの .lnk .exe ファイルを取得しました。ファイル数: {}",
+            explore_files.len()
+        )),
+    ) {
         return Err(CommandError::Anyhow(anyhow::anyhow!(e.to_string())));
     }
     if let Err(e) = pubsub.notify(
@@ -62,7 +69,7 @@ pub async fn create_elements_in_pc(
         .get_all_game_cache()
         .await?;
 
-    let new_elements = modules
+    let new_elements_with_data = modules
         .file_use_case()
         .filter_files_to_collection_elements(
             &handle,
@@ -74,8 +81,15 @@ pub async fn create_elements_in_pc(
 
     let new_elements_game_caches = modules
         .all_game_cache_use_case()
-        .get_by_ids(new_elements.iter().map(|v| v.id.value).collect())
+        .get_by_ids(new_elements_with_data.iter().map(|v| v.id.value).collect())
         .await?;
+
+    // ゲーム名を保存しておく（戻り値で使用）
+    let gamenames: Vec<String> = new_elements_game_caches
+        .iter()
+        .map(|v| v.gamename.clone())
+        .collect();
+
     modules
         .collection_use_case()
         .concurency_save_thumbnails(
@@ -89,10 +103,10 @@ pub async fn create_elements_in_pc(
 
     modules
         .collection_use_case()
-        .upsert_collection_elements(&new_elements)
+        .upsert_collection_elements(&new_elements_with_data)
         .await?;
 
-    let new_element_ids = new_elements
+    let new_element_ids = new_elements_with_data
         .iter()
         .map(|v| v.id.clone())
         .collect::<Vec<Id<_>>>();
@@ -106,7 +120,7 @@ pub async fn create_elements_in_pc(
         .add_cache(explore_files)
         .await?;
 
-    Ok(new_elements.into_iter().map(|v| v.gamename).collect())
+    Ok(gamenames)
 }
 
 #[tauri::command]
@@ -165,9 +179,9 @@ pub async fn upsert_collection_element(
     lnk_path: Option<String>,
     game_cache: AllGameCacheOne,
 ) -> anyhow::Result<(), CommandError> {
-    let install_at;
+    let _install_at;
     if let Some(path) = exe_path.clone() {
-        install_at = get_file_created_at_sync(&path);
+        _install_at = get_file_created_at_sync(&path);
     } else if let Some(path) = lnk_path.clone() {
         let metadatas = get_lnk_metadatas(vec![path.as_str()])?;
         let metadata = metadatas
@@ -177,22 +191,30 @@ pub async fn upsert_collection_element(
             "metadata.path: {}, metadata.icon: {}",
             metadata.path, metadata.icon
         );
-        install_at = get_file_created_at_sync(&metadata.path);
+        _install_at = get_file_created_at_sync(&metadata.path);
     } else {
-        install_at = None;
+        _install_at = None;
     }
-    let new_element = NewCollectionElement::new(
-        Id::new(game_cache.id),
+    let element_id = Id::new(game_cache.id);
+    let handle = Arc::new(handle);
+
+    // ScannedGameElementを作成
+    let scanned_element = ScannedGameElement::new(
+        element_id.clone(),
         game_cache.gamename,
         exe_path,
         lnk_path,
-        install_at,
+        _install_at,
     );
-    let handle = Arc::new(handle);
+
+    // 関連データを含むコレクション要素を作成
     modules
         .collection_use_case()
-        .upsert_collection_element(&new_element)
+        .create_collection_element(&scanned_element)
         .await?;
+
+    // アイコンを保存
+    let new_element = NewCollectionElement::new(element_id.clone());
     modules
         .collection_use_case()
         .save_element_icon(&handle, &new_element)
@@ -341,10 +363,22 @@ pub async fn create_element_details(
     modules: State<'_, Arc<Modules>>,
     details: Vec<CreateCollectionElementDetail>,
 ) -> anyhow::Result<(), CommandError> {
-    Ok(modules
-        .collection_use_case()
-        .create_element_details(details.into_iter().map(|v| v.into()).collect())
-        .await?)
+    for detail in details {
+        let info = crate::domain::collection::NewCollectionElementInfo::new(
+            Id::new(detail.collection_element_id),
+            detail.gamename,
+            detail.gamename_ruby,
+            detail.brandname,
+            detail.brandname_ruby,
+            detail.sellday,
+            detail.is_nukige,
+        );
+        modules
+            .collection_use_case()
+            .upsert_collection_element_info(&info)
+            .await?;
+    }
+    Ok(())
 }
 
 #[tauri::command]
@@ -568,20 +602,14 @@ pub async fn proctail_clear_events(
 pub async fn proctail_get_status(
     modules: State<'_, Arc<Modules>>,
 ) -> anyhow::Result<ServiceStatus, CommandError> {
-    Ok(modules
-        .process_use_case()
-        .proctail_get_status()
-        .await?)
+    Ok(modules.process_use_case().proctail_get_status().await?)
 }
 
 #[tauri::command]
 pub async fn proctail_health_check(
     modules: State<'_, Arc<Modules>>,
 ) -> anyhow::Result<HealthCheckResult, CommandError> {
-    Ok(modules
-        .process_use_case()
-        .proctail_health_check()
-        .await?)
+    Ok(modules.process_use_case().proctail_health_check().await?)
 }
 
 #[tauri::command]
@@ -639,20 +667,14 @@ pub async fn proctail_manager_download_and_install(
 pub async fn proctail_manager_start(
     modules: State<'_, Arc<Modules>>,
 ) -> anyhow::Result<(), CommandError> {
-    Ok(modules
-        .process_use_case()
-        .proctail_manager_start()
-        .await?)
+    Ok(modules.process_use_case().proctail_manager_start().await?)
 }
 
 #[tauri::command]
 pub async fn proctail_manager_stop(
     modules: State<'_, Arc<Modules>>,
 ) -> anyhow::Result<(), CommandError> {
-    Ok(modules
-        .process_use_case()
-        .proctail_manager_stop()
-        .await?)
+    Ok(modules.process_use_case().proctail_manager_stop().await?)
 }
 
 #[tauri::command]

@@ -12,7 +12,7 @@ use crate::domain::file::{
 use crate::domain::pubsub::{ProgressLivePayload, ProgressPayload, PubSubService};
 use crate::{
     domain::{
-        collection::{CollectionElement, NewCollectionElement},
+        collection::{CollectionElement, ScannedGameElement},
         distance::get_comparable_distance,
         explorer::file::FileExplorer,
         file::{
@@ -72,12 +72,15 @@ fn emit_progress_with_time<P: PubSubService>(
     base_announce: &str,
 ) -> anyhow::Result<()> {
     let end = start.elapsed();
-    pubsub.notify("progress", ProgressPayload::new(format!(
-        "{}累計{}.{:03}秒経過しました.",
-        base_announce,
-        end.as_secs(),
-        end.subsec_nanos() / 1_000_000
-    )))
+    pubsub.notify(
+        "progress",
+        ProgressPayload::new(format!(
+            "{}累計{}.{:03}秒経過しました.",
+            base_announce,
+            end.as_secs(),
+            end.subsec_nanos() / 1_000_000
+        )),
+    )
 }
 
 impl<R: ExplorersExt> FileUseCase<R> {
@@ -166,7 +169,8 @@ impl<R: ExplorersExt> FileUseCase<R> {
             let pubsub_clone = Arc::clone(&pubsub);
             tauri::async_runtime::spawn(async move {
                 let res = get_most_probable_game_candidate(&all, path)?;
-                if let Err(e) = pubsub_clone.notify("progresslive", ProgressLivePayload::new(None)) {
+                if let Err(e) = pubsub_clone.notify("progresslive", ProgressLivePayload::new(None))
+                {
                     return Err(e);
                 }
                 Ok(res)
@@ -202,7 +206,7 @@ impl<R: ExplorersExt> FileUseCase<R> {
         files: Vec<String>,
         all_game_cache: AllGameCache,
         pubsub: Arc<P>,
-    ) -> anyhow::Result<Vec<NewCollectionElement>> {
+    ) -> anyhow::Result<Vec<ScannedGameElement>> {
         let start = Instant::now();
 
         let normalized_all_games = Arc::new(
@@ -220,11 +224,7 @@ impl<R: ExplorersExt> FileUseCase<R> {
             .collect();
 
         let (exe_id_path_vec, lnk_id_path_vec): (Vec<(i32, String)>, Vec<(i32, String)>) = self
-            .concurency_get_path_game_map(
-                normalized_all_games,
-                files,
-                pubsub.clone(),
-            )
+            .concurency_get_path_game_map(normalized_all_games, files, pubsub.clone())
             .await?
             .into_iter()
             .partition(|(_id, path)| path.to_lowercase().ends_with("exe"));
@@ -256,7 +256,7 @@ impl<R: ExplorersExt> FileUseCase<R> {
             // new collection element
             if let Some(gamename) = all_erogamescape_game_map.get(&id) {
                 let install_at = get_file_created_at_sync(&exe_path);
-                collection_elements.push(NewCollectionElement::new(
+                collection_elements.push(ScannedGameElement::new(
                     Id::new(id),
                     gamename.clone(),
                     Some(exe_path),
@@ -267,7 +267,7 @@ impl<R: ExplorersExt> FileUseCase<R> {
         }
         for (id, lnk_path) in lnk_id_path_vec.iter() {
             let id = Id::new(*id);
-            let install_at;
+            let _install_at;
             // icon
             if let Some(metadata) = lnk_metadatas.get(lnk_path.as_str()) {
                 let task;
@@ -278,18 +278,18 @@ impl<R: ExplorersExt> FileUseCase<R> {
                 }
                 save_icon_tasks.push(task);
 
-                install_at = get_file_created_at_sync(&metadata.path);
+                _install_at = get_file_created_at_sync(&metadata.path);
             } else {
-                install_at = None;
+                _install_at = None;
             }
 
             if let Some(gamename) = all_erogamescape_game_map.get(&id.value) {
-                collection_elements.push(NewCollectionElement::new(
+                collection_elements.push(ScannedGameElement::new(
                     id,
                     gamename.clone(),
                     None,
                     Some(lnk_path.clone()),
-                    install_at,
+                    _install_at,
                 ));
             }
         }
@@ -331,11 +331,22 @@ impl<R: ExplorersExt> FileUseCase<R> {
         collection_element: CollectionElement,
         is_run_as_admin: bool,
     ) -> anyhow::Result<Option<u32>> {
-        start_process(
-            is_run_as_admin,
-            collection_element.exe_path,
-            collection_element.lnk_path,
-        )
+        let (exe_path, lnk_path) = if let Some(paths) = &collection_element.paths {
+            (paths.exe_path.clone(), paths.lnk_path.clone())
+        } else {
+            return Err(anyhow::anyhow!(
+                "ゲームの実行ファイルパスが設定されていません。ゲームを再スキャンしてください。"
+            ));
+        };
+
+        // 両方のパスがNoneの場合もエラー
+        if exe_path.is_none() && lnk_path.is_none() {
+            return Err(anyhow::anyhow!(
+                "ゲームの実行ファイルパスが設定されていません。ゲームを再スキャンしてください。"
+            ));
+        }
+
+        start_process(is_run_as_admin, exe_path, lnk_path)
     }
     pub fn get_play_time_minutes(
         &self,

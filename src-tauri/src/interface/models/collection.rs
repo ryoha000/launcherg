@@ -33,24 +33,62 @@ pub struct CollectionElement {
 
 impl CollectionElement {
     pub fn from_domain(handle: &Arc<AppHandle>, st: domain::collection::CollectionElement) -> Self {
+        // 新しい構造から情報を取得
+        let (gamename, gamename_ruby, brandname, brandname_ruby, sellday, is_nukige) =
+            if let Some(info) = &st.info {
+                (
+                    info.gamename.clone(),
+                    info.gamename_ruby.clone(),
+                    info.brandname.clone(),
+                    info.brandname_ruby.clone(),
+                    info.sellday.clone(),
+                    info.is_nukige,
+                )
+            } else {
+                (
+                    "".to_string(),
+                    "".to_string(),
+                    "".to_string(),
+                    "".to_string(),
+                    "".to_string(),
+                    false,
+                )
+            };
+
+        let (exe_path, lnk_path) = if let Some(paths) = &st.paths {
+            (paths.exe_path.clone(), paths.lnk_path.clone())
+        } else {
+            (None, None)
+        };
+
+        let install_at = st.install.as_ref().map(|i| i.install_at.to_rfc3339());
+        let last_play_at = st.play.as_ref().map(|p| p.last_play_at.to_rfc3339());
+        let like_at = st.like.as_ref().map(|l| l.like_at.to_rfc3339());
+
+        let (thumbnail_width, thumbnail_height) = if let Some(thumbnail) = &st.thumbnail {
+            (thumbnail.thumbnail_width, thumbnail.thumbnail_height)
+        } else {
+            (None, None)
+        };
+
         CollectionElement::new(
             st.id.value,
-            st.gamename,
-            st.gamename_ruby,
-            st.brandname,
-            st.brandname_ruby,
-            st.sellday,
-            st.is_nukige,
-            st.exe_path,
-            st.lnk_path,
+            gamename,
+            gamename_ruby,
+            brandname,
+            brandname_ruby,
+            sellday,
+            is_nukige,
+            exe_path,
+            lnk_path,
             get_thumbnail_path(handle, &st.id),
             get_icon_path(handle, &st.id),
-            st.install_at.and_then(|v| Some(v.to_rfc3339())),
-            st.last_play_at.and_then(|v| Some(v.to_rfc3339())),
-            st.like_at.and_then(|v| Some(v.to_rfc3339())),
+            install_at,
+            last_play_at,
+            like_at,
             st.updated_at.to_rfc3339(),
-            st.thumbnail_width,
-            st.thumbnail_height,
+            thumbnail_width,
+            thumbnail_height,
         )
     }
 }
@@ -60,4 +98,3 @@ pub struct CalculateDistanceKV {
     pub key: String,
     pub value: String,
 }
-

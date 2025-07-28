@@ -34,6 +34,7 @@ pub trait RepositoriesExt {
     fn all_game_cache_repository(&self) -> &Self::AllGameCacheRepo;
 }
 
+
 impl RepositoriesExt for Repositories {
     type CollectionRepo = RepositoryImpl<CollectionElement>;
     type ExploredCacheRepo = RepositoryImpl<ExploredCache>;

@@ -1,11 +1,10 @@
-use async_trait::async_trait;
 use chrono::{DateTime, Local};
 
 use crate::domain::all_game_cache::{
     AllGameCache, AllGameCacheOneWithThumbnailUrl, NewAllGameCacheOne,
 };
 
-#[async_trait]
+#[cfg_attr(test, mockall::automock)]
 pub trait AllGameCacheRepository {
     async fn get_by_ids(
         &self,

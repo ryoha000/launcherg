@@ -2946,7 +2946,6 @@ name = "launcherg"
 version = "0.0.0"
 dependencies = [
  "anyhow",
- "async-trait",
  "axum",
  "base64 0.21.2",
  "chrono",

@@ -74,6 +74,7 @@ export type SeiyaDataPair = [string, string]
 
 export interface CollectionElementDetail {
   collectionElementId: number
+  gamename: string
   gamenameRuby: string
   brandname: string
   brandnameRuby: string
