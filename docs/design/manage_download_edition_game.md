@@ -193,35 +193,10 @@ pub trait CollectionRepository {
 ```rust
 // usecase/collection.rs
 impl CollectionUseCase {
-    // 統合されたゲーム状態取得
-    pub async fn get_game_with_install_status(&self, id: Id<CollectionElement>) -> Result<GameWithStatus> {
-        let element = self.repository.find_by_id(id).await?;
-        let paths = self.repository.find_paths_by_collection_element_id(id).await?;
-        let dl_store = self.repository.find_dl_store_by_collection_element_id(id).await?;
-
-        let status = self.determine_game_status(&paths, &dl_store);
-        Ok(GameWithStatus { element, status })
-    }
-
-    // ゲーム状態判定ロジック
-    fn determine_game_status(&self, paths: &Option<CollectionElementPaths>, dl_store: &Option<CollectionElementDLStore>) -> GameStatus {
-        match (paths, dl_store) {
-            (Some(paths), _) if paths.exe_path.is_some() || paths.lnk_path.is_some() => GameStatus::Installed,
-            (None, Some(dl_store)) if dl_store.is_owned => GameStatus::OwnedNotInstalled,
-            _ => GameStatus::NotOwned,
-        }
-    }
-
     // DL版ゲーム登録
     pub async fn register_dl_store_game(&self, request: RegisterDLStoreGameRequest) -> Result<()> {
         // 既存のcollection_elementを検索または作成
         // DL版情報を登録
-    }
-
-    // インストール済みパスの関連付け
-    pub async fn link_installed_path(&self, collection_element_id: Id<CollectionElement>, exe_path: String) -> Result<()> {
-        // pathsテーブルにデータを挿入
-        // installsテーブルに履歴を記録
     }
 }
 
@@ -364,7 +339,8 @@ pub async fn link_installed_game(
 
      async function selectInstallPath() {
        const selected = await open({
-         filters: [{ name: 'Executable', extensions: ['exe'] }]],
+         filters: [{ name: 'Executable', extensions: ['exe'] }]
+],
        }
 
        if (selected) {
@@ -384,19 +360,268 @@ pub async fn link_installed_game(
 
 ### データ同期フロー
 
-#### 1. DL版ゲーム情報の登録
+## ブラウザ拡張機能による自動同期
+
+### 概要
+
+ユーザーの利便性を向上するため、ブラウザ拡張機能を開発してDMM・DLsiteでの購入済みゲーム情報を自動的にLaunchergに同期する機能を実装します。
+
+### アーキテクチャ
+
+#### 1. ブラウザ拡張機能 (Browser Extension)
+```
+Launcher Extension/
+├── manifest.json (拡張機能設定)
+├── content-scripts/
+│   ├── dmm-games.js (DMMゲームページ用)
+│   └── dlsite.js (DLsiteページ用)
+├── background/
+│   └── background.js (バックグラウンド処理)
+└── popup/
+    ├── popup.html (設定UI)
+    └── popup.js (設定ロジック)
+```
+
+#### 2. 通信プロトコル設計
+
+**Native Messaging API使用**
+- ブラウザ拡張機能とデスクトップアプリ間の安全な通信
+- JSONベースのメッセージ交換
+- Tauriアプリが対応するNative Messaging Host
+
+```json
+// メッセージフォーマット例
+{
+  "type": "game_data_sync",
+  "store": "DMM" | "DLSite",
+  "games": [
+    {
+      "store_id": "game_12345",
+      "title": "ゲームタイトル",
+      "purchase_url": "https://...",
+      "purchase_date": "2024-01-15",
+      "thumbnail_url": "https://..."
+    }
+  ]
+}
+```
+
+#### 3. 拡張機能の動作仕様
+
+**Content Scripts**
+```javascript
+// content-scripts/dmm-games.js
+class DMMGameExtractor {
+  extractPurchasedGames() {
+    // DOMから購入済みゲーム情報を抽出
+    const gameElements = document.querySelectorAll('.purchased-game-item')
+    return Array.from(gameElements).map(element => ({
+      store_id: this.extractGameId(element),
+      title: this.extractTitle(element),
+      purchase_url: this.extractUrl(element),
+      thumbnail_url: this.extractThumbnail(element)
+    }))
+  }
+
+  detectPageType() {
+    // 購入済みゲーム一覧ページかどうかを判定
+    return window.location.href.includes('/library')
+      || document.querySelector('.library-container')
+  }
+
+  sendToLauncher(games) {
+    // Background scriptに送信
+    chrome.runtime.sendMessage({
+      type: 'sync_games',
+      store: 'DMM',
+      games
+    })
+  }
+}
+
+// ページロード時に実行
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initExtractor)
+}
+else {
+  initExtractor()
+}
+
+function initExtractor() {
+  const extractor = new DMMGameExtractor()
+  if (extractor.detectPageType()) {
+    const games = extractor.extractPurchasedGames()
+    if (games.length > 0) {
+      extractor.sendToLauncher(games)
+    }
+  }
+}
+```
+
+**Background Script**
+```javascript
+// background/background.js
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if (message.type === 'sync_games') {
+    sendToNativeApp(message)
+  }
+})
+
+async function sendToNativeApp(data) {
+  try {
+    const response = await chrome.runtime.sendNativeMessage(
+      'com.launcherg.native_host',
+      {
+        type: 'game_data_sync',
+        store: data.store,
+        games: data.games
+      }
+    )
+    console.log('Sync successful:', response)
+  }
+  catch (error) {
+    console.error('Sync failed:', error)
+  }
+}
+```
+
+#### 4. Tauri側の実装
+
+**Native Messaging Host設定**
+```json
+// native-messaging-host/manifest.json
+{
+  "name": "com.launcherg.native_host",
+  "description": "Launcherg Native Messaging Host",
+  "path": "C:\\Program Files\\Launcherg\\native-host.exe",
+  "type": "stdio",
+  "allowed_origins": [
+    "chrome-extension://[extension-id]/"
+  ]
+}
+```
+
+**Tauriコマンド拡張**
+```rust
+#[tauri::command]
+pub async fn sync_dl_store_games(
+    app_handle: AppHandle,
+    store_type: String,
+    games_data: Vec<DLStoreGameData>
+) -> Result<SyncResult, String> {
+    let usecase = get_collection_usecase(&app_handle);
+
+    let mut sync_result = SyncResult::default();
+
+    for game_data in games_data {
+        match usecase.register_or_update_dl_store_game(game_data).await {
+            Ok(_) => sync_result.success_count += 1,
+            Err(e) => {
+                sync_result.error_count += 1;
+                sync_result.errors.push(format!("Failed to sync {}: {}", game_data.title, e));
+            }
+        }
+    }
+
+    Ok(sync_result)
+}
+
+#[derive(Serialize)]
+pub struct SyncResult {
+    pub success_count: u32,
+    pub error_count: u32,
+    pub errors: Vec<String>,
+}
+```
+
+#### 1. 自動同期フロー（拡張機能経由）
 ```mermaid
 sequenceDiagram
     participant User
-    participant Launcher
     participant Browser
-    participant Store
+    participant Extension
+    participant NativeHost
+    participant Launcherg
 
-    User->>Browser: DMMやDLsiteで購入履歴を確認
-    User->>Launcher: DLStoreManagerで新規ゲーム追加
-    Launcher->>Launcher: collection_element_dl_stores に登録
-    Note over Launcher: is_owned = true, パス情報なし
+    User->>Browser: DMMやDLsiteの購入済みゲーム一覧を表示
+    Browser->>Extension: ページロード検知
+    Extension->>Extension: 購入済みゲーム情報を抽出
+    Extension->>NativeHost: Native Messaging API でデータ送信
+    NativeHost->>Launcherg: sync_dl_store_games コマンド実行
+    Launcherg->>Launcherg: collection_element_dl_stores に自動登録
+    Launcherg->>NativeHost: 同期結果を返す
+    NativeHost->>Extension: 同期完了通知
+    Extension->>User: ブラウザ通知で同期完了を表示
 ```
+
+#### 2. 同期データの詳細設計
+
+**DLStoreGameData構造体**
+```rust
+#[derive(Debug, Deserialize)]
+pub struct DLStoreGameData {
+    pub store_id: String,
+    pub title: String,
+    pub purchase_url: String,
+    pub purchase_date: Option<String>,
+    pub thumbnail_url: Option<String>,
+    pub price: Option<String>,
+    pub store_type: DLStoreType,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct SyncGameDataRequest {
+    pub store: String, // "DMM" or "DLSite"
+    pub games: Vec<DLStoreGameData>,
+    pub sync_timestamp: String,
+}
+```
+
+#### 3. 重複検出とマージロジック
+
+```rust
+impl CollectionUseCase {
+    pub async fn register_or_update_dl_store_game(&self, game_data: DLStoreGameData) -> Result<()> {
+        // 1. 既存のDL版ゲーム情報を検索
+        if let Some(existing) = self.repository
+            .find_dl_store_by_store_id(&game_data.store_id, &game_data.store_type)
+            .await?
+        {
+            // 既存データの更新
+            self.update_dl_store_if_changed(&existing, &game_data).await?;
+        } else {
+            // 2. タイトルでcollection_elementを検索
+            let collection_element = match self.find_by_fuzzy_title(&game_data.title).await? {
+                Some(element) => element,
+                None => {
+                    // 新規collection_element作成
+                    let new_element = NewCollectionElement::new(Id::new());
+                    self.repository.create(new_element).await?
+                }
+            };
+
+            // 3. DL版情報を登録
+            let dl_store = NewCollectionElementDLStore::new(
+                collection_element.id,
+                game_data.store_id,
+                game_data.store_type,
+                game_data.store_type.to_string(), // store_name
+                game_data.purchase_url,
+                true, // is_owned
+                parse_date(&game_data.purchase_date),
+            );
+
+            self.repository.create_dl_store(&dl_store).await?;
+        }
+
+        Ok(())
+    }
+
+    async fn find_by_fuzzy_title(&self, title: &str) -> Result<Option<CollectionElement>> {
+        // タイトルの曖昧マッチング（類似度による検索）
+        // 既存のerogamescape情報とのマッチングも考慮
+    }
+}
 
 #### 2. インストールフロー
 ```mermaid
@@ -442,54 +667,120 @@ sequenceDiagram
 3. **Repository層拡張**
    - `CollectionRepository`にDL版関連メソッド追加
    - SQLx実装の追加
+   - 曖昧マッチング機能の実装
 
 4. **UseCase層拡張**
    - ゲーム状態判定ロジックの実装
    - DL版ゲーム登録・更新機能
    - パス関連付け機能
+   - 重複検出・マージロジック
 
-### Phase 2: Tauri Interface実装
-1. **Tauriコマンド追加**
-   - `register_dl_store_game`
-   - `get_games_with_status`
+### Phase 2: Native Messaging Host実装
+1. **Native Messaging Host開発**
+   - Tauriアプリとブラウザ拡張機能間の橋渡し
+   - JSON メッセージの解析・転送
+   - エラーハンドリング
+
+2. **Tauriコマンド追加**
+   - `sync_dl_store_games` (拡張機能からの自動同期)
+   - `register_dl_store_game` (手動登録)
    - `open_store_page`
    - `link_installed_game`
 
-2. **エラーハンドリング**
-   - 各コマンドの適切なエラー処理
-   - フロントエンドへのエラー通知
+3. **セキュリティ実装**
+   - 拡張機能ID検証
+   - レート制限
+   - デジタル署名検証
 
-### Phase 3: フロントエンド実装
+### Phase 3: ブラウザ拡張機能開発
+1. **拡張機能基盤**
+   - Manifest V3での拡張機能作成
+   - Content Scripts実装
+   - Background Script実装
+
+2. **サイト別対応**
+   - DMMゲーム購入履歴抽出ロジック
+   - DLsite購入履歴抽出ロジック
+   - DOM変更への対応
+
+3. **ユーザーインターフェース**
+   - ポップアップUI（設定・状態表示）
+   - 同期状況の通知
+   - エラー状況の表示
+
+### Phase 4: フロントエンド実装
 1. **既存コンポーネント拡張**
    - `PlayButton.svelte`の状態別表示機能
    - `Work.svelte`のDL版情報表示
 
 2. **新規管理画面**
    - `DLStoreManager.svelte`による一括管理
-   - 設定画面への統合
+   - 拡張機能連携状況の表示
+   - 同期履歴・エラーログ表示
 
-3. **ユーザーエクスペリエンス向上**
-   - インストール状態の視覚的フィードバック
-   - ブラウザ連携の使いやすさ改善
+3. **同期機能UI**
+   - 手動同期ボタン
+   - 同期設定（自動/手動切り替え）
+   - 同期除外設定
 
-### Phase 4: テスト・品質保証
+### Phase 5: テスト・品質保証
 1. **単体テスト**
    - Repository層のテスト
    - UseCase層のロジックテスト
+   - 拡張機能のユニットテスト
 
 2. **統合テスト**
-   - Tauriコマンドのエンドツーエンドテスト
+   - Native Messaging の通信テスト
+   - エンドツーエンドの同期テスト
    - データベース整合性テスト
 
-3. **ユーザビリティテスト**
-   - 実際のワークフローでの検証
-   - パフォーマンス確認
+3. **実環境テスト**
+   - 複数ブラウザでの動作確認
+   - サイト仕様変更への対応テスト
+   - パフォーマンス・セキュリティテスト
 
 ## セキュリティ考慮事項
 
-- 認証情報は一切保存しない
-- ブラウザ起動時はユーザーの明示的な操作のみ
-- ファイルパス情報は暗号化して保存（将来的検討）
+### ブラウザ拡張機能のセキュリティ
+
+1. **データの取り扱い**
+   - 認証情報（パスワード、セッション情報）は一切取得・保存しない
+   - DOMから公開されているゲーム情報のみを抽出
+   - 個人の購入履歴データはローカルのLaunchergにのみ保存
+
+2. **通信セキュリティ**
+   - Native Messaging APIによる安全な通信経路
+   - 拡張機能IDによる通信元の検証
+   - メッセージの署名・検証機能（将来的検討）
+
+3. **権限管理**
+   - 必要最小限のブラウザ権限のみ要求
+   - 特定ドメイン（DMM、DLsite）のみでの動作
+   - ユーザーの明示的な同期操作でのみ動作
+
+4. **プライバシー保護**
+   - 購入データの外部送信は一切行わない
+   - ローカルPC内でのみデータ処理
+   - ユーザーが拡張機能を無効にすることで完全に停止可能
+
+### Native Messaging のセキュリティ
+
+1. **Host検証**
+   - デジタル署名されたnative-host.exe
+   - レジストリ登録による正当性確認
+   - 偽装防止のためのハッシュ検証
+
+2. **通信制限**
+   - 特定の拡張機能IDからのみ接続許可
+   - メッセージサイズの制限
+   - レート制限による過剰な通信の防止
+
+### データベースセキュリティ
+
+1. **DL版情報の保護**
+   - SQLiteデータベースの暗号化（将来的検討）
+   - 購入履歴データのハッシュ化
+   - ファイルパス情報の難読化
 
 ## 今後の拡張可能性
 
