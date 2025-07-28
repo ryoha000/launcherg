@@ -79,7 +79,7 @@ pub enum DLStoreType {
 }
 ```
 
-#### CollectionElement構造（変更なし）
+#### CollectionElement構造拡張
 ```rust
 pub struct CollectionElement {
     pub id: Id<CollectionElement>,
@@ -93,6 +93,39 @@ pub struct CollectionElement {
     pub like: Option<CollectionElementLike>,
     pub thumbnail: Option<CollectionElementThumbnail>,
     pub dl_store: Option<CollectionElementDLStore>, // 新規追加
+}
+
+// CollectionElementにインストール状態判定メソッドを追加
+impl CollectionElement {
+    pub fn install_status(&self) -> GameInstallStatus {
+        match (&self.paths, &self.dl_store) {
+            // パス情報がある場合はインストール済み
+            (Some(paths), _) if paths.exe_path.is_some() || paths.lnk_path.is_some() => {
+                GameInstallStatus::Installed
+            }
+            // DL版を所有しているがパス情報がない場合
+            (None, Some(dl_store)) if dl_store.is_owned => {
+                GameInstallStatus::OwnedNotInstalled
+            }
+            // その他は未所有
+            _ => GameInstallStatus::NotOwned,
+        }
+    }
+
+    pub fn can_play(&self) -> bool {
+        matches!(self.install_status(), GameInstallStatus::Installed)
+    }
+
+    pub fn can_install(&self) -> bool {
+        matches!(self.install_status(), GameInstallStatus::OwnedNotInstalled)
+    }
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub enum GameInstallStatus {
+    Installed,           // プレイ可能
+    OwnedNotInstalled,   // インストール可能
+    NotOwned,           // 購入していない
 }
 ```
 
@@ -192,12 +225,6 @@ impl CollectionUseCase {
     }
 }
 
-#[derive(Debug)]
-pub enum GameStatus {
-    Installed,           // プレイ可能
-    OwnedNotInstalled,   // インストール可能
-    NotOwned,           // 購入していない
-}
 ```
 
 #### Interface層
@@ -206,8 +233,8 @@ Tauriコマンドを追加：
 ```rust
 // interface/command.rs
 #[tauri::command]
-pub async fn get_games_with_status(app_handle: AppHandle) -> Result<Vec<GameWithStatus>, String> {
-    // 統合されたゲーム一覧を返す
+pub async fn get_collection_elements(app_handle: AppHandle) -> Result<Vec<CollectionElement>, String> {
+    // 既存のコレクション取得メソッドを使用し、dl_store情報も含める
 }
 
 #[tauri::command]
