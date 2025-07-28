@@ -75,7 +75,6 @@ mod tests {
     fn create_test_scanned_game_element(id: i32) -> ScannedGameElement {
         ScannedGameElement {
             id: create_test_element_id(id),
-            gamename: "Test Game".to_string(),
             exe_path: Some("/path/to/game.exe".to_string()),
             lnk_path: Some("/path/to/game.lnk".to_string()),
             install_at: Some(Local::now()),
@@ -180,7 +179,6 @@ mod tests {
         let use_case = CollectionUseCase::new(Arc::new(mock_repositories));
         let element = ScannedGameElement {
             id: create_test_element_id(1),
-            gamename: "Test Game".to_string(),
             exe_path: None,
             lnk_path: None,
             install_at: None,
@@ -302,27 +300,6 @@ mod tests {
         let id = create_test_element_id(1);
 
         let result = use_case.update_element_like_at(&id, false).await;
-        assert!(result.is_ok());
-    }
-
-    #[tokio::test]
-    async fn test_delete_element_success() {
-        let mut mock_repo = MockCollectionRepository::new();
-        mock_repo
-            .expect_delete_collection_element()
-            .with(eq(create_test_element_id(1)))
-            .times(1)
-            .returning(|_| Ok(()));
-
-        let mut mock_repositories = MockRepositoriesExtMock::new();
-        mock_repositories
-            .expect_collection_repository()
-            .return_const(mock_repo);
-
-        let use_case = CollectionUseCase::new(Arc::new(mock_repositories));
-        let id = create_test_element_id(1);
-
-        let result = use_case.delete_element(&id).await;
         assert!(result.is_ok());
     }
 

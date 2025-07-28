@@ -1,6 +1,5 @@
 use std::sync::Arc;
 
-use chrono::{DateTime, Local};
 use refinery::config::{Config, ConfigDbType};
 use sqlx::{
     sqlite::{SqliteConnectOptions, SqlitePoolOptions},
@@ -11,7 +10,6 @@ use tempfile::NamedTempFile;
 use crate::{
     domain::{
         all_game_cache::AllGameCache, collection::CollectionElement, explored_cache::ExploredCache,
-        Id,
     },
     infrastructure::repositoryimpl::{
         driver::Db,
@@ -26,7 +24,6 @@ mod embedded {
 
 pub struct TestDatabase {
     pub pool: Pool<Sqlite>,
-    pub db: Db,
     pub repositories: Repositories,
     _temp_file: NamedTempFile,
 }
@@ -56,7 +53,6 @@ impl TestDatabase {
 
         Ok(TestDatabase {
             pool,
-            db,
             repositories,
             _temp_file: temp_file,
         })
@@ -73,26 +69,6 @@ impl TestDatabase {
     pub fn all_game_cache_repository(&self) -> &RepositoryImpl<AllGameCache> {
         self.repositories.all_game_cache_repository()
     }
-}
-
-pub fn create_test_collection_element_id() -> Id<CollectionElement> {
-    Id::new(1)
-}
-
-pub fn create_test_collection_element_ids(count: usize) -> Vec<Id<CollectionElement>> {
-    (1..=count).map(|i| Id::new(i as i32)).collect()
-}
-
-pub fn create_test_datetime() -> DateTime<Local> {
-    Local::now()
-}
-
-pub fn create_test_explored_paths() -> Vec<String> {
-    vec![
-        "/test/path/1".to_string(),
-        "/test/path/2".to_string(),
-        "/test/path/3".to_string(),
-    ]
 }
 
 pub mod all_game_cache_test;

@@ -13,14 +13,6 @@ mod tests {
         usecase::all_game_cache::AllGameCacheUseCase,
     };
 
-    fn create_test_cache_one(id: i32) -> AllGameCacheOneWithThumbnailUrl {
-        AllGameCacheOneWithThumbnailUrl {
-            id,
-            gamename: format!("Test Game {}", id),
-            thumbnail_url: format!("https://example.com/thumbnail_{}.jpg", id),
-        }
-    }
-
     fn create_test_new_cache_one(id: i32) -> NewAllGameCacheOne {
         NewAllGameCacheOne {
             id,

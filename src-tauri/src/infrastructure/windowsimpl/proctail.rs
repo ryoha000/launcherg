@@ -80,11 +80,9 @@ struct ServiceStatusData {
     is_etw_monitoring: bool,
     is_pipe_server_running: bool,
     active_watch_targets: i32,
-    total_tags: i32,
     total_events: i32,
     #[serde(rename = "EstimatedMemoryUsageMB")]
     estimated_memory_usage_mb: i64,
-    message: String,
 }
 
 #[derive(Debug, Deserialize)]
@@ -108,7 +106,6 @@ struct EmptyData {}
 struct WatchTargetData {
     process_id: u32,
     process_name: String,
-    executable_path: String,
     start_time: String,
     tag_name: String,
 }

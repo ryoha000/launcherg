@@ -4,11 +4,6 @@ use serde::{Deserialize, Serialize};
 
 use super::Id;
 
-#[derive(new, Debug)]
-pub struct NewCollection {
-    pub name: String,
-}
-
 #[derive(new, Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct CollectionElement {
@@ -106,7 +101,6 @@ pub struct NewCollectionElement {
 #[derive(new, Debug)]
 pub struct ScannedGameElement {
     pub id: Id<CollectionElement>,
-    pub gamename: String,
     pub exe_path: Option<String>,
     pub lnk_path: Option<String>,
     pub install_at: Option<DateTime<Local>>,

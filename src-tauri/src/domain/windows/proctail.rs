@@ -10,16 +10,6 @@ pub enum ProcTailError {
     ServiceError(String),
     #[error("Invalid response from ProcTail service: {0}")]
     InvalidResponse(String),
-    #[error("Process not found: {0}")]
-    ProcessNotFound(u32),
-    #[error("Tag not found: {0}")]
-    TagNotFound(String),
-    #[error("Tag already exists: {0}")]
-    TagAlreadyExists(String),
-    #[error("Insufficient permissions")]
-    InsufficientPermissions,
-    #[error("ProcTail service is not running")]
-    ServiceNotRunning,
     #[error("Timeout while communicating with ProcTail service")]
     Timeout,
     #[error("IO error: {0}")]

@@ -290,13 +290,6 @@ impl<R: RepositoriesExt> CollectionUseCase<R> {
             .await?;
         Ok(())
     }
-    pub async fn delete_element(&self, id: &Id<CollectionElement>) -> anyhow::Result<()> {
-        self.repositories
-            .collection_repository()
-            .delete_collection_element(id)
-            .await?;
-        Ok(())
-    }
     pub async fn get_all_elements(
         &self,
         handle: &Arc<AppHandle>,

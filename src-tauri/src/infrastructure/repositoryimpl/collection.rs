@@ -230,10 +230,6 @@ impl CollectionRepository for RepositoryImpl<CollectionElement> {
         Ok(())
     }
 
-    async fn delete_element_by_id(&self, id: &Id<CollectionElement>) -> anyhow::Result<()> {
-        self.delete_collection_element(id).await
-    }
-
     // CollectionElementInfo操作
     async fn upsert_collection_element_info(
         &self,
@@ -295,75 +291,6 @@ impl CollectionRepository for RepositoryImpl<CollectionElement> {
             ON ce.id = cei.collection_element_id
             WHERE cei.collection_element_id IS NULL",
         )
-        .fetch_all(&*pool)
-        .await?;
-        Ok(ids.into_iter().map(|v| Id::new(v.0)).collect())
-    }
-
-    async fn get_brandname_and_rubies(&self) -> anyhow::Result<Vec<(String, String)>> {
-        let pool = self.pool.0.clone();
-        Ok(sqlx::query_as(
-            "SELECT DISTINCT brandname, brandname_ruby FROM collection_element_info_by_erogamescape",
-        )
-        .fetch_all(&*pool)
-        .await?)
-    }
-
-    async fn get_element_ids_by_is_nukige(
-        &self,
-        is_nukige: bool,
-    ) -> anyhow::Result<Vec<Id<CollectionElement>>> {
-        let pool = self.pool.0.clone();
-        let ids: Vec<(i32,)> = match is_nukige {
-            true => sqlx::query_as(
-                "SELECT collection_element_id FROM collection_element_info_by_erogamescape WHERE is_nukige != 0",
-            ),
-            false => sqlx::query_as(
-                "SELECT collection_element_id FROM collection_element_info_by_erogamescape WHERE is_nukige = 0",
-            ),
-        }
-        .fetch_all(&*pool)
-        .await?;
-        Ok(ids.into_iter().map(|v| Id::new(v.0)).collect())
-    }
-
-    async fn get_element_ids_by_brandnames(
-        &self,
-        brandnames: &Vec<String>,
-    ) -> anyhow::Result<Vec<Id<CollectionElement>>> {
-        let pool = self.pool.0.clone();
-        let mut builder = sqlx::query_builder::QueryBuilder::new(
-            "SELECT collection_element_id FROM collection_element_info_by_erogamescape WHERE brandname IN (",
-        );
-        let mut separated = builder.separated(", ");
-        for name in brandnames.iter() {
-            separated.push_bind(name);
-        }
-        separated.push_unseparated(")");
-        let query = builder.build();
-        let ids: Vec<i32> = query
-            .fetch_all(&*pool)
-            .await?
-            .into_iter()
-            .map(|v| v.try_get(0))
-            .filter_map(|v| v.ok())
-            .collect();
-
-        Ok(ids.into_iter().map(|v| Id::new(v)).collect())
-    }
-
-    async fn get_element_ids_by_sellday(
-        &self,
-        since: &str,
-        until: &str,
-    ) -> anyhow::Result<Vec<Id<CollectionElement>>> {
-        let pool = self.pool.0.clone();
-        let ids: Vec<(i32,)> = sqlx::query_as(
-            "SELECT collection_element_id FROM collection_element_info_by_erogamescape 
-             WHERE DATE(sellday) BETWEEN ? AND ?",
-        )
-        .bind(since)
-        .bind(until)
         .fetch_all(&*pool)
         .await?;
         Ok(ids.into_iter().map(|v| Id::new(v.0)).collect())
@@ -445,18 +372,6 @@ impl CollectionRepository for RepositoryImpl<CollectionElement> {
             Some(table) => Ok(Some(table.try_into()?)),
             None => Ok(None),
         }
-    }
-
-    async fn get_element_ids_by_install_at_not_null(
-        &self,
-    ) -> anyhow::Result<Vec<Id<CollectionElement>>> {
-        let pool = self.pool.0.clone();
-        let ids: Vec<(i32,)> =
-            sqlx::query_as("SELECT collection_element_id FROM collection_element_installs")
-                .fetch_all(&*pool)
-                .await?;
-
-        Ok(ids.into_iter().map(|v| Id::new(v.0)).collect())
     }
 
     // CollectionElementPlay操作
@@ -635,31 +550,5 @@ impl CollectionRepository for RepositoryImpl<CollectionElement> {
         .fetch_all(&*pool)
         .await?;
         Ok(ids.into_iter().map(|v| Id::new(v.0)).collect())
-    }
-
-    // その他のユーティリティ操作
-    async fn remove_conflict_maps(&self) -> anyhow::Result<()> {
-        let pool = self.pool.0.clone();
-        let not_delete_ids: Vec<(i32,)> = sqlx::query_as(
-            "SELECT MIN(id) FROM collection_element_maps GROUP BY collection_id, collection_element_id",
-        )
-        .fetch_all(&*pool)
-        .await?;
-        let not_delete_ids: Vec<i32> = not_delete_ids.into_iter().map(|v| v.0).collect();
-
-        if not_delete_ids.is_empty() {
-            return Ok(());
-        }
-        let mut builder = sqlx::query_builder::QueryBuilder::new(
-            "DELETE FROM collection_element_maps WHERE id NOT IN (",
-        );
-        let mut separated = builder.separated(", ");
-        for id in not_delete_ids.iter() {
-            separated.push_bind(id);
-        }
-        separated.push_unseparated(")");
-        let query = builder.build();
-        query.execute(&*pool).await?;
-        Ok(())
     }
 }

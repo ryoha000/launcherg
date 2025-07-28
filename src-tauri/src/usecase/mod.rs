@@ -8,6 +8,4 @@ mod explored_cache_test;
 pub mod file;
 mod file_test;
 pub mod models;
-pub mod network;
-mod network_test;
 pub mod process;

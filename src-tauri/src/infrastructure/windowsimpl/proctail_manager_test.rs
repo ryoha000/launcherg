@@ -190,7 +190,7 @@ mod tests {
             .mount(&mock_server)
             .await;
 
-        let (manager, _temp_dir) = create_test_manager();
+        let (_manager, _temp_dir) = create_test_manager();
 
         // 実際のGitHubAPIではなくモックサーバーを使用するため、
         // GITHUB_RELEASES_URLを動的に変更する必要があります
@@ -418,7 +418,7 @@ mod tests {
     /// 完了のためには: get_latest_version()のモック実装が必要
     #[tokio::test]
     async fn test_is_update_available_no_current_version() {
-        let (manager, _temp_dir) = create_test_manager();
+        let (_manager, _temp_dir) = create_test_manager();
 
         // 現在のバージョンがない場合は更新が利用可能
         // 実際のGitHubAPIを呼び出すため、本来はモックが必要
@@ -456,7 +456,7 @@ mod tests {
     /// 完了のためには: is_update_available()のモック実装が必要
     #[tokio::test]
     async fn test_ensure_latest_version_no_update_needed() {
-        let (manager, _temp_dir) = create_test_manager();
+        let (_manager, _temp_dir) = create_test_manager();
 
         // 実際のGitHubAPIを呼び出すため、本来はモックが必要
         // このテストは統合テストとして実行するか、モックを使用する必要がある
@@ -472,7 +472,7 @@ mod tests {
     /// 完了のためには: start_proctailの分割またはensure_latest_versionのモック実装が必要
     #[tokio::test]
     async fn test_start_proctail_no_executable() {
-        let (manager, _temp_dir) = create_test_manager();
+        let (_manager, _temp_dir) = create_test_manager();
 
         // 実行可能ファイルが存在しない場合のテスト
         // ensure_latest_versionが呼び出されるため、GitHubAPIのモックが必要

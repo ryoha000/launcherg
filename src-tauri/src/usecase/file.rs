@@ -218,10 +218,6 @@ impl<R: ExplorersExt> FileUseCase<R> {
                 })
                 .collect::<AllGameCache>(),
         );
-        let all_erogamescape_game_map: HashMap<i32, String> = all_game_cache
-            .into_iter()
-            .map(|v| (v.id, v.gamename))
-            .collect();
 
         let (exe_id_path_vec, lnk_id_path_vec): (Vec<(i32, String)>, Vec<(i32, String)>) = self
             .concurency_get_path_game_map(normalized_all_games, files, pubsub.clone())
@@ -254,16 +250,13 @@ impl<R: ExplorersExt> FileUseCase<R> {
             save_icon_tasks.push(task);
 
             // new collection element
-            if let Some(gamename) = all_erogamescape_game_map.get(&id) {
-                let install_at = get_file_created_at_sync(&exe_path);
-                collection_elements.push(ScannedGameElement::new(
-                    Id::new(id),
-                    gamename.clone(),
-                    Some(exe_path),
-                    None,
-                    install_at,
-                ));
-            }
+            let install_at = get_file_created_at_sync(&exe_path);
+            collection_elements.push(ScannedGameElement::new(
+                Id::new(id),
+                Some(exe_path),
+                None,
+                install_at,
+            ));
         }
         for (id, lnk_path) in lnk_id_path_vec.iter() {
             let id = Id::new(*id);
@@ -283,15 +276,12 @@ impl<R: ExplorersExt> FileUseCase<R> {
                 _install_at = None;
             }
 
-            if let Some(gamename) = all_erogamescape_game_map.get(&id.value) {
-                collection_elements.push(ScannedGameElement::new(
-                    id,
-                    gamename.clone(),
-                    None,
-                    Some(lnk_path.clone()),
-                    _install_at,
-                ));
-            }
+            collection_elements.push(ScannedGameElement::new(
+                id,
+                None,
+                Some(lnk_path.clone()),
+                _install_at,
+            ));
         }
         futures::future::try_join_all(save_icon_tasks)
             .await?

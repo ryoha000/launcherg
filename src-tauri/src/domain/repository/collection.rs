@@ -21,7 +21,6 @@ pub trait CollectionRepository {
     ) -> Result<Option<CollectionElement>>;
     async fn upsert_collection_element(&self, new_element: &NewCollectionElement) -> Result<()>;
     async fn delete_collection_element(&self, element_id: &Id<CollectionElement>) -> Result<()>;
-    async fn delete_element_by_id(&self, id: &Id<CollectionElement>) -> Result<()>;
 
     // CollectionElementInfo操作
     async fn upsert_collection_element_info(&self, info: &NewCollectionElementInfo) -> Result<()>;
@@ -30,20 +29,6 @@ pub trait CollectionRepository {
         id: &Id<CollectionElement>,
     ) -> Result<Option<CollectionElementInfo>>;
     async fn get_not_registered_info_element_ids(&self) -> Result<Vec<Id<CollectionElement>>>;
-    async fn get_brandname_and_rubies(&self) -> Result<Vec<(String, String)>>;
-    async fn get_element_ids_by_is_nukige(
-        &self,
-        is_nukige: bool,
-    ) -> Result<Vec<Id<CollectionElement>>>;
-    async fn get_element_ids_by_brandnames(
-        &self,
-        brandnames: &Vec<String>,
-    ) -> Result<Vec<Id<CollectionElement>>>;
-    async fn get_element_ids_by_sellday(
-        &self,
-        since: &str,
-        until: &str,
-    ) -> Result<Vec<Id<CollectionElement>>>;
 
     // CollectionElementPaths操作
     async fn upsert_collection_element_paths(
@@ -64,7 +49,6 @@ pub trait CollectionRepository {
         &self,
         id: &Id<CollectionElement>,
     ) -> Result<Option<CollectionElementInstall>>;
-    async fn get_element_ids_by_install_at_not_null(&self) -> Result<Vec<Id<CollectionElement>>>;
 
     // CollectionElementPlay操作
     async fn upsert_collection_element_play(&self, play: &NewCollectionElementPlay) -> Result<()>;
@@ -110,7 +94,4 @@ pub trait CollectionRepository {
         height: i32,
     ) -> Result<()>;
     async fn get_null_thumbnail_size_element_ids(&self) -> Result<Vec<Id<CollectionElement>>>;
-
-    // その他のユーティリティ操作
-    async fn remove_conflict_maps(&self) -> Result<()>;
 }

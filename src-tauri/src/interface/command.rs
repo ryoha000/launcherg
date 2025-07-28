@@ -201,7 +201,6 @@ pub async fn upsert_collection_element(
     // ScannedGameElementを作成
     let scanned_element = ScannedGameElement::new(
         element_id.clone(),
-        game_cache.gamename,
         exe_path,
         lnk_path,
         _install_at,
