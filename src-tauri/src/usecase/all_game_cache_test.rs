@@ -33,28 +33,23 @@ mod tests {
     async fn test_get_success() {
         use std::sync::Arc;
 
-        // Mockリポジトリを事前に作成
-        let mock_repo = {
-            let mut repo = MockAllGameCacheRepository::new();
-            repo.expect_get_by_ids()
-                .with(eq(vec![1]))
-                .times(1)
-                .returning(|_| {
-                    Ok(vec![AllGameCacheOneWithThumbnailUrl {
-                        id: 1,
-                        gamename: "Test Game 1".to_string(),
-                        thumbnail_url: "https://example.com/thumbnail_1.jpg".to_string(),
-                    }])
-                });
-            Arc::new(repo)
-        };
+        let mut mock_repo = MockAllGameCacheRepository::new();
+        mock_repo.expect_get_by_ids()
+            .with(eq(vec![1]))
+            .times(1)
+            .returning(|_| {
+                Ok(vec![AllGameCacheOneWithThumbnailUrl {
+                    id: 1,
+                    gamename: "Test Game 1".to_string(),
+                    thumbnail_url: "https://example.com/thumbnail_1.jpg".to_string(),
+                }])
+            });
 
-        let mock_repo_clone = Arc::clone(&mock_repo);
         let mut mock_repositories = MockRepositoriesExtMock::new();
         mock_repositories
             .expect_all_game_cache_repository()
             .times(1)
-            .return_const(mock_repo_clone);
+            .return_const(mock_repo);
 
         let use_case = AllGameCacheUseCase::new(Arc::new(mock_repositories));
 
@@ -69,21 +64,17 @@ mod tests {
     async fn test_get_not_found() {
         use std::sync::Arc;
 
-        let mock_repo = {
-            let mut repo = MockAllGameCacheRepository::new();
-            repo.expect_get_by_ids()
-                .with(eq(vec![999]))
-                .times(1)
-                .returning(|_| { Ok(vec![]) });
-            Arc::new(repo)
-        };
+        let mut mock_repo = MockAllGameCacheRepository::new();
+        mock_repo.expect_get_by_ids()
+            .with(eq(vec![999]))
+            .times(1)
+            .returning(|_| { Ok(vec![]) });
 
-        let mock_repo_clone = Arc::clone(&mock_repo);
         let mut mock_repositories = MockRepositoriesExtMock::new();
         mock_repositories
             .expect_all_game_cache_repository()
             .times(1)
-            .return_const(mock_repo_clone);
+            .return_const(mock_repo);
 
         let use_case = AllGameCacheUseCase::new(Arc::new(mock_repositories));
 
@@ -97,34 +88,30 @@ mod tests {
     async fn test_get_by_ids_success() {
         use std::sync::Arc;
 
-        let mock_repo = {
-            let mut repo = MockAllGameCacheRepository::new();
-            repo.expect_get_by_ids()
-                .with(eq(vec![1, 2]))
-                .times(1)
-                .returning(|_| {
-                    Ok(vec![
-                        AllGameCacheOneWithThumbnailUrl {
-                            id: 1,
-                            gamename: "Test Game 1".to_string(),
-                            thumbnail_url: "https://example.com/thumbnail_1.jpg".to_string(),
-                        },
-                        AllGameCacheOneWithThumbnailUrl {
-                            id: 2,
-                            gamename: "Test Game 2".to_string(),
-                            thumbnail_url: "https://example.com/thumbnail_2.jpg".to_string(),
-                        },
-                    ])
-                });
-            Arc::new(repo)
-        };
+        let mut mock_repo = MockAllGameCacheRepository::new();
+        mock_repo.expect_get_by_ids()
+            .with(eq(vec![1, 2]))
+            .times(1)
+            .returning(|_| {
+                Ok(vec![
+                    AllGameCacheOneWithThumbnailUrl {
+                        id: 1,
+                        gamename: "Test Game 1".to_string(),
+                        thumbnail_url: "https://example.com/thumbnail_1.jpg".to_string(),
+                    },
+                    AllGameCacheOneWithThumbnailUrl {
+                        id: 2,
+                        gamename: "Test Game 2".to_string(),
+                        thumbnail_url: "https://example.com/thumbnail_2.jpg".to_string(),
+                    },
+                ])
+            });
 
-        let mock_repo_clone = Arc::clone(&mock_repo);
         let mut mock_repositories = MockRepositoriesExtMock::new();
         mock_repositories
             .expect_all_game_cache_repository()
             .times(1)
-            .return_const(mock_repo_clone);
+            .return_const(mock_repo);
 
         let use_case = AllGameCacheUseCase::new(Arc::new(mock_repositories));
 
@@ -140,21 +127,17 @@ mod tests {
     async fn test_get_by_ids_empty() {
         use std::sync::Arc;
 
-        let mock_repo = {
-            let mut repo = MockAllGameCacheRepository::new();
-            repo.expect_get_by_ids()
-                .with(eq(vec![]))
-                .times(1)
-                .returning(|_| { Ok(vec![]) });
-            Arc::new(repo)
-        };
+        let mut mock_repo = MockAllGameCacheRepository::new();
+        mock_repo.expect_get_by_ids()
+            .with(eq(vec![]))
+            .times(1)
+            .returning(|_| { Ok(vec![]) });
 
-        let mock_repo_clone = Arc::clone(&mock_repo);
         let mut mock_repositories = MockRepositoriesExtMock::new();
         mock_repositories
             .expect_all_game_cache_repository()
             .times(1)
-            .return_const(mock_repo_clone);
+            .return_const(mock_repo);
 
         let use_case = AllGameCacheUseCase::new(Arc::new(mock_repositories));
 
@@ -168,29 +151,25 @@ mod tests {
     async fn test_get_all_game_cache_success() {
         use std::sync::Arc;
 
-        let mock_repo = {
-            let mut repo = MockAllGameCacheRepository::new();
-            repo.expect_get_all().times(1).returning(|| {
-                Ok(vec![
-                    AllGameCacheOne {
-                        id: 1,
-                        gamename: "Test Game 1".to_string(),
-                    },
-                    AllGameCacheOne {
-                        id: 2,
-                        gamename: "Test Game 2".to_string(),
-                    },
-                ])
-            });
-            Arc::new(repo)
-        };
+        let mut mock_repo = MockAllGameCacheRepository::new();
+        mock_repo.expect_get_all().times(1).returning(|| {
+            Ok(vec![
+                AllGameCacheOne {
+                    id: 1,
+                    gamename: "Test Game 1".to_string(),
+                },
+                AllGameCacheOne {
+                    id: 2,
+                    gamename: "Test Game 2".to_string(),
+                },
+            ])
+        });
 
-        let mock_repo_clone = Arc::clone(&mock_repo);
         let mut mock_repositories = MockRepositoriesExtMock::new();
         mock_repositories
             .expect_all_game_cache_repository()
             .times(1)
-            .return_const(mock_repo_clone);
+            .return_const(mock_repo);
 
         let use_case = AllGameCacheUseCase::new(Arc::new(mock_repositories));
 
@@ -211,15 +190,14 @@ mod tests {
             repo.expect_get_last_updated()
                 .times(1)
                 .returning(move || { Ok((100, expected_time)) });
-            Arc::new(repo)
+            repo
         };
 
-        let mock_repo_clone = Arc::clone(&mock_repo);
         let mut mock_repositories = MockRepositoriesExtMock::new();
         mock_repositories
             .expect_all_game_cache_repository()
             .times(1)
-            .return_const(mock_repo_clone);
+            .return_const(mock_repo);
 
         let use_case = AllGameCacheUseCase::new(Arc::new(mock_repositories));
 
@@ -233,25 +211,21 @@ mod tests {
     async fn test_update_all_game_cache_success() {
         use std::sync::Arc;
 
-        let mock_repo = {
-            let mut repo = MockAllGameCacheRepository::new();
-            repo.expect_delete_by_ids()
-                .with(eq(vec![1, 2]))
-                .times(1)
-                .returning(|_| { Ok(()) });
-            repo.expect_update()
-                .with(always())
-                .times(1)
-                .returning(|_| { Ok(()) });
-            Arc::new(repo)
-        };
+        let mut mock_repo = MockAllGameCacheRepository::new();
+        mock_repo.expect_delete_by_ids()
+            .with(eq(vec![1, 2]))
+            .times(1)
+            .returning(|_| { Ok(()) });
+        mock_repo.expect_update()
+            .with(always())
+            .times(1)
+            .returning(|_| { Ok(()) });
 
-        let mock_repo_clone = Arc::clone(&mock_repo);
         let mut mock_repositories = MockRepositoriesExtMock::new();
         mock_repositories
             .expect_all_game_cache_repository()
             .times(2) // delete_by_ids and update
-            .return_const(mock_repo_clone);
+            .return_const(mock_repo);
 
         let use_case = AllGameCacheUseCase::new(Arc::new(mock_repositories));
         let cache_data = vec![create_test_new_cache_one(1), create_test_new_cache_one(2)];
@@ -264,18 +238,14 @@ mod tests {
     async fn test_update_all_game_cache_empty() {
         use std::sync::Arc;
 
-        let mock_repo = {
-            let repo = MockAllGameCacheRepository::new();
-            // empty cacheの場合、repositoryメソッドは呼ばれない
-            Arc::new(repo)
-        };
+        let mock_repo = MockAllGameCacheRepository::new();
+        // empty cacheの場合、repositoryメソッドは呼ばれない
 
-        let mock_repo_clone = Arc::clone(&mock_repo);
         let mut mock_repositories = MockRepositoriesExtMock::new();
         mock_repositories
             .expect_all_game_cache_repository()
             .times(0) // empty cacheの場合は呼ばれない
-            .return_const(mock_repo_clone);
+            .return_const(mock_repo);
 
         let use_case = AllGameCacheUseCase::new(Arc::new(mock_repositories));
         let cache_data = vec![];
@@ -288,21 +258,17 @@ mod tests {
     async fn test_repository_error_propagation() {
         use std::sync::Arc;
 
-        let mock_repo = {
-            let mut repo = MockAllGameCacheRepository::new();
-            repo.expect_get_by_ids()
-                .with(eq(vec![1]))
-                .times(1)
-                .returning(|_| { Err(anyhow::anyhow!("Database error")) });
-            Arc::new(repo)
-        };
+        let mut mock_repo = MockAllGameCacheRepository::new();
+        mock_repo.expect_get_by_ids()
+            .with(eq(vec![1]))
+            .times(1)
+            .returning(|_| { Err(anyhow::anyhow!("Database error")) });
 
-        let mock_repo_clone = Arc::clone(&mock_repo);
         let mut mock_repositories = MockRepositoriesExtMock::new();
         mock_repositories
             .expect_all_game_cache_repository()
             .times(1)
-            .return_const(mock_repo_clone);
+            .return_const(mock_repo);
 
         let use_case = AllGameCacheUseCase::new(Arc::new(mock_repositories));
 

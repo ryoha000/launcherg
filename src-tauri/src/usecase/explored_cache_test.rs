@@ -40,8 +40,8 @@ mod tests {
         let result = use_case.get_cache().await;
         assert!(result.is_ok());
         let cache = result.unwrap();
-        assert_eq!(cache.paths.len(), 3);
-        assert!(cache.paths.contains(&"/path/to/game1".to_string()));
+        assert_eq!(cache.len(), 3);
+        assert!(cache.contains(&"/path/to/game1".to_string()));
     }
 
     #[tokio::test]
@@ -63,7 +63,7 @@ mod tests {
         let result = use_case.get_cache().await;
         assert!(result.is_ok());
         let cache = result.unwrap();
-        assert!(cache.paths.is_empty());
+        assert!(cache.is_empty());
     }
 
     #[tokio::test]

@@ -158,11 +158,11 @@ pub trait ProcTail: Send + Sync {
     async fn get_watch_targets(&self) -> Result<Vec<WatchTarget>, ProcTailError>;
 
     /// Get recorded events for a specific tag
-    async fn get_recorded_events(
+    async fn get_recorded_events<'a>(
         &self,
         tag: &str,
         count: Option<u32>,
-        event_type: Option<&str>,
+        event_type: Option<&'a str>,
     ) -> Result<Vec<ProcTailEvent>, ProcTailError>;
 
     /// Clear events for a specific tag
