@@ -17,6 +17,7 @@ pub struct CollectionElement {
     pub play: Option<CollectionElementPlay>,
     pub like: Option<CollectionElementLike>,
     pub thumbnail: Option<CollectionElementThumbnail>,
+    pub dl_store: Option<CollectionElementDLStore>,
 }
 
 // スクレイピング情報（erogamescape由来）
@@ -147,4 +148,66 @@ pub struct NewCollectionElementThumbnail {
     pub collection_element_id: Id<CollectionElement>,
     pub thumbnail_width: Option<i32>,
     pub thumbnail_height: Option<i32>,
+}
+
+// DL版ストア情報
+#[derive(new, Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct CollectionElementDLStore {
+    pub id: Id<CollectionElementDLStore>,
+    pub collection_element_id: Id<CollectionElement>,
+    pub store_id: String,
+    pub store_type: DLStoreType,
+    pub store_name: String,
+    pub purchase_url: String,
+    pub is_owned: bool,
+    pub purchase_date: Option<DateTime<Local>>,
+    pub created_at: DateTime<Local>,
+    pub updated_at: DateTime<Local>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub enum DLStoreType {
+    DMM,
+    DLSite,
+}
+
+#[derive(new, Debug)]
+pub struct NewCollectionElementDLStore {
+    pub collection_element_id: Id<CollectionElement>,
+    pub store_id: String,
+    pub store_type: DLStoreType,
+    pub store_name: String,
+    pub purchase_url: String,
+    pub is_owned: bool,
+    pub purchase_date: Option<DateTime<Local>>,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub enum GameInstallStatus {
+    Installed,
+    OwnedNotInstalled,
+    NotOwned,
+}
+
+impl CollectionElement {
+    pub fn install_status(&self) -> GameInstallStatus {
+        match (&self.paths, &self.dl_store) {
+            (Some(paths), _) if paths.exe_path.is_some() || paths.lnk_path.is_some() => {
+                GameInstallStatus::Installed
+            }
+            (None, Some(dl_store)) if dl_store.is_owned => {
+                GameInstallStatus::OwnedNotInstalled
+            }
+            _ => GameInstallStatus::NotOwned,
+        }
+    }
+
+    pub fn can_play(&self) -> bool {
+        matches!(self.install_status(), GameInstallStatus::Installed)
+    }
+
+    pub fn can_install(&self) -> bool {
+        matches!(self.install_status(), GameInstallStatus::OwnedNotInstalled)
+    }
 }

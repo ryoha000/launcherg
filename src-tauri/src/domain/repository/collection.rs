@@ -2,9 +2,10 @@ use crate::domain::{
     collection::{
         CollectionElement, CollectionElementInfo, CollectionElementInstall, CollectionElementLike,
         CollectionElementPaths, CollectionElementPlay, CollectionElementThumbnail,
-        NewCollectionElement, NewCollectionElementInfo, NewCollectionElementInstall,
-        NewCollectionElementLike, NewCollectionElementPaths, NewCollectionElementPlay,
-        NewCollectionElementThumbnail,
+        CollectionElementDLStore, NewCollectionElement, NewCollectionElementInfo, 
+        NewCollectionElementInstall, NewCollectionElementLike, NewCollectionElementPaths, 
+        NewCollectionElementPlay, NewCollectionElementThumbnail, NewCollectionElementDLStore,
+        DLStoreType,
     },
     Id,
 };
@@ -94,4 +95,28 @@ pub trait CollectionRepository {
         height: i32,
     ) -> Result<()>;
     async fn get_null_thumbnail_size_element_ids(&self) -> Result<Vec<Id<CollectionElement>>>;
+
+    // CollectionElementDLStore操作
+    async fn upsert_collection_element_dl_store(
+        &self,
+        dl_store: &NewCollectionElementDLStore,
+    ) -> Result<()>;
+    async fn get_element_dl_store_by_element_id(
+        &self,
+        id: &Id<CollectionElement>,
+    ) -> Result<Option<CollectionElementDLStore>>;
+    async fn get_element_dl_store_by_store_id(
+        &self,
+        store_id: &str,
+        store_type: &DLStoreType,
+    ) -> Result<Option<CollectionElementDLStore>>;
+    async fn update_collection_element_dl_store(
+        &self,
+        dl_store: &CollectionElementDLStore,
+    ) -> Result<()>;
+    async fn delete_collection_element_dl_store(
+        &self,
+        id: &Id<CollectionElementDLStore>,
+    ) -> Result<()>;
+    async fn get_uninstalled_owned_games(&self) -> Result<Vec<CollectionElement>>;
 }

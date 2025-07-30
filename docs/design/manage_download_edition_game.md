@@ -220,7 +220,7 @@ pub async fn register_dl_store_game(
     game_title: String,
     purchase_url: String
 ) -> Result<(), String> {
-    // DL版ゲームを登録
+    // !gi
 }
 
 #[tauri::command]

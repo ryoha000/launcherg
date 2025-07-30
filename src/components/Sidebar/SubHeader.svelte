@@ -1,10 +1,12 @@
 <script lang='ts'>
   import type { AllGameCacheOne } from '@/lib/types'
+  import DLStoreManager from '@/components/DLStore/DLStoreManager.svelte'
   import ImportAutomatically from '@/components/Sidebar/ImportAutomatically.svelte'
   import ImportManually from '@/components/Sidebar/ImportManually.svelte'
   import ImportPopover from '@/components/Sidebar/ImportPopover.svelte'
   import APopover from '@/components/UI/APopover.svelte'
   import Button from '@/components/UI/Button.svelte'
+  import ButtonIcon from '@/components/UI/ButtonIcon.svelte'
   import { commandUpsertCollectionElement } from '@/lib/command'
   import { registerCollectionElementDetails } from '@/lib/registerCollectionElementDetails'
   import { showInfoToast } from '@/lib/toast'
@@ -12,6 +14,7 @@
 
   let isOpenImportAutomatically = $state(false)
   let isOpenImportManually = $state(false)
+  let isOpenDLStoreManager = $state(false)
 
   const importManually = async (
     exePath: string | null,
@@ -30,22 +33,28 @@
   <div class='text-(text-primary body) font-bold pl-2 mr-auto'>
     登録したゲーム
   </div>
-  <APopover panelClass='right-0'>
-    {#snippet button()}
-      <Button
-        text='Add'
-        leftIcon='i-material-symbols-computer-outline-rounded'
-        appendClass='ml-auto'
-      />
-    {/snippet}
-    {#snippet children({ close })}
-      <ImportPopover
-        onclose={() => close(null)}
-        onstartAuto={() => (isOpenImportAutomatically = true)}
-        onstartManual={() => (isOpenImportManually = true)}
-      />
-    {/snippet}
-  </APopover>
+  <div class='flex items-center gap-2'>
+    <ButtonIcon
+      icon='i-material-symbols-download-rounded'
+      onclick={() => (isOpenDLStoreManager = true)}
+    />
+    <APopover panelClass='right-0'>
+      {#snippet button()}
+        <Button
+          text='Add'
+          leftIcon='i-material-symbols-computer-outline-rounded'
+          appendClass='ml-auto'
+        />
+      {/snippet}
+      {#snippet children({ close })}
+        <ImportPopover
+          onclose={() => close(null)}
+          onstartAuto={() => (isOpenImportAutomatically = true)}
+          onstartManual={() => (isOpenImportManually = true)}
+        />
+      {/snippet}
+    </APopover>
+  </div>
 </div>
 <ImportAutomatically bind:isOpen={isOpenImportAutomatically} />
 <ImportManually
@@ -53,3 +62,4 @@
   onconfirm={importManually}
   oncancel={() => (isOpenImportManually = false)}
 />
+<DLStoreManager bind:isOpen={isOpenDLStoreManager} />

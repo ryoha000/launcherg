@@ -63,7 +63,26 @@ export interface CollectionElement {
   thumbnail: string
   thumbnailWidth: number | null
   thumbnailHeight: number | null
+  dlStore?: DLStoreInfo | null
+  installStatus: GameInstallStatus
+  canPlay: boolean
+  canInstall: boolean
 }
+
+export interface DLStoreInfo {
+  id: number
+  collectionElementId: number
+  storeId: string
+  storeType: 'DMM' | 'DLSite'
+  storeName: string
+  purchaseUrl: string
+  isOwned: boolean
+  purchaseDate: string | null
+  createdAt: string
+  updatedAt: string
+}
+
+export type GameInstallStatus = 'installed' | 'owned-not-installed' | 'not-owned'
 
 export interface CollectionElementsWithLabel {
   label: string

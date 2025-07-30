@@ -121,6 +121,10 @@ export async function commandGetGameCandidates(filepath: string) {
   })
 }
 
+export async function commandGetGameCandidatesByName(gameName: string) {
+  return await invoke<[number, string][]>('get_game_candidates_by_name', { gameName })
+}
+
 export async function commandGetExePathByLnk(filepath: string) {
   return await invoke<string>('get_exe_path_by_lnk', {
     filepath,
@@ -206,4 +210,47 @@ export async function commandProcTailManagerStop() {
 
 export async function commandProcTailManagerIsRunning() {
   return await invoke<boolean>('proctail_manager_is_running')
+}
+
+// DL版ゲーム管理機能のコマンド
+export async function commandRegisterDLStoreGame(
+  storeType: 'DMM' | 'DLSite',
+  storeId: string,
+  erogamescapeId: number,
+  purchaseUrl: string,
+) {
+  return await invoke<number>('register_dl_store_game', {
+    storeType,
+    storeId,
+    erogamescapeId,
+    purchaseUrl,
+  })
+}
+
+export async function commandOpenStorePage(purchaseUrl: string) {
+  return await invoke<void>('open_store_page', { purchaseUrl })
+}
+
+export async function commandLinkInstalledGame(
+  collectionElementId: number,
+  exePath: string,
+) {
+  return await invoke<void>('link_installed_game', {
+    collectionElementId,
+    exePath,
+  })
+}
+
+export async function commandGetUninstalledOwnedGames() {
+  return await invoke<CollectionElement[]>('get_uninstalled_owned_games')
+}
+
+export async function commandUpdateDLStoreOwnership(
+  dlStoreId: number,
+  isOwned: boolean,
+) {
+  return await invoke<void>('update_dl_store_ownership', {
+    dlStoreId,
+    isOwned,
+  })
 }

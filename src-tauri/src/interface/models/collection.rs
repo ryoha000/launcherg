@@ -29,6 +29,25 @@ pub struct CollectionElement {
     pub registered_at: String,
     pub thumbnail_width: Option<i32>,
     pub thumbnail_height: Option<i32>,
+    pub dl_store: Option<DLStoreInfo>,
+    pub install_status: String,
+    pub can_play: bool,
+    pub can_install: bool,
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DLStoreInfo {
+    pub id: i32,
+    pub collection_element_id: i32,
+    pub store_id: String,
+    pub store_type: String,
+    pub store_name: String,
+    pub purchase_url: String,
+    pub is_owned: bool,
+    pub purchase_date: Option<String>,
+    pub created_at: String,
+    pub updated_at: String,
 }
 
 impl CollectionElement {
@@ -71,6 +90,30 @@ impl CollectionElement {
             (None, None)
         };
 
+        let install_status = match st.install_status() {
+            crate::domain::collection::GameInstallStatus::Installed => "installed",
+            crate::domain::collection::GameInstallStatus::OwnedNotInstalled => "owned-not-installed",
+            crate::domain::collection::GameInstallStatus::NotOwned => "not-owned",
+        };
+        let can_play = st.can_play();
+        let can_install = st.can_install();
+
+        let dl_store = st.dl_store.map(|dl_store| DLStoreInfo {
+            id: dl_store.id.value,
+            collection_element_id: dl_store.collection_element_id.value,
+            store_id: dl_store.store_id,
+            store_type: match dl_store.store_type {
+                crate::domain::collection::DLStoreType::DMM => "DMM".to_string(),
+                crate::domain::collection::DLStoreType::DLSite => "DLSite".to_string(),
+            },
+            store_name: dl_store.store_name,
+            purchase_url: dl_store.purchase_url,
+            is_owned: dl_store.is_owned,
+            purchase_date: dl_store.purchase_date.map(|dt| dt.to_rfc3339()),
+            created_at: dl_store.created_at.to_rfc3339(),
+            updated_at: dl_store.updated_at.to_rfc3339(),
+        });
+
         CollectionElement::new(
             st.id.value,
             gamename,
@@ -89,6 +132,10 @@ impl CollectionElement {
             st.updated_at.to_rfc3339(),
             thumbnail_width,
             thumbnail_height,
+            dl_store,
+            install_status.to_string(),
+            can_play,
+            can_install,
         )
     }
 }

@@ -15,6 +15,7 @@
     commandDeleteCollectionElement,
     commandGetCollectionElement,
     commandOpenFolder,
+    commandOpenStorePage,
     commandPlayGame,
     commandUpdateElementLike,
     commandUpsertCollectionElement,
@@ -103,11 +104,22 @@
   let isOpenDelete = $state(false)
   let isOpenOtherInformation = $state(false)
   let isOpenQrCode = $state(false)
+
+  const handleInstall = async () => {
+    const element = await elementPromise
+    if (element.dlStore?.purchaseUrl) {
+      await commandOpenStorePage(element.dlStore.purchaseUrl)
+    }
+  }
 </script>
 
 {#await elementPromise then element}
   <div class='flex items-center gap-4 flex-wrap w-full min-w-0'>
-    <PlayButton play={({ isAdmin }) => play(isAdmin)} />
+    <PlayButton
+      gameStatus={element.installStatus}
+      play={({ isAdmin }) => play(isAdmin)}
+      install={handleInstall}
+    />
     <Button
       leftIcon='i-material-symbols-drive-file-rename-outline'
       text='Memo'

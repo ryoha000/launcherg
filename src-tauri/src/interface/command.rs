@@ -1,6 +1,7 @@
 use std::sync::Arc;
 use tauri::AppHandle;
 use tauri::State;
+use tauri_plugin_shell::ShellExt;
 
 use super::models::all_game_cache::AllGameCacheOne;
 use super::{
@@ -17,7 +18,7 @@ use crate::infrastructure::windowsimpl::proctail_manager::{
 };
 use crate::{
     domain::{
-        collection::{NewCollectionElement, ScannedGameElement},
+        collection::{NewCollectionElement, ScannedGameElement, DLStoreType},
         distance::get_comparable_distance,
         file::{get_file_created_at_sync, normalize},
         pubsub::{ProgressLivePayload, ProgressPayload, PubSubService},
@@ -470,6 +471,47 @@ pub async fn get_game_candidates(
 }
 
 #[tauri::command]
+pub async fn get_game_candidates_by_name(
+    modules: State<'_, Arc<Modules>>,
+    game_name: String,
+) -> anyhow::Result<Vec<(i32, String)>, CommandError> {
+    use crate::domain::file::normalize;
+    use crate::domain::distance::get_comparable_distance;
+    
+    let all_game_cache = modules
+        .all_game_cache_use_case()
+        .get_all_game_cache()
+        .await?;
+    
+    let normalized_search = normalize(&game_name);
+    let threshold = 0.3; // 編集距離の閾値
+    let max_results = 20;
+    
+    let mut distance_pairs: Vec<((i32, String), f32)> = vec![];
+    
+    for game in all_game_cache {
+        let normalized_gamename = normalize(&game.gamename);
+        let distance = get_comparable_distance(&normalized_search, &normalized_gamename);
+        
+        if distance > threshold {
+            distance_pairs.push(((game.id, game.gamename), distance));
+        }
+    }
+    
+    // 距離が大きい順（類似度が高い順）にソート
+    distance_pairs.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap());
+    
+    // 上位max_results件を取得
+    let results: Vec<(i32, String)> = distance_pairs
+        .into_iter()
+        .take(max_results)
+        .map(|(pair, _)| pair)
+        .collect();
+    
+    Ok(results)
+}
+
+#[tauri::command]
 pub async fn get_exe_path_by_lnk(filepath: String) -> anyhow::Result<String, CommandError> {
     if !filepath.to_lowercase().ends_with("lnk") {
         return Err(CommandError::Anyhow(anyhow::anyhow!(
@@ -684,4 +726,76 @@ pub async fn proctail_manager_is_running(
         .process_use_case()
         .proctail_manager_is_running()
         .await?)
+}
+
+// DL版ゲーム管理機能のTauriコマンド
+
+#[tauri::command]
+pub async fn register_dl_store_game(
+    modules: State<'_, Arc<Modules>>,
+    store_type: String,
+    store_id: String,
+    erogamescape_id: i32,
+    purchase_url: String,
+) -> anyhow::Result<i32, CommandError> {
+    let store_type = match store_type.as_str() {
+        "DMM" => DLStoreType::DMM,
+        "DLSite" => DLStoreType::DLSite,
+        _ => return Err(anyhow::anyhow!("Invalid store type").into()),
+    };
+
+    let collection_element_id = modules
+        .collection_use_case()
+        .register_dl_store_game(store_type, store_id, erogamescape_id, purchase_url)
+        .await?;
+
+    Ok(collection_element_id.value)
+}
+
+#[tauri::command]
+pub async fn open_store_page(handle: AppHandle, purchase_url: String) -> anyhow::Result<(), CommandError> {
+    let shell = handle.shell();
+    shell.open(purchase_url, None)
+        .map_err(|e| anyhow::anyhow!("Failed to open URL: {}", e))?;
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn link_installed_game(
+    modules: State<'_, Arc<Modules>>,
+    collection_element_id: i32,
+    exe_path: String,
+) -> anyhow::Result<(), CommandError> {
+    modules
+        .collection_use_case()
+        .link_installed_game(Id::new(collection_element_id), exe_path)
+        .await?;
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn get_uninstalled_owned_games(
+    modules: State<'_, Arc<Modules>>,
+    handle: AppHandle,
+) -> anyhow::Result<Vec<CollectionElement>, CommandError> {
+    let games = modules
+        .collection_use_case()
+        .get_uninstalled_owned_games()
+        .await?;
+    
+    let handle = Arc::new(handle);
+    Ok(games.into_iter().map(|g| CollectionElement::from_domain(&handle, g)).collect())
+}
+
+#[tauri::command]
+pub async fn update_dl_store_ownership(
+    modules: State<'_, Arc<Modules>>,
+    dl_store_id: i32,
+    is_owned: bool,
+) -> anyhow::Result<(), CommandError> {
+    modules
+        .collection_use_case()
+        .update_dl_store_ownership(Id::new(dl_store_id), is_owned)
+        .await?;
+    Ok(())
 }
