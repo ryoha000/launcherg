@@ -69,6 +69,7 @@ mod tests {
                 created_at: Local::now(),
                 updated_at: Local::now(),
             }),
+            dl_store: None,
         }
     }
 

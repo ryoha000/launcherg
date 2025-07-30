@@ -34,7 +34,6 @@ use crate::infrastructure::util::get_save_root_abs_dir;
 use super::{
     all_game_cache::{AllGameCache, AllGameCacheOne},
     collection::CollectionElement,
-    distance::get_comparable_distance,
     Id,
 };
 
@@ -45,6 +44,7 @@ use image::{ColorType, ImageEncoder};
 use fast_image_resize as fr;
 
 trait WString {
+    #[allow(dead_code)]
     fn to_wide(&self) -> Vec<u16>;
     fn to_wide_null_terminated(&self) -> Vec<u16>;
 }
@@ -59,79 +59,9 @@ impl WString for &str {
     }
 }
 
+#[allow(dead_code)]
 fn to_pcwstr(str: &str) -> PCWSTR {
     PCWSTR::from_raw(str.to_wide_null_terminated().as_ptr())
-}
-
-const NOT_GAME_EQUALLY_WORD: [&str; 1] = ["bgi"];
-
-const NOT_GAME_TERMS: [&str; 16] = [
-    "マニュアル",
-    "詳細設定",
-    "はじめに",
-    "サポート",
-    "セーブデータ",
-    "インストール",
-    "アンインストール",
-    "体験版",
-    "install",
-    "uninstall",
-    "autorun",
-    "削除",
-    "license",
-    "ライセンス",
-    "公式サイト",
-    "ホームページ",
-];
-fn not_game(filename: &str) -> bool {
-    for not_game_str in NOT_GAME_TERMS {
-        if filename.contains(not_game_str) {
-            return true;
-        }
-    }
-    for not_game_str in NOT_GAME_EQUALLY_WORD {
-        if filename.eq(not_game_str) {
-            return true;
-        }
-    }
-    return false;
-}
-
-const REMOVE_WORDS: [&str; 9] = [
-    "を起動",
-    "の起動",
-    "_単独動作版",
-    "「",
-    "」",
-    " ",
-    "　",
-    "ダウンロード版",
-    "DL版",
-];
-fn remove_word(filename: &str) -> String {
-    let mut result = filename.to_string();
-    for word in REMOVE_WORDS.iter() {
-        result = result.replace(word, "");
-    }
-    result
-}
-
-const IGNORE_GAME_ID: [i32; 4] = [2644, 63, 2797, 10419];
-
-// (string, i32)でstringがファイル名といっちした場合はこのゲームにする
-const EQUALLY_FILENAME_GAME_ID_PAIR: [(&str, i32); 1] = [("pieces", 27123)];
-
-pub fn get_file_name_without_extension(file_path: &str) -> Option<String> {
-    let path = Path::new(file_path);
-    if let Some(file_name) = path.file_name() {
-        if let Some(file_name_str) = file_name.to_str() {
-            let file_name_without_extension = Path::new(file_name_str)
-                .file_stem()
-                .map(|stem| stem.to_string_lossy().into_owned());
-            return file_name_without_extension;
-        }
-    }
-    None
 }
 
 pub fn normalize(s: &str) -> String {
@@ -245,107 +175,29 @@ pub fn get_most_probable_game_candidate(
     id_name_pairs: &AllGameCache,
     filepath: String,
 ) -> anyhow::Result<Option<(AllGameCacheOne, String)>> {
-    let candidates: AllGameCache =
-        get_game_candidates_by_exe_path(id_name_pairs, &filepath, 0.8, 1)?;
+    let game_identifier = crate::usecase::game_identifier::GameIdentifierUseCase::with_default_matcher(id_name_pairs.clone());
+    let candidates = game_identifier.identify_by_filepath(&filepath)?;
     Ok(candidates
         .first()
         .map(|candidate| (candidate.clone(), filepath)))
 }
 
-pub fn get_game_candidates_by_exe_path(
-    id_name_pairs: &AllGameCache,
-    filepath: &str,
-    threshould: f32,
-    candidate_limit: usize,
-) -> anyhow::Result<AllGameCache> {
-    let parent = Path::new(&filepath)
-        .parent()
-        .and_then(|v| {
-            v.file_name()
-                .and_then(|name| Some(normalize(&name.to_string_lossy().to_string())))
-        })
-        .ok_or(anyhow::anyhow!("can not get parent"))?;
-
-    let filename: String =
-        get_file_name_without_extension(filepath).ok_or(anyhow::anyhow!("can not get filename"))?;
-    let filename = normalize(&filename);
-    if not_game(&filename) {
-        return Ok(vec![]);
-    }
-    let filename = remove_word(&filename);
-
-    let is_skip_filename_check = filename == "game" || filename == "start";
-
-    let mut distance_pairs = vec![];
-
-    for (equally_filename, id) in EQUALLY_FILENAME_GAME_ID_PAIR {
-        if filename == *equally_filename {
-            id_name_pairs.iter().find(|v| v.id == id).map(|v| {
-                distance_pairs.push((v.clone(), 100.0));
-            });
-        }
-    }
-
-    for pair in id_name_pairs.iter() {
-        let mut is_ignore = false;
-        for ignore_id in IGNORE_GAME_ID {
-            if pair.id == ignore_id {
-                is_ignore = true;
-            }
-        }
-        if is_ignore {
-            continue;
-        }
-
-        let mut val: f32 = 0.0;
-        if !is_skip_filename_check {
-            val = val.max(get_comparable_distance(&filename, &pair.gamename));
-        }
-
-        val = val.max(get_comparable_distance(&parent, &pair.gamename));
-        if val > threshould {
-            distance_pairs.push((pair.clone(), val));
-        }
-    }
-
-    if distance_pairs.len() == 0 {
-        for pair in id_name_pairs.iter() {
-            if filename.len() > 5 && pair.gamename.contains(&filename) {
-                distance_pairs.push((pair.clone(), filename.len() as f32));
-            }
-            if parent.len() > 5 && pair.gamename.contains(&parent) {
-                distance_pairs.push((pair.clone(), parent.len() as f32));
-            }
-        }
-    }
-
-    distance_pairs.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap());
-
-    let mut res = vec![];
-    for (pair, _) in distance_pairs {
-        if res.len() < candidate_limit {
-            res.push(pair)
-        }
-    }
-    Ok(res)
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
+
     #[test]
-    fn test_get_game_candidates_by_exe_path() {
-        let res = get_game_candidates_by_exe_path(
+    fn test_get_most_probable_game_candidate() {
+        let res = get_most_probable_game_candidate(
             &vec![AllGameCacheOne::new(
                 27123,
                 "pieces/渡り鳥のソムニウム".to_string(),
             )],
-            "W:\\others\\software\\Whirlpool\\pieces\\pieces.exe",
-            0.5,
-            3,
+            "W:\\others\\software\\Whirlpool\\pieces\\pieces.exe".to_string(),
         )
         .unwrap();
-        let pieces = res.first().unwrap();
+        assert!(res.is_some());
+        let (pieces, _) = res.unwrap();
         assert_eq!(pieces.id, 27123);
     }
 }

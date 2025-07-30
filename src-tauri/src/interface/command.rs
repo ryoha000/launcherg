@@ -460,11 +460,11 @@ pub async fn get_game_candidates(
         .all_game_cache_use_case()
         .get_all_game_cache()
         .await?;
-
-    Ok(modules
-        .file_use_case()
-        .get_game_candidates(all_game_cache, filepath)
-        .await?
+    
+    let game_identifier = crate::usecase::game_identifier::GameIdentifierUseCase::with_default_matcher(all_game_cache);
+    
+    Ok(game_identifier
+        .identify_by_filepath(&filepath)?
         .into_iter()
         .map(|c| (c.id, c.gamename))
         .collect())
@@ -475,40 +475,19 @@ pub async fn get_game_candidates_by_name(
     modules: State<'_, Arc<Modules>>,
     game_name: String,
 ) -> anyhow::Result<Vec<(i32, String)>, CommandError> {
-    use crate::domain::file::normalize;
-    use crate::domain::distance::get_comparable_distance;
-    
     let all_game_cache = modules
         .all_game_cache_use_case()
         .get_all_game_cache()
         .await?;
     
-    let normalized_search = normalize(&game_name);
-    let threshold = 0.3; // 編集距離の閾値
-    let max_results = 20;
+    let game_identifier = crate::usecase::game_identifier::GameIdentifierUseCase::with_default_matcher(all_game_cache);
     
-    let mut distance_pairs: Vec<((i32, String), f32)> = vec![];
-    
-    for game in all_game_cache {
-        let normalized_gamename = normalize(&game.gamename);
-        let distance = get_comparable_distance(&normalized_search, &normalized_gamename);
-        
-        if distance > threshold {
-            distance_pairs.push(((game.id, game.gamename), distance));
-        }
-    }
-    
-    // 距離が大きい順（類似度が高い順）にソート
-    distance_pairs.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap());
-    
-    // 上位max_results件を取得
-    let results: Vec<(i32, String)> = distance_pairs
+    Ok(game_identifier
+        .identify_by_name(&game_name)?
         .into_iter()
-        .take(max_results)
-        .map(|(pair, _)| pair)
-        .collect();
-    
-    Ok(results)
+        .take(20) // 上位20件まで
+        .map(|c| (c.id, c.gamename))
+        .collect())
 }
 
 #[tauri::command]

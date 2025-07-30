@@ -7,5 +7,6 @@ pub mod explored_cache;
 mod explored_cache_test;
 pub mod file;
 mod file_test;
+pub mod game_identifier;
 pub mod models;
 pub mod process;

@@ -5,10 +5,8 @@ use derive_new::new;
 use tauri::AppHandle;
 
 use crate::domain::all_game_cache::{AllGameCache, AllGameCacheOne};
-use crate::domain::file::{
-    get_file_created_at_sync, get_file_name_without_extension, get_game_candidates_by_exe_path,
-    PlayHistory,
-};
+use crate::domain::file::{get_file_created_at_sync, PlayHistory};
+use crate::domain::game_matcher::get_file_name_without_extension;
 use crate::domain::pubsub::{ProgressLivePayload, ProgressPayload, PubSubService};
 use crate::{
     domain::{
@@ -185,20 +183,6 @@ impl<R: ExplorersExt> FileUseCase<R> {
                 .collect();
 
         Ok(self.get_map_of_one_filepath_per_game(most_probable_game_filepath_pairs))
-    }
-    pub async fn get_game_candidates(
-        &self,
-        all_game_cache: AllGameCache,
-        file: String,
-    ) -> anyhow::Result<AllGameCache> {
-        let normalized_all_games = all_game_cache
-            .iter()
-            .map(|pair| AllGameCacheOne {
-                id: pair.id,
-                gamename: normalize(&pair.gamename),
-            })
-            .collect::<AllGameCache>();
-        get_game_candidates_by_exe_path(&normalized_all_games, &file, 0.2, 5)
     }
     pub async fn filter_files_to_collection_elements<P: PubSubService + 'static>(
         &self,
