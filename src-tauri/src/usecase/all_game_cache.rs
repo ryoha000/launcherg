@@ -63,4 +63,14 @@ impl<R: RepositoriesExt> AllGameCacheUseCase<R> {
             .update(cache)
             .await
     }
+
+    pub async fn search_games_by_name(
+        &self,
+        name: &str,
+    ) -> anyhow::Result<Vec<AllGameCacheOneWithThumbnailUrl>> {
+        self.repositories
+            .all_game_cache_repository()
+            .search_by_name(name)
+            .await
+    }
 }

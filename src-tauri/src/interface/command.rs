@@ -25,6 +25,7 @@ use crate::{
         Id,
     },
     usecase::models::collection::CreateCollectionElementDetail,
+    native_messaging::protocol::{ExtractedGameData, SyncBatchResult, SyncStatus, ExtensionConfig},
 };
 
 #[tauri::command]
@@ -778,3 +779,188 @@ pub async fn update_dl_store_ownership(
         .await?;
     Ok(())
 }
+
+// バッチ同期とステータス管理のコマンド
+
+#[tauri::command]
+pub async fn sync_dl_store_games_batch(
+    modules: State<'_, Arc<Modules>>,
+    store_type: String,
+    games_data: Vec<ExtractedGameData>,
+) -> anyhow::Result<SyncBatchResult, CommandError> {
+    let store_type = match store_type.as_str() {
+        "DMM" => DLStoreType::DMM,
+        "DLSite" => DLStoreType::DLSite,
+        _ => return Err(anyhow::anyhow!("Invalid store type").into()),
+    };
+
+    let mut result = SyncBatchResult {
+        success_count: 0,
+        error_count: 0,
+        errors: Vec::new(),
+        synced_games: Vec::new(),
+    };
+
+    for game_data in games_data {
+        // ErogamescapeIDが提供されている場合のみ同期
+        if let Some(id_str) = game_data.additional_data.get("erogamescape_id") {
+            if let Ok(erogamescape_id) = id_str.parse::<i32>() {
+                match modules
+                    .collection_use_case()
+                    .register_dl_store_game(
+                        store_type.clone(),
+                        game_data.store_id.clone(),
+                        erogamescape_id,
+                        game_data.purchase_url.clone(),
+                    )
+                    .await
+                {
+                    Ok(_) => {
+                        result.success_count += 1;
+                        result.synced_games.push(game_data.title.clone());
+                    }
+                    Err(e) => {
+                        result.error_count += 1;
+                        result.errors.push(format!("Failed to sync {}: {}", game_data.title, e));
+                    }
+                }
+            } else {
+                result.error_count += 1;
+                result.errors.push(format!("Invalid erogamescape_id for {}: {}", game_data.title, id_str));
+            }
+        } else {
+            result.error_count += 1;
+            result.errors.push(format!("No erogamescape_id provided for {}", game_data.title));
+        }
+    }
+
+    Ok(result)
+}
+
+#[tauri::command]
+pub async fn get_sync_status(
+    modules: State<'_, Arc<Modules>>,
+) -> anyhow::Result<SyncStatus, CommandError> {
+    let extension_manager = modules.extension_manager_use_case();
+    let status = extension_manager.check_extension_connection().await
+        .map_err(|e| anyhow::anyhow!("拡張機能の接続確認に失敗: {}", e))?;
+    
+    Ok(status)
+}
+
+#[tauri::command]
+pub async fn set_extension_config(
+    config: ExtensionConfig,
+) -> anyhow::Result<(), CommandError> {
+    // 実際の実装では、設定をファイルまたはデータベースに保存する
+    println!("Extension config updated: {:?}", config);
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn generate_extension_package(
+    handle: AppHandle,
+) -> anyhow::Result<crate::usecase::extension_installer::ExtensionPackageInfo, CommandError> {
+    use crate::usecase::extension_installer::ExtensionInstallerUseCase;
+    
+    let installer = ExtensionInstallerUseCase::new(Arc::new(handle));
+    let package_info = installer.generate_extension_package().await
+        .map_err(|e| anyhow::anyhow!("拡張機能パッケージの生成に失敗: {}", e))?;
+    
+    Ok(package_info)
+}
+
+#[tauri::command]
+pub async fn setup_native_messaging_host(
+    handle: AppHandle,
+    extension_id: Option<String>,
+) -> anyhow::Result<String, CommandError> {
+    use crate::usecase::extension_installer::ExtensionInstallerUseCase;
+    
+    let installer = ExtensionInstallerUseCase::new(Arc::new(handle));
+    let result = installer.setup_native_messaging_host(extension_id).await
+        .map_err(|e| anyhow::anyhow!("Native Messaging Hostのセットアップに失敗: {}", e))?;
+    
+    Ok(result)
+}
+
+#[tauri::command]
+pub async fn get_extension_package_info(
+    handle: AppHandle,
+) -> anyhow::Result<Option<crate::usecase::extension_installer::ExtensionPackageInfo>, CommandError> {
+    use crate::usecase::extension_installer::ExtensionInstallerUseCase;
+    
+    let installer = ExtensionInstallerUseCase::new(Arc::new(handle));
+    
+    if installer.is_package_available() {
+        let manifest_info = installer.get_extension_manifest_info().await
+            .map_err(|e| anyhow::anyhow!("拡張機能情報の取得に失敗: {}", e))?;
+        let package_path = installer.get_package_path();
+        let _package_size = installer.get_package_size()
+            .map_err(|e| anyhow::anyhow!("パッケージサイズの取得に失敗: {}", e))?;
+            
+        Ok(Some(crate::usecase::extension_installer::ExtensionPackageInfo {
+            version: manifest_info.version.clone(),
+            package_path: package_path.to_string_lossy().to_string(),
+            manifest_info,
+        }))
+    } else {
+        Ok(None)
+    }
+}
+
+#[tauri::command]
+pub async fn copy_extension_for_development(
+    handle: AppHandle,
+) -> anyhow::Result<String, CommandError> {
+    use crate::usecase::extension_installer::ExtensionInstallerUseCase;
+    
+    let installer = ExtensionInstallerUseCase::new(Arc::new(handle));
+    let dev_path = installer.copy_extension_for_development().await
+        .map_err(|e| anyhow::anyhow!("開発用拡張機能のコピーに失敗: {}", e))?;
+    
+    Ok(dev_path)
+}
+
+#[tauri::command]
+pub async fn get_dev_extension_info(
+    handle: AppHandle,
+) -> anyhow::Result<Option<String>, CommandError> {
+    use crate::usecase::extension_installer::ExtensionInstallerUseCase;
+    
+    let installer = ExtensionInstallerUseCase::new(Arc::new(handle));
+    
+    if installer.is_dev_extension_available() {
+        let dev_path = installer.get_dev_extension_path();
+        Ok(Some(dev_path.to_string_lossy().to_string()))
+    } else {
+        Ok(None)
+    }
+}
+
+#[tauri::command]
+pub async fn check_registry_keys(
+    handle: AppHandle,
+) -> anyhow::Result<Vec<crate::usecase::extension_installer::RegistryKeyInfo>, CommandError> {
+    use crate::usecase::extension_installer::ExtensionInstallerUseCase;
+    
+    let installer = ExtensionInstallerUseCase::new(Arc::new(handle));
+    let result = installer.check_registry_keys()
+        .map_err(|e| anyhow::anyhow!("Failed to check registry keys: {}", e))?;
+    
+    Ok(result)
+}
+
+#[tauri::command]
+pub async fn remove_registry_keys(
+    handle: AppHandle,
+) -> anyhow::Result<Vec<String>, CommandError> {
+    use crate::usecase::extension_installer::ExtensionInstallerUseCase;
+    
+    let installer = ExtensionInstallerUseCase::new(Arc::new(handle));
+    let result = installer.remove_registry_keys()
+        .map_err(|e| anyhow::anyhow!("Failed to remove registry keys: {}", e))?;
+    
+    Ok(result)
+}
+

@@ -3,13 +3,13 @@
   import Button from '@/components/UI/Button.svelte'
   import Input from '@/components/UI/Input.svelte'
 
-  let settings = {
+  let settings = $state({
     theme: 'dark',
     autoLaunch: false,
     showNotifications: true,
     defaultDirectory: '',
     maxRecentGames: '10',
-  }
+  })
 
   function saveSettings() {
   // TODO: Tauriコマンドを使って設定を保存
@@ -27,6 +27,10 @@
 
   function navigateToProcTailDebug() {
     goto('/debug/proctail')
+  }
+
+  function navigateToExtensionManager() {
+    goto('/debug/extensionmanager')
   }
 </script>
 
@@ -71,6 +75,18 @@
         </div>
         <div>
           <Input bind:value={settings.maxRecentGames} placeholder='10' />
+        </div>
+      </div>
+    </div>
+
+    <!-- 拡張機能 -->
+    <div>
+      <h2 class='text-lg font-semibold mb-3 text-(text-primary)'>拡張機能</h2>
+      <div class='space-y-3'>
+        <div class='bg-(bg-secondary) border border-(border-primary) rounded p-4'>
+          <h3 class='text-base font-medium mb-2 text-(text-primary)'>ブラウザ拡張機能</h3>
+          <p class='text-sm text-(text-secondary) mb-3'>DMM GamesやDLsiteからゲーム情報を自動取得します</p>
+          <Button onclick={navigateToExtensionManager} text='拡張機能を管理' />
         </div>
       </div>
     </div>

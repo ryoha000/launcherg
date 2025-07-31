@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Launcherg DL Store Sync</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="popup-container">
+    <header class="popup-header">
+      <img src="../icons/icon32.png" alt="Launcherg" class="icon">
+      <h1>DL Store Sync</h1>
+    </header>
+
+    <main class="popup-main">
+      <!-- メインページ -->
+      <div id="main-page" class="page active">
+        <!-- ステータス表示 -->
+        <section class="status-section">
+          <div class="status-item">
+            <span class="status-label">接続状況:</span>
+            <span id="connection-status" class="status-value">確認中...</span>
+          </div>
+          <div class="status-item">
+            <span class="status-label">最終同期:</span>
+            <span id="last-sync" class="status-value">未同期</span>
+          </div>
+        </section>
+
+        <!-- 手動同期ボタン -->
+        <section class="sync-section">
+          <button id="manual-sync-btn" class="sync-button">
+            <span class="button-icon">🔄</span>
+            手動同期
+          </button>
+          <p class="sync-description">
+            現在のページからゲーム情報を抽出してLaunchergに同期します
+          </p>
+        </section>
+
+        <!-- 統計情報（簡略版） -->
+        <section class="stats-section">
+          <h3>同期統計</h3>
+          <div class="stats-grid">
+            <div class="stat-item">
+              <span class="stat-number" id="total-synced">0</span>
+              <span class="stat-label">総同期数</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-number" id="success-count">0</span>
+              <span class="stat-label">成功</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-number" id="error-count">0</span>
+              <span class="stat-label">エラー</span>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <!-- 設定ページ -->
+      <div id="settings-page" class="page">
+        <section class="settings-section">
+          <h3>基本設定</h3>
+          <div class="setting-item">
+            <label class="setting-label">
+              <input type="checkbox" id="auto-sync-checkbox">
+              <span class="checkmark"></span>
+              自動同期を有効にする
+            </label>
+            <p class="setting-description">ページ読み込み時に自動的にゲーム情報を抽出します</p>
+          </div>
+          <div class="setting-item">
+            <label class="setting-label">
+              <input type="checkbox" id="notifications-checkbox">
+              <span class="checkmark"></span>
+              通知を表示する
+            </label>
+            <p class="setting-description">同期結果をブラウザ通知で表示します</p>
+          </div>
+          <div class="setting-item">
+            <label class="setting-label">
+              <input type="checkbox" id="debug-mode-checkbox">
+              <span class="checkmark"></span>
+              デバッグモード
+            </label>
+            <p class="setting-description">デバッグページと詳細ログを有効にします</p>
+          </div>
+        </section>
+
+        <!-- カスタムルール管理 -->
+        <section class="custom-rules-section">
+          <h3>高度な設定</h3>
+          <button id="manage-rules-btn" class="secondary-button">
+            カスタムルールを管理
+          </button>
+          <p class="rules-description">
+            サイトの変更に対応するためのカスタム抽出ルールを管理できます
+          </p>
+        </section>
+      </div>
+
+      <!-- ログページ -->
+      <div id="logs-page" class="page">
+        <!-- 詳細統計情報 -->
+        <section class="detailed-stats-section">
+          <h3>詳細統計</h3>
+          <div class="stats-grid-detailed">
+            <div class="stat-item">
+              <span class="stat-number" id="total-synced-detailed">0</span>
+              <span class="stat-label">総同期数</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-number" id="success-count-detailed">0</span>
+              <span class="stat-label">成功</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-number" id="error-count-detailed">0</span>
+              <span class="stat-label">エラー</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-number" id="dmm-count">0</span>
+              <span class="stat-label">DMM</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-number" id="dlsite-count">0</span>
+              <span class="stat-label">DLsite</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-number" id="success-rate">0%</span>
+              <span class="stat-label">成功率</span>
+            </div>
+          </div>
+        </section>
+
+        <!-- ログ表示 -->
+        <section class="log-section">
+          <h3>
+            活動ログ
+            <button id="clear-log-btn" class="clear-button">クリア</button>
+          </h3>
+          <div id="log-container" class="log-container expanded">
+            <!-- ログエントリがここに追加される -->
+          </div>
+        </section>
+      </div>
+
+      <!-- デバッグページ -->
+      <div id="debug-page" class="page">
+        <div class="debug-input-section">
+          <h3>Native Messaging テスト</h3>
+          <div class="json-input-container">
+            <label for="debug-json-input">JSONメッセージ:</label>
+            <textarea 
+              id="debug-json-input" 
+              class="json-input" 
+              placeholder='{"type": "health_check", "payload": {}, "timestamp": "2025-01-30T12:34:56Z", "request_id": "test-123"}'
+              rows="8"
+            ></textarea>
+          </div>
+          <div class="debug-buttons">
+            <button id="send-json-btn" class="primary-button">
+              JSON送信
+            </button>
+            <button id="clear-debug-btn" class="secondary-button">
+              クリア
+            </button>
+          </div>
+        </div>
+        
+        <div class="debug-output-section">
+          <h3>
+            レスポンス
+            <button id="copy-response-btn" class="copy-button" title="レスポンスをコピー">📋</button>
+          </h3>
+          <div id="debug-response" class="debug-response expanded">
+            レスポンスがここに表示されます
+          </div>
+        </div>
+
+        <div class="debug-templates">
+          <h3>テンプレート</h3>
+          <div class="template-buttons">
+            <button class="template-btn" data-template="health_check">Health Check</button>
+            <button class="template-btn" data-template="get_status">Get Status</button>
+            <button class="template-btn" data-template="sync_games">Sync Games</button>
+            <button class="template-btn" data-template="set_config">Set Config</button>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- ボトムナビゲーション -->
+    <nav class="bottom-navigation">
+      <button class="nav-item active" data-page="main">
+        <span class="nav-icon">🏠</span>
+        <span class="nav-label">メイン</span>
+      </button>
+      <button class="nav-item" data-page="settings">
+        <span class="nav-icon">⚙️</span>
+        <span class="nav-label">設定</span>
+      </button>
+      <button class="nav-item" data-page="logs">
+        <span class="nav-icon">📝</span>
+        <span class="nav-label">ログ</span>
+      </button>
+      <button class="nav-item" data-page="debug" id="debug-nav-item" style="display: none;">
+        <span class="nav-icon">🐛</span>
+        <span class="nav-label">デバッグ</span>
+      </button>
+    </nav>
+
+    <footer class="popup-footer">
+      <div class="footer-links">
+        <a href="#" id="help-link">ヘルプ</a>
+        <a href="#" id="settings-link">詳細設定</a>
+      </div>
+      <div class="version">v1.0.0</div>
+    </footer>
+  </div>
+
+  <!-- ローディングオーバーレイ -->
+  <div id="loading-overlay" class="loading-overlay hidden">
+    <div class="loading-spinner"></div>
+    <p id="loading-message">同期中...</p>
+  </div>
+
+  <!-- モーダルダイアログ -->
+  <div id="modal-overlay" class="modal-overlay hidden">
+    <div class="modal">
+      <div class="modal-header">
+        <h2 id="modal-title">タイトル</h2>
+        <button id="modal-close" class="close-button">&times;</button>
+      </div>
+      <div class="modal-body" id="modal-body">
+        <!-- モーダルコンテンツ -->
+      </div>
+      <div class="modal-footer">
+        <button id="modal-cancel" class="secondary-button">キャンセル</button>
+        <button id="modal-confirm" class="primary-button">確認</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

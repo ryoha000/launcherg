@@ -14,4 +14,5 @@ pub trait AllGameCacheRepository {
     async fn get_last_updated(&self) -> anyhow::Result<(i32, DateTime<Local>)>;
     async fn update(&self, cache: Vec<NewAllGameCacheOne>) -> anyhow::Result<()>;
     async fn delete_by_ids(&self, ids: Vec<i32>) -> anyhow::Result<()>;
+    async fn search_by_name(&self, name: &str) -> anyhow::Result<Vec<AllGameCacheOneWithThumbnailUrl>>;
 }

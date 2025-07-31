@@ -1,0 +1,46 @@
+{
+  "manifest_version": 3,
+  "name": "Launcherg DL Store Sync",
+  "version": "1.0.0",
+  "description": "Automatically sync your purchased games from DMM and DLsite to Launcherg",
+  "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAzSNyryKW6+57VgyUWZ8RcWJucGglE5pKxhVJI1nPPj8AVPxt5cwQJ3BLIJX97t6fM5Vb2lr/i7PrH+KGEUEVMKzvNZt4gRtJozO/ZEXP9U79IdUIAcV+7bihPso8KP1RqNje661+Xm5FAui+CL1TrqjKrfP5UFit3T5I/gI2rBFB/DDfZ0RZ++BSLyFqJMZHCB+Nh03w3r1At6H3l95PBofF57TCcbdJw1igxZ1xj/xrwc3G+CboO/1JPrCrHUj0PfwxlE2RU6RAMEqpzfAtvR3jBA9MymgjN/NpDNUKwIQhIqfY/7HmSBouj4Zwzmqd295KRQ7bHmI+H6uO5kMlvQIDAQAB",
+  "permissions": [
+    "nativeMessaging",
+    "activeTab",
+    "storage",
+    "notifications",
+    "alarms"
+  ],
+  "host_permissions": [
+    "https://games.dmm.co.jp/*",
+    "https://www.dlsite.com/*"
+  ],
+  "background": {
+    "service_worker": "background/background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://games.dmm.co.jp/*"
+      ],
+      "js": [
+        "content-scripts/dmm-extractor.js"
+      ],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "https://www.dlsite.com/*"
+      ],
+      "js": [
+        "content-scripts/dlsite-extractor.js"
+      ],
+      "run_at": "document_idle"
+    }
+  ],
+  "action": {
+    "default_popup": "popup/popup.html",
+    "default_title": "Launcherg DL Store Sync"
+  },
+  "options_page": "popup/popup.html"
+}
