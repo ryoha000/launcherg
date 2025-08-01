@@ -8,10 +8,10 @@ use super::{
     error::CommandError,
     models::{
         collection::CollectionElement,
-        extension::{SyncStatus, ExtensionConfig},
     },
     module::{Modules, ModulesExt},
 };
+use crate::domain::extension::{SyncStatus, ExtensionConfig};
 use crate::domain::file::get_lnk_metadatas;
 use crate::domain::windows::proctail::{
     HealthCheckResult, ProcTailEvent, ServiceStatus, WatchTarget,

@@ -4,9 +4,11 @@ use chrono::Utc;
 
 use super::error::UseCaseError;
 use crate::{
-    domain::pubsub::{PubSubService, ExtensionConnectionPayload}, 
+    domain::{
+        pubsub::{PubSubService, ExtensionConnectionPayload},
+        extension::{SyncStatus, ExtensionConnectionStatus},
+    },
     infrastructure::repositoryimpl::repository::RepositoriesExt,
-    interface::models::extension::{SyncStatus, ExtensionConnectionStatus},
 };
 
 #[derive(new)]
