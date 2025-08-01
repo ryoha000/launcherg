@@ -3,8 +3,11 @@
   "version": "1.0.0",
   "description": "Browser extension for syncing DL store games to Launcherg",
   "scripts": {
-    "build": "npm run protobuf:generate && webpack --mode=production",
-    "dev": "npm run protobuf:generate && webpack --mode=development --watch",
+    "build": "npm run protobuf:generate && vite build",
+    "dev": "npm run protobuf:generate && vite build --watch",
+    "test": "vitest",
+    "test:ui": "vitest --ui",
+    "coverage": "vitest --coverage",
     "clean": "rimraf dist",
     "protobuf:generate": "buf generate --template ../proto/buf.gen.yaml ../proto",
     "protobuf:lint": "buf lint ../proto",
@@ -18,11 +21,13 @@
     "@bufbuild/buf": "^1.47.0",
     "@bufbuild/protoc-gen-es": "^2.0.0",
     "@types/chrome": "^0.0.268",
-    "copy-webpack-plugin": "^12.0.2",
+    "@types/node": "^20.11.5",
+    "@vitest/coverage-v8": "^3.2.4",
+    "@vitest/ui": "^3.2.4",
+    "happy-dom": "^18.0.1",
     "rimraf": "^5.0.5",
-    "ts-loader": "^9.5.1",
     "typescript": "^5.3.3",
-    "webpack": "^5.89.0",
-    "webpack-cli": "^5.1.4"
+    "vite": "^7.0.6",
+    "vitest": "^3.2.4"
   }
 }

@@ -30,7 +30,7 @@ interface LogEntry {
   message: string
 }
 
-class PopupController {
+export class PopupController {
   private config: ExtensionConfig = {
     auto_sync: true,
     show_notifications: true,
@@ -753,6 +753,10 @@ class PopupController {
 }
 
 // DOMが読み込まれたら初期化
-document.addEventListener('DOMContentLoaded', () => {
-  new PopupController()
-})
+// テスト環境では自動初期化しない
+// eslint-disable-next-line node/prefer-global/process
+if (typeof (globalThis as any).process === 'undefined' || (globalThis as any).process?.env?.NODE_ENV !== 'test') {
+  document.addEventListener('DOMContentLoaded', () => {
+    new PopupController()
+  })
+}
