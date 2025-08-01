@@ -3,4 +3,4 @@ dist/
 *.log
 .env
 .DS_Store
-extension-private-key.pem
+*.pem

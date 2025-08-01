@@ -68,6 +68,36 @@
   let registryKeys = $state<RegistryKeyInfo[]>([])
   let registryKeysLoading = $state(false)
 
+  const getDetailedStatusMessage = (connectionStatus: string) => {
+    switch (connectionStatus) {
+      case 'connected': return '正常に接続されています'
+      case 'connecting': return '接続中です'
+      case 'host_not_found': return 'Native Messaging Hostの実行ファイルが見つかりません'
+      case 'host_startup_failed': return 'Native Messaging Hostプロセスの起動に失敗しました'
+      case 'health_check_timeout': return 'ヘルスチェックがタイムアウトしました'
+      case 'health_check_failed': return 'ヘルスチェックでエラーが発生しました'
+      case 'communication_error': return '通信エラーが発生しました'
+      case 'process_termination_error': return 'プロセス終了時にエラーが発生しました'
+      case 'unknown_error': return '不明なエラーが発生しました'
+      default: return '状態不明'
+    }
+  }
+
+  // レジストリキー情報を読み込み
+  const loadRegistryKeys = async () => {
+    registryKeysLoading = true
+    try {
+      registryKeys = await commandCheckRegistryKeys()
+    }
+    catch (e) {
+      console.error('Failed to load registry keys:', e)
+      showErrorToast(`レジストリキーの読み込みに失敗: ${e}`)
+    }
+    finally {
+      registryKeysLoading = false
+    }
+  }
+
   const loadExtensionStatus = async () => {
     loading = true
 
@@ -213,21 +243,6 @@
     }
   }
 
-  // レジストリキー情報を読み込み
-  const loadRegistryKeys = async () => {
-    registryKeysLoading = true
-    try {
-      registryKeys = await commandCheckRegistryKeys()
-    }
-    catch (e) {
-      console.error('Failed to load registry keys:', e)
-      showErrorToast(`レジストリキーの読み込みに失敗: ${e}`)
-    }
-    finally {
-      registryKeysLoading = false
-    }
-  }
-
   // レジストリキーを削除
   const removeRegistryKeys = async () => {
     try {
@@ -294,21 +309,6 @@
       }
     }
   })
-
-  const getDetailedStatusMessage = (connectionStatus: string) => {
-    switch (connectionStatus) {
-      case 'connected': return '正常に接続されています'
-      case 'connecting': return '接続中です'
-      case 'host_not_found': return 'Native Messaging Hostの実行ファイルが見つかりません'
-      case 'host_startup_failed': return 'Native Messaging Hostプロセスの起動に失敗しました'
-      case 'health_check_timeout': return 'ヘルスチェックがタイムアウトしました'
-      case 'health_check_failed': return 'ヘルスチェックでエラーが発生しました'
-      case 'communication_error': return '通信エラーが発生しました'
-      case 'process_termination_error': return 'プロセス終了時にエラーが発生しました'
-      case 'unknown_error': return '不明なエラーが発生しました'
-      default: return '状態不明'
-    }
-  }
 
   const formatDate = (dateStr: string) => {
     return new Date(dateStr).toLocaleString('ja-JP')

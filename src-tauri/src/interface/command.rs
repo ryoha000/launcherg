@@ -786,9 +786,16 @@ pub async fn update_dl_store_ownership(
 
 #[tauri::command]
 pub async fn get_sync_status(
+    handle: AppHandle,
     modules: State<'_, Arc<Modules>>,
 ) -> anyhow::Result<SyncStatus, CommandError> {
-    let extension_manager = modules.extension_manager_use_case();
+    use crate::usecase::extension_manager::ExtensionManagerUseCase;
+    
+    let extension_manager = ExtensionManagerUseCase::with_app_handle(
+        modules.repositories(), 
+        modules.pubsub().clone(), 
+        Arc::new(handle)
+    );
     let status = extension_manager.check_extension_connection().await
         .map_err(|e| anyhow::anyhow!("拡張機能の接続確認に失敗: {}", e))?;
     
