@@ -23,7 +23,7 @@ import type {
   JsonSyncResponse,
 } from '../types/json-messages'
 
-import { create, fromBinary, toBinary } from '@bufbuild/protobuf'
+import { create, fromBinary, fromJsonString, toBinary, toJsonString } from '@bufbuild/protobuf'
 import { TimestampSchema } from '@bufbuild/protobuf/wkt'
 import extractionRules from '../config/extraction-rules.json'
 
@@ -262,17 +262,12 @@ class BackgroundService {
         reject(new Error('Native messaging timeout'))
       }, 30000)
 
-      // JSONとして送信（BigIntを処理）
-      const jsonMessage = JSON.stringify(message, (key, value) => {
-        if (typeof value === 'bigint') {
-          return value.toString()
-        }
-        return value
-      })
+      // JSONとして送信（ProtoBuf専用のシリアライザを使用）
+      const jsonString = toJsonString(NativeMessageSchema, message)
 
       chrome.runtime.sendNativeMessage(
         this.nativeHostName,
-        JSON.parse(jsonMessage),
+        JSON.parse(jsonString),
         (response) => {
           clearTimeout(timeout)
 
@@ -280,9 +275,16 @@ class BackgroundService {
             reject(new Error(chrome.runtime.lastError.message))
           }
           else if (response) {
-            // JSONレスポンスをNativeResponseとして処理
-            // responseは既にJavaScriptオブジェクトなのでそのまま使用
-            resolve(response as NativeResponse)
+            try {
+              // JSONレスポンスをProtoBuf形式にパース
+              const jsonString = JSON.stringify(response)
+              const nativeResponse = fromJsonString(NativeResponseSchema, jsonString)
+              resolve(nativeResponse)
+            }
+            catch (e) {
+              console.error('[Background] Failed to parse JSON response:', e)
+              reject(e)
+            }
           }
           else {
             resolve(null)
