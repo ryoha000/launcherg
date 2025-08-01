@@ -185,7 +185,7 @@ fn send_response_with_format(response: &NativeResponse, format: RequestFormat) -
 
     match format {
         RequestFormat::Protobuf => {
-            // ProtoBuf形式で送信
+            // ProtoBuf形式で送信（生のバイナリデータ）
             let mut response_bytes = Vec::new();
             response.encode(&mut response_bytes)
                 .map_err(|e| format!("Failed to encode protobuf response: {}", e))?;
