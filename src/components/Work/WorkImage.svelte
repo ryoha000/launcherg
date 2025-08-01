@@ -7,4 +7,4 @@
   const { name, src }: Props = $props()
 </script>
 
-<img alt='{name}_icon' {src} class='object-contain w-full' />
+<img alt='{name}_icon' {src} class='w-full object-contain' />

@@ -5,7 +5,7 @@ use super::{
     models::collection::{
         CollectionElementInfoTable, CollectionElementInstallTable, CollectionElementLikeTable,
         CollectionElementPathsTable, CollectionElementPlayTable, CollectionElementTable,
-        CollectionElementThumbnailTable,
+        CollectionElementThumbnailTable, CollectionElementDLStoreTable,
     },
     repository::RepositoryImpl,
 };
@@ -13,9 +13,10 @@ use crate::domain::{
     collection::{
         CollectionElement, CollectionElementInfo, CollectionElementInstall, CollectionElementLike,
         CollectionElementPaths, CollectionElementPlay, CollectionElementThumbnail,
-        NewCollectionElement, NewCollectionElementInfo, NewCollectionElementInstall,
-        NewCollectionElementLike, NewCollectionElementPaths, NewCollectionElementPlay,
-        NewCollectionElementThumbnail,
+        CollectionElementDLStore, NewCollectionElement, NewCollectionElementInfo, 
+        NewCollectionElementInstall, NewCollectionElementLike, NewCollectionElementPaths, 
+        NewCollectionElementPlay, NewCollectionElementThumbnail, NewCollectionElementDLStore,
+        DLStoreType,
     },
     repository::collection::CollectionRepository,
     Id,
@@ -42,6 +43,9 @@ impl CollectionRepository for RepositoryImpl<CollectionElement> {
             element.like = self.get_element_like_by_element_id(&element_id).await?;
             element.thumbnail = self
                 .get_element_thumbnail_by_element_id(&element_id)
+                .await?;
+            element.dl_store = self
+                .get_element_dl_store_by_element_id(&element_id)
                 .await?;
 
             result.push(element);
@@ -199,6 +203,9 @@ impl CollectionRepository for RepositoryImpl<CollectionElement> {
         } else {
             None
         };
+
+        // DL版情報を取得
+        element.dl_store = self.get_element_dl_store_by_element_id(id).await?;
 
         Ok(Some(element))
     }
@@ -550,5 +557,151 @@ impl CollectionRepository for RepositoryImpl<CollectionElement> {
         .fetch_all(&*pool)
         .await?;
         Ok(ids.into_iter().map(|v| Id::new(v.0)).collect())
+    }
+
+    // CollectionElementDLStore操作
+    async fn upsert_collection_element_dl_store(
+        &self,
+        dl_store: &NewCollectionElementDLStore,
+    ) -> anyhow::Result<()> {
+        let pool = self.pool.0.clone();
+        let store_type_str = match dl_store.store_type {
+            DLStoreType::DMM => "DMM",
+            DLStoreType::DLSite => "DLSite",
+        };
+        
+        query(
+            "INSERT INTO collection_element_dl_stores 
+             (collection_element_id, store_id, store_type, store_name, purchase_url, is_owned, purchase_date)
+             VALUES (?, ?, ?, ?, ?, ?, ?)
+             ON CONFLICT(collection_element_id, store_id, store_type) 
+             DO UPDATE SET 
+                store_name = excluded.store_name,
+                purchase_url = excluded.purchase_url,
+                is_owned = excluded.is_owned,
+                purchase_date = excluded.purchase_date,
+                updated_at = CURRENT_TIMESTAMP"
+        )
+        .bind(dl_store.collection_element_id.value)
+        .bind(&dl_store.store_id)
+        .bind(store_type_str)
+        .bind(&dl_store.store_name)
+        .bind(&dl_store.purchase_url)
+        .bind(dl_store.is_owned)
+        .bind(dl_store.purchase_date)
+        .execute(&*pool)
+        .await?;
+        Ok(())
+    }
+
+    async fn get_element_dl_store_by_element_id(
+        &self,
+        id: &Id<CollectionElement>,
+    ) -> anyhow::Result<Option<CollectionElementDLStore>> {
+        let pool = self.pool.0.clone();
+        let dl_store = query_as::<_, CollectionElementDLStoreTable>(
+            "SELECT * FROM collection_element_dl_stores WHERE collection_element_id = ?"
+        )
+        .bind(id.value)
+        .fetch_optional(&*pool)
+        .await?;
+
+        match dl_store {
+            Some(dl_store) => Ok(Some(dl_store.try_into()?)),
+            None => Ok(None),
+        }
+    }
+
+    async fn get_element_dl_store_by_store_id(
+        &self,
+        store_id: &str,
+        store_type: &DLStoreType,
+    ) -> anyhow::Result<Option<CollectionElementDLStore>> {
+        let pool = self.pool.0.clone();
+        let store_type_str = match store_type {
+            DLStoreType::DMM => "DMM",
+            DLStoreType::DLSite => "DLSite",
+        };
+
+        let dl_store = query_as::<_, CollectionElementDLStoreTable>(
+            "SELECT * FROM collection_element_dl_stores WHERE store_id = ? AND store_type = ?"
+        )
+        .bind(store_id)
+        .bind(store_type_str)
+        .fetch_optional(&*pool)
+        .await?;
+
+        match dl_store {
+            Some(dl_store) => Ok(Some(dl_store.try_into()?)),
+            None => Ok(None),
+        }
+    }
+
+    async fn update_collection_element_dl_store(
+        &self,
+        dl_store: &CollectionElementDLStore,
+    ) -> anyhow::Result<()> {
+        let pool = self.pool.0.clone();
+
+        query(
+            "UPDATE collection_element_dl_stores 
+             SET store_name = ?, purchase_url = ?, is_owned = ?, purchase_date = ?, updated_at = CURRENT_TIMESTAMP
+             WHERE id = ?"
+        )
+        .bind(&dl_store.store_name)
+        .bind(&dl_store.purchase_url)
+        .bind(dl_store.is_owned)
+        .bind(dl_store.purchase_date)
+        .bind(dl_store.id.value)
+        .execute(&*pool)
+        .await?;
+        Ok(())
+    }
+
+    async fn delete_collection_element_dl_store(
+        &self,
+        id: &Id<CollectionElementDLStore>,
+    ) -> anyhow::Result<()> {
+        let pool = self.pool.0.clone();
+        query("DELETE FROM collection_element_dl_stores WHERE id = ?")
+            .bind(id.value)
+            .execute(&*pool)
+            .await?;
+        Ok(())
+    }
+
+    async fn get_uninstalled_owned_games(&self) -> anyhow::Result<Vec<CollectionElement>> {
+        let pool = self.pool.0.clone();
+        let elements = query_as::<_, CollectionElementTable>(
+            "SELECT ce.* FROM collection_elements ce
+             INNER JOIN collection_element_dl_stores ceds ON ce.id = ceds.collection_element_id
+             LEFT JOIN collection_element_paths cep ON ce.id = cep.collection_element_id
+             WHERE ceds.is_owned = 1 
+             AND (cep.exe_path IS NULL AND cep.lnk_path IS NULL)"
+        )
+        .fetch_all(&*pool)
+        .await?;
+
+        let mut result = Vec::new();
+        for element_table in elements {
+            let element_id = Id::new(element_table.id);
+            let mut element: CollectionElement = element_table.try_into()?;
+
+            // 関連データを取得して設定
+            element.info = self.get_element_info_by_element_id(&element_id).await?;
+            element.paths = self.get_element_paths_by_element_id(&element_id).await?;
+            element.install = self.get_element_install_by_element_id(&element_id).await?;
+            element.play = self.get_element_play_by_element_id(&element_id).await?;
+            element.like = self.get_element_like_by_element_id(&element_id).await?;
+            element.thumbnail = self
+                .get_element_thumbnail_by_element_id(&element_id)
+                .await?;
+            element.dl_store = self
+                .get_element_dl_store_by_element_id(&element_id)
+                .await?;
+
+            result.push(element);
+        }
+        Ok(result)
     }
 }

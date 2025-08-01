@@ -90,4 +90,34 @@ impl AllGameCacheRepository for RepositoryImpl<AllGameCache> {
         query.execute(&*pool).await?;
         Ok(())
     }
+
+    async fn search_by_name(&self, name: &str) -> anyhow::Result<Vec<AllGameCacheOneWithThumbnailUrl>> {
+        let pool = self.pool.0.clone();
+        let search_pattern = format!("%{}%", name);
+        
+        Ok(sqlx::query(
+            "SELECT id, gamename, thumbnail_url FROM all_game_caches 
+             WHERE gamename LIKE ? 
+             ORDER BY 
+                CASE 
+                    WHEN gamename = ? THEN 1 
+                    WHEN gamename LIKE ? THEN 2 
+                    ELSE 3 
+                END, 
+                LENGTH(gamename) 
+             LIMIT 50"
+        )
+        .bind(&search_pattern)
+        .bind(name)
+        .bind(format!("{}%", name))
+        .fetch_all(&*pool)
+        .await?
+        .into_iter()
+        .map(|row| AllGameCacheOneWithThumbnailUrl {
+            id: row.get(0),
+            gamename: row.get(1),
+            thumbnail_url: row.get(2),
+        })
+        .collect())
+    }
 }

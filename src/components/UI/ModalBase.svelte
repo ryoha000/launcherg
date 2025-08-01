@@ -37,19 +37,19 @@
 </script>
 
 {#if isOpen}
-  <div class='fixed inset-0 z-10 w-full h-full' onclose={handleClose} use:portal>
-    <div class='relative p-12 w-full h-full'>
+  <div class='fixed inset-0 z-10 h-full w-full' onclose={handleClose} use:portal>
+    <div class='relative h-full w-full p-12'>
       <!-- svelte-ignore a11y_click_events_have_key_events -->
       <!-- svelte-ignore a11y_no_static_element_interactions -->
       <div transition:fade={{ duration: 100 }} class='absolute inset-0 z-20 bg-(bg-backdrop opacity-80)' onclick={handleClose}></div>
       <div
         transition:scale={{ delay: 100, duration: 200 }}
-        class='relative w-full h-full z-30 m-auto {panelClass} overflow-hidden'
+        class='relative z-30 m-auto h-full w-full {panelClass} overflow-hidden'
         class:h-full={fullmodal}
         use:dialog.modal
       >
         <div
-          class='w-full h-full border-(~ solid border-primary) rounded-lg bg-bg-primary shadow min-h-0 max-h-full'
+          class='h-full max-h-full min-h-0 w-full border border-(border-primary solid) rounded-lg bg-bg-primary shadow'
         >
           {@render children?.()}
         </div>

@@ -1,0 +1,115 @@
+syntax = "proto3";
+
+package launcherg.extension_internal;
+
+// Content ScriptからBackground Scriptへのリクエスト
+message ExtensionRequest {
+  string request_id = 1;
+  
+  oneof request {
+    SyncGamesRequest sync_games = 10;
+    GetConfigRequest get_config = 11;
+    ShowNotificationRequest show_notification = 12;
+    GetStatusRequest get_status = 13;
+    DebugNativeMessageRequest debug_native_message = 14;
+  }
+}
+
+// Background ScriptからContent Scriptへのレスポンス
+message ExtensionResponse {
+  string request_id = 1;
+  bool success = 2;
+  string error = 3;
+  
+  oneof response {
+    SyncGamesResponse sync_games_result = 10;
+    GetConfigResponse config_result = 11;
+    ShowNotificationResponse notification_result = 12;
+    GetStatusResponse status_result = 13;
+    DebugNativeMessageResponse debug_result = 14;
+  }
+}
+
+// ゲーム同期リクエスト
+message SyncGamesRequest {
+  string store = 1;  // "DMM" | "DLSite"
+  repeated GameData games = 2;
+  string source = 3;
+}
+
+// ゲームデータ（Content Script内での表現）
+message GameData {
+  string store_id = 1;
+  string title = 2;
+  string purchase_url = 3;
+  string purchase_date = 4;
+  string thumbnail_url = 5;  
+  map<string, string> additional_data = 6;
+}
+
+// ゲーム同期レスポンス
+message SyncGamesResponse {
+  SyncResult result = 1;
+  string message = 2;
+}
+
+// 同期結果
+message SyncResult {
+  uint32 success_count = 1;
+  uint32 error_count = 2;
+  repeated string errors = 3;
+  repeated string synced_games = 4;
+}
+
+// 設定取得リクエスト
+message GetConfigRequest {
+  string site = 1;  // "dmm" | "dlsite"
+}
+
+// 設定取得レスポンス
+message GetConfigResponse {
+  string config_json = 1;  // JSON文字列として設定を格納
+}
+
+// 通知表示リクエスト
+message ShowNotificationRequest {
+  string title = 1;
+  string message = 2;
+  string icon_type = 3;  // "success" | "error" | ""
+}
+
+// 通知表示レスポンス
+message ShowNotificationResponse {
+  // 空のメッセージ - 成功/失敗はExtensionResponseのsuccessで判定
+}
+
+// ステータス取得リクエスト
+message GetStatusRequest {
+  // 空のメッセージ
+}
+
+// ステータス取得レスポンス
+message GetStatusResponse {
+  StatusData status = 1;
+}
+
+// ステータスデータ
+message StatusData {
+  string last_sync = 1;  // ISO文字列
+  uint32 total_synced = 2;
+  repeated string connected_extensions = 3;
+  bool is_running = 4;
+  string connection_status = 5;  // enum値を文字列として格納
+  string error_message = 6;
+}
+
+// デバッグメッセージリクエスト
+message DebugNativeMessageRequest {
+  string payload_json = 1;  // JSON文字列としてペイロードを格納
+}
+
+// デバッグメッセージレスポンス
+message DebugNativeMessageResponse {
+  string native_response_json = 1;  // JSON文字列としてネイティブレスポンスを格納
+  string timestamp = 2;
+}

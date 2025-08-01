@@ -19,12 +19,12 @@
 <div>
   <button
     use:disclosure.button
-    class='bg-transparent rounded transition-all hover:bg-bg-button-hover w-full'
+    class='w-full rounded bg-transparent transition-all hover:bg-bg-button-hover'
   >
-    <div class='p-(x-4 y-2) flex items-center gap-4 bg-transparent'>
-      <div class='text-(text-primary body2)'>{label}</div>
+    <div class='flex items-center gap-4 bg-transparent p-(x-4 y-2)'>
+      <div class='text-(body2 text-primary)'>{label}</div>
       <div
-        class='i-material-symbols-arrow-drop-down ml-auto h-5 w-5 color-text-primary transition-all flex-shrink-0'
+        class='i-material-symbols-arrow-drop-down ml-auto h-5 w-5 flex-shrink-0 color-text-primary transition-all'
         class:rotate-180={$disclosure.expanded}
       ></div>
     </div>

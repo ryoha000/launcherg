@@ -1,0 +1,160 @@
+{
+  "version": "1.0",
+  "sites": {
+    "dmm": {
+      "name": "DMM Games",
+      "domain": "games.dmm.co.jp",
+      "detectionRules": [
+        {
+          "name": "library_page",
+          "selector": ".library-list, [data-testid='library-list']",
+          "required": true,
+          "description": "購入済みゲーム一覧ページの検出"
+        },
+        {
+          "name": "my_games_page",
+          "selector": ".my-game-list, .purchased-list",
+          "required": false,
+          "description": "マイゲーム一覧ページの検出"
+        }
+      ],
+      "gameExtractionRules": {
+        "container": ".library-item, .game-item, [data-game-info]",
+        "fields": {
+          "store_id": {
+            "selectors": [
+              "[data-game-id]",
+              "[data-product-id]",
+              "a[href*='/game/']"
+            ],
+            "attribute": "data-game-id",
+            "fallbackAttribute": "data-product-id",
+            "urlPattern": "/game/([^/]+)",
+            "required": true,
+            "description": "DMM内のゲームID"
+          },
+          "title": {
+            "selectors": [
+              ".game-title",
+              ".product-title",
+              ".title",
+              "h3",
+              "a[title]"
+            ],
+            "processor": "text",
+            "fallbackAttribute": "title",
+            "required": true,
+            "description": "ゲームタイトル"
+          },
+          "purchase_url": {
+            "selectors": [
+              "a.game-link",
+              "a[href*='/game/']",
+              ".title-link"
+            ],
+            "attribute": "href",
+            "required": true,
+            "description": "ゲームページのURL"
+          },
+          "thumbnail_url": {
+            "selectors": [
+              ".game-image img",
+              ".thumbnail img",
+              "img[src*='thumbnail']"
+            ],
+            "attribute": "src",
+            "required": false,
+            "description": "ゲームのサムネイル画像"
+          },
+          "purchase_date": {
+            "selectors": [
+              ".purchase-date",
+              ".bought-date",
+              "[data-purchase-date]"
+            ],
+            "processor": "text",
+            "attribute": "data-purchase-date",
+            "required": false,
+            "description": "購入日"
+          }
+        }
+      }
+    },
+    "dlsite": {
+      "name": "DLsite",
+      "domain": "www.dlsite.com",
+      "detectionRules": [
+        {
+          "name": "library_page",
+          "selector": ".library_list, #library-list, .purchase-list",
+          "required": true,
+          "description": "購入済み作品一覧ページの検出"
+        }
+      ],
+      "gameExtractionRules": {
+        "container": ".library_item, .purchase-item, [data-work-id]",
+        "fields": {
+          "store_id": {
+            "selectors": [
+              "[data-work-id]",
+              "[data-product-id]",
+              "a[href*='/work/']"
+            ],
+            "attribute": "data-work-id",
+            "urlPattern": "/work/=([^/&]+)",
+            "required": true,
+            "description": "DLsite内の作品ID"
+          },
+          "title": {
+            "selectors": [
+              ".work_name",
+              ".product-title",
+              ".title",
+              "a[title]"
+            ],
+            "processor": "text",
+            "fallbackAttribute": "title",
+            "required": true,
+            "description": "作品タイトル"
+          },
+          "purchase_url": {
+            "selectors": [
+              "a.work_thumb",
+              "a[href*='/work/']",
+              ".title-link"
+            ],
+            "attribute": "href",
+            "required": true,
+            "description": "作品ページのURL"
+          },
+          "thumbnail_url": {
+            "selectors": [
+              ".work_thumb img",
+              ".thumbnail img",
+              "img[data-src]"
+            ],
+            "attribute": "src",
+            "fallbackAttribute": "data-src",
+            "required": false,
+            "description": "作品のサムネイル画像"
+          },
+          "purchase_date": {
+            "selectors": [
+              ".purchase_date",
+              ".bought-date"
+            ],
+            "processor": "text",
+            "required": false,
+            "description": "購入日"
+          }
+        }
+      }
+    }
+  },
+  "defaultConfig": {
+    "maxGamesPerSync": 100,
+    "syncInterval": 300000,
+    "retryAttempts": 3,
+    "debugMode": false
+  }
+}

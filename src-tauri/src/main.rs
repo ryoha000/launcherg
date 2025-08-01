@@ -98,6 +98,21 @@ fn main() {
             command::proctail_manager_start,
             command::proctail_manager_stop,
             command::proctail_manager_is_running,
+            command::register_dl_store_game,
+            command::open_store_page,
+            command::link_installed_game,
+            command::get_uninstalled_owned_games,
+            command::update_dl_store_ownership,
+            command::get_game_candidates_by_name,
+            command::get_sync_status,
+            command::set_extension_config,
+            command::generate_extension_package,
+            command::setup_native_messaging_host,
+            command::get_extension_package_info,
+            command::copy_extension_for_development,
+            command::get_dev_extension_info,
+            command::check_registry_keys,
+            command::remove_registry_keys,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

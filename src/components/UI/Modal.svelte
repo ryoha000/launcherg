@@ -49,18 +49,18 @@
 >
   <div class='grid grid-rows-[min-content_1fr_min-content] h-full'>
     <div
-      class='flex items-center bg-bg-secondary border-(b-1px solid border-primary) rounded-t-lg {headerClass}'
+      class='flex items-center border-(b-1px border-primary solid) rounded-t-lg bg-bg-secondary {headerClass}'
     >
-      <div class='px-4 text-(text-primary body) font-medium'>
+      <div class='px-4 text-(body text-primary) font-medium'>
         {title}
       </div>
       <button
         onclick={onclose}
-        class='ml-auto p-4 bg-transparent color-text-tertiary hover:color-text-primary transition-all'
+        class='ml-auto bg-transparent p-4 color-text-tertiary transition-all hover:color-text-primary'
         tabindex={autofocusCloseButton ? 0 : -1}
         aria-label='Close modal'
       >
-        <div class='w-5 h-5 i-iconoir-cancel'></div>
+        <div class='i-iconoir-cancel h-5 w-5'></div>
       </button>
     </div>
     <div class:p-4={withContentPadding} class='overflow-y-auto'>
@@ -68,8 +68,8 @@
     </div>
     {#if withFooter}
       {#if footer}{@render footer()}{:else}
-        <div class='flex items-center p-4 border-(t-1px solid border-primary)'>
-          <div class='flex items-center ml-auto gap-2'>
+        <div class='flex items-center border-(t-1px border-primary solid) p-4'>
+          <div class='ml-auto flex items-center gap-2'>
             <Button text={cancelText} onclick={oncancel} />
             <Button
               variant='success'

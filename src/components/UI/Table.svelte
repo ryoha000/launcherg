@@ -11,24 +11,24 @@
   const { title, rows }: Props = $props()
 </script>
 
-<div class='border-(~ solid border-primary) rounded-xl'>
-  <div class='bg-bg-secondary p-4 rounded-t-xl'>
+<div class='border border-(border-primary solid) rounded-xl'>
+  <div class='rounded-t-xl bg-bg-secondary p-4'>
     <div class='text-(body text-primary)'>{title}</div>
   </div>
-  <div class='grid-(~ cols-[min-content_1fr])'>
+  <div class='grid grid-(cols-[min-content_1fr])'>
     {#each rows as row (row.label)}
       <div
-        class='p-4 border-(t-1px solid border-primary) whitespace-nowrap text-(body2 text-primary)'
+        class='whitespace-nowrap border-(t-1px border-primary solid) p-4 text-(body2 text-primary)'
       >
         {row.label}
       </div>
       {#if row.component}
-        <div class='p-4 border-(t-1px solid border-primary)'>
+        <div class='border-(t-1px border-primary solid) p-4'>
           <row.component value={row.value} />
         </div>
       {:else}
         <div
-          class='p-4 border-(t-1px solid border-primary) text-(body2 text-primary)'
+          class='border-(t-1px border-primary solid) p-4 text-(body2 text-primary)'
         >
           {row.value}
         </div>

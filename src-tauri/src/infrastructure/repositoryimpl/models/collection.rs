@@ -6,6 +6,7 @@ use crate::domain::{
     collection::{
         CollectionElement, CollectionElementInfo, CollectionElementInstall, CollectionElementLike,
         CollectionElementPaths, CollectionElementPlay, CollectionElementThumbnail,
+        CollectionElementDLStore, DLStoreType,
     },
     Id,
 };
@@ -78,6 +79,20 @@ pub struct CollectionElementThumbnailTable {
     pub updated_at: NaiveDateTime,
 }
 
+#[derive(FromRow)]
+pub struct CollectionElementDLStoreTable {
+    pub id: i32,
+    pub collection_element_id: i32,
+    pub store_id: String,
+    pub store_type: String,
+    pub store_name: String,
+    pub purchase_url: String,
+    pub is_owned: i32,
+    pub purchase_date: Option<NaiveDateTime>,
+    pub created_at: NaiveDateTime,
+    pub updated_at: NaiveDateTime,
+}
+
 // ドメインモデルへの変換実装
 impl TryFrom<CollectionElementTable> for CollectionElement {
     type Error = anyhow::Error;
@@ -92,6 +107,7 @@ impl TryFrom<CollectionElementTable> for CollectionElement {
             None, // play は別途取得
             None, // like は別途取得
             None, // thumbnail は別途取得
+            None, // dl_store は別途取得
         ))
     }
 }
@@ -175,6 +191,31 @@ impl TryFrom<CollectionElementThumbnailTable> for CollectionElementThumbnail {
             Id::new(st.collection_element_id),
             st.thumbnail_width,
             st.thumbnail_height,
+            st.created_at.and_utc().with_timezone(&Local),
+            st.updated_at.and_utc().with_timezone(&Local),
+        ))
+    }
+}
+
+impl TryFrom<CollectionElementDLStoreTable> for CollectionElementDLStore {
+    type Error = anyhow::Error;
+    fn try_from(st: CollectionElementDLStoreTable) -> Result<Self, Self::Error> {
+        let store_type = match st.store_type.as_str() {
+            "DMM" => DLStoreType::DMM,
+            "DLSite" => DLStoreType::DLSite,
+            _ => return Err(anyhow::anyhow!("Unknown store type: {}", st.store_type)),
+        };
+
+        Ok(CollectionElementDLStore::new(
+            Id::new(st.id),
+            Id::new(st.collection_element_id),
+            st.store_id,
+            store_type,
+            st.store_name,
+            st.purchase_url,
+            st.is_owned != 0,
+            st.purchase_date
+                .map(|dt| dt.and_utc().with_timezone(&Local)),
             st.created_at.and_utc().with_timezone(&Local),
             st.updated_at.and_utc().with_timezone(&Local),
         ))

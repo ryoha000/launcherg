@@ -78,8 +78,8 @@
         on:update={e => (idInput = e.detail.value)}
       />
       {#if candidates.length !== 0}
-        <div class='space-y-1 pl-2'>
-          <h4 class='text-(text-primary body) font-medium mb-1'>候補</h4>
+        <div class='pl-2 space-y-1'>
+          <h4 class='mb-1 text-(body text-primary) font-medium'>候補</h4>
           <div class='w-full'>
             {#each candidates as [id, gamename] (id)}
               <button
@@ -89,7 +89,7 @@
                 onclick={() => clickCandidate(id)}
               >
                 <div
-                  class='text-(text-secondary left body2) overflow-ellipsis whitespace-nowrap overflow-hidden w-full'
+                  class='overflow-ellipsis w-full overflow-hidden whitespace-nowrap text-(left body2 text-secondary)'
                 >
                   {gamename}
                 </div>
