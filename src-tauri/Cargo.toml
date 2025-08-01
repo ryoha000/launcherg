@@ -67,6 +67,7 @@ tempfile = "3.8"
 prost = "0.14.0"
 pbjson = "0.8.0"
 pbjson-types = "0.8.0"
+async-trait = "0.1"
 
 [target.'cfg(windows)'.dependencies]
 winreg = "0.52"

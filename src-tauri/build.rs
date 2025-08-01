@@ -5,6 +5,12 @@ fn main() {
     // Tauri build
     tauri_build::build();
 
+    // Generate code from proto files
+    generate_code_from_proto(Path::new("src/bin/proto"));
+    generate_code_from_proto(Path::new("src/infrastructure/native_messaging/proto"));
+}
+
+fn generate_code_from_proto(proto_out_dir: &Path) {
     let proto_files = [
         "../proto/native_messaging/common.proto",
         "../proto/native_messaging/status.proto",
@@ -17,8 +23,10 @@ fn main() {
     }
 
     let out_dir = std::env::var("OUT_DIR").unwrap();
-    let descriptor_path = "src/bin/proto/descriptor.bin";
-    let proto_out_dir = Path::new("src/bin/proto/generated");
+    // let descriptor_path = "src/bin/proto/descriptor.bin";
+    // let proto_out_dir = Path::new("src/bin/proto/generated");
+    let descriptor_path = proto_out_dir.join("descriptor.bin");
+    let proto_out_dir = proto_out_dir.join("generated");
 
     // Create output directory
     fs::create_dir_all(&proto_out_dir).unwrap();

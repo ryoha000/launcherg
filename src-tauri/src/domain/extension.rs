@@ -54,3 +54,16 @@ pub enum ExtensionConnectionStatus {
     /// 不明なエラー
     UnknownError = 9,
 }
+
+/// Native Messaging Hostクライアントのトレイト
+#[async_trait::async_trait]
+pub trait NativeMessagingHostClient: Send + Sync {
+    /// ヘルスチェックを実行
+    async fn health_check(&self) -> Result<bool, Box<dyn std::error::Error + Send + Sync>>;
+    
+    /// 同期ステータスを取得
+    async fn get_sync_status(&self) -> Result<SyncStatus, Box<dyn std::error::Error + Send + Sync>>;
+    
+    /// 拡張機能設定を更新
+    async fn set_config(&self, config: &ExtensionConfig) -> Result<String, Box<dyn std::error::Error + Send + Sync>>;
+}

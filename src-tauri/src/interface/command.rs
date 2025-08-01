@@ -736,7 +736,9 @@ pub async fn register_dl_store_game(
 
 #[tauri::command]
 pub async fn open_store_page(handle: AppHandle, purchase_url: String) -> anyhow::Result<(), CommandError> {
+    #[allow(deprecated)]
     let shell = handle.shell();
+    #[allow(deprecated)]
     shell.open(purchase_url, None)
         .map_err(|e| anyhow::anyhow!("Failed to open URL: {}", e))?;
     Ok(())
@@ -786,17 +788,10 @@ pub async fn update_dl_store_ownership(
 
 #[tauri::command]
 pub async fn get_sync_status(
-    handle: AppHandle,
+    _handle: AppHandle,
     modules: State<'_, Arc<Modules>>,
 ) -> anyhow::Result<SyncStatus, CommandError> {
-    use crate::usecase::extension_manager::ExtensionManagerUseCase;
-    
-    let extension_manager = ExtensionManagerUseCase::with_app_handle(
-        modules.repositories(), 
-        modules.pubsub().clone(), 
-        Arc::new(handle)
-    );
-    let status = extension_manager.check_extension_connection().await
+    let status = modules.extension_manager_use_case().check_extension_connection().await
         .map_err(|e| anyhow::anyhow!("拡張機能の接続確認に失敗: {}", e))?;
     
     Ok(status)
@@ -805,10 +800,12 @@ pub async fn get_sync_status(
 #[tauri::command]
 pub async fn set_extension_config(
     config: ExtensionConfig,
-) -> anyhow::Result<(), CommandError> {
-    // 実際の実装では、設定をファイルまたはデータベースに保存する
-    println!("Extension config updated: {:?}", config);
-    Ok(())
+    modules: State<'_, Arc<Modules>>,
+) -> anyhow::Result<String, CommandError> {
+    let result = modules.extension_manager_use_case().set_extension_config(&config).await
+        .map_err(|e| anyhow::anyhow!("拡張機能設定の更新に失敗: {}", e))?;
+    
+    Ok(result)
 }
 
 #[tauri::command]
