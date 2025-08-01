@@ -1,14 +1,53 @@
 import type { ExtractedGameData, SiteConfig } from './base-extractor'
 import { BaseExtractor } from './base-extractor'
 
+// Extension Internal protobuf types
+import type {
+  ExtensionRequest,
+  ExtensionResponse,
+  SyncGamesRequest,
+  GetConfigRequest,
+  ShowNotificationRequest,
+} from '../proto/extension_internal/messages_pb'
+
+import {
+  ExtensionRequestSchema,
+  ExtensionResponseSchema,
+  SyncGamesRequestSchema,
+  GetConfigRequestSchema,
+  ShowNotificationRequestSchema,
+  GameDataSchema,
+} from '../proto/extension_internal/messages_pb'
+
+import { create, fromJson, toJson } from '@bufbuild/protobuf'
+
 // DLsite用の設定を読み込み
 let dlsiteConfig: SiteConfig
 
-// 設定を動的に読み込み
-chrome.runtime.sendMessage({ type: 'get_config', site: 'dlsite' }, (response) => {
-  if (response && response.config) {
-    dlsiteConfig = response.config
-    initDLsiteExtractor()
+function generateRequestId(): string {
+  return Date.now().toString(36) + Math.random().toString(36).substr(2)
+}
+
+// 設定を動的に読み込みをプロトバフで実行
+const getConfigRequest = create(ExtensionRequestSchema, {
+  requestId: generateRequestId(),
+  request: {
+    case: 'getConfig',
+    value: create(GetConfigRequestSchema, {
+      site: 'dlsite'
+    })
+  }
+})
+
+chrome.runtime.sendMessage(toJson(ExtensionRequestSchema, getConfigRequest), (responseJson) => {
+  try {
+    const response = fromJson(ExtensionResponseSchema, responseJson)
+    if (response && response.success && response.response.case === 'configResult') {
+      dlsiteConfig = JSON.parse(response.response.value.configJson)
+      initDLsiteExtractor()
+    }
+  } catch (error) {
+    console.error('[DLsite Extractor] Failed to parse config response:', error)
   }
 })
 
@@ -77,20 +116,44 @@ class DLsiteExtractor extends BaseExtractor {
       // DLsite特有の処理
       const processedGames = games.map(game => this.processDLsiteGame(game))
 
-      // バックグラウンドスクリプトに送信
-      chrome.runtime.sendMessage({
-        type: 'sync_games',
-        store: 'DLSite',
-        games: processedGames,
-        source: 'dlsite-extractor',
-      }, (response) => {
-        if (response && response.success) {
-          console.log('[DLsite Extractor] Sync successful:', response)
-          this.showNotification(`DLsite: ${processedGames.length}個の作品を同期しました`)
+      // プロトバフでゲームデータを変換
+      const gameDataList = processedGames.map(game => create(GameDataSchema, {
+        storeId: game.store_id,
+        title: game.title,
+        purchaseUrl: game.purchase_url,
+        purchaseDate: game.purchase_date || '',
+        thumbnailUrl: game.thumbnail_url || '',
+        additionalData: game.additional_data
+      }))
+
+      // プロトバフメッセージを作成
+      const syncRequest = create(ExtensionRequestSchema, {
+        requestId: generateRequestId(),
+        request: {
+          case: 'syncGames',
+          value: create(SyncGamesRequestSchema, {
+            store: 'DLSite',
+            games: gameDataList,
+            source: 'dlsite-extractor'
+          })
         }
-        else {
-          console.error('[DLsite Extractor] Sync failed:', response)
-          this.showNotification('DLsite: 同期に失敗しました', 'error')
+      })
+
+      // バックグラウンドスクリプトに送信
+      chrome.runtime.sendMessage(toJson(ExtensionRequestSchema, syncRequest), (responseJson) => {
+        try {
+          const response = fromJson(ExtensionResponseSchema, responseJson)
+          if (response && response.success && response.response.case === 'syncGamesResult') {
+            console.log('[DLsite Extractor] Sync successful:', response)
+            this.showNotification(`DLsite: ${processedGames.length}個の作品を同期しました`)
+          }
+          else {
+            console.error('[DLsite Extractor] Sync failed:', response)
+            this.showNotification('DLsite: 同期に失敗しました', 'error')
+          }
+        } catch (error) {
+          console.error('[DLsite Extractor] Failed to parse sync response:', error)
+          this.showNotification('DLsite: 同期レスポンスの解析に失敗しました', 'error')
         }
       })
     }
@@ -206,13 +269,21 @@ class DLsiteExtractor extends BaseExtractor {
   }
 
   private showNotification(message: string, type: 'success' | 'error' = 'success'): void {
-    // ブラウザ通知を表示
-    chrome.runtime.sendMessage({
-      type: 'show_notification',
-      title: 'Launcherg DL Store Sync',
-      message,
-      iconType: type,
+    // プロトバフで通知メッセージを作成
+    const notificationRequest = create(ExtensionRequestSchema, {
+      requestId: generateRequestId(),
+      request: {
+        case: 'showNotification',
+        value: create(ShowNotificationRequestSchema, {
+          title: 'Launcherg DL Store Sync',
+          message,
+          iconType: type,
+        })
+      }
     })
+
+    // ブラウザ通知を表示
+    chrome.runtime.sendMessage(toJson(ExtensionRequestSchema, notificationRequest))
 
     // ページ内通知も表示
     this.showInPageNotification(message, type)

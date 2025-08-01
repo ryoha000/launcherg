@@ -2,7 +2,17 @@
 // Content ScriptとNative Messaging Hostの橋渡しを行う
 
 import type { SiteConfig } from '../content-scripts/base-extractor'
+
 // Extension Internal types
+import type {
+  DebugNativeMessageRequest,
+  ExtensionRequest,
+  ExtensionResponse,
+  GetConfigRequest,
+  GetStatusRequest,
+  ShowNotificationRequest,
+  SyncGamesRequest,
+} from '../proto/extension_internal/messages_pb'
 
 // Native Messaging types
 import type {
@@ -10,22 +20,27 @@ import type {
   NativeResponse,
 } from '../proto/native_messaging/common_pb'
 
-import type {
-  JsonConfigResponse,
-  JsonDebugNativeMessageMessage,
-  JsonDebugResponse,
-  JsonGetConfigMessage,
-  JsonMessage,
-  JsonResponse,
-  JsonShowNotificationMessage,
-  JsonStatusResponse,
-  JsonSyncGamesMessage,
-  JsonSyncResponse,
-} from '../types/json-messages'
+import { create, fromBinary, fromJson, fromJsonString, toBinary, toJson, toJsonString } from '@bufbuild/protobuf'
 
-import { create, fromBinary, fromJsonString, toBinary, toJsonString } from '@bufbuild/protobuf'
 import { TimestampSchema } from '@bufbuild/protobuf/wkt'
 import extractionRules from '../config/extraction-rules.json'
+import {
+  DebugNativeMessageRequestSchema,
+  DebugNativeMessageResponseSchema,
+  ExtensionRequestSchema,
+  ExtensionResponseSchema,
+  GameDataSchema,
+  GetConfigRequestSchema,
+  GetConfigResponseSchema,
+  GetStatusRequestSchema,
+  GetStatusResponseSchema,
+  ShowNotificationRequestSchema,
+  ShowNotificationResponseSchema,
+  StatusDataSchema,
+  SyncGamesRequestSchema,
+  SyncGamesResponseSchema,
+  SyncResultSchema,
+} from '../proto/extension_internal/messages_pb'
 
 import {
   HealthCheckRequestSchema,
@@ -83,63 +98,81 @@ class BackgroundService {
   }
 
   private async handleMessage(
-    message: JsonMessage,
+    message: any,
     sender: chrome.runtime.MessageSender,
-    sendResponse: (response?: JsonResponse) => void,
+    sendResponse: (response?: any) => void,
   ): Promise<void> {
     try {
-      // 従来のJSON形式メッセージを処理
-      switch (message.type) {
-        case 'sync_games':
-          await this.handleSyncGames(message as JsonSyncGamesMessage, sendResponse)
+      // プロトバフメッセージをJSONから復元
+      const extensionRequest = fromJson(ExtensionRequestSchema, message)
+
+      // リクエストタイプに応じて処理を分岐
+      switch (extensionRequest.request.case) {
+        case 'syncGames':
+          await this.handleProtobufSyncGames(extensionRequest.requestId, extensionRequest.request.value, sendResponse)
           break
 
-        case 'get_config':
-          this.handleGetConfig(message as JsonGetConfigMessage, sendResponse)
+        case 'getConfig':
+          await this.handleProtobufGetConfig(extensionRequest.requestId, extensionRequest.request.value, sendResponse)
           break
 
-        case 'show_notification':
-          await this.handleShowNotification(message as JsonShowNotificationMessage, sendResponse)
+        case 'showNotification':
+          await this.handleProtobufShowNotification(extensionRequest.requestId, extensionRequest.request.value, sendResponse)
           break
 
-        case 'get_status':
-          await this.handleGetStatus(sendResponse)
+        case 'getStatus':
+          await this.handleProtobufGetStatus(extensionRequest.requestId, extensionRequest.request.value, sendResponse)
           break
 
-        case 'debug_native_message':
-          await this.handleDebugNativeMessage(message as JsonDebugNativeMessageMessage, sendResponse)
+        case 'debugNativeMessage':
+          await this.handleProtobufDebugNativeMessage(extensionRequest.requestId, extensionRequest.request.value, sendResponse)
           break
 
         default:
-          console.warn('[Background] Unknown message type:', message.type)
-          sendResponse({ success: false, error: 'Unknown message type' })
+          console.warn('[Background] Unknown request type:', extensionRequest.request.case)
+          const errorResponse = create(ExtensionResponseSchema, {
+            requestId: extensionRequest.requestId,
+            success: false,
+            error: 'Unknown request type',
+            response: { case: undefined },
+          })
+          sendResponse(toJson(ExtensionResponseSchema, errorResponse))
       }
     }
     catch (error) {
       console.error('[Background] Error handling message:', error)
       const errorMessage = error instanceof Error ? error.message : 'Unknown error'
-      sendResponse({ success: false, error: errorMessage })
+
+      // エラーレスポンスを作成
+      const errorResponse = create(ExtensionResponseSchema, {
+        requestId: (message as any).requestId || 'unknown',
+        success: false,
+        error: errorMessage,
+        response: { case: undefined },
+      })
+      sendResponse(toJson(ExtensionResponseSchema, errorResponse))
     }
   }
 
-  private async handleSyncGames(
-    request: JsonSyncGamesMessage,
-    sendResponse: (response?: JsonSyncResponse) => void,
+  private async handleProtobufSyncGames(
+    requestId: string,
+    syncGamesRequest: SyncGamesRequest,
+    sendResponse: (response?: any) => void,
   ): Promise<void> {
-    console.log(`[Background] Syncing ${request.games.length} games from ${request.store}`)
+    console.log(`[Background] Syncing ${syncGamesRequest.games.length} games from ${syncGamesRequest.store}`)
 
     try {
-      const extractedGames = request.games.map(game => create(ExtractedGameDataSchema, {
-        storeId: game.store_id || '',
+      const extractedGames = syncGamesRequest.games.map(game => create(ExtractedGameDataSchema, {
+        storeId: game.storeId || '',
         title: game.title || '',
-        purchaseUrl: game.purchase_url || '',
-        purchaseDate: game.purchase_date || '',
-        thumbnailUrl: game.thumbnail_url || '',
-        additionalData: game.additional_data || {},
+        purchaseUrl: game.purchaseUrl || '',
+        purchaseDate: game.purchaseDate || '',
+        thumbnailUrl: game.thumbnailUrl || '',
+        additionalData: game.additionalData || {},
       }))
 
-      const syncRequest = create(NativeSyncGamesRequestSchema, {
-        store: request.store,
+      const nativeSyncRequest = create(NativeSyncGamesRequestSchema, {
+        store: syncGamesRequest.store,
         games: extractedGames,
         extensionId: chrome.runtime.id,
       })
@@ -149,79 +182,137 @@ class BackgroundService {
         requestId: this.generateRequestId(),
         message: {
           case: 'syncGames',
-          value: syncRequest,
+          value: nativeSyncRequest,
         },
       })
 
-      const response = await this.sendNativeProtobufMessage(nativeMessage)
+      const nativeResponse = await this.sendNativeProtobufMessage(nativeMessage)
 
-      if (response && response.success) {
-        let resultData: JsonSyncResponse['result']
-        if (response.response.case === 'syncGamesResult') {
-          const syncBatchResult = response.response.value
-          resultData = {
+      if (nativeResponse && nativeResponse.success) {
+        let syncResult
+        if (nativeResponse.response.case === 'syncGamesResult') {
+          const syncBatchResult = nativeResponse.response.value
+          syncResult = create(SyncResultSchema, {
             successCount: Number(syncBatchResult.successCount),
             errorCount: Number(syncBatchResult.errorCount),
             errors: syncBatchResult.errors,
             syncedGames: syncBatchResult.syncedGames,
-          }
+          })
         }
 
-        sendResponse({
+        const response = create(ExtensionResponseSchema, {
+          requestId,
           success: true,
-          result: resultData,
-          message: `${request.store}から${request.games.length}個のゲームを同期しました`,
+          error: '',
+          response: {
+            case: 'syncGamesResult',
+            value: create(SyncGamesResponseSchema, {
+              result: syncResult,
+              message: `${syncGamesRequest.store}から${syncGamesRequest.games.length}個のゲームを同期しました`,
+            }),
+          },
         })
+
+        sendResponse(toJson(ExtensionResponseSchema, response))
       }
       else {
-        throw new Error(response?.error || 'Native host returned error')
+        throw new Error(nativeResponse?.error || 'Native host returned error')
       }
     }
     catch (error) {
       console.error('[Background] Sync failed:', error)
       const errorMessage = error instanceof Error ? error.message : 'Unknown error'
-      sendResponse({
+
+      const errorResponse = create(ExtensionResponseSchema, {
+        requestId,
         success: false,
         error: errorMessage,
-        message: `${request.store}の同期に失敗しました`,
+        response: {
+          case: 'syncGamesResult',
+          value: create(SyncGamesResponseSchema, {
+            message: `${syncGamesRequest.store}の同期に失敗しました`,
+          }),
+        },
       })
+      sendResponse(toJson(ExtensionResponseSchema, errorResponse))
     }
   }
 
-  private handleGetConfig(
-    request: JsonGetConfigMessage,
-    sendResponse: (response?: JsonConfigResponse) => void,
-  ): void {
-    const config = this.configs[request.site]
+  private async handleProtobufGetConfig(
+    requestId: string,
+    getConfigRequest: GetConfigRequest,
+    sendResponse: (response?: any) => void,
+  ): Promise<void> {
+    const config = this.configs[getConfigRequest.site]
+
     if (config) {
-      sendResponse({ success: true, config })
+      const response = create(ExtensionResponseSchema, {
+        requestId,
+        success: true,
+        error: '',
+        response: {
+          case: 'configResult',
+          value: create(GetConfigResponseSchema, {
+            configJson: JSON.stringify(config),
+          }),
+        },
+      })
+      sendResponse(toJson(ExtensionResponseSchema, response))
     }
     else {
-      sendResponse({ success: false, error: `Config not found for site: ${request.site}` })
+      const errorResponse = create(ExtensionResponseSchema, {
+        requestId,
+        success: false,
+        error: `Config not found for site: ${getConfigRequest.site}`,
+        response: { case: undefined },
+      })
+      sendResponse(toJson(ExtensionResponseSchema, errorResponse))
     }
   }
 
-  private async handleShowNotification(
-    request: JsonShowNotificationMessage,
-    sendResponse: (response?: JsonResponse) => void,
+  private async handleProtobufShowNotification(
+    requestId: string,
+    notificationRequest: ShowNotificationRequest,
+    sendResponse: (response?: any) => void,
   ): Promise<void> {
     try {
       await chrome.notifications.create({
         type: 'basic',
-        iconUrl: request.iconType === 'error' ? 'icons/icon32_error.png' : 'icons/icon32.png',
-        title: request.title,
-        message: request.message,
+        iconUrl: notificationRequest.iconType === 'error' ? 'icons/icon32_error.png' : 'icons/icon32.png',
+        title: notificationRequest.title,
+        message: notificationRequest.message,
       })
-      sendResponse({ success: true })
+
+      const response = create(ExtensionResponseSchema, {
+        requestId,
+        success: true,
+        error: '',
+        response: {
+          case: 'notificationResult',
+          value: create(ShowNotificationResponseSchema, {}),
+        },
+      })
+      sendResponse(toJson(ExtensionResponseSchema, response))
     }
     catch (error) {
       console.error('[Background] Notification failed:', error)
       const errorMessage = error instanceof Error ? error.message : 'Unknown error'
-      sendResponse({ success: false, error: errorMessage })
+
+      const errorResponse = create(ExtensionResponseSchema, {
+        requestId,
+        success: false,
+        error: errorMessage,
+        response: { case: undefined },
+      })
+      sendResponse(toJson(ExtensionResponseSchema, errorResponse))
     }
   }
 
-  private async handleGetStatus(sendResponse: (response?: JsonStatusResponse) => void): Promise<void> {
+  private async handleProtobufGetStatus(
+    requestId: string,
+    getStatusRequest: GetStatusRequest,
+    sendResponse: (response?: any) => void,
+  ): Promise<void> {
     try {
       const nativeMessage = create(NativeMessageSchema, {
         timestamp: create(TimestampSchema, { seconds: BigInt(Math.floor(Date.now() / 1000)) }),
@@ -232,27 +323,45 @@ class BackgroundService {
         },
       })
 
-      const response = await this.sendNativeProtobufMessage(nativeMessage)
+      const nativeResponse = await this.sendNativeProtobufMessage(nativeMessage)
 
-      let statusData: JsonStatusResponse['status']
-      if (response && response.response.case === 'statusResult') {
-        const syncStatus = response.response.value
-        statusData = {
+      let statusData
+      if (nativeResponse && nativeResponse.response.case === 'statusResult') {
+        const syncStatus = nativeResponse.response.value
+        statusData = create(StatusDataSchema, {
           lastSync: syncStatus.lastSync ? new Date(Number(syncStatus.lastSync.seconds) * 1000).toISOString() : '',
           totalSynced: Number(syncStatus.totalSynced),
           connectedExtensions: syncStatus.connectedExtensions,
           isRunning: syncStatus.isRunning,
           connectionStatus: syncStatus.connectionStatus.toString(),
           errorMessage: syncStatus.errorMessage,
-        }
+        })
       }
 
-      sendResponse({ success: true, status: statusData })
+      const response = create(ExtensionResponseSchema, {
+        requestId,
+        success: true,
+        error: '',
+        response: {
+          case: 'statusResult',
+          value: create(GetStatusResponseSchema, {
+            status: statusData,
+          }),
+        },
+      })
+      sendResponse(toJson(ExtensionResponseSchema, response))
     }
     catch (error) {
       console.error('[Background] Get status failed:', error)
       const errorMessage = error instanceof Error ? error.message : 'Unknown error'
-      sendResponse({ success: false, error: errorMessage })
+
+      const errorResponse = create(ExtensionResponseSchema, {
+        requestId,
+        success: false,
+        error: errorMessage,
+        response: { case: undefined },
+      })
+      sendResponse(toJson(ExtensionResponseSchema, errorResponse))
     }
   }
 
@@ -264,10 +373,12 @@ class BackgroundService {
 
       // JSONとして送信（ProtoBuf専用のシリアライザを使用）
       const jsonString = toJsonString(NativeMessageSchema, message)
+      console.log('[Background] Sending native message:', jsonString, toJson(NativeMessageSchema, message))
 
       chrome.runtime.sendNativeMessage(
         this.nativeHostName,
-        JSON.parse(jsonString),
+        // @ts-expect-error nullになりえるらしいがいったん無視
+        toJson(NativeMessageSchema, message),
         (response) => {
           clearTimeout(timeout)
 
@@ -277,8 +388,9 @@ class BackgroundService {
           else if (response) {
             try {
               // JSONレスポンスをProtoBuf形式にパース
-              const jsonString = JSON.stringify(response)
-              const nativeResponse = fromJsonString(NativeResponseSchema, jsonString)
+              // const jsonString = JSON.stringify(response)
+              const nativeResponse = fromJson(NativeResponseSchema, response)
+              console.log('[Background] Received native response:', nativeResponse)
               resolve(nativeResponse)
             }
             catch (e) {
@@ -310,9 +422,10 @@ class BackgroundService {
     }
   }
 
-  private async handleDebugNativeMessage(
-    message: JsonDebugNativeMessageMessage,
-    sendResponse: (response?: JsonDebugResponse) => void,
+  private async handleProtobufDebugNativeMessage(
+    requestId: string,
+    debugRequest: DebugNativeMessageRequest,
+    sendResponse: (response?: any) => void,
   ): Promise<void> {
     try {
       const debugMessage = create(NativeMessageSchema, {
@@ -324,23 +437,39 @@ class BackgroundService {
         },
       })
 
-      const response = await this.sendNativeProtobufMessage(debugMessage)
+      const nativeResponse = await this.sendNativeProtobufMessage(debugMessage)
 
-      sendResponse({
+      const response = create(ExtensionResponseSchema, {
+        requestId,
         success: true,
-        native_response: response,
-        timestamp: new Date().toISOString(),
+        error: '',
+        response: {
+          case: 'debugResult',
+          value: create(DebugNativeMessageResponseSchema, {
+            nativeResponseJson: JSON.stringify(nativeResponse),
+            timestamp: new Date().toISOString(),
+          }),
+        },
       })
+      sendResponse(toJson(ExtensionResponseSchema, response))
     }
     catch (error) {
       console.error('[Background] Debug native message failed:', error)
       const errorMessage = error instanceof Error ? error.message : 'Unknown error'
 
-      sendResponse({
+      const errorResponse = create(ExtensionResponseSchema, {
+        requestId,
         success: false,
         error: errorMessage,
-        timestamp: new Date().toISOString(),
+        response: {
+          case: 'debugResult',
+          value: create(DebugNativeMessageResponseSchema, {
+            nativeResponseJson: '',
+            timestamp: new Date().toISOString(),
+          }),
+        },
       })
+      sendResponse(toJson(ExtensionResponseSchema, errorResponse))
     }
   }
 

@@ -1,5 +1,30 @@
 // ポップアップUIの制御スクリプト
 
+// Extension Internal protobuf types
+import type {
+  DebugNativeMessageRequest,
+  ExtensionRequest,
+  ExtensionResponse,
+  GetConfigRequest,
+  GetStatusRequest,
+  ShowNotificationRequest,
+  StatusData,
+  SyncGamesRequest,
+} from '../proto/extension_internal/messages_pb'
+
+import { create, fromJson, toJson } from '@bufbuild/protobuf'
+
+import {
+  DebugNativeMessageRequestSchema,
+  ExtensionRequestSchema,
+  ExtensionResponseSchema,
+  GameDataSchema,
+  GetConfigRequestSchema,
+  GetStatusRequestSchema,
+  ShowNotificationRequestSchema,
+  SyncGamesRequestSchema,
+} from '../proto/extension_internal/messages_pb'
+
 interface ExtensionConfig {
   auto_sync: boolean
   show_notifications: boolean
@@ -7,12 +32,7 @@ interface ExtensionConfig {
   sync_interval: number
 }
 
-interface SyncStatus {
-  last_sync?: string
-  total_synced: number
-  connected_extensions: string[]
-  is_running: boolean
-}
+// SyncStatusはprotobufのStatusDataを使用するため削除
 
 interface LogEntry {
   timestamp: string
@@ -290,11 +310,20 @@ class PopupController {
     this.displayDebugResponse({ message: '送信中...' }, false)
 
     try {
-      // バックグラウンドスクリプトに直接メッセージを送信
-      const response = await this.sendMessage({
-        type: 'debug_native_message',
-        payload: parsedMessage,
+      // プロトバフメッセージを作成
+      const request = create(ExtensionRequestSchema, {
+        requestId: this.generateRequestId(),
+        request: {
+          case: 'debugNativeMessage',
+          value: create(DebugNativeMessageRequestSchema, {
+            payloadJson: JSON.stringify(parsedMessage),
+          }),
+        },
       })
+
+      // バックグラウンドスクリプトに送信
+      const responseJson = await this.sendProtobufMessage(request)
+      const response = fromJson(ExtensionResponseSchema, responseJson)
 
       this.displayDebugResponse(response, !response.success)
 
@@ -449,11 +478,21 @@ class PopupController {
 
   private async updateStatus(): Promise<void> {
     try {
-      // バックグラウンドスクリプトからステータスを取得
-      const response = await this.sendMessage({ type: 'get_status' })
+      // プロトバフメッセージを作成
+      const request = create(ExtensionRequestSchema, {
+        requestId: this.generateRequestId(),
+        request: {
+          case: 'getStatus',
+          value: create(GetStatusRequestSchema, {}),
+        },
+      })
 
-      if (response && response.success) {
-        this.updateStatusDisplay(response.status)
+      // バックグラウンドスクリプトからステータスを取得
+      const responseJson = await this.sendProtobufMessage(request)
+      const response = fromJson(ExtensionResponseSchema, responseJson)
+
+      if (response && response.success && response.response.case === 'statusResult') {
+        this.updateStatusDisplay(response.response.value.status)
         this.updateConnectionStatus('connected')
       }
       else {
@@ -467,18 +506,21 @@ class PopupController {
     }
   }
 
-  private updateStatusDisplay(status: SyncStatus): void {
+  private updateStatusDisplay(status?: StatusData): void {
+    if (!status)
+      return
+
     // 最終同期時刻
     const lastSyncElement = document.getElementById('last-sync')
-    if (lastSyncElement && status.last_sync) {
-      const lastSync = new Date(status.last_sync)
+    if (lastSyncElement && status.lastSync) {
+      const lastSync = new Date(status.lastSync)
       lastSyncElement.textContent = this.formatDate(lastSync)
     }
 
     // 統計情報
     const totalSyncedElement = document.getElementById('total-synced')
     if (totalSyncedElement) {
-      totalSyncedElement.textContent = status.total_synced.toString()
+      totalSyncedElement.textContent = status.totalSynced.toString()
     }
   }
 
@@ -565,7 +607,7 @@ class PopupController {
     try {
       await chrome.storage.local.set({ extension_config: this.config })
 
-      // バックグラウンドスクリプトに設定変更を通知
+      // バックグラウンドスクリプトに設定変更を通知（暫定的にsendMessageを使用）
       await this.sendMessage({
         type: 'config_updated',
         config: this.config,
@@ -667,6 +709,22 @@ class PopupController {
   private async sendMessage(message: any): Promise<any> {
     return new Promise((resolve, reject) => {
       chrome.runtime.sendMessage(message, (response) => {
+        if (chrome.runtime.lastError) {
+          reject(new Error(chrome.runtime.lastError.message))
+        }
+        else {
+          resolve(response)
+        }
+      })
+    })
+  }
+
+  private async sendProtobufMessage(request: ExtensionRequest): Promise<any> {
+    return new Promise((resolve, reject) => {
+      // プロトバフメッセージをJSONとしてシリアライズ
+      const messageJson = toJson(ExtensionRequestSchema, request)
+
+      chrome.runtime.sendMessage(messageJson, (response) => {
         if (chrome.runtime.lastError) {
           reject(new Error(chrome.runtime.lastError.message))
         }
