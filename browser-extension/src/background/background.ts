@@ -6,8 +6,6 @@ import type { SiteConfig } from '../content-scripts/base-extractor'
 // Extension Internal types
 import type {
   DebugNativeMessageRequest,
-  ExtensionRequest,
-  ExtensionResponse,
   GetConfigRequest,
   GetStatusRequest,
   ShowNotificationRequest,
@@ -20,24 +18,18 @@ import type {
   NativeResponse,
 } from '../proto/native_messaging/common_pb'
 
-import { create, fromBinary, fromJson, fromJsonString, toBinary, toJson, toJsonString } from '@bufbuild/protobuf'
+import { create, fromJson, toJson, toJsonString } from '@bufbuild/protobuf'
 
 import { TimestampSchema } from '@bufbuild/protobuf/wkt'
 import extractionRules from '../config/extraction-rules.json'
 import {
-  DebugNativeMessageRequestSchema,
   DebugNativeMessageResponseSchema,
   ExtensionRequestSchema,
   ExtensionResponseSchema,
-  GameDataSchema,
-  GetConfigRequestSchema,
   GetConfigResponseSchema,
-  GetStatusRequestSchema,
   GetStatusResponseSchema,
-  ShowNotificationRequestSchema,
   ShowNotificationResponseSchema,
   StatusDataSchema,
-  SyncGamesRequestSchema,
   SyncGamesResponseSchema,
   SyncResultSchema,
 } from '../proto/extension_internal/messages_pb'
@@ -128,7 +120,7 @@ class BackgroundService {
           await this.handleProtobufDebugNativeMessage(extensionRequest.requestId, extensionRequest.request.value, sendResponse)
           break
 
-        default:
+        default: {
           console.warn('[Background] Unknown request type:', extensionRequest.request.case)
           const errorResponse = create(ExtensionResponseSchema, {
             requestId: extensionRequest.requestId,
@@ -137,6 +129,7 @@ class BackgroundService {
             response: { case: undefined },
           })
           sendResponse(toJson(ExtensionResponseSchema, errorResponse))
+        }
       }
     }
     catch (error) {

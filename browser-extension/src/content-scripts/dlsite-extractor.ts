@@ -1,25 +1,19 @@
-import type { ExtractedGameData, SiteConfig } from './base-extractor'
-import { BaseExtractor } from './base-extractor'
-
 // Extension Internal protobuf types
-import type {
-  ExtensionRequest,
-  ExtensionResponse,
-  SyncGamesRequest,
-  GetConfigRequest,
-  ShowNotificationRequest,
-} from '../proto/extension_internal/messages_pb'
+
+import type { ExtractedGameData, SiteConfig } from './base-extractor'
+
+import { create, fromJson, toJson } from '@bufbuild/protobuf'
 
 import {
   ExtensionRequestSchema,
   ExtensionResponseSchema,
-  SyncGamesRequestSchema,
+  GameDataSchema,
   GetConfigRequestSchema,
   ShowNotificationRequestSchema,
-  GameDataSchema,
+  SyncGamesRequestSchema,
 } from '../proto/extension_internal/messages_pb'
 
-import { create, fromJson, toJson } from '@bufbuild/protobuf'
+import { BaseExtractor } from './base-extractor'
 
 // DLsite用の設定を読み込み
 let dlsiteConfig: SiteConfig
@@ -34,9 +28,9 @@ const getConfigRequest = create(ExtensionRequestSchema, {
   request: {
     case: 'getConfig',
     value: create(GetConfigRequestSchema, {
-      site: 'dlsite'
-    })
-  }
+      site: 'dlsite',
+    }),
+  },
 })
 
 chrome.runtime.sendMessage(toJson(ExtensionRequestSchema, getConfigRequest), (responseJson) => {
@@ -46,7 +40,8 @@ chrome.runtime.sendMessage(toJson(ExtensionRequestSchema, getConfigRequest), (re
       dlsiteConfig = JSON.parse(response.response.value.configJson)
       initDLsiteExtractor()
     }
-  } catch (error) {
+  }
+  catch (error) {
     console.error('[DLsite Extractor] Failed to parse config response:', error)
   }
 })
@@ -123,7 +118,7 @@ class DLsiteExtractor extends BaseExtractor {
         purchaseUrl: game.purchase_url,
         purchaseDate: game.purchase_date || '',
         thumbnailUrl: game.thumbnail_url || '',
-        additionalData: game.additional_data
+        additionalData: game.additional_data,
       }))
 
       // プロトバフメッセージを作成
@@ -134,9 +129,9 @@ class DLsiteExtractor extends BaseExtractor {
           value: create(SyncGamesRequestSchema, {
             store: 'DLSite',
             games: gameDataList,
-            source: 'dlsite-extractor'
-          })
-        }
+            source: 'dlsite-extractor',
+          }),
+        },
       })
 
       // バックグラウンドスクリプトに送信
@@ -151,7 +146,8 @@ class DLsiteExtractor extends BaseExtractor {
             console.error('[DLsite Extractor] Sync failed:', response)
             this.showNotification('DLsite: 同期に失敗しました', 'error')
           }
-        } catch (error) {
+        }
+        catch (error) {
           console.error('[DLsite Extractor] Failed to parse sync response:', error)
           this.showNotification('DLsite: 同期レスポンスの解析に失敗しました', 'error')
         }
@@ -278,8 +274,8 @@ class DLsiteExtractor extends BaseExtractor {
           title: 'Launcherg DL Store Sync',
           message,
           iconType: type,
-        })
-      }
+        }),
+      },
     })
 
     // ブラウザ通知を表示

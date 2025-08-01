@@ -7,4 +7,10 @@ export default antfu({
   rules: {
     'prefer-const': 'off',
   },
+}, {
+  files: ['browser-extension/**'],
+  rules: {
+    'no-console': 'off',
+    'no-new': 'off',
+  },
 })

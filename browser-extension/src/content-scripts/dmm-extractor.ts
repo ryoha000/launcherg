@@ -1,25 +1,19 @@
-import type { ExtractedGameData, SiteConfig } from './base-extractor'
-import { BaseExtractor } from './base-extractor'
-
 // Extension Internal protobuf types
-import type {
-  ExtensionRequest,
-  ExtensionResponse,
-  SyncGamesRequest,
-  GetConfigRequest,
-  ShowNotificationRequest,
-} from '../proto/extension_internal/messages_pb'
+
+import type { ExtractedGameData, SiteConfig } from './base-extractor'
+
+import { create, fromJson, toJson } from '@bufbuild/protobuf'
 
 import {
   ExtensionRequestSchema,
   ExtensionResponseSchema,
-  SyncGamesRequestSchema,
+  GameDataSchema,
   GetConfigRequestSchema,
   ShowNotificationRequestSchema,
-  GameDataSchema,
+  SyncGamesRequestSchema,
 } from '../proto/extension_internal/messages_pb'
 
-import { create, fromJson, toJson } from '@bufbuild/protobuf'
+import { BaseExtractor } from './base-extractor'
 
 // DMM Games用の設定を読み込み
 let dmmConfig: SiteConfig
@@ -34,9 +28,9 @@ const getConfigRequest = create(ExtensionRequestSchema, {
   request: {
     case: 'getConfig',
     value: create(GetConfigRequestSchema, {
-      site: 'dmm'
-    })
-  }
+      site: 'dmm',
+    }),
+  },
 })
 
 chrome.runtime.sendMessage(toJson(ExtensionRequestSchema, getConfigRequest), (responseJson) => {
@@ -46,7 +40,8 @@ chrome.runtime.sendMessage(toJson(ExtensionRequestSchema, getConfigRequest), (re
       dmmConfig = JSON.parse(response.response.value.configJson)
       initDMMExtractor()
     }
-  } catch (error) {
+  }
+  catch (error) {
     console.error('[DMM Extractor] Failed to parse config response:', error)
   }
 })
@@ -114,7 +109,7 @@ class DMMExtractor extends BaseExtractor {
         purchaseUrl: game.purchase_url,
         purchaseDate: game.purchase_date || '',
         thumbnailUrl: game.thumbnail_url || '',
-        additionalData: game.additional_data
+        additionalData: game.additional_data,
       }))
 
       // プロトバフメッセージを作成
@@ -125,9 +120,9 @@ class DMMExtractor extends BaseExtractor {
           value: create(SyncGamesRequestSchema, {
             store: 'DMM',
             games: gameDataList,
-            source: 'dmm-extractor'
-          })
-        }
+            source: 'dmm-extractor',
+          }),
+        },
       })
 
       // バックグラウンドスクリプトに送信
@@ -142,7 +137,8 @@ class DMMExtractor extends BaseExtractor {
             console.error('[DMM Extractor] Sync failed:', response)
             this.showNotification('DMM: 同期に失敗しました', 'error')
           }
-        } catch (error) {
+        }
+        catch (error) {
           console.error('[DMM Extractor] Failed to parse sync response:', error)
           this.showNotification('DMM: 同期レスポンスの解析に失敗しました', 'error')
         }
@@ -223,8 +219,8 @@ class DMMExtractor extends BaseExtractor {
           title: 'Launcherg DL Store Sync',
           message,
           iconType: type,
-        })
-      }
+        }),
+      },
     })
 
     // ブラウザ通知を表示

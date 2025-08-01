@@ -2,14 +2,8 @@
 
 // Extension Internal protobuf types
 import type {
-  DebugNativeMessageRequest,
   ExtensionRequest,
-  ExtensionResponse,
-  GetConfigRequest,
-  GetStatusRequest,
-  ShowNotificationRequest,
   StatusData,
-  SyncGamesRequest,
 } from '../proto/extension_internal/messages_pb'
 
 import { create, fromJson, toJson } from '@bufbuild/protobuf'
@@ -18,11 +12,7 @@ import {
   DebugNativeMessageRequestSchema,
   ExtensionRequestSchema,
   ExtensionResponseSchema,
-  GameDataSchema,
-  GetConfigRequestSchema,
   GetStatusRequestSchema,
-  ShowNotificationRequestSchema,
-  SyncGamesRequestSchema,
 } from '../proto/extension_internal/messages_pb'
 
 interface ExtensionConfig {
@@ -401,7 +391,7 @@ class PopupController {
       this.addLog('info', 'デバッグレスポンスをクリップボードにコピーしました')
     }
     catch (error) {
-      this.addLog('error', 'クリップボードへのコピーに失敗しました')
+      this.addLog('error', `クリップボードへのコピーに失敗しました。 ${error instanceof Error ? error.message : 'Unknown error'}`)
     }
   }
 
