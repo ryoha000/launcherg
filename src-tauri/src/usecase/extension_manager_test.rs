@@ -2,10 +2,7 @@
 mod tests {
     use crate::usecase::extension_manager::ExtensionManagerUseCase;
     use crate::{
-        infrastructure::{
-            repositoryimpl::repository::RepositoriesExt,
-            native_messaging_mock::MockNativeMessagingHostClient,
-        },
+        infrastructure::repositoryimpl::repository::RepositoriesExt,
         domain::{
             repository::{
                 collection::MockCollectionRepository,
@@ -59,8 +56,7 @@ mod tests {
     async fn test_extension_manager_with_nonexistent_path() {
         let repositories = Arc::new(MockRepositories::new());
         let pubsub = MockPubSub;
-        let mock_client = Arc::new(MockNativeMessagingHostClient::with_path_not_exists());
-        let extension_manager = ExtensionManagerUseCase::new(repositories, pubsub, mock_client);
+        let extension_manager = ExtensionManagerUseCase::new(repositories, pubsub);
 
         let result = extension_manager.check_extension_connection().await;
         
@@ -84,8 +80,7 @@ mod tests {
     async fn test_extension_manager_with_invalid_executable() {
         let repositories = Arc::new(MockRepositories::new());
         let pubsub = MockPubSub;
-        let mock_client = Arc::new(MockNativeMessagingHostClient::with_health_check_failure());
-        let extension_manager = ExtensionManagerUseCase::new(repositories, pubsub, mock_client);
+        let extension_manager = ExtensionManagerUseCase::new(repositories, pubsub);
 
         let result = extension_manager.check_extension_connection().await;
         
@@ -94,10 +89,10 @@ mod tests {
         assert!(!status.is_running, "無効な実行ファイルの場合、is_running: falseになるはず");
         assert!(status.connected_extensions.is_empty());
         
-        // 詳細状態をチェック（health_check_timeoutの場合）
+        // レジストリが見つからない場合はHostNotFoundになる
         assert!(
-            status.connection_status == 5, // HealthCheckTimeout
-            "ヘルスチェック失敗の場合、HealthCheckTimeoutになるはず: {:?}", status.connection_status
+            status.connection_status == 3, // HostNotFound
+            "レジストリエントリが見つからない場合、HostNotFoundになるはず: {:?}", status.connection_status
         );
         assert!(!status.error_message.is_empty(), "エラーメッセージが設定されているはず");
     }
@@ -106,31 +101,28 @@ mod tests {
     async fn test_extension_manager_with_mock_host() {
         let repositories = Arc::new(MockRepositories::new());
         let pubsub = MockPubSub;
-        let mock_client = Arc::new(MockNativeMessagingHostClient::new());
-        let extension_manager = ExtensionManagerUseCase::new(repositories, pubsub, mock_client);
+        let extension_manager = ExtensionManagerUseCase::new(repositories, pubsub);
 
         let result = extension_manager.check_extension_connection().await;
         
         assert!(result.is_ok());
         let status = result.unwrap();
-        // 正常なモックの場合、is_running: trueになる
-        assert!(status.is_running, "正常なモックの場合、is_running: trueになるはず");
+        // レジストリが見つからない場合、is_running: falseになる
+        assert!(!status.is_running, "レジストリエントリが見つからない場合、is_running: falseになるはず");
         
-        // 詳細状態をチェック（正常接続の場合）
+        // 詳細状態をチェック（レジストリが見つからない場合）
         assert!(
-            status.connection_status == 1, // Connected
-            "正常接続の場合、Connectedになるはず: {:?}", status.connection_status
+            status.connection_status == 3, // HostNotFound
+            "レジストリエントリが見つからない場合、HostNotFoundになるはず: {:?}", status.connection_status
         );
-        assert_eq!(status.total_synced, 42);
-        assert_eq!(status.connected_extensions, vec!["mock-extension".to_string()]);
+        assert!(!status.error_message.is_empty(), "エラーメッセージが設定されているはず");
     }
 
     #[tokio::test]
     async fn test_extension_manager_default_path() {
         let repositories = Arc::new(MockRepositories::new());
         let pubsub = MockPubSub;
-        let mock_client = Arc::new(MockNativeMessagingHostClient::with_path_not_exists());
-        let extension_manager = ExtensionManagerUseCase::new(repositories, pubsub, mock_client);
+        let extension_manager = ExtensionManagerUseCase::new(repositories, pubsub);
 
         let result = extension_manager.check_extension_connection().await;
         

@@ -7,6 +7,12 @@ pub struct MockNativeMessagingHostClient {
     path_exists: bool,
 }
 
+impl Default for MockNativeMessagingHostClient {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl MockNativeMessagingHostClient {
     pub fn new() -> Self {
         Self {

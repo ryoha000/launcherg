@@ -29,6 +29,8 @@ impl AppConfigProvider for AppHandle {
 
 const BROWSER_EXTENSION_DIR: &str = "browser-extension";
 const EXTENSION_PACKAGE_NAME: &str = "launcherg-extension.zip";
+const CHROME_REGISTRY_KEY: &str = "SOFTWARE\\Google\\Chrome\\NativeMessagingHosts\\moe.ryoha.launcherg.extension_host";
+const EDGE_REGISTRY_KEY: &str = "SOFTWARE\\Microsoft\\Edge\\NativeMessagingHosts\\moe.ryoha.launcherg.extension_host";
 
 // PowerShellスクリプトを文字列として埋め込み
 const INSTALL_SCRIPT: &str = r#"# Native Messaging Host インストールスクリプト (Windows)
@@ -709,8 +711,8 @@ impl<T: AppConfigProvider> ExtensionInstallerUseCase<T> {
     /// レジストリキーの状態を確認
     #[cfg(target_os = "windows")]
     pub fn check_registry_keys(&self) -> Result<Vec<RegistryKeyInfo>, ExtensionInstallerError> {
-        let chrome_key = "SOFTWARE\\Google\\Chrome\\NativeMessagingHosts\\moe.ryoha.launcherg.extension_host";
-        let edge_key = "SOFTWARE\\Microsoft\\Edge\\NativeMessagingHosts\\moe.ryoha.launcherg.extension_host";
+        let chrome_key = CHROME_REGISTRY_KEY;
+        let edge_key = EDGE_REGISTRY_KEY;
         
         let mut results = Vec::new();
         
@@ -761,8 +763,8 @@ impl<T: AppConfigProvider> ExtensionInstallerUseCase<T> {
     /// レジストリキーを削除
     #[cfg(target_os = "windows")]
     pub fn remove_registry_keys(&self) -> Result<Vec<String>, ExtensionInstallerError> {
-        let chrome_key = "SOFTWARE\\Google\\Chrome\\NativeMessagingHosts\\moe.ryoha.launcherg.extension_host";
-        let edge_key = "SOFTWARE\\Microsoft\\Edge\\NativeMessagingHosts\\moe.ryoha.launcherg.extension_host";
+        let chrome_key = CHROME_REGISTRY_KEY;
+        let edge_key = EDGE_REGISTRY_KEY;
         
         let mut results = Vec::new();
         let hkcu = RegKey::predef(HKEY_CURRENT_USER);

@@ -12,7 +12,6 @@
     commandGetExtensionPackageInfo,
     commandGetSyncStatus,
     commandRemoveRegistryKeys,
-    commandSetExtensionConfig,
     commandSetupNativeMessagingHost,
   } from '@/lib/command'
   import { showErrorToast, showInfoToast } from '@/lib/toast'
@@ -26,14 +25,6 @@
 
   // 同期履歴
   let syncHistory = $state<any[]>([])
-
-  // 設定
-  let extensionConfig = $state({
-    auto_sync: true,
-    allowed_domains: ['games.dmm.co.jp', 'www.dlsite.com'],
-    sync_interval_minutes: '5',
-    debug_mode: false,
-  })
 
   // 手動同期テスト用
   let testSyncData = $state({
@@ -128,16 +119,6 @@
     }
     finally {
       loading = false
-    }
-  }
-
-  const saveConfig = async () => {
-    try {
-      await commandSetExtensionConfig(extensionConfig)
-      showInfoToast('拡張機能の設定を保存しました')
-    }
-    catch (e) {
-      showErrorToast(`設定の保存に失敗: ${e}`)
     }
   }
 
@@ -413,71 +394,6 @@
           variant='normal'
           onclick={loadExtensionStatus}
           disabled={loading}
-        />
-      </div>
-    </div>
-
-    <!-- 拡張機能設定 -->
-    <div class='border border-(border-primary) rounded bg-(bg-secondary) p-4'>
-      <h3 class='mb-3 text-(lg text-primary) font-semibold'>拡張機能設定</h3>
-      <div class='space-y-4'>
-        <label class='flex items-center justify-between'>
-          <span class='text-(base text-primary)'>自動同期</span>
-          <input
-            type='checkbox'
-            bind:checked={extensionConfig.auto_sync}
-            class='toggle'
-          />
-        </label>
-        <label class='flex items-center justify-between'>
-          <span class='text-(base text-primary)'>デバッグモード</span>
-          <input
-            type='checkbox'
-            bind:checked={extensionConfig.debug_mode}
-            class='toggle'
-          />
-        </label>
-        <div class='space-y-2'>
-          <label for='sync-interval' class='text-(base text-primary)'>同期間隔（分）</label>
-          <input
-            id='sync-interval'
-            type='number'
-            bind:value={extensionConfig.sync_interval_minutes}
-            min='1'
-            max='60'
-            class='w-full border border-(border-primary) rounded bg-(bg-primary) p-2 text-(text-primary)'
-          />
-        </div>
-        <div class='space-y-2'>
-          <span class='text-(base text-primary)'>許可ドメイン</span>
-          <div class='space-y-1'>
-            {#each extensionConfig.allowed_domains as _, i}
-              <div class='flex items-center gap-2'>
-                <Input
-                  bind:value={extensionConfig.allowed_domains[i]}
-                  placeholder='example.com'
-                />
-                <Button
-                  variant='normal'
-                  text='削除'
-                  onclick={() => {
-                    extensionConfig.allowed_domains = extensionConfig.allowed_domains.filter((_domain, index) => index !== i)
-                  }}
-                />
-              </div>
-            {/each}
-            <Button
-              text='ドメイン追加'
-              variant='normal'
-              onclick={() => {
-                extensionConfig.allowed_domains = [...extensionConfig.allowed_domains, '']
-              }}
-            />
-          </div>
-        </div>
-        <Button
-          text='設定を保存'
-          onclick={saveConfig}
         />
       </div>
     </div>

@@ -6,19 +6,21 @@ use super::error::UseCaseError;
 use crate::{
     domain::{
         pubsub::{PubSubService, ExtensionConnectionPayload},
-        extension::{SyncStatus, ExtensionConnectionStatus, NativeMessagingHostClient, ExtensionConfig},
+        extension::{SyncStatus, ExtensionConnectionStatus, ExtensionConfig, NativeMessagingHostClient},
     },
-    infrastructure::repositoryimpl::repository::RepositoriesExt,
+    infrastructure::{
+        repositoryimpl::repository::RepositoriesExt,
+        native_messaging::{NativeMessagingHostClientImpl, NativeHostPathResolver},
+    },
 };
 
 #[derive(new)]
-pub struct ExtensionManagerUseCase<R: RepositoriesExt, P: PubSubService, C: NativeMessagingHostClient> {
+pub struct ExtensionManagerUseCase<R: RepositoriesExt, P: PubSubService> {
     repositories: Arc<R>,
     pubsub: P,
-    native_messaging_client: Arc<C>,
 }
 
-impl<R: RepositoriesExt, P: PubSubService, C: NativeMessagingHostClient> ExtensionManagerUseCase<R, P, C> {
+impl<R: RepositoriesExt, P: PubSubService> ExtensionManagerUseCase<R, P> {
     /// ブラウザ拡張機能の接続状況をチェックする
     pub async fn check_extension_connection(&self) -> Result<SyncStatus, UseCaseError> {
         // 接続開始をPubSubで通知
@@ -30,12 +32,35 @@ impl<R: RepositoriesExt, P: PubSubService, C: NativeMessagingHostClient> Extensi
         };
         let _ = self.pubsub.notify("extension-connection-status", connecting_payload);
 
+        // Native Messaging Hostクライアントを作成
+        let native_messaging_client = match self.create_native_messaging_client() {
+            Ok(client) => client,
+            Err(e) => {
+                let result_payload = ExtensionConnectionPayload {
+                    connection_status: "host_not_found".to_string(),
+                    is_running: false,
+                    error_message: Some(e.to_string()),
+                    timestamp: Utc::now(),
+                };
+                let _ = self.pubsub.notify("extension-connection-status", result_payload);
+                
+                return Ok(SyncStatus {
+                    last_sync: None,
+                    total_synced: 0,
+                    connected_extensions: vec![],
+                    is_running: false,
+                    connection_status: ExtensionConnectionStatus::HostNotFound as i32,
+                    error_message: e.to_string(),
+                });
+            }
+        };
+
         // Native Messaging Hostとの通信を試行
-        match self.native_messaging_client.health_check().await {
+        match native_messaging_client.health_check().await {
             Ok(health_ok) => {
                 if health_ok {
                     // ヘルスチェック成功、ステータスを取得
-                    match self.native_messaging_client.get_sync_status().await {
+                    match native_messaging_client.get_sync_status().await {
                         Ok(status) => {
                             let result_payload = ExtensionConnectionPayload {
                                 connection_status: "connected".to_string(),
@@ -119,10 +144,19 @@ impl<R: RepositoriesExt, P: PubSubService, C: NativeMessagingHostClient> Extensi
 
     /// 拡張機能設定を更新
     pub async fn set_extension_config(&self, config: &ExtensionConfig) -> Result<String, UseCaseError> {
-        match self.native_messaging_client.set_config(config).await {
+        let native_messaging_client = self.create_native_messaging_client()
+            .map_err(|e| UseCaseError::NativeHostProcessError(e.to_string()))?;
+            
+        match native_messaging_client.set_config(config).await {
             Ok(message) => Ok(message),
             Err(e) => Err(UseCaseError::NativeHostProcessError(e.to_string())),
         }
+    }
+
+    /// Native Messaging Hostクライアントを作成
+    fn create_native_messaging_client(&self) -> Result<NativeMessagingHostClientImpl, Box<dyn std::error::Error + Send + Sync>> {
+        let native_host_path = NativeHostPathResolver::resolve_path()?;
+        Ok(NativeMessagingHostClientImpl::new(native_host_path))
     }
 }
 

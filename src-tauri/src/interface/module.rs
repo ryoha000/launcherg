@@ -6,7 +6,6 @@ use crate::{
     domain::pubsub::PubSubService,
     infrastructure::{
         explorerimpl::explorer::{Explorers, ExplorersExt},
-        native_messaging::NativeMessagingHostClientImpl,
         pubsubimpl::pubsub::{PubSub, PubSubExt},
         repositoryimpl::{
             driver::Db,
@@ -24,7 +23,7 @@ use crate::{
 pub struct Modules {
     collection_use_case: CollectionUseCase<Repositories>,
     explored_cache_use_case: ExploredCacheUseCase<Repositories>,
-    extension_manager_use_case: ExtensionManagerUseCase<Repositories, PubSub, NativeMessagingHostClientImpl>,
+    extension_manager_use_case: ExtensionManagerUseCase<Repositories, PubSub>,
     file_use_case: FileUseCase<Explorers>,
     all_game_cache_use_case: AllGameCacheUseCase<Repositories>,
     process_use_case: ProcessUseCase<Windows>,
@@ -38,7 +37,7 @@ pub trait ModulesExt {
 
     fn collection_use_case(&self) -> &CollectionUseCase<Self::Repositories>;
     fn explored_cache_use_case(&self) -> &ExploredCacheUseCase<Self::Repositories>;
-    fn extension_manager_use_case(&self) -> &ExtensionManagerUseCase<Self::Repositories, Self::PubSub, NativeMessagingHostClientImpl>;
+    fn extension_manager_use_case(&self) -> &ExtensionManagerUseCase<Self::Repositories, Self::PubSub>;
     fn all_game_cache_use_case(&self) -> &AllGameCacheUseCase<Self::Repositories>;
     fn file_use_case(&self) -> &FileUseCase<Self::Explorers>;
     fn process_use_case(&self) -> &ProcessUseCase<Self::Windows>;
@@ -57,7 +56,7 @@ impl ModulesExt for Modules {
     fn explored_cache_use_case(&self) -> &ExploredCacheUseCase<Self::Repositories> {
         &self.explored_cache_use_case
     }
-    fn extension_manager_use_case(&self) -> &ExtensionManagerUseCase<Self::Repositories, Self::PubSub, NativeMessagingHostClientImpl> {
+    fn extension_manager_use_case(&self) -> &ExtensionManagerUseCase<Self::Repositories, Self::PubSub> {
         &self.extension_manager_use_case
     }
     fn all_game_cache_use_case(&self) -> &AllGameCacheUseCase<Self::Repositories> {
@@ -85,8 +84,7 @@ impl Modules {
 
         let collection_use_case = CollectionUseCase::new(repositories.clone());
         let explored_cache_use_case = ExploredCacheUseCase::new(repositories.clone());
-        let native_messaging_client = Arc::new(NativeMessagingHostClientImpl::with_app_handle(Arc::new(handle.clone())));
-        let extension_manager_use_case = ExtensionManagerUseCase::new(repositories.clone(), pubsub.clone(), native_messaging_client);
+        let extension_manager_use_case = ExtensionManagerUseCase::new(repositories.clone(), pubsub.clone());
         let all_game_cache_use_case: AllGameCacheUseCase<Repositories> =
             AllGameCacheUseCase::new(repositories.clone());
 
