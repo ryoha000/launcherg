@@ -43,18 +43,18 @@
 </script>
 
 <div
-  class='min-h-0 relative border-(r-1px solid border-primary) transition-all'
+  class='relative min-h-0 border-(r-1px border-primary solid) transition-all'
   class:w-80={$showSidebar}
   class:w-12={!$showSidebar}
 >
   {#if $showSidebar}
     <div class='absolute inset-0' transition:fly={{ x: -40, duration: 150 }}>
       <div
-        class='min-h-0 relative w-full h-full grid-(~ rows-[min-content_min-content_min-content_1fr])'
+        class='relative grid grid-(rows-[min-content_min-content_min-content_1fr]) h-full min-h-0 w-full'
       >
         <Header />
         <SubHeader />
-        <div class='w-full mt-2 px-2'>
+        <div class='mt-2 w-full px-2'>
           <Search
             bind:query={$query}
             bind:order={$order}

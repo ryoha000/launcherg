@@ -28,22 +28,22 @@
   }}
 />
 <div
-  class='border-(2px solid transparent) focus-within:border-accent-accent rounded transition-all'
+  class='border-(2px transparent solid) rounded transition-all focus-within:border-accent-accent'
 >
   <div
-    class='group w-full flex items-center gap-2 px-2 py-1 border border-(border-primary solid) rounded bg-bg-secondary hover:bg-bg-primary focus-within:(border-transparent bg-bg-primary) transition-all relative'
+    class='group relative w-full flex items-center gap-2 border border-(border-primary solid) rounded bg-bg-secondary px-2 py-1 transition-all focus-within:(border-transparent bg-bg-primary) hover:bg-bg-primary'
   >
-    <div class='w-5 h-5 i-material-symbols-search color-text-primary'></div>
+    <div class='i-material-symbols-search h-5 w-5 color-text-primary'></div>
     <input
       bind:this={input}
       bind:value
       {placeholder}
-      class='w-full text-(body2 text-primary) bg-bg-secondary group-hover:bg-bg-primary focus:bg-bg-primary placeholder-text-placeholder transition-all'
+      class='placeholder-text-placeholder w-full bg-bg-secondary text-(body2 text-primary) transition-all focus:bg-bg-primary group-hover:bg-bg-primary'
     />
     {#if value !== ''}
       <button
         onclick={() => (value = '')}
-        class='absolute right-2 w-5 h-5 i-material-symbols-cancel-outline-rounded color-text-primary'
+        class='i-material-symbols-cancel-outline-rounded absolute right-2 h-5 w-5 color-text-primary'
         aria-label='Clear search input'
       ></button>
     {/if}

@@ -14,8 +14,6 @@
     commandRemoveRegistryKeys,
     commandSetExtensionConfig,
     commandSetupNativeMessagingHost,
-    commandSyncDLStoreGamesBatch,
-
   } from '@/lib/command'
   import { showErrorToast, showInfoToast } from '@/lib/toast'
 
@@ -114,33 +112,8 @@
   }
 
   const testManualSync = async () => {
-    loading = true
-    try {
-      const result = await commandSyncDLStoreGamesBatch(
-        testSyncData.store,
-        testSyncData.sampleGames,
-      )
-
-      showInfoToast(`テスト同期完了: 成功${result.success_count}件、エラー${result.error_count}件`)
-
-      // 履歴に追加
-      syncHistory.unshift({
-        timestamp: new Date().toISOString(),
-        store: testSyncData.store,
-        type: 'manual_test',
-        success_count: result.success_count,
-        error_count: result.error_count,
-        errors: result.errors,
-      })
-
-      await loadExtensionStatus()
-    }
-    catch (e) {
-      showErrorToast(`テスト同期に失敗: ${e}`)
-    }
-    finally {
-      loading = false
-    }
+    // TODO: sync_dl_store_games_batch コマンドが削除されたため、この機能は現在利用できません
+    showErrorToast('手動同期機能は現在利用できません')
   }
 
   // 拡張機能パッケージ生成
@@ -374,27 +347,27 @@
   }
 </script>
 
-<div class='p-6 max-w-4xl mx-auto h-full overflow-y-auto'>
+<div class='mx-auto h-full max-w-4xl overflow-y-auto p-6'>
   <div class='space-y-6'>
     <!-- Header -->
     <div class='flex items-center justify-between'>
-      <h1 class='text-2xl font-bold text-(text-primary)'>ブラウザ拡張機能管理</h1>
+      <h1 class='text-(2xl text-primary) font-bold'>ブラウザ拡張機能管理</h1>
       <div class='flex gap-2'>
         <Button variant='normal' onclick={loadExtensionStatus} text='再接続' />
         <div class='flex items-center gap-2'>
-          <div class='w-3 h-3 rounded-full' class:bg-green-500={extensionStatus === 'connected'} class:bg-red-500={extensionStatus === 'disconnected'} class:bg-gray-500={extensionStatus === 'unknown'}></div>
-          <span class='text-sm text-(text-secondary)'>{getStatusText(extensionStatus)}</span>
+          <div class='h-3 w-3 rounded-full' class:bg-green-500={extensionStatus === 'connected'} class:bg-red-500={extensionStatus === 'disconnected'} class:bg-gray-500={extensionStatus === 'unknown'}></div>
+          <span class='text-(sm text-secondary)'>{getStatusText(extensionStatus)}</span>
         </div>
       </div>
     </div>
 
     <!-- 接続状況 -->
-    <div class='bg-(bg-secondary) border border-(border-primary) rounded p-4'>
-      <h3 class='text-lg font-semibold mb-3 text-(text-primary)'>接続状況</h3>
+    <div class='border border-(border-primary) rounded bg-(bg-secondary) p-4'>
+      <h3 class='mb-3 text-(lg text-primary) font-semibold'>接続状況</h3>
       <div class='flex items-center justify-between'>
         <div class='space-y-2'>
           <div class='flex items-center gap-2'>
-            <span class='text-(text-secondary) text-sm'>拡張機能:</span>
+            <span class='text-(sm text-secondary)'>拡張機能:</span>
             <span class={`font-medium ${getStatusColor(extensionStatus)}`}>
               {getStatusText(extensionStatus)}
             </span>
@@ -402,7 +375,7 @@
 
           {#if detailedConnectionStatus}
             <div class='flex items-center gap-2'>
-              <span class='text-(text-secondary) text-sm'>詳細状態:</span>
+              <span class='text-(sm text-secondary)'>詳細状態:</span>
               <span class={`text-sm font-medium ${getDetailedStatusColor(detailedConnectionStatus)}`}>
                 {getDetailedStatusMessage(detailedConnectionStatus)}
               </span>
@@ -410,10 +383,10 @@
           {/if}
 
           {#if errorMessage}
-            <div class='mt-2 p-2 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded'>
+            <div class='mt-2 border border-red-200 rounded bg-red-50 p-2 dark:border-red-800 dark:bg-red-900/20'>
               <div class='flex items-start gap-2'>
-                <span class='text-red-600 text-sm font-medium'>エラー詳細:</span>
-                <span class='text-red-700 dark:text-red-300 text-sm break-all'>
+                <span class='text-sm text-red-600 font-medium'>エラー詳細:</span>
+                <span class='break-all text-sm text-red-700 dark:text-red-300'>
                   {errorMessage}
                 </span>
               </div>
@@ -422,14 +395,14 @@
 
           {#if syncStatus}
             <div class='flex items-center gap-2'>
-              <span class='text-(text-secondary) text-sm'>最終同期:</span>
-              <span class='text-(text-primary) text-sm'>
+              <span class='text-(sm text-secondary)'>最終同期:</span>
+              <span class='text-(sm text-primary)'>
                 {syncStatus.last_sync ? formatDate(syncStatus.last_sync) : '未同期'}
               </span>
             </div>
             <div class='flex items-center gap-2'>
-              <span class='text-(text-secondary) text-sm'>総同期数:</span>
-              <span class='text-(text-primary) text-sm font-medium'>
+              <span class='text-(sm text-secondary)'>総同期数:</span>
+              <span class='text-(sm text-primary) font-medium'>
                 {syncStatus.total_synced}
               </span>
             </div>
@@ -445,11 +418,11 @@
     </div>
 
     <!-- 拡張機能設定 -->
-    <div class='bg-(bg-secondary) border border-(border-primary) rounded p-4'>
-      <h3 class='text-lg font-semibold mb-3 text-(text-primary)'>拡張機能設定</h3>
+    <div class='border border-(border-primary) rounded bg-(bg-secondary) p-4'>
+      <h3 class='mb-3 text-(lg text-primary) font-semibold'>拡張機能設定</h3>
       <div class='space-y-4'>
         <label class='flex items-center justify-between'>
-          <span class='text-(text-primary) text-base'>自動同期</span>
+          <span class='text-(base text-primary)'>自動同期</span>
           <input
             type='checkbox'
             bind:checked={extensionConfig.auto_sync}
@@ -457,7 +430,7 @@
           />
         </label>
         <label class='flex items-center justify-between'>
-          <span class='text-(text-primary) text-base'>デバッグモード</span>
+          <span class='text-(base text-primary)'>デバッグモード</span>
           <input
             type='checkbox'
             bind:checked={extensionConfig.debug_mode}
@@ -465,18 +438,18 @@
           />
         </label>
         <div class='space-y-2'>
-          <label for='sync-interval' class='text-(text-primary) text-base'>同期間隔（分）</label>
+          <label for='sync-interval' class='text-(base text-primary)'>同期間隔（分）</label>
           <input
             id='sync-interval'
             type='number'
             bind:value={extensionConfig.sync_interval_minutes}
             min='1'
             max='60'
-            class='w-full p-2 bg-(bg-primary) border border-(border-primary) rounded text-(text-primary)'
+            class='w-full border border-(border-primary) rounded bg-(bg-primary) p-2 text-(text-primary)'
           />
         </div>
         <div class='space-y-2'>
-          <span class='text-(text-primary) text-base'>許可ドメイン</span>
+          <span class='text-(base text-primary)'>許可ドメイン</span>
           <div class='space-y-1'>
             {#each extensionConfig.allowed_domains as _, i}
               <div class='flex items-center gap-2'>
@@ -510,15 +483,15 @@
     </div>
 
     <!-- テスト機能 -->
-    <div class='bg-(bg-secondary) border border-(border-primary) rounded p-4'>
-      <h3 class='text-lg font-semibold mb-3 text-(text-primary)'>テスト機能</h3>
+    <div class='border border-(border-primary) rounded bg-(bg-secondary) p-4'>
+      <h3 class='mb-3 text-(lg text-primary) font-semibold'>テスト機能</h3>
       <div class='space-y-4'>
         <div class='space-y-2'>
-          <label for='test-store' class='text-(text-primary) text-base'>テストストア</label>
+          <label for='test-store' class='text-(base text-primary)'>テストストア</label>
           <select
             id='test-store'
             bind:value={testSyncData.store}
-            class='w-full p-2 bg-(bg-primary) border border-(border-primary) rounded text-(text-primary)'
+            class='w-full border border-(border-primary) rounded bg-(bg-primary) p-2 text-(text-primary)'
           >
             <option value='DMM'>DMM Games</option>
             <option value='DLSite'>DLsite</option>
@@ -529,44 +502,44 @@
           onclick={testManualSync}
           disabled={loading}
         />
-        <p class='text-(text-secondary) text-sm'>
+        <p class='text-(sm text-secondary)'>
           ※ テスト用のサンプルデータを使用して同期機能をテストします
         </p>
       </div>
     </div>
 
     <!-- 同期履歴 -->
-    <div class='bg-(bg-secondary) border border-(border-primary) rounded p-4'>
-      <h3 class='text-lg font-semibold mb-3 text-(text-primary)'>同期履歴</h3>
+    <div class='border border-(border-primary) rounded bg-(bg-secondary) p-4'>
+      <h3 class='mb-3 text-(lg text-primary) font-semibold'>同期履歴</h3>
       {#if syncHistory.length === 0}
-        <div class='text-center py-8'>
-          <p class='text-(text-secondary) text-lg'>同期履歴はありません</p>
-          <p class='text-(text-tertiary) text-sm mt-1'>テスト同期を実行すると履歴が表示されます</p>
+        <div class='py-8 text-center'>
+          <p class='text-(lg text-secondary)'>同期履歴はありません</p>
+          <p class='mt-1 text-(sm text-tertiary)'>テスト同期を実行すると履歴が表示されます</p>
         </div>
       {:else}
-        <div class='space-y-2 max-h-96 overflow-y-auto'>
-          <div class='text-sm text-(text-secondary) mb-2 px-2'>
+        <div class='max-h-96 overflow-y-auto space-y-2'>
+          <div class='mb-2 px-2 text-(sm text-secondary)'>
             {syncHistory.length}件の履歴が見つかりました
           </div>
           {#each syncHistory as history, index}
-            <div class='p-3 bg-(bg-tertiary) rounded border border-(border-secondary) hover:bg-(bg-secondary) transition-colors'>
-              <div class='flex items-center justify-between mb-2'>
+            <div class='border-border-secondary border rounded bg-(bg-tertiary) p-3 transition-colors hover:bg-(bg-secondary)'>
+              <div class='mb-2 flex items-center justify-between'>
                 <div class='flex items-center gap-2'>
-                  <span class='text-xs text-(text-tertiary) font-mono'>#{syncHistory.length - index}</span>
-                  <span class='font-medium text-(text-primary) px-2 py-1 rounded text-xs bg-(bg-primary) text-(bg-secondary)'>
+                  <span class='text-(xs text-tertiary) font-mono'>#{syncHistory.length - index}</span>
+                  <span class='rounded bg-(bg-primary) px-2 py-1 text-(xs bg-secondary text-primary) font-medium'>
                     {history.store} - {history.type}
                   </span>
                 </div>
-                <span class='text-xs text-(text-secondary) font-mono'>
+                <span class='text-(xs text-secondary) font-mono'>
                   {formatDate(history.timestamp)}
                 </span>
               </div>
-              <div class='flex items-center gap-4 text-(text-secondary) text-sm'>
+              <div class='flex items-center gap-4 text-(sm text-secondary)'>
                 <span class='text-green-600'>成功: {history.success_count}</span>
                 <span class='text-red-600'>エラー: {history.error_count}</span>
               </div>
               {#if history.errors && history.errors.length > 0}
-                <div class='mt-2 text-(text-secondary) text-xs'>
+                <div class='mt-2 text-(xs text-secondary)'>
                   <details>
                     <summary class='cursor-pointer'>エラー詳細</summary>
                     <div class='mt-1 pl-4'>
@@ -584,35 +557,35 @@
     </div>
 
     <!-- 拡張機能パッケージ -->
-    <div class='bg-(bg-secondary) border border-(border-primary) rounded p-4'>
-      <h3 class='text-lg font-semibold mb-3 text-(text-primary)'>拡張機能パッケージ</h3>
+    <div class='border border-(border-primary) rounded bg-(bg-secondary) p-4'>
+      <h3 class='mb-3 text-(lg text-primary) font-semibold'>拡張機能パッケージ</h3>
       <div class='space-y-4'>
         {#if packageInfo}
-          <div class='bg-(bg-tertiary) border border-(border-secondary) rounded p-3'>
-            <div class='flex items-center justify-between mb-2'>
-              <h4 class='font-medium text-(text-primary)'>{packageInfo.manifest_info.name}</h4>
-              <span class='text-xs text-(text-secondary) bg-(bg-primary) px-2 py-1 rounded'>
+          <div class='border-border-secondary border rounded bg-(bg-tertiary) p-3'>
+            <div class='mb-2 flex items-center justify-between'>
+              <h4 class='text-(text-primary) font-medium'>{packageInfo.manifest_info.name}</h4>
+              <span class='rounded bg-(bg-primary) px-2 py-1 text-(xs text-secondary)'>
                 v{packageInfo.manifest_info.version}
               </span>
             </div>
-            <p class='text-sm text-(text-secondary) mb-2'>
+            <p class='mb-2 text-(sm text-secondary)'>
               {packageInfo.manifest_info.description}
             </p>
             <div class='grid grid-cols-2 gap-4 text-sm'>
               <div>
                 <span class='text-(text-secondary)'>Extension ID:</span>
-                <div class='font-mono text-xs text-(text-primary) bg-(bg-primary) p-1 rounded mt-1'>
+                <div class='mt-1 rounded bg-(bg-primary) p-1 text-(xs text-primary) font-mono'>
                   {packageInfo.manifest_info.extension_id}
                 </div>
               </div>
               <div>
                 <span class='text-(text-secondary)'>パッケージサイズ:</span>
-                <div class='text-(text-primary) mt-1'>
+                <div class='mt-1 text-(text-primary)'>
                   {Math.round((new Blob([packageInfo.package_path]).size) / 1024)}KB
                 </div>
               </div>
             </div>
-            <div class='flex gap-2 mt-3'>
+            <div class='mt-3 flex gap-2'>
               <Button
                 variant='normal'
                 text='パッケージをダウンロード'
@@ -630,9 +603,9 @@
             </div>
           </div>
         {:else}
-          <div class='text-center py-8'>
-            <p class='text-(text-secondary) text-lg mb-2'>パッケージが生成されていません</p>
-            <p class='text-(text-tertiary) text-sm mb-4'>
+          <div class='py-8 text-center'>
+            <p class='mb-2 text-(lg text-secondary)'>パッケージが生成されていません</p>
+            <p class='mb-4 text-(sm text-tertiary)'>
               拡張機能をパッケージ化して配布用のZIPファイルを作成します
             </p>
             <Button
@@ -646,22 +619,22 @@
     </div>
 
     <!-- 開発環境用 -->
-    <div class='bg-(bg-secondary) border border-(border-primary) rounded p-4'>
-      <h3 class='text-lg font-semibold mb-3 text-(text-primary)'>開発環境用</h3>
+    <div class='border border-(border-primary) rounded bg-(bg-secondary) p-4'>
+      <h3 class='mb-3 text-(lg text-primary) font-semibold'>開発環境用</h3>
       <div class='space-y-4'>
         {#if devExtensionPath}
-          <div class='bg-(bg-tertiary) border border-(border-secondary) rounded p-3'>
-            <div class='flex items-center justify-between mb-2'>
-              <h4 class='font-medium text-(text-primary)'>開発用拡張機能フォルダ</h4>
-              <span class='text-xs text-green-600 bg-green-100 px-2 py-1 rounded'>準備完了</span>
+          <div class='border-border-secondary border rounded bg-(bg-tertiary) p-3'>
+            <div class='mb-2 flex items-center justify-between'>
+              <h4 class='text-(text-primary) font-medium'>開発用拡張機能フォルダ</h4>
+              <span class='rounded bg-green-100 px-2 py-1 text-xs text-green-600'>準備完了</span>
             </div>
-            <p class='text-sm text-(text-secondary) mb-2'>
+            <p class='mb-2 text-(sm text-secondary)'>
               Chrome/Edgeの「パッケージ化されていない拡張機能を読み込む」で以下のフォルダを選択してください
             </p>
-            <div class='bg-(bg-primary) p-2 rounded border'>
-              <code class='text-xs text-(text-primary) break-all'>{devExtensionPath}</code>
+            <div class='border rounded bg-(bg-primary) p-2'>
+              <code class='break-all text-(xs text-primary)'>{devExtensionPath}</code>
             </div>
-            <div class='flex gap-2 mt-3'>
+            <div class='mt-3 flex gap-2'>
               <Button
                 variant='normal'
                 text='フォルダを開く'
@@ -679,9 +652,9 @@
             </div>
           </div>
         {:else}
-          <div class='text-center py-8'>
-            <p class='text-(text-secondary) text-lg mb-2'>開発用フォルダが作成されていません</p>
-            <p class='text-(text-tertiary) text-sm mb-4'>
+          <div class='py-8 text-center'>
+            <p class='mb-2 text-(lg text-secondary)'>開発用フォルダが作成されていません</p>
+            <p class='mb-4 text-(sm text-tertiary)'>
               拡張機能をビルドして、ブラウザですぐに読み込めるフォルダを作成します
             </p>
             <Button
@@ -693,9 +666,9 @@
         {/if}
 
         <!-- 開発のヒント -->
-        <div class='bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded p-3'>
-          <h4 class='text-sm font-medium text-blue-800 dark:text-blue-200 mb-2'>💡 開発のヒント</h4>
-          <ul class='text-xs text-blue-700 dark:text-blue-300 space-y-1'>
+        <div class='border border-blue-200 rounded bg-blue-50 p-3 dark:border-blue-800 dark:bg-blue-900/20'>
+          <h4 class='mb-2 text-sm text-blue-800 font-medium dark:text-blue-200'>💡 開発のヒント</h4>
+          <ul class='text-xs text-blue-700 space-y-1 dark:text-blue-300'>
             <li>• この機能は開発環境でのテスト用です</li>
             <li>• フォルダ内容を直接編集してリロードで確認できます</li>
             <li>• 本格的な配布にはZIPパッケージ機能をご利用ください</li>
@@ -705,9 +678,9 @@
     </div>
 
     <!-- インストールガイド -->
-    <div class='bg-(bg-secondary) border border-(border-primary) rounded p-4'>
-      <div class='flex items-center justify-between mb-3'>
-        <h3 class='text-lg font-semibold text-(text-primary)'>インストールガイド</h3>
+    <div class='border border-(border-primary) rounded bg-(bg-secondary) p-4'>
+      <div class='mb-3 flex items-center justify-between'>
+        <h3 class='text-(lg text-primary) font-semibold'>インストールガイド</h3>
         <Button
           variant='normal'
           text={installGuideVisible ? '手順を隠す' : '手順を表示'}
@@ -718,14 +691,14 @@
       {#if installGuideVisible}
         <div class='space-y-4'>
           <!-- ステップ1: 拡張機能のインストール -->
-          <div class='border border-(border-secondary) rounded p-3'>
-            <div class='flex items-center gap-2 mb-2'>
-              <div class='w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center text-sm font-bold'>1</div>
-              <h4 class='font-medium text-(text-primary)'>ブラウザ拡張機能のインストール</h4>
+          <div class='border-border-secondary border rounded p-3'>
+            <div class='mb-2 flex items-center gap-2'>
+              <div class='h-6 w-6 flex items-center justify-center rounded-full bg-blue-500 text-sm text-white font-bold'>1</div>
+              <h4 class='text-(text-primary) font-medium'>ブラウザ拡張機能のインストール</h4>
             </div>
-            <div class='ml-8 space-y-2 text-sm text-(text-secondary)'>
+            <div class='ml-8 text-(sm text-secondary) space-y-2'>
               <p>1. 上記の「パッケージを生成」ボタンでZIPファイルを作成</p>
-              <p>2. Chrome/Edgeで <code class='bg-(bg-primary) px-1 rounded'>chrome://extensions/</code> を開く</p>
+              <p>2. Chrome/Edgeで <code class='rounded bg-(bg-primary) px-1'>chrome://extensions/</code> を開く</p>
               <p>3. 「デベロッパーモード」を有効化</p>
               <p>4. 「パッケージ化されていない拡張機能を読み込む」をクリック</p>
               <p>5. 解凍したdistフォルダを選択</p>
@@ -733,17 +706,17 @@
           </div>
 
           <!-- ステップ2: Native Messaging Host のセットアップ -->
-          <div class='border border-(border-secondary) rounded p-3'>
-            <div class='flex items-center gap-2 mb-2'>
-              <div class='w-6 h-6 bg-green-500 text-white rounded-full flex items-center justify-center text-sm font-bold'>2</div>
-              <h4 class='font-medium text-(text-primary)'>Native Messaging Host セットアップ</h4>
+          <div class='border-border-secondary border rounded p-3'>
+            <div class='mb-2 flex items-center gap-2'>
+              <div class='h-6 w-6 flex items-center justify-center rounded-full bg-green-500 text-sm text-white font-bold'>2</div>
+              <h4 class='text-(text-primary) font-medium'>Native Messaging Host セットアップ</h4>
             </div>
-            <div class='ml-8 space-y-2 text-sm text-(text-secondary)'>
+            <div class='ml-8 text-(sm text-secondary) space-y-2'>
               <p>1. 下記の「セットアップを実行」ボタンをクリック</p>
               <p>2. PowerShellが管理者権限で実行されます</p>
               <p>3. 拡張機能IDが自動検出され、レジストリに登録されます</p>
-              <div class='mt-2 p-2 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded'>
-                <p class='text-blue-800 dark:text-blue-200 text-xs'>
+              <div class='mt-2 border border-blue-200 rounded bg-blue-50 p-2 dark:border-blue-800 dark:bg-blue-900/20'>
+                <p class='text-xs text-blue-800 dark:text-blue-200'>
                   ℹ️ 管理者権限が必要です。UAC確認ダイアログが表示されたら「はい」をクリックしてください。
                 </p>
               </div>
@@ -751,12 +724,12 @@
           </div>
 
           <!-- ステップ3: 動作確認 -->
-          <div class='border border-(border-secondary) rounded p-3'>
-            <div class='flex items-center gap-2 mb-2'>
-              <div class='w-6 h-6 bg-purple-500 text-white rounded-full flex items-center justify-center text-sm font-bold'>3</div>
-              <h4 class='font-medium text-(text-primary)'>動作確認</h4>
+          <div class='border-border-secondary border rounded p-3'>
+            <div class='mb-2 flex items-center gap-2'>
+              <div class='h-6 w-6 flex items-center justify-center rounded-full bg-purple-500 text-sm text-white font-bold'>3</div>
+              <h4 class='text-(text-primary) font-medium'>動作確認</h4>
             </div>
-            <div class='ml-8 space-y-2 text-sm text-(text-secondary)'>
+            <div class='ml-8 text-(sm text-secondary) space-y-2'>
               <p>1. DMM Games または DLsite のライブラリページを開く</p>
               <p>2. 拡張機能アイコンをクリック</p>
               <p>3. 「手動同期」をクリックしてテスト</p>
@@ -765,26 +738,26 @@
           </div>
 
           <!-- 対応サイト情報 -->
-          <div class='bg-(bg-tertiary) border border-(border-secondary) rounded p-3'>
-            <h4 class='font-medium text-(text-primary) mb-2'>対応サイト</h4>
-            <ul class='space-y-1 text-sm text-(text-secondary)'>
+          <div class='border-border-secondary border rounded bg-(bg-tertiary) p-3'>
+            <h4 class='mb-2 text-(text-primary) font-medium'>対応サイト</h4>
+            <ul class='text-(sm text-secondary) space-y-1'>
               <li class='flex items-center gap-2'>
-                <div class='w-2 h-2 bg-green-500 rounded-full'></div>
+                <div class='h-2 w-2 rounded-full bg-green-500'></div>
                 DMM Games (games.dmm.co.jp) - 購入済みゲーム一覧
               </li>
               <li class='flex items-center gap-2'>
-                <div class='w-2 h-2 bg-green-500 rounded-full'></div>
+                <div class='h-2 w-2 rounded-full bg-green-500'></div>
                 DLsite (www.dlsite.com) - マイライブラリ
               </li>
             </ul>
           </div>
         </div>
       {:else}
-        <div class='text-center py-4'>
-          <p class='text-(text-secondary) text-sm'>
+        <div class='py-4 text-center'>
+          <p class='text-(sm text-secondary)'>
             ブラウザ拡張機能をインストールしてDMM/DLsiteから自動同期
           </p>
-          <p class='text-(text-tertiary) text-xs mt-1'>
+          <p class='mt-1 text-(xs text-tertiary)'>
             「手順を表示」をクリックして詳細なセットアップ手順をご確認ください
           </p>
         </div>
@@ -792,16 +765,16 @@
     </div>
 
     <!-- Extension ID設定 -->
-    <div class='bg-(bg-secondary) border border-(border-primary) rounded p-4'>
-      <h3 class='text-lg font-semibold mb-3 text-(text-primary)'>Extension ID 設定</h3>
+    <div class='border border-(border-primary) rounded bg-(bg-secondary) p-4'>
+      <h3 class='mb-3 text-(lg text-primary) font-semibold'>Extension ID 設定</h3>
       <div class='space-y-4'>
-        <p class='text-(text-secondary) text-sm'>
+        <p class='text-(sm text-secondary)'>
           ブラウザにインストールした拡張機能のIDを入力してください。
           拡張機能管理ページ（chrome://extensions/）で確認できます。
         </p>
 
         <div class='space-y-2'>
-          <div class='text-(text-primary) text-base mb-2'>Extension ID</div>
+          <div class='mb-2 text-(base text-primary)'>Extension ID</div>
           <div class='flex gap-2'>
             <div class='flex-1'>
               <Input
@@ -827,11 +800,11 @@
         </div>
 
         {#if savedExtensionId}
-          <div class='bg-(bg-tertiary) border border-(border-secondary) rounded p-3'>
+          <div class='border-border-secondary border rounded bg-(bg-tertiary) p-3'>
             <div class='flex items-center justify-between'>
               <div>
-                <p class='text-sm text-(text-secondary)'>保存されたExtension ID:</p>
-                <p class='font-mono text-sm text-(text-primary) mt-1'>{savedExtensionId}</p>
+                <p class='text-(sm text-secondary)'>保存されたExtension ID:</p>
+                <p class='mt-1 text-(sm text-primary) font-mono'>{savedExtensionId}</p>
               </div>
               <Button
                 variant='normal'
@@ -850,13 +823,13 @@
     </div>
 
     <!-- 自動セットアップ -->
-    <div class='bg-(bg-secondary) border border-(border-primary) rounded p-4'>
-      <h3 class='text-lg font-semibold mb-3 text-(text-primary)'>Native Messaging Host セットアップ</h3>
+    <div class='border border-(border-primary) rounded bg-(bg-secondary) p-4'>
+      <h3 class='mb-3 text-(lg text-primary) font-semibold'>Native Messaging Host セットアップ</h3>
 
       <!-- セットアップ内容の説明 -->
-      <div class='bg-(bg-tertiary) border border-(border-secondary) rounded p-3 mb-4'>
-        <h4 class='text-sm font-medium text-(text-primary) mb-2'>🔧 セットアップで実行される処理</h4>
-        <div class='space-y-1 text-xs text-(text-secondary)'>
+      <div class='border-border-secondary mb-4 border rounded bg-(bg-tertiary) p-3'>
+        <h4 class='mb-2 text-(sm text-primary) font-medium'>🔧 セットアップで実行される処理</h4>
+        <div class='text-(xs text-secondary) space-y-1'>
           <div class='flex items-start gap-2'>
             <span class='text-blue-600'>1.</span>
             <span>Native Messaging Host 実行ファイル（native-messaging-host.exe）の存在確認・自動ビルド</span>
@@ -879,14 +852,14 @@
           </div>
           <div class='flex items-start gap-2'>
             <span class='text-blue-600'>6.</span>
-            <span class='font-medium text-green-600'>Chrome レジストリキーを作成・登録</span>
+            <span class='text-green-600 font-medium'>Chrome レジストリキーを作成・登録</span>
           </div>
           <div class='flex items-start gap-2'>
             <span class='text-blue-600'>7.</span>
-            <span class='font-medium text-green-600'>Edge レジストリキーを作成・登録</span>
+            <span class='text-green-600 font-medium'>Edge レジストリキーを作成・登録</span>
           </div>
         </div>
-        <div class='mt-2 p-2 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded'>
+        <div class='mt-2 border border-yellow-200 rounded bg-yellow-50 p-2 dark:border-yellow-800 dark:bg-yellow-900/20'>
           <p class='text-xs text-yellow-800 dark:text-yellow-200'>
             <span class='font-medium'>レジストリキー:</span><br />
             • HKCU\Software\Google\Chrome\NativeMessagingHosts\moe.ryoha.launcherg.extension_host<br />
@@ -896,9 +869,9 @@
       </div>
 
       {#if setupStep === 'idle'}
-        <div class='text-center py-6'>
-          <p class='text-(text-secondary) text-lg mb-2'>ワンクリックセットアップ</p>
-          <p class='text-(text-tertiary) text-sm mb-4'>
+        <div class='py-6 text-center'>
+          <p class='mb-2 text-(lg text-secondary)'>ワンクリックセットアップ</p>
+          <p class='mb-4 text-(sm text-tertiary)'>
             上記の処理を自動で実行します。管理者権限が必要です。
           </p>
           <Button
@@ -910,13 +883,13 @@
       {:else}
         <div class='space-y-4'>
           <!-- プログレス表示 -->
-          <div class='bg-(bg-tertiary) rounded p-3'>
-            <div class='flex items-center gap-3 mb-3'>
-              <div class='text-sm font-medium text-(text-primary)'>セットアップ進行状況</div>
+          <div class='rounded bg-(bg-tertiary) p-3'>
+            <div class='mb-3 flex items-center gap-3'>
+              <div class='text-(sm text-primary) font-medium'>セットアップ進行状況</div>
               {#if setupStep === 'complete'}
-                <div class='text-xs text-green-600 bg-green-100 px-2 py-1 rounded'>完了</div>
+                <div class='rounded bg-green-100 px-2 py-1 text-xs text-green-600'>完了</div>
               {:else}
-                <div class='text-xs text-blue-600 bg-blue-100 px-2 py-1 rounded'>実行中</div>
+                <div class='rounded bg-blue-100 px-2 py-1 text-xs text-blue-600'>実行中</div>
               {/if}
             </div>
 
@@ -924,26 +897,26 @@
               <!-- Native Messaging Host セットアップ -->
               <div class='flex items-center gap-3'>
                 {#if setupStep === 'host'}
-                  <div class='w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin'></div>
+                  <div class='h-4 w-4 animate-spin border-2 border-blue-500 border-t-transparent rounded-full'></div>
                 {:else if setupStep === 'complete'}
-                  <div class='w-4 h-4 bg-green-500 rounded-full flex items-center justify-center'>
-                    <svg class='w-2 h-2 text-white' fill='currentColor' viewBox='0 0 20 20'>
+                  <div class='h-4 w-4 flex items-center justify-center rounded-full bg-green-500'>
+                    <svg class='h-2 w-2 text-white' fill='currentColor' viewBox='0 0 20 20'>
                       <path fill-rule='evenodd' d='M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z' clip-rule='evenodd'></path>
                     </svg>
                   </div>
                 {:else}
-                  <div class='w-4 h-4 border-2 border-gray-300 rounded-full'></div>
+                  <div class='h-4 w-4 border-2 border-gray-300 rounded-full'></div>
                 {/if}
-                <span class='text-sm text-(text-primary)'>Native Messaging Host をセットアップ</span>
+                <span class='text-(sm text-primary)'>Native Messaging Host をセットアップ</span>
               </div>
             </div>
           </div>
 
           <!-- セットアップ出力 -->
           {#if setupOutput}
-            <div class='bg-(bg-tertiary) border border-(border-secondary) rounded p-3'>
-              <h4 class='text-sm font-medium text-(text-primary) mb-2'>セットアップ出力</h4>
-              <pre class='text-xs text-(text-secondary) bg-(bg-primary) p-2 rounded overflow-x-auto whitespace-pre-wrap'>{setupOutput}</pre>
+            <div class='border-border-secondary border rounded bg-(bg-tertiary) p-3'>
+              <h4 class='mb-2 text-(sm text-primary) font-medium'>セットアップ出力</h4>
+              <pre class='overflow-x-auto whitespace-pre-wrap rounded bg-(bg-primary) p-2 text-(xs text-secondary)'>{setupOutput}</pre>
             </div>
           {/if}
 
@@ -976,9 +949,9 @@
     </div>
 
     <!-- レジストリキー情報 -->
-    <div class='bg-(bg-secondary) border border-(border-primary) rounded p-4'>
-      <div class='flex items-center justify-between mb-3'>
-        <h3 class='text-lg font-semibold text-(text-primary)'>レジストリキー情報</h3>
+    <div class='border border-(border-primary) rounded bg-(bg-secondary) p-4'>
+      <div class='mb-3 flex items-center justify-between'>
+        <h3 class='text-(lg text-primary) font-semibold'>レジストリキー情報</h3>
         <div class='flex gap-2'>
           <Button
             variant='normal'
@@ -996,31 +969,31 @@
       </div>
 
       {#if registryKeysLoading}
-        <div class='text-center py-4'>
+        <div class='py-4 text-center'>
           <p class='text-(text-secondary)'>読み込み中...</p>
         </div>
       {:else if registryKeys.length === 0}
-        <div class='text-center py-4'>
+        <div class='py-4 text-center'>
           <p class='text-(text-secondary)'>レジストリキー情報がありません</p>
         </div>
       {:else}
         <div class='space-y-3'>
           {#each registryKeys as keyInfo}
-            <div class='bg-(bg-tertiary) border border-(border-secondary) rounded p-3'>
-              <div class='flex items-center justify-between mb-2'>
+            <div class='border-border-secondary border rounded bg-(bg-tertiary) p-3'>
+              <div class='mb-2 flex items-center justify-between'>
                 <div class='flex items-center gap-2'>
-                  <span class='font-medium text-(text-primary)'>{keyInfo.browser}</span>
-                  <div class='w-2 h-2 rounded-full' class:bg-green-500={keyInfo.exists} class:bg-red-500={!keyInfo.exists}></div>
-                  <span class='text-xs text-(text-secondary)'>
+                  <span class='text-(text-primary) font-medium'>{keyInfo.browser}</span>
+                  <div class='h-2 w-2 rounded-full' class:bg-green-500={keyInfo.exists} class:bg-red-500={!keyInfo.exists}></div>
+                  <span class='text-(xs text-secondary)'>
                     {keyInfo.exists ? '登録済み' : '未登録'}
                   </span>
                 </div>
               </div>
 
-              <div class='space-y-2 text-sm'>
+              <div class='text-sm space-y-2'>
                 <div>
                   <span class='text-(text-secondary)'>レジストリキー:</span>
-                  <div class='font-mono text-xs text-(text-primary) bg-(bg-primary) p-1 rounded mt-1 break-all'>
+                  <div class='mt-1 break-all rounded bg-(bg-primary) p-1 text-(xs text-primary) font-mono'>
                     {keyInfo.key_path}
                   </div>
                 </div>
@@ -1028,7 +1001,7 @@
                 {#if keyInfo.exists && keyInfo.value}
                   <div>
                     <span class='text-(text-secondary)'>マニフェストパス:</span>
-                    <div class='font-mono text-xs text-(text-primary) bg-(bg-primary) p-1 rounded mt-1 break-all'>
+                    <div class='mt-1 break-all rounded bg-(bg-primary) p-1 text-(xs text-primary) font-mono'>
                       {keyInfo.value}
                     </div>
                   </div>

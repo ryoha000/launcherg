@@ -30,7 +30,7 @@
 
 <button
   onclick={handleClick}
-  class='text-(body2 text-link) block whitespace-nowrap underline-text-link hover:underline bg-transparent transition-all underline-none'
+  class='block whitespace-nowrap bg-transparent text-(body2 text-link) underline-none underline-text-link transition-all hover:underline'
 >
   {#if children}{@render children()}{:else}
     {text}

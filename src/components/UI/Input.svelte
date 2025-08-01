@@ -32,10 +32,10 @@
 
 <label>
   {#if label}
-    <div class='text-(text-primary body) font-medium mb-1'>{label}</div>
+    <div class='mb-1 text-(body text-primary) font-medium'>{label}</div>
   {/if}
   <div
-    class='w-full border-(2px solid transparent) focus-within:border-accent-accent rounded transition-all'
+    class='w-full border-(2px transparent solid) rounded transition-all focus-within:border-accent-accent'
   >
     <input
       bind:this={input}

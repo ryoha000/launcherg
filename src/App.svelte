@@ -18,7 +18,7 @@
 
 </script>
 
-<main class='h-full w-full bg-(bg-primary) font-sans grid grid-rows-[auto_1fr]'>
+<main class='grid grid-rows-[auto_1fr] h-full w-full bg-(bg-primary) font-sans'>
   <Titlebar />
   {#await setDetailPromise then _}
     <Layout>

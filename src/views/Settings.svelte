@@ -34,15 +34,15 @@
   }
 </script>
 
-<div class='p-6 max-w-2xl mx-auto h-full overflow-y-auto'>
+<div class='mx-auto h-full max-w-2xl overflow-y-auto p-6'>
   <div class='space-y-6'>
     <!-- テーマ設定 -->
     <div>
-      <h2 class='text-lg font-semibold mb-3 text-(text-primary)'>表示設定</h2>
+      <h2 class='mb-3 text-(lg text-primary) font-semibold'>表示設定</h2>
       <div class='space-y-3'>
         <div>
-          <label for='theme-select' class='block text-sm font-medium mb-2 text-(text-secondary)'>テーマ</label>
-          <select id='theme-select' bind:value={settings.theme} class='w-full p-2 border rounded bg-(bg-secondary) text-(text-primary) border-(border-primary)'>
+          <label for='theme-select' class='mb-2 block text-(sm text-secondary) font-medium'>テーマ</label>
+          <select id='theme-select' bind:value={settings.theme} class='w-full border border-(border-primary) rounded bg-(bg-secondary) p-2 text-(text-primary)'>
             <option value='dark'>ダーク</option>
             <option value='light'>ライト</option>
             <option value='auto'>システム設定に従う</option>
@@ -53,7 +53,7 @@
 
     <!-- 起動設定 -->
     <div>
-      <h2 class='text-lg font-semibold mb-3 text-(text-primary)'>起動設定</h2>
+      <h2 class='mb-3 text-(lg text-primary) font-semibold'>起動設定</h2>
       <div class='space-y-3'>
         <label class='flex items-center'>
           <input type='checkbox' bind:checked={settings.autoLaunch} class='mr-2'>
@@ -68,7 +68,7 @@
 
     <!-- ゲーム設定 -->
     <div>
-      <h2 class='text-lg font-semibold mb-3 text-(text-primary)'>ゲーム設定</h2>
+      <h2 class='mb-3 text-(lg text-primary) font-semibold'>ゲーム設定</h2>
       <div class='space-y-3'>
         <div>
           <Input bind:value={settings.defaultDirectory} placeholder='ゲームファイルのデフォルトディレクトリ' />
@@ -81,11 +81,11 @@
 
     <!-- 拡張機能 -->
     <div>
-      <h2 class='text-lg font-semibold mb-3 text-(text-primary)'>拡張機能</h2>
+      <h2 class='mb-3 text-(lg text-primary) font-semibold'>拡張機能</h2>
       <div class='space-y-3'>
-        <div class='bg-(bg-secondary) border border-(border-primary) rounded p-4'>
-          <h3 class='text-base font-medium mb-2 text-(text-primary)'>ブラウザ拡張機能</h3>
-          <p class='text-sm text-(text-secondary) mb-3'>DMM GamesやDLsiteからゲーム情報を自動取得します</p>
+        <div class='border border-(border-primary) rounded bg-(bg-secondary) p-4'>
+          <h3 class='mb-2 text-(base text-primary) font-medium'>ブラウザ拡張機能</h3>
+          <p class='mb-3 text-(sm text-secondary)'>DMM GamesやDLsiteからゲーム情報を自動取得します</p>
           <Button onclick={navigateToExtensionManager} text='拡張機能を管理' />
         </div>
       </div>
@@ -93,7 +93,7 @@
 
     <!-- デバッグ設定 -->
     <div>
-      <h2 class='text-lg font-semibold mb-3 text-(text-primary)'>デバッグ</h2>
+      <h2 class='mb-3 text-(lg text-primary) font-semibold'>デバッグ</h2>
       <div class='space-y-3'>
         <Button variant='normal' onclick={navigateToProcTailDebug} text='ProcTailデバッグ画面' />
       </div>

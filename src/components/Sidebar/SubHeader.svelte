@@ -29,8 +29,8 @@
   }
 </script>
 
-<div class='mt-4 w-full px-2 flex items-center'>
-  <div class='text-(text-primary body) font-bold pl-2 mr-auto'>
+<div class='mt-4 w-full flex items-center px-2'>
+  <div class='mr-auto pl-2 text-(body text-primary) font-bold'>
     登録したゲーム
   </div>
   <div class='flex items-center gap-2'>

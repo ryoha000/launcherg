@@ -1,0 +1,57 @@
+syntax = "proto3";
+
+package launcherg.common;
+
+import "google/protobuf/timestamp.proto";
+import "native_messaging/sync.proto";
+import "native_messaging/status.proto";
+
+// Native Messaging Hostへのリクエストメッセージ
+message NativeMessage {
+  google.protobuf.Timestamp timestamp = 1;
+  string request_id = 2;
+  
+  // oneofを使用してメッセージタイプとペイロードの整合性を保証
+  oneof message {
+    sync.SyncGamesRequest sync_games = 10;
+    GetStatusRequest get_status = 11;
+    status.ExtensionConfig set_config = 12;
+    HealthCheckRequest health_check = 13;
+  }
+}
+
+// ステータス取得リクエスト（空のメッセージ）
+message GetStatusRequest {
+  // 空のメッセージ - リクエストパラメータは不要
+}
+
+// ヘルスチェックリクエスト（空のメッセージ）
+message HealthCheckRequest {
+  // 空のメッセージ - ping的な用途
+}
+
+// Native Messaging Hostからのレスポンスメッセージ
+message NativeResponse {
+  bool success = 1;
+  string error = 2;
+  string request_id = 3;
+  
+  // oneofを使用してレスポンスタイプとデータの整合性を保証
+  oneof response {
+    sync.SyncBatchResult sync_games_result = 10;
+    status.SyncStatus status_result = 11;
+    ConfigUpdateResult config_result = 12;
+    HealthCheckResult health_check_result = 13;
+  }
+}
+
+// 設定更新結果
+message ConfigUpdateResult {
+  string message = 1;
+}
+
+// ヘルスチェック結果
+message HealthCheckResult {
+  string message = 1;
+  string version = 2;
+}

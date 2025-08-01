@@ -1,24 +1,12 @@
+mod proto;
+
 use std::io::{self, Read, Write};
-use serde::{Deserialize, Serialize};
-use serde_json;
+use prost::Message;
+use pbjson_types::Timestamp;
+use chrono::Utc;
 
-// プロトコル定義の簡易版（実際はsrc/native_messaging/protocol.rsを使用）
-#[derive(Debug, Clone, Serialize, Deserialize)]
-struct NativeMessage {
-    #[serde(rename = "type")]
-    type_: String,
-    payload: serde_json::Value,
-    timestamp: String,
-    request_id: String,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-struct NativeResponse {
-    success: bool,
-    data: Option<serde_json::Value>,
-    error: Option<String>,
-    request_id: String,
-}
+// プロトタイプを使用
+use proto::generated::launcherg::{common::*, sync::*, status::*};
 
 fn main() {
     // 標準エラー出力にログを記録
@@ -68,22 +56,29 @@ fn handle_message() -> Result<bool, Box<dyn std::error::Error>> {
     let mut message_bytes = vec![0u8; length];
     handle.read_exact(&mut message_bytes)?;
     
-    let message_str = String::from_utf8(message_bytes)?;
-    let message: NativeMessage = serde_json::from_str(&message_str)?;
+    let message = NativeMessage::decode(&message_bytes[..])
+        .map_err(|e| format!("Failed to decode protobuf message: {}", e))?;
     
-    log::info!("Received message type: {}", message.type_);
+    let message_type = match &message.message {
+        Some(native_message::Message::SyncGames(_)) => "sync_games",
+        Some(native_message::Message::GetStatus(_)) => "get_status",
+        Some(native_message::Message::SetConfig(_)) => "set_config",
+        Some(native_message::Message::HealthCheck(_)) => "health_check",
+        None => "unknown",
+    };
+    log::info!("Received message type: {}", message_type);
     
     // メッセージタイプに応じて処理
-    let response = match message.type_.as_str() {
-        "sync_games" => handle_sync_games(&message),
-        "get_status" => handle_get_status(&message),
-        "set_config" => handle_set_config(&message),
-        "health_check" => handle_health_check(&message),
-        _ => NativeResponse {
+    let response = match &message.message {
+        Some(native_message::Message::SyncGames(req)) => handle_sync_games(req, &message.request_id),
+        Some(native_message::Message::GetStatus(req)) => handle_get_status(req, &message.request_id),
+        Some(native_message::Message::SetConfig(req)) => handle_set_config(req, &message.request_id),
+        Some(native_message::Message::HealthCheck(req)) => handle_health_check(req, &message.request_id),
+        None => NativeResponse {
             success: false,
-            data: None,
-            error: Some(format!("Unknown message type: {}", message.type_)),
-            request_id: message.request_id,
+            error: "No message content provided".to_string(),
+            request_id: message.request_id.clone(),
+            response: None,
         },
     };
     
@@ -93,64 +88,79 @@ fn handle_message() -> Result<bool, Box<dyn std::error::Error>> {
     Ok(true)
 }
 
-fn handle_sync_games(message: &NativeMessage) -> NativeResponse {
-    // 固定値を返す実装
-    let result = serde_json::json!({
-        "success_count": 3,
-        "error_count": 1,
-        "errors": ["Game 'Test Game 4' not found in ErogameScape database"],
-        "synced_games": ["Test Game 1", "Test Game 2", "Test Game 3"]
-    });
+fn handle_sync_games(request: &SyncGamesRequest, request_id: &str) -> NativeResponse {
+    log::info!("Syncing {} games from store: {}", request.games.len(), request.store);
+    
+    let result = SyncBatchResult {
+        success_count: 3,
+        error_count: 1,
+        errors: vec!["Game 'Test Game 4' not found in ErogameScape database".to_string()],
+        synced_games: vec!["Test Game 1".to_string(), "Test Game 2".to_string(), "Test Game 3".to_string()],
+    };
     
     NativeResponse {
         success: true,
-        data: Some(result),
-        error: None,
-        request_id: message.request_id.clone(),
+        error: String::new(),
+        request_id: request_id.to_string(),
+        response: Some(native_response::Response::SyncGamesResult(result)),
     }
 }
 
-fn handle_get_status(message: &NativeMessage) -> NativeResponse {
-    // 固定値を返す実装
-    let status = serde_json::json!({
-        "last_sync": "2025-01-30T12:34:56Z",
-        "total_synced": 42,
-        "connected_extensions": ["chrome-extension://abcdefghijklmnop"],
-        "is_running": true
-    });
+fn handle_get_status(_request: &GetStatusRequest, request_id: &str) -> NativeResponse {
+    let status = SyncStatus {
+        last_sync: Some(Timestamp {
+            seconds: Utc::now().timestamp(),
+            nanos: 0,
+        }),
+        total_synced: 42,
+        connected_extensions: vec!["chrome-extension://abcdefghijklmnop".to_string()],
+        is_running: true,
+        connection_status: ExtensionConnectionStatus::Connected as i32,
+        error_message: String::new(),
+    };
     
     NativeResponse {
         success: true,
-        data: Some(status),
-        error: None,
-        request_id: message.request_id.clone(),
+        error: String::new(),
+        request_id: request_id.to_string(),
+        response: Some(native_response::Response::StatusResult(status)),
     }
 }
 
-fn handle_set_config(message: &NativeMessage) -> NativeResponse {
-    // 設定を受け取ったことにして成功を返す
-    log::info!("Config updated: {:?}", message.payload);
+fn handle_set_config(config: &ExtensionConfig, request_id: &str) -> NativeResponse {
+    log::info!("Config updated: auto_sync={}, debug_mode={}", config.auto_sync, config.debug_mode);
+    
+    let result = ConfigUpdateResult {
+        message: "Config updated successfully".to_string(),
+    };
     
     NativeResponse {
         success: true,
-        data: Some(serde_json::json!("Config updated successfully")),
-        error: None,
-        request_id: message.request_id.clone(),
+        error: String::new(),
+        request_id: request_id.to_string(),
+        response: Some(native_response::Response::ConfigResult(result)),
     }
 }
 
-fn handle_health_check(message: &NativeMessage) -> NativeResponse {
+fn handle_health_check(_request: &HealthCheckRequest, request_id: &str) -> NativeResponse {
+    let result = HealthCheckResult {
+        message: "OK".to_string(),
+        version: env!("CARGO_PKG_VERSION").to_string(),
+    };
+    
     NativeResponse {
         success: true,
-        data: Some(serde_json::json!("OK")),
-        error: None,
-        request_id: message.request_id.clone(),
+        error: String::new(),
+        request_id: request_id.to_string(),
+        response: Some(native_response::Response::HealthCheckResult(result)),
     }
 }
 
 fn send_response(response: &NativeResponse) -> Result<(), Box<dyn std::error::Error>> {
-    let response_str = serde_json::to_string(response)?;
-    let response_bytes = response_str.as_bytes();
+    let mut response_bytes = Vec::new();
+    response.encode(&mut response_bytes)
+        .map_err(|e| format!("Failed to encode protobuf response: {}", e))?;
+    
     let length = response_bytes.len() as u32;
     
     let stdout = io::stdout();
@@ -159,7 +169,7 @@ fn send_response(response: &NativeResponse) -> Result<(), Box<dyn std::error::Er
     // メッセージ長を送信（4バイト、リトルエンディアン）
     handle.write_all(&length.to_le_bytes())?;
     // メッセージ本体を送信
-    handle.write_all(response_bytes)?;
+    handle.write_all(&response_bytes)?;
     handle.flush()?;
     
     log::info!("Sent response for request: {}", response.request_id);

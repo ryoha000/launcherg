@@ -20,18 +20,18 @@
 
 {#if show}
   <div
-    class='absolute p-(l-6 y-2) {appendClass} top--1 bottom--1 flex items-center'
+    class='absolute p-(y-2 l-6) {appendClass} bottom--1 top--1 flex items-center'
     style='background: linear-gradient(90deg, rgba(34,39,46,0) 0%, rgba(34,39,46,0.773546918767507) 15%, rgba(34,39,46,1) 30%, rgba(34,39,46,1) 100%);'
     class:rotate-180={back}
     transition:fly={{ x: 10, duration: 150 }}
   >
     <button
-      class='bg-transparent transition-all hover:bg-bg-button-hover rounded-full p-1'
+      class='rounded-full bg-transparent p-1 transition-all hover:bg-bg-button-hover'
       onclick={wrappedOnclick}
       aria-label='Scroll search attributes'
     >
       <div
-        class='i-material-symbols-arrow-forward-ios-rounded w-4 h-4 color-text-primary'
+        class='i-material-symbols-arrow-forward-ios-rounded h-4 w-4 color-text-primary'
       ></div>
     </button>
   </div>

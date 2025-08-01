@@ -1,0 +1,37 @@
+syntax = "proto3";
+
+package launcherg.status;
+
+import "google/protobuf/timestamp.proto";
+
+// 拡張機能の接続ステータス
+enum ExtensionConnectionStatus {
+  EXTENSION_CONNECTION_STATUS_UNSPECIFIED = 0;
+  EXTENSION_CONNECTION_STATUS_CONNECTED = 1;           // 正常に接続済み
+  EXTENSION_CONNECTION_STATUS_CONNECTING = 2;          // 接続中（チェック実行中）
+  EXTENSION_CONNECTION_STATUS_HOST_NOT_FOUND = 3;      // Native Messaging Hostの実行ファイルが見つからない
+  EXTENSION_CONNECTION_STATUS_HOST_STARTUP_FAILED = 4; // Native Messaging Hostプロセスの起動に失敗
+  EXTENSION_CONNECTION_STATUS_HEALTH_CHECK_TIMEOUT = 5; // ヘルスチェック通信のタイムアウト
+  EXTENSION_CONNECTION_STATUS_HEALTH_CHECK_FAILED = 6;  // ヘルスチェック通信でエラーレスポンス
+  EXTENSION_CONNECTION_STATUS_COMMUNICATION_ERROR = 7;  // JSON解析エラーなどの通信エラー
+  EXTENSION_CONNECTION_STATUS_PROCESS_TERMINATION_ERROR = 8; // プロセス終了時のエラー
+  EXTENSION_CONNECTION_STATUS_UNKNOWN_ERROR = 9;       // 不明なエラー
+}
+
+// 同期ステータス情報
+message SyncStatus {
+  google.protobuf.Timestamp last_sync = 1;  // 最後の同期時刻（optional）
+  uint32 total_synced = 2;                   // 同期したゲーム総数
+  repeated string connected_extensions = 3;   // 接続済み拡張機能のリスト
+  bool is_running = 4;                       // Native Messaging Hostが動作中かどうか
+  ExtensionConnectionStatus connection_status = 5; // 接続ステータス
+  string error_message = 6;                  // エラーメッセージ（optional）
+}
+
+// 拡張機能の設定
+message ExtensionConfig {
+  bool auto_sync = 1;                        // 自動同期の有効・無効
+  repeated string allowed_domains = 2;       // 許可されたドメインのリスト
+  uint32 sync_interval_minutes = 3;          // 同期間隔（分）
+  bool debug_mode = 4;                       // デバッグモードの有効・無効
+}

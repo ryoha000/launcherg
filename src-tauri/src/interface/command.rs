@@ -6,7 +6,10 @@ use tauri_plugin_shell::ShellExt;
 use super::models::all_game_cache::AllGameCacheOne;
 use super::{
     error::CommandError,
-    models::collection::CollectionElement,
+    models::{
+        collection::CollectionElement,
+        extension::{SyncStatus, ExtensionConfig},
+    },
     module::{Modules, ModulesExt},
 };
 use crate::domain::file::get_lnk_metadatas;
@@ -25,7 +28,6 @@ use crate::{
         Id,
     },
     usecase::models::collection::CreateCollectionElementDetail,
-    native_messaging::protocol::{ExtractedGameData, SyncBatchResult, SyncStatus, ExtensionConfig},
 };
 
 #[tauri::command]
@@ -781,61 +783,6 @@ pub async fn update_dl_store_ownership(
 }
 
 // バッチ同期とステータス管理のコマンド
-
-#[tauri::command]
-pub async fn sync_dl_store_games_batch(
-    modules: State<'_, Arc<Modules>>,
-    store_type: String,
-    games_data: Vec<ExtractedGameData>,
-) -> anyhow::Result<SyncBatchResult, CommandError> {
-    let store_type = match store_type.as_str() {
-        "DMM" => DLStoreType::DMM,
-        "DLSite" => DLStoreType::DLSite,
-        _ => return Err(anyhow::anyhow!("Invalid store type").into()),
-    };
-
-    let mut result = SyncBatchResult {
-        success_count: 0,
-        error_count: 0,
-        errors: Vec::new(),
-        synced_games: Vec::new(),
-    };
-
-    for game_data in games_data {
-        // ErogamescapeIDが提供されている場合のみ同期
-        if let Some(id_str) = game_data.additional_data.get("erogamescape_id") {
-            if let Ok(erogamescape_id) = id_str.parse::<i32>() {
-                match modules
-                    .collection_use_case()
-                    .register_dl_store_game(
-                        store_type.clone(),
-                        game_data.store_id.clone(),
-                        erogamescape_id,
-                        game_data.purchase_url.clone(),
-                    )
-                    .await
-                {
-                    Ok(_) => {
-                        result.success_count += 1;
-                        result.synced_games.push(game_data.title.clone());
-                    }
-                    Err(e) => {
-                        result.error_count += 1;
-                        result.errors.push(format!("Failed to sync {}: {}", game_data.title, e));
-                    }
-                }
-            } else {
-                result.error_count += 1;
-                result.errors.push(format!("Invalid erogamescape_id for {}: {}", game_data.title, id_str));
-            }
-        } else {
-            result.error_count += 1;
-            result.errors.push(format!("No erogamescape_id provided for {}", game_data.title));
-        }
-    }
-
-    Ok(result)
-}
 
 #[tauri::command]
 pub async fn get_sync_status(

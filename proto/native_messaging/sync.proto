@@ -1,0 +1,28 @@
+syntax = "proto3";
+
+package launcherg.sync;
+
+// ゲーム同期リクエスト
+message SyncGamesRequest {
+  string store = 1;  // "DMM" | "DLSite"
+  repeated ExtractedGameData games = 2;
+  string extension_id = 3;
+}
+
+// 抽出されたゲームデータ
+message ExtractedGameData {
+  string store_id = 1;
+  string title = 2;
+  string purchase_url = 3;
+  string purchase_date = 4;  // optional
+  string thumbnail_url = 5;  // optional
+  map<string, string> additional_data = 6;
+}
+
+// ゲーム同期結果のバッチレスポンス
+message SyncBatchResult {
+  uint32 success_count = 1;
+  uint32 error_count = 2;
+  repeated string errors = 3;
+  repeated string synced_games = 4;  // ゲームタイトルのリスト
+}

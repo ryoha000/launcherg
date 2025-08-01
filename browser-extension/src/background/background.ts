@@ -2,26 +2,43 @@
 // Content ScriptとNative Messaging Hostの橋渡しを行う
 
 import type { SiteConfig } from '../content-scripts/base-extractor'
+// Extension Internal types
+
+// Native Messaging types
+import type {
+  NativeMessage,
+  NativeResponse,
+} from '../proto/native_messaging/common_pb'
+
+import type {
+  JsonConfigResponse,
+  JsonDebugNativeMessageMessage,
+  JsonDebugResponse,
+  JsonGetConfigMessage,
+  JsonMessage,
+  JsonResponse,
+  JsonShowNotificationMessage,
+  JsonStatusResponse,
+  JsonSyncGamesMessage,
+  JsonSyncResponse,
+} from '../types/json-messages'
+
+import { create, fromBinary, toBinary } from '@bufbuild/protobuf'
+import { TimestampSchema } from '@bufbuild/protobuf/wkt'
 import extractionRules from '../config/extraction-rules.json'
 
-interface SyncRequest {
-  type: 'sync_games'
-  store: 'DMM' | 'DLSite'
-  games: any[]
-  source: string
-}
+import {
+  HealthCheckRequestSchema,
+  GetStatusRequestSchema as NativeGetStatusRequestSchema,
+  NativeMessageSchema,
+  NativeResponseSchema,
+} from '../proto/native_messaging/common_pb'
+import {
+  ExtractedGameDataSchema,
+  SyncGamesRequestSchema as NativeSyncGamesRequestSchema,
+} from '../proto/native_messaging/sync_pb'
 
-interface ConfigRequest {
-  type: 'get_config'
-  site: 'dmm' | 'dlsite'
-}
-
-interface NotificationRequest {
-  type: 'show_notification'
-  title: string
-  message: string
-  iconType?: 'success' | 'error'
-}
+// 型定義はprotobufから取得するため、interfaceは削除
 
 class BackgroundService {
   private nativeHostName = 'moe.ryoha.launcherg.extension_host'
@@ -66,22 +83,23 @@ class BackgroundService {
   }
 
   private async handleMessage(
-    message: any,
+    message: JsonMessage,
     sender: chrome.runtime.MessageSender,
-    sendResponse: (response?: any) => void,
+    sendResponse: (response?: JsonResponse) => void,
   ): Promise<void> {
     try {
+      // 従来のJSON形式メッセージを処理
       switch (message.type) {
         case 'sync_games':
-          await this.handleSyncGames(message as SyncRequest, sendResponse)
+          await this.handleSyncGames(message as JsonSyncGamesMessage, sendResponse)
           break
 
         case 'get_config':
-          this.handleGetConfig(message as ConfigRequest, sendResponse)
+          this.handleGetConfig(message as JsonGetConfigMessage, sendResponse)
           break
 
         case 'show_notification':
-          await this.handleShowNotification(message as NotificationRequest, sendResponse)
+          await this.handleShowNotification(message as JsonShowNotificationMessage, sendResponse)
           break
 
         case 'get_status':
@@ -89,7 +107,7 @@ class BackgroundService {
           break
 
         case 'debug_native_message':
-          await this.handleDebugNativeMessage(message, sendResponse)
+          await this.handleDebugNativeMessage(message as JsonDebugNativeMessageMessage, sendResponse)
           break
 
         default:
@@ -105,32 +123,53 @@ class BackgroundService {
   }
 
   private async handleSyncGames(
-    request: SyncRequest,
-    sendResponse: (response?: any) => void,
+    request: JsonSyncGamesMessage,
+    sendResponse: (response?: JsonSyncResponse) => void,
   ): Promise<void> {
     console.log(`[Background] Syncing ${request.games.length} games from ${request.store}`)
 
     try {
-      // Native Messaging Hostに送信するメッセージを準備
-      const nativeMessage = {
-        type: 'sync_games',
-        payload: {
-          store: request.store,
-          games: request.games,
-          extension_id: chrome.runtime.id,
-        },
-        timestamp: new Date().toISOString(),
-        request_id: this.generateRequestId(),
-      }
+      const extractedGames = request.games.map(game => create(ExtractedGameDataSchema, {
+        storeId: game.store_id || '',
+        title: game.title || '',
+        purchaseUrl: game.purchase_url || '',
+        purchaseDate: game.purchase_date || '',
+        thumbnailUrl: game.thumbnail_url || '',
+        additionalData: game.additional_data || {},
+      }))
 
-      // Native Messaging Hostに送信
-      const response = await this.sendNativeMessage(nativeMessage)
+      const syncRequest = create(NativeSyncGamesRequestSchema, {
+        store: request.store,
+        games: extractedGames,
+        extensionId: chrome.runtime.id,
+      })
+
+      const nativeMessage = create(NativeMessageSchema, {
+        timestamp: create(TimestampSchema, { seconds: BigInt(Math.floor(Date.now() / 1000)) }),
+        requestId: this.generateRequestId(),
+        message: {
+          case: 'syncGames',
+          value: syncRequest,
+        },
+      })
+
+      const response = await this.sendNativeProtobufMessage(nativeMessage)
 
       if (response && response.success) {
-        console.log('[Background] Native host sync successful:', response)
+        let resultData: JsonSyncResponse['result']
+        if (response.response.case === 'syncGamesResult') {
+          const syncBatchResult = response.response.value
+          resultData = {
+            successCount: Number(syncBatchResult.successCount),
+            errorCount: Number(syncBatchResult.errorCount),
+            errors: syncBatchResult.errors,
+            syncedGames: syncBatchResult.syncedGames,
+          }
+        }
+
         sendResponse({
           success: true,
-          result: response.data,
+          result: resultData,
           message: `${request.store}から${request.games.length}個のゲームを同期しました`,
         })
       }
@@ -150,8 +189,8 @@ class BackgroundService {
   }
 
   private handleGetConfig(
-    request: ConfigRequest,
-    sendResponse: (response?: any) => void,
+    request: JsonGetConfigMessage,
+    sendResponse: (response?: JsonConfigResponse) => void,
   ): void {
     const config = this.configs[request.site]
     if (config) {
@@ -163,8 +202,8 @@ class BackgroundService {
   }
 
   private async handleShowNotification(
-    request: NotificationRequest,
-    sendResponse: (response?: any) => void,
+    request: JsonShowNotificationMessage,
+    sendResponse: (response?: JsonResponse) => void,
   ): Promise<void> {
     try {
       await chrome.notifications.create({
@@ -182,17 +221,33 @@ class BackgroundService {
     }
   }
 
-  private async handleGetStatus(sendResponse: (response?: any) => void): Promise<void> {
+  private async handleGetStatus(sendResponse: (response?: JsonStatusResponse) => void): Promise<void> {
     try {
-      const nativeMessage = {
-        type: 'get_status',
-        payload: {},
-        timestamp: new Date().toISOString(),
-        request_id: this.generateRequestId(),
+      const nativeMessage = create(NativeMessageSchema, {
+        timestamp: create(TimestampSchema, { seconds: BigInt(Math.floor(Date.now() / 1000)) }),
+        requestId: this.generateRequestId(),
+        message: {
+          case: 'getStatus',
+          value: create(NativeGetStatusRequestSchema, {}),
+        },
+      })
+
+      const response = await this.sendNativeProtobufMessage(nativeMessage)
+
+      let statusData: JsonStatusResponse['status']
+      if (response && response.response.case === 'statusResult') {
+        const syncStatus = response.response.value
+        statusData = {
+          lastSync: syncStatus.lastSync ? new Date(Number(syncStatus.lastSync.seconds) * 1000).toISOString() : '',
+          totalSynced: Number(syncStatus.totalSynced),
+          connectedExtensions: syncStatus.connectedExtensions,
+          isRunning: syncStatus.isRunning,
+          connectionStatus: syncStatus.connectionStatus.toString(),
+          errorMessage: syncStatus.errorMessage,
+        }
       }
 
-      const response = await this.sendNativeMessage(nativeMessage)
-      sendResponse({ success: true, status: response?.data })
+      sendResponse({ success: true, status: statusData })
     }
     catch (error) {
       console.error('[Background] Get status failed:', error)
@@ -201,23 +256,47 @@ class BackgroundService {
     }
   }
 
-  private async sendNativeMessage(message: any): Promise<any> {
+  private async sendNativeProtobufMessage(message: NativeMessage): Promise<NativeResponse | null> {
     return new Promise((resolve, reject) => {
       const timeout = setTimeout(() => {
         reject(new Error('Native messaging timeout'))
-      }, 30000) // 30秒タイムアウト
+      }, 30000)
+
+      const messageBytes = toBinary(NativeMessageSchema, message)
+
+      const messageJson = {
+        protobuf_data: Array.from(messageBytes),
+        request_id: message.requestId,
+      }
 
       chrome.runtime.sendNativeMessage(
         this.nativeHostName,
-        message,
+        messageJson,
         (response) => {
           clearTimeout(timeout)
 
           if (chrome.runtime.lastError) {
             reject(new Error(chrome.runtime.lastError.message))
           }
+          else if (response) {
+            try {
+              if (response.protobuf_data && Array.isArray(response.protobuf_data)) {
+                const responseBytes = new Uint8Array(response.protobuf_data)
+                const nativeResponse = fromBinary(NativeResponseSchema, responseBytes)
+                resolve(nativeResponse)
+              }
+              else {
+                console.warn('[Background] Received JSON response instead of protobuf:', response)
+                reject(new Error('Expected protobuf response but got JSON'))
+              }
+            }
+            catch (e) {
+              console.error('[Background] Failed to parse protobuf response:', e)
+              reject(e)
+            }
+          }
           else {
-            resolve(response)
+            resolve(null)
           }
         },
       )
@@ -241,41 +320,23 @@ class BackgroundService {
   }
 
   private async handleDebugNativeMessage(
-    message: any,
-    sendResponse: (response?: any) => void,
+    message: JsonDebugNativeMessageMessage,
+    sendResponse: (response?: JsonDebugResponse) => void,
   ): Promise<void> {
-    console.log('[Background] Debug native message request:', message)
-
     try {
-      if (!message.payload) {
-        throw new Error('Debug message payload is missing')
-      }
+      const debugMessage = create(NativeMessageSchema, {
+        timestamp: create(TimestampSchema, { seconds: BigInt(Math.floor(Date.now() / 1000)) }),
+        requestId: this.generateRequestId(),
+        message: {
+          case: 'healthCheck',
+          value: create(HealthCheckRequestSchema, {}),
+        },
+      })
 
-      // デバッグメッセージの検証
-      const debugMessage = message.payload
-      if (!debugMessage.type) {
-        throw new Error('Debug message must have a type field')
-      }
+      const response = await this.sendNativeProtobufMessage(debugMessage)
 
-      // request_idとtimestampが未設定の場合は自動生成
-      if (!debugMessage.request_id) {
-        debugMessage.request_id = this.generateRequestId()
-      }
-      if (!debugMessage.timestamp) {
-        debugMessage.timestamp = new Date().toISOString()
-      }
-
-      console.log('[Background] Sending debug native message:', debugMessage)
-
-      // Native Messaging Hostに直接送信
-      const response = await this.sendNativeMessage(debugMessage)
-
-      console.log('[Background] Debug native message response:', response)
-
-      // レスポンスをそのまま返す（成功・失敗問わず）
       sendResponse({
         success: true,
-        debug_request: debugMessage,
         native_response: response,
         timestamp: new Date().toISOString(),
       })
@@ -283,11 +344,10 @@ class BackgroundService {
     catch (error) {
       console.error('[Background] Debug native message failed:', error)
       const errorMessage = error instanceof Error ? error.message : 'Unknown error'
-      
+
       sendResponse({
         success: false,
         error: errorMessage,
-        debug_request: message.payload,
         timestamp: new Date().toISOString(),
       })
     }

@@ -160,6 +160,6 @@
   }
 </script>
 
-<div class='w-full h-full min-w-0' bind:clientHeight={height}>
+<div class='h-full min-w-0 w-full' bind:clientHeight={height}>
   <textarea id='mde' use:mde></textarea>
 </div>

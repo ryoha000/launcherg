@@ -5,7 +5,6 @@ mod domain;
 mod infrastructure;
 mod interface;
 mod usecase;
-pub mod native_messaging;
 
 use std::sync::Arc;
 
@@ -105,7 +104,6 @@ fn main() {
             command::get_uninstalled_owned_games,
             command::update_dl_store_ownership,
             command::get_game_candidates_by_name,
-            command::sync_dl_store_games_batch,
             command::get_sync_status,
             command::set_extension_config,
             command::generate_extension_package,

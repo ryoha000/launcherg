@@ -15,6 +15,8 @@ path = "src/bin/native-messaging-host.rs"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [build-dependencies]
+prost-build = "0.14.0"
+pbjson-build = "0.8.0"
 tauri-build = { version = "2.0.0-beta", features = [] }
 
 [dependencies]
@@ -28,7 +30,7 @@ sqlx = { version = "0.6", features = [
   "sqlite",
   "chrono",
 ] }
-chrono = { version = "0.4.26", features = [ "serde" ] }
+chrono = { version = "0.4.38", features = [ "serde" ] }
 derive-new = "0.5.0"
 walkdir = "2"
 reqwest = { version = "0.11", features = [
@@ -62,9 +64,23 @@ tauri-plugin-http = "2.5.0"
 env_logger = "0.10"
 log = "0.4"
 tempfile = "3.8"
+prost = "0.14.0"
+pbjson = "0.8.0"
+pbjson-types = "0.8.0"
 
 [target.'cfg(windows)'.dependencies]
 winreg = "0.52"
+
+[dev-dependencies]
+tokio-test = "0.4"
+mockall = "0.11"
+tempfile = "3.8"
+wiremock = "0.5"
+
+[features]
+# this feature is used for production builds or when `devPath` points to the filesystem
+# DO NOT REMOVE!!
+custom-protocol = [ "tauri/custom-protocol" ]
 
 [dependencies.windows]
 version = "0.51"
@@ -100,14 +116,3 @@ features = [
   "fast-rng", # Use a faster (but still sufficiently random) RNG
   "macro-diagnostics", # Enable better diagnostics for compile-time UUIDs
 ]
-
-[dev-dependencies]
-tokio-test = "0.4"
-mockall = "0.11"
-tempfile = "3.8"
-wiremock = "0.5"
-
-[features]
-# this feature is used for production builds or when `devPath` points to the filesystem
-# DO NOT REMOVE!!
-custom-protocol = [ "tauri/custom-protocol" ]

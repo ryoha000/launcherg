@@ -36,26 +36,26 @@
   withFooter={false}
   fullmodal
 >
-  <div class='space-y-4 text-text-primary'>
+  <div class='text-text-primary space-y-4'>
     <div>
       QRコードを読み込む、またはリンクを共有することでほかの端末からメモを取れます
     </div>
     {#if readyPromise}
       {#await readyPromise}
-        <div class='flex-(~ col) items-center justify-center gap-5 w-full p-12'>
+        <div class='w-full flex flex-(col) items-center justify-center gap-5 p-12'>
           <div
-            class='w-20 h-20 border-(12px solid #D9D9D9 t-#2D2D2D t-rounded) rounded-full animate-spin'
+            class='border-t-rounded h-20 w-20 animate-spin border-(12px #D9D9D9 t-#2D2D2D solid) rounded-full'
           ></div>
-          <div class='text-(text-primary h3) font-bold'>処理中</div>
+          <div class='text-(h3 text-primary) font-bold'>処理中</div>
         </div>
       {:then value}
-        <div class='flex-(~ col) justify-center items-center gap-4'>
+        <div class='flex flex-(col) items-center justify-center gap-4'>
           <button
             onclick={() => copyUrlToClipboard(value)}
-            class='flex hover:bg-bg-button rounded px-4 py-1 items-center gap-4 bg-inherit'
+            class='flex items-center gap-4 rounded bg-inherit px-4 py-1 hover:bg-bg-button'
           >
             <div
-              class='i-material-symbols-content-copy-outline-rounded w-5 h-5'
+              class='i-material-symbols-content-copy-outline-rounded h-5 w-5'
             ></div>
             <div>{new URL(value).origin}?d=...</div>
           </button>

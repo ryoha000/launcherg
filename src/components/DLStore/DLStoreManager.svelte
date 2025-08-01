@@ -164,9 +164,9 @@
   cancelText='閉じる'
   oncancel={() => (isOpen = false)}
 >
-  <div class='space-y-4 max-h-[70vh] overflow-y-auto'>
+  <div class='max-h-[70vh] overflow-y-auto space-y-4'>
     <div class='flex items-center justify-between'>
-      <h3 class='text-(text-primary lg) font-medium'>未インストールの購入済みゲーム</h3>
+      <h3 class='text-(lg text-primary) font-medium'>未インストールの購入済みゲーム</h3>
       <Button
         leftIcon='i-material-symbols-add-rounded'
         text='新規追加'
@@ -176,14 +176,14 @@
     </div>
 
     {#if showAddForm}
-      <div class='bg-bg-secondary p-4 rounded-lg space-y-3'>
-        <h4 class='text-(text-primary base) font-medium'>新しいDL版ゲームを追加</h4>
+      <div class='rounded-lg bg-bg-secondary p-4 space-y-3'>
+        <h4 class='text-(base text-primary) font-medium'>新しいDL版ゲームを追加</h4>
         <div>
-          <label for='store-type' class='block text-(text-secondary sm) mb-1'>ストア</label>
+          <label for='store-type' class='mb-1 block text-(sm text-secondary)'>ストア</label>
           <select
             id='store-type'
             bind:value={newGameForm.storeType}
-            class='w-full p-2 bg-bg-primary border border-border rounded text-text-primary'
+            class='border-border w-full border rounded bg-bg-primary p-2 text-text-primary'
           >
             <option value='DMM'>DMM Games</option>
             <option value='DLSite'>DLsite</option>
@@ -202,8 +202,8 @@
             on:update={e => updateCandidates(e.detail.value)}
           />
           {#if candidates.length > 0}
-            <div class='space-y-1 pl-2'>
-              <h5 class='text-(text-primary sm) font-medium'>候補</h5>
+            <div class='pl-2 space-y-1'>
+              <h5 class='text-(sm text-primary) font-medium'>候補</h5>
               <div class='max-h-32 overflow-y-auto space-y-1'>
                 {#each candidates as [id, gamename] (id)}
                   <button
@@ -248,28 +248,28 @@
     {/if}
 
     {#if loading}
-      <div class='text-center py-8'>
-        <div class='animate-spin rounded-full h-8 w-8 border-b-2 border-text-primary mx-auto'></div>
+      <div class='py-8 text-center'>
+        <div class='mx-auto h-8 w-8 animate-spin border-b-2 border-text-primary rounded-full'></div>
       </div>
     {:else if uninstalledGames.length === 0}
-      <div class='text-center py-8 text-text-secondary'>
+      <div class='py-8 text-center text-text-secondary'>
         未インストールの購入済みゲームはありません
       </div>
     {:else}
       <div class='space-y-2'>
         {#each uninstalledGames as game}
-          <div class='flex items-center justify-between p-3 bg-bg-secondary rounded-lg'>
+          <div class='flex items-center justify-between rounded-lg bg-bg-secondary p-3'>
             <div class='min-w-0 flex-1'>
-              <div class='text-(text-primary base) font-medium truncate'>
+              <div class='truncate text-(base text-primary) font-medium'>
                 {game.gamename || 'タイトル不明'}
               </div>
               {#if game.dlStore}
-                <div class='text-(text-secondary sm)'>
+                <div class='text-(sm text-secondary)'>
                   {game.dlStore.storeName} - {game.dlStore.storeId}
                 </div>
               {/if}
             </div>
-            <div class='flex gap-2 ml-4 flex-shrink-0'>
+            <div class='ml-4 flex flex-shrink-0 gap-2'>
               <Button
                 leftIcon='i-material-symbols-download-rounded'
                 text='Install'
@@ -288,8 +288,8 @@
       </div>
     {/if}
 
-    <div class='pt-4 border-t border-border'>
-      <p class='text-(text-secondary sm)'>
+    <div class='border-border border-t pt-4'>
+      <p class='text-(sm text-secondary)'>
         ※ Installボタンをクリックすると、ストアページがブラウザで開きます。
         ダウンロード・インストール後、「パスを選択」からゲームの実行ファイルを選択してください。
       </p>

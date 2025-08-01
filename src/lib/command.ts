@@ -256,15 +256,6 @@ export async function commandUpdateDLStoreOwnership(
 }
 
 // 拡張機能連携用の新しいコマンド
-export async function commandSyncDLStoreGamesBatch(
-  storeType: 'DMM' | 'DLSite',
-  gamesData: any[],
-) {
-  return await invoke<any>('sync_dl_store_games_batch', {
-    storeType,
-    gamesData,
-  })
-}
 
 export async function commandGetSyncStatus() {
   return await invoke<any>('get_sync_status')

@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 
-import { execSync } from 'child_process'
-import { copyFileSync, existsSync } from 'fs'
-import { join, dirname } from 'path'
-import { fileURLToPath } from 'url'
+import { execSync } from 'node:child_process'
+import { copyFileSync, existsSync } from 'node:fs'
+import { dirname, join } from 'node:path'
+import { fileURLToPath } from 'node:url'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
@@ -12,7 +12,7 @@ const tauriDir = join(rootDir, 'src-tauri')
 
 const isDebug = process.argv.includes('--debug')
 const profile = isDebug ? 'debug' : 'release'
-const buildCommand = isDebug 
+const buildCommand = isDebug
   ? 'cargo build --bin native-messaging-host'
   : 'cargo build --release --bin native-messaging-host'
 
@@ -22,7 +22,7 @@ try {
   // Change to src-tauri directory and build
   execSync(buildCommand, {
     cwd: tauriDir,
-    stdio: 'inherit'
+    stdio: 'inherit',
   })
 
   // Copy the executable to src-tauri root
@@ -38,7 +38,8 @@ try {
   copyFileSync(sourcePath, destPath)
 
   console.log('✅ Native messaging host built and copied successfully!')
-} catch (error) {
+}
+catch (error) {
   console.error('❌ Build failed:', error.message)
   process.exit(1)
 }

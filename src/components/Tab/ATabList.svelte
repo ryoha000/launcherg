@@ -5,14 +5,14 @@
 </script>
 
 <ScrollableHorizontal>
-  <div class='grid-(~ cols-[min-content_1fr]) items-center'>
-    <div class='flex items-center h-10'>
+  <div class='grid grid-(cols-[min-content_1fr]) items-center'>
+    <div class='h-10 flex items-center'>
       {#each $tabs as tab, i (tab.id)}
         <ATab {tab} selected={$selected === i} />
       {/each}
     </div>
     <div
-      class='w-full h-full bg-bg-disabled border-(b-1px solid border-primary)'
+      class='h-full w-full border-(b-1px border-primary solid) bg-bg-disabled'
     ></div>
   </div>
 </ScrollableHorizontal>

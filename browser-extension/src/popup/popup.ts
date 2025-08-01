@@ -143,7 +143,7 @@ class PopupController {
   private setupNavigation(): void {
     // ナビゲーションボタンのイベントリスナー
     const navButtons = document.querySelectorAll('.nav-item')
-    navButtons.forEach(btn => {
+    navButtons.forEach((btn) => {
       btn.addEventListener('click', (e) => {
         const page = (e.currentTarget as HTMLElement).dataset.page
         if (page) {
@@ -157,7 +157,7 @@ class PopupController {
     // 現在のページを非表示
     const currentPageElement = document.getElementById(`${this.currentPage}-page`)
     const currentNavItem = document.querySelector(`[data-page="${this.currentPage}"]`)
-    
+
     if (currentPageElement) {
       currentPageElement.classList.remove('active')
     }
@@ -168,7 +168,7 @@ class PopupController {
     // 新しいページを表示
     const newPageElement = document.getElementById(`${pageId}-page`)
     const newNavItem = document.querySelector(`[data-page="${pageId}"]`)
-    
+
     if (newPageElement) {
       newPageElement.classList.add('active')
     }
@@ -194,15 +194,18 @@ class PopupController {
     const successCountDetailed = document.getElementById('success-count-detailed')
     const errorCountDetailed = document.getElementById('error-count-detailed')
 
-    if (totalSyncedDetailed) totalSyncedDetailed.textContent = totalSynced
-    if (successCountDetailed) successCountDetailed.textContent = successCount
-    if (errorCountDetailed) errorCountDetailed.textContent = errorCount
+    if (totalSyncedDetailed)
+      totalSyncedDetailed.textContent = totalSynced
+    if (successCountDetailed)
+      successCountDetailed.textContent = successCount
+    if (errorCountDetailed)
+      errorCountDetailed.textContent = errorCount
 
     // 成功率を計算
-    const total = parseInt(totalSynced)
-    const success = parseInt(successCount)
+    const total = Number.parseInt(totalSynced)
+    const success = Number.parseInt(successCount)
     const successRate = total > 0 ? Math.round((success / total) * 100) : 0
-    
+
     const successRateElement = document.getElementById('success-rate')
     if (successRateElement) {
       successRateElement.textContent = `${successRate}%`
@@ -211,8 +214,10 @@ class PopupController {
     // DMM・DLsiteの個別カウント（ダミーデータ、実際は実装時に修正）
     const dmmCount = document.getElementById('dmm-count')
     const dlsiteCount = document.getElementById('dlsite-count')
-    if (dmmCount) dmmCount.textContent = Math.floor(parseInt(totalSynced) * 0.6).toString()
-    if (dlsiteCount) dlsiteCount.textContent = Math.floor(parseInt(totalSynced) * 0.4).toString()
+    if (dmmCount)
+      dmmCount.textContent = Math.floor(Number.parseInt(totalSynced) * 0.6).toString()
+    if (dlsiteCount)
+      dlsiteCount.textContent = Math.floor(Number.parseInt(totalSynced) * 0.4).toString()
   }
 
   private setupDebugSection(): void {
@@ -233,7 +238,7 @@ class PopupController {
 
     // テンプレートボタン
     const templateButtons = document.querySelectorAll('.template-btn')
-    templateButtons.forEach(btn => {
+    templateButtons.forEach((btn) => {
       btn.addEventListener('click', (e) => {
         const template = (e.target as HTMLElement).dataset.template
         if (template) {
@@ -248,7 +253,7 @@ class PopupController {
     if (debugNavItem) {
       debugNavItem.style.display = this.config.debug_mode ? 'flex' : 'none'
     }
-    
+
     // デバッグモードが無効になった場合、メインページに戻る
     if (!this.config.debug_mode && this.currentPage === 'debug') {
       this.switchPage('main')
@@ -260,7 +265,8 @@ class PopupController {
     const responseDiv = document.getElementById('debug-response')
     const sendBtn = document.getElementById('send-json-btn') as HTMLButtonElement
 
-    if (!jsonInput || !responseDiv || !sendBtn) return
+    if (!jsonInput || !responseDiv || !sendBtn)
+      return
 
     const jsonText = jsonInput.value.trim()
     if (!jsonText) {
@@ -272,7 +278,8 @@ class PopupController {
     let parsedMessage
     try {
       parsedMessage = JSON.parse(jsonText)
-    } catch (e) {
+    }
+    catch (e) {
       this.displayDebugResponse({ error: `無効なJSON: ${e}` }, true)
       return
     }
@@ -290,20 +297,23 @@ class PopupController {
       })
 
       this.displayDebugResponse(response, !response.success)
-      
+
       if (response.success) {
         this.addLog('success', `デバッグメッセージ送信成功: ${parsedMessage.type || 'unknown'}`)
-      } else {
+      }
+      else {
         this.addLog('error', `デバッグメッセージ送信失敗: ${response.error}`)
       }
-    } catch (error) {
+    }
+    catch (error) {
       const errorResponse = {
         error: error instanceof Error ? error.message : 'Unknown error',
-        details: 'バックグラウンドスクリプトとの通信に失敗しました'
+        details: 'バックグラウンドスクリプトとの通信に失敗しました',
       }
       this.displayDebugResponse(errorResponse, true)
       this.addLog('error', `デバッグメッセージ通信エラー: ${errorResponse.error}`)
-    } finally {
+    }
+    finally {
       // UI状態を復元
       sendBtn.disabled = false
       sendBtn.textContent = 'JSON送信'
@@ -312,11 +322,12 @@ class PopupController {
 
   private displayDebugResponse(response: any, isError: boolean): void {
     const responseDiv = document.getElementById('debug-response')
-    if (!responseDiv) return
+    if (!responseDiv)
+      return
 
     // JSONを整形して表示
     const formattedJson = JSON.stringify(response, null, 2)
-    
+
     responseDiv.innerHTML = `
       <div class="debug-response-header ${isError ? 'error' : 'success'}">
         <span class="response-status">${isError ? '❌ エラー' : '✅ 成功'}</span>
@@ -329,7 +340,7 @@ class PopupController {
   private clearDebugInputs(): void {
     const jsonInput = document.getElementById('debug-json-input') as HTMLTextAreaElement
     const responseDiv = document.getElementById('debug-response')
-    
+
     if (jsonInput) {
       jsonInput.value = ''
     }
@@ -342,29 +353,33 @@ class PopupController {
   private async copyResponse(): Promise<void> {
     const responseDiv = document.getElementById('debug-response')
     const copyBtn = document.getElementById('copy-response-btn')
-    if (!responseDiv || !copyBtn) return
+    if (!responseDiv || !copyBtn)
+      return
 
     const codeElement = responseDiv.querySelector('code')
-    if (!codeElement) return
+    if (!codeElement)
+      return
 
     try {
       await navigator.clipboard.writeText(codeElement.textContent || '')
-      
+
       const originalText = copyBtn.textContent
       copyBtn.textContent = '✅'
       setTimeout(() => {
         copyBtn.textContent = originalText
       }, 1000)
-      
+
       this.addLog('info', 'デバッグレスポンスをクリップボードにコピーしました')
-    } catch (error) {
+    }
+    catch (error) {
       this.addLog('error', 'クリップボードへのコピーに失敗しました')
     }
   }
 
   private loadTemplate(templateType: string): void {
     const jsonInput = document.getElementById('debug-json-input') as HTMLTextAreaElement
-    if (!jsonInput) return
+    if (!jsonInput)
+      return
 
     const templates = {
       health_check: {

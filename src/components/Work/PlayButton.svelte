@@ -17,7 +17,7 @@
   const canInstall = $derived(gameStatus === 'owned-not-installed')
 </script>
 
-<div class='flex items-center min-w-0'>
+<div class='min-w-0 flex items-center'>
   {#if isInstalled && play}
     <Button
       appendClass='rounded-r-0'
@@ -41,7 +41,7 @@
           variant='success'
         >
           <div
-            class='color-text-white w-5 h-5 i-material-symbols-arrow-drop-down'
+            class='i-material-symbols-arrow-drop-down h-5 w-5 color-text-white'
             class:rotate-180={open}
           ></div>
         </ButtonBase>

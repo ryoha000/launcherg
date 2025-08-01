@@ -28,6 +28,7 @@ dist-ssr
 tmp/*
 
 *.exe
+*.bin
 
 # Native Messaging Host generated files
 native-messaging-manifest-installed.json
