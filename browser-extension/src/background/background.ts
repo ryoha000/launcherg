@@ -262,8 +262,13 @@ class BackgroundService {
         reject(new Error('Native messaging timeout'))
       }, 30000)
 
-      // JSONとして送信
-      const jsonMessage = JSON.stringify(message)
+      // JSONとして送信（BigIntを処理）
+      const jsonMessage = JSON.stringify(message, (key, value) => {
+        if (typeof value === 'bigint') {
+          return value.toString()
+        }
+        return value
+      })
 
       chrome.runtime.sendNativeMessage(
         this.nativeHostName,
