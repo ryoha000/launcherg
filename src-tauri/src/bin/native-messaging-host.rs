@@ -5,7 +5,6 @@ use prost::Message;
 use pbjson_types::Timestamp;
 use chrono::Utc;
 use serde_json;
-use serde::{Deserialize, Serialize};
 
 // プロトタイプを使用
 use proto::generated::launcherg::{common::*, sync::*, status::*};
@@ -171,18 +170,6 @@ fn parse_message(message_bytes: &[u8]) -> Result<(NativeMessage, RequestFormat),
         return Ok((message, RequestFormat::Protobuf));
     }
 
-    // Chrome拡張機能からの数値配列形式を試す
-    if message_bytes[0] == b'[' {
-        let json_str = std::str::from_utf8(message_bytes)
-            .map_err(|e| format!("Failed to parse message as UTF-8: {}", e))?;
-        if let Ok(json_array) = serde_json::from_str::<Vec<u8>>(json_str) {
-            if let Ok(message) = NativeMessage::decode(&json_array[..]) {
-                log::info!("Parsed as ProtoBuf from JSON array");
-                return Ok((message, RequestFormat::Protobuf));
-            }
-        }
-    }
-
     // JSONとしてパース
     let json_str = std::str::from_utf8(message_bytes)
         .map_err(|e| format!("Failed to parse message as UTF-8: {}", e))?;
@@ -198,21 +185,16 @@ fn send_response_with_format(response: &NativeResponse, format: RequestFormat) -
 
     match format {
         RequestFormat::Protobuf => {
-            // ProtoBuf形式で送信（Chrome拡張機能向けには数値配列のJSON形式）
+            // ProtoBuf形式で送信
             let mut response_bytes = Vec::new();
             response.encode(&mut response_bytes)
                 .map_err(|e| format!("Failed to encode protobuf response: {}", e))?;
             
-            let response_array: Vec<u8> = response_bytes;
-            let json_response = serde_json::to_string(&response_array)
-                .map_err(|e| format!("Failed to serialize response array: {}", e))?;
-            
-            let json_bytes = json_response.as_bytes();
-            let length = json_bytes.len() as u32;
+            let length = response_bytes.len() as u32;
             
             handle.write_all(&length.to_le_bytes())?;
-            handle.write_all(json_bytes)?;
-            log::info!("Sent ProtoBuf response (as JSON array) for request: {}", response.request_id);
+            handle.write_all(&response_bytes)?;
+            log::info!("Sent ProtoBuf response for request: {}", response.request_id);
         }
         RequestFormat::Json => {
             // JSON形式で送信

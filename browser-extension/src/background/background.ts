@@ -262,14 +262,12 @@ class BackgroundService {
         reject(new Error('Native messaging timeout'))
       }, 30000)
 
-      const messageBytes = toBinary(NativeMessageSchema, message)
-
-      // Chrome拡張機能では、ProtoBufバイト配列を数値配列として送信する必要がある
-      const messageArray = Array.from(messageBytes)
+      // JSONとして送信
+      const jsonMessage = JSON.stringify(message)
 
       chrome.runtime.sendNativeMessage(
         this.nativeHostName,
-        messageArray,
+        JSON.parse(jsonMessage),
         (response) => {
           clearTimeout(timeout)
 
@@ -278,13 +276,12 @@ class BackgroundService {
           }
           else if (response) {
             try {
-              // レスポンスも数値配列として受信される
-              const responseBytes = new Uint8Array(response)
-              const nativeResponse = fromBinary(NativeResponseSchema, responseBytes)
+              // JSONレスポンスをNativeResponseとして処理
+              const nativeResponse = response as NativeResponse
               resolve(nativeResponse)
             }
             catch (e) {
-              console.error('[Background] Failed to parse protobuf response:', e)
+              console.error('[Background] Failed to parse JSON response:', e)
               reject(e)
             }
           }
