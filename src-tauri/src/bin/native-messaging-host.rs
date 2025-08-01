@@ -4,9 +4,17 @@ use std::io::{self, Read, Write};
 use prost::Message;
 use pbjson_types::Timestamp;
 use chrono::Utc;
+use serde_json;
+use serde::{Deserialize, Serialize};
 
 // プロトタイプを使用
 use proto::generated::launcherg::{common::*, sync::*, status::*};
+
+#[derive(Debug)]
+enum RequestFormat {
+    Protobuf,
+    Json,
+}
 
 fn main() {
     // 標準エラー出力にログを記録
@@ -56,8 +64,8 @@ fn handle_message() -> Result<bool, Box<dyn std::error::Error>> {
     let mut message_bytes = vec![0u8; length];
     handle.read_exact(&mut message_bytes)?;
     
-    let message = NativeMessage::decode(&message_bytes[..])
-        .map_err(|e| format!("Failed to decode protobuf message: {}", e))?;
+    // リクエスト形式を判定し、メッセージをパース
+    let (message, format) = parse_message(&message_bytes)?;
     
     let message_type = match &message.message {
         Some(native_message::Message::SyncGames(_)) => "sync_games",
@@ -82,8 +90,8 @@ fn handle_message() -> Result<bool, Box<dyn std::error::Error>> {
         },
     };
     
-    // レスポンスを送信
-    send_response(&response)?;
+    // レスポンス形式に応じて送信
+    send_response_with_format(&response, format)?;
     
     Ok(true)
 }
@@ -156,23 +164,70 @@ fn handle_health_check(_request: &HealthCheckRequest, request_id: &str) -> Nativ
     }
 }
 
-fn send_response(response: &NativeResponse) -> Result<(), Box<dyn std::error::Error>> {
-    let mut response_bytes = Vec::new();
-    response.encode(&mut response_bytes)
-        .map_err(|e| format!("Failed to encode protobuf response: {}", e))?;
-    
-    let length = response_bytes.len() as u32;
-    
+fn parse_message(message_bytes: &[u8]) -> Result<(NativeMessage, RequestFormat), Box<dyn std::error::Error>> {
+    // まずProtoBufとして直接パースを試みる
+    if let Ok(message) = NativeMessage::decode(message_bytes) {
+        log::info!("Parsed as raw ProtoBuf message");
+        return Ok((message, RequestFormat::Protobuf));
+    }
+
+    // Chrome拡張機能からの数値配列形式を試す
+    if message_bytes[0] == b'[' {
+        let json_str = std::str::from_utf8(message_bytes)
+            .map_err(|e| format!("Failed to parse message as UTF-8: {}", e))?;
+        if let Ok(json_array) = serde_json::from_str::<Vec<u8>>(json_str) {
+            if let Ok(message) = NativeMessage::decode(&json_array[..]) {
+                log::info!("Parsed as ProtoBuf from JSON array");
+                return Ok((message, RequestFormat::Protobuf));
+            }
+        }
+    }
+
+    // JSONとしてパース
+    let json_str = std::str::from_utf8(message_bytes)
+        .map_err(|e| format!("Failed to parse message as UTF-8: {}", e))?;
+    let message = serde_json::from_str::<NativeMessage>(json_str)
+        .map_err(|e| format!("Failed to parse as JSON: {}", e))?;
+    log::info!("Parsed as JSON message");
+    Ok((message, RequestFormat::Json))
+}
+
+fn send_response_with_format(response: &NativeResponse, format: RequestFormat) -> Result<(), Box<dyn std::error::Error>> {
     let stdout = io::stdout();
     let mut handle = stdout.lock();
+
+    match format {
+        RequestFormat::Protobuf => {
+            // ProtoBuf形式で送信（Chrome拡張機能向けには数値配列のJSON形式）
+            let mut response_bytes = Vec::new();
+            response.encode(&mut response_bytes)
+                .map_err(|e| format!("Failed to encode protobuf response: {}", e))?;
+            
+            let response_array: Vec<u8> = response_bytes;
+            let json_response = serde_json::to_string(&response_array)
+                .map_err(|e| format!("Failed to serialize response array: {}", e))?;
+            
+            let json_bytes = json_response.as_bytes();
+            let length = json_bytes.len() as u32;
+            
+            handle.write_all(&length.to_le_bytes())?;
+            handle.write_all(json_bytes)?;
+            log::info!("Sent ProtoBuf response (as JSON array) for request: {}", response.request_id);
+        }
+        RequestFormat::Json => {
+            // JSON形式で送信
+            let json_response = serde_json::to_string(&response)
+                .map_err(|e| format!("Failed to serialize JSON response: {}", e))?;
+            
+            let json_bytes = json_response.as_bytes();
+            let length = json_bytes.len() as u32;
+            
+            handle.write_all(&length.to_le_bytes())?;
+            handle.write_all(json_bytes)?;
+            log::info!("Sent JSON response for request: {}", response.request_id);
+        }
+    }
     
-    // メッセージ長を送信（4バイト、リトルエンディアン）
-    handle.write_all(&length.to_le_bytes())?;
-    // メッセージ本体を送信
-    handle.write_all(&response_bytes)?;
     handle.flush()?;
-    
-    log::info!("Sent response for request: {}", response.request_id);
-    
     Ok(())
 }

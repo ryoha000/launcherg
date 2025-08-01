@@ -264,14 +264,12 @@ class BackgroundService {
 
       const messageBytes = toBinary(NativeMessageSchema, message)
 
-      const messageJson = {
-        protobuf_data: Array.from(messageBytes),
-        request_id: message.requestId,
-      }
+      // Chrome拡張機能では、ProtoBufバイト配列を数値配列として送信する必要がある
+      const messageArray = Array.from(messageBytes)
 
       chrome.runtime.sendNativeMessage(
         this.nativeHostName,
-        messageJson,
+        messageArray,
         (response) => {
           clearTimeout(timeout)
 
@@ -280,15 +278,10 @@ class BackgroundService {
           }
           else if (response) {
             try {
-              if (response.protobuf_data && Array.isArray(response.protobuf_data)) {
-                const responseBytes = new Uint8Array(response.protobuf_data)
-                const nativeResponse = fromBinary(NativeResponseSchema, responseBytes)
-                resolve(nativeResponse)
-              }
-              else {
-                console.warn('[Background] Received JSON response instead of protobuf:', response)
-                reject(new Error('Expected protobuf response but got JSON'))
-              }
+              // レスポンスも数値配列として受信される
+              const responseBytes = new Uint8Array(response)
+              const nativeResponse = fromBinary(NativeResponseSchema, responseBytes)
+              resolve(nativeResponse)
             }
             catch (e) {
               console.error('[Background] Failed to parse protobuf response:', e)
