@@ -275,15 +275,9 @@ class BackgroundService {
             reject(new Error(chrome.runtime.lastError.message))
           }
           else if (response) {
-            try {
-              // JSONレスポンスをNativeResponseとして処理
-              const nativeResponse = response as NativeResponse
-              resolve(nativeResponse)
-            }
-            catch (e) {
-              console.error('[Background] Failed to parse JSON response:', e)
-              reject(e)
-            }
+            // JSONレスポンスをNativeResponseとして処理
+            // responseは既にJavaScriptオブジェクトなのでそのまま使用
+            resolve(response as NativeResponse)
           }
           else {
             resolve(null)
