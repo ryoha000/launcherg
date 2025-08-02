@@ -377,7 +377,7 @@ impl<R: RepositoriesExt> CollectionUseCase<R> {
         exe_path: String,
     ) -> anyhow::Result<()> {
         let paths = NewCollectionElementPaths::new(
-            collection_element_id,
+            collection_element_id.clone(),
             Some(exe_path),
             None, // lnk_path
         );

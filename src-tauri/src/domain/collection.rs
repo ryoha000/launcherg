@@ -1,11 +1,9 @@
 use chrono::{DateTime, Local};
 use derive_new::new;
-use serde::{Deserialize, Serialize};
 
 use super::Id;
 
-#[derive(new, Debug, Clone, Serialize, Deserialize, PartialEq)]
-#[serde(rename_all = "camelCase")]
+#[derive(new, Clone, Debug, PartialEq)]
 pub struct CollectionElement {
     pub id: Id<CollectionElement>,
     pub created_at: DateTime<Local>,
@@ -21,8 +19,7 @@ pub struct CollectionElement {
 }
 
 // スクレイピング情報（erogamescape由来）
-#[derive(new, Debug, Clone, Serialize, Deserialize, PartialEq)]
-#[serde(rename_all = "camelCase")]
+#[derive(new, Clone, Debug, PartialEq)]
 pub struct CollectionElementInfo {
     pub id: Id<CollectionElementInfo>,
     pub collection_element_id: Id<CollectionElement>,
@@ -37,8 +34,7 @@ pub struct CollectionElementInfo {
 }
 
 // パス情報
-#[derive(new, Debug, Clone, Serialize, Deserialize, PartialEq)]
-#[serde(rename_all = "camelCase")]
+#[derive(new, Clone, Debug, PartialEq)]
 pub struct CollectionElementPaths {
     pub id: Id<CollectionElementPaths>,
     pub collection_element_id: Id<CollectionElement>,
@@ -49,8 +45,7 @@ pub struct CollectionElementPaths {
 }
 
 // インストール情報
-#[derive(new, Debug, Clone, Serialize, Deserialize, PartialEq)]
-#[serde(rename_all = "camelCase")]
+#[derive(new, Clone, Debug, PartialEq)]
 pub struct CollectionElementInstall {
     pub id: Id<CollectionElementInstall>,
     pub collection_element_id: Id<CollectionElement>,
@@ -60,8 +55,7 @@ pub struct CollectionElementInstall {
 }
 
 // プレイ情報
-#[derive(new, Debug, Clone, Serialize, Deserialize, PartialEq)]
-#[serde(rename_all = "camelCase")]
+#[derive(new, Clone, Debug, PartialEq)]
 pub struct CollectionElementPlay {
     pub id: Id<CollectionElementPlay>,
     pub collection_element_id: Id<CollectionElement>,
@@ -71,8 +65,7 @@ pub struct CollectionElementPlay {
 }
 
 // いいね情報
-#[derive(new, Debug, Clone, Serialize, Deserialize, PartialEq)]
-#[serde(rename_all = "camelCase")]
+#[derive(new, Clone, Debug, PartialEq)]
 pub struct CollectionElementLike {
     pub id: Id<CollectionElementLike>,
     pub collection_element_id: Id<CollectionElement>,
@@ -82,8 +75,7 @@ pub struct CollectionElementLike {
 }
 
 // サムネイル情報
-#[derive(new, Debug, Clone, Serialize, Deserialize, PartialEq)]
-#[serde(rename_all = "camelCase")]
+#[derive(new, Clone, Debug, PartialEq)]
 pub struct CollectionElementThumbnail {
     pub id: Id<CollectionElementThumbnail>,
     pub collection_element_id: Id<CollectionElement>,
@@ -93,13 +85,13 @@ pub struct CollectionElementThumbnail {
     pub updated_at: DateTime<Local>,
 }
 
-#[derive(new, Debug)]
+#[derive(new, Clone, Debug)]
 pub struct NewCollectionElement {
     pub id: Id<CollectionElement>,
 }
 
 // ファイルスキャン用の関連データ付きコレクション要素
-#[derive(new, Debug)]
+#[derive(new, Clone, Debug)]
 pub struct ScannedGameElement {
     pub id: Id<CollectionElement>,
     pub exe_path: Option<String>,
@@ -107,7 +99,7 @@ pub struct ScannedGameElement {
     pub install_at: Option<DateTime<Local>>,
 }
 
-#[derive(new, Debug)]
+#[derive(new, Clone, Debug)]
 pub struct NewCollectionElementInfo {
     pub collection_element_id: Id<CollectionElement>,
     pub gamename: String,
@@ -118,32 +110,32 @@ pub struct NewCollectionElementInfo {
     pub is_nukige: bool,
 }
 
-#[derive(new, Debug)]
+#[derive(new, Clone, Debug)]
 pub struct NewCollectionElementPaths {
     pub collection_element_id: Id<CollectionElement>,
     pub exe_path: Option<String>,
     pub lnk_path: Option<String>,
 }
 
-#[derive(new, Debug)]
+#[derive(new, Clone, Debug)]
 pub struct NewCollectionElementInstall {
     pub collection_element_id: Id<CollectionElement>,
     pub install_at: DateTime<Local>,
 }
 
-#[derive(new, Debug)]
+#[derive(new, Clone, Debug)]
 pub struct NewCollectionElementPlay {
     pub collection_element_id: Id<CollectionElement>,
     pub last_play_at: DateTime<Local>,
 }
 
-#[derive(new, Debug)]
+#[derive(new, Clone, Debug)]
 pub struct NewCollectionElementLike {
     pub collection_element_id: Id<CollectionElement>,
     pub like_at: DateTime<Local>,
 }
 
-#[derive(new, Debug)]
+#[derive(new, Clone, Debug)]
 pub struct NewCollectionElementThumbnail {
     pub collection_element_id: Id<CollectionElement>,
     pub thumbnail_width: Option<i32>,
@@ -151,8 +143,7 @@ pub struct NewCollectionElementThumbnail {
 }
 
 // DL版ストア情報
-#[derive(new, Debug, Clone, Serialize, Deserialize, PartialEq)]
-#[serde(rename_all = "camelCase")]
+#[derive(new, Clone, Debug, PartialEq)]
 pub struct CollectionElementDLStore {
     pub id: Id<CollectionElementDLStore>,
     pub collection_element_id: Id<CollectionElement>,
@@ -166,13 +157,13 @@ pub struct CollectionElementDLStore {
     pub updated_at: DateTime<Local>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum DLStoreType {
     DMM,
     DLSite,
 }
 
-#[derive(new, Debug)]
+#[derive(new, Clone, Debug)]
 pub struct NewCollectionElementDLStore {
     pub collection_element_id: Id<CollectionElement>,
     pub store_id: String,
