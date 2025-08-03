@@ -1,7 +1,7 @@
 import antfu from '@antfu/eslint-config'
 
 export default antfu({
-  ignores: ['script', '**/script/**', '**/scripts/**', 'src-tauri/gen/**', 'src-tauri/target/**', '**/*.md', 'browser-extension/src/proto'],
+  ignores: ['script', '**/script/**', '**/scripts/**', 'src-tauri/gen/**', 'src-tauri/target/**', '**/*.md', 'browser-extension/**/proto/**'],
   svelte: true,
   unocss: true,
   rules: {

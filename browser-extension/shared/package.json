@@ -1,0 +1,37 @@
+{
+  "name": "@launcherg/shared",
+  "type": "module",
+  "version": "1.0.0",
+  "description": "Shared utilities for Launcherg browser extension",
+  "exports": {
+    "./base-extractor": {
+      "types": "./dist/base-extractor/index.d.ts",
+      "import": "./dist/base-extractor/index.js"
+    },
+    "./proto/extension_internal": {
+      "types": "./dist/proto/extension_internal/index.d.ts",
+      "import": "./dist/proto/extension_internal/index.js"
+    },
+    "./proto/native_messaging": {
+      "types": "./dist/proto/native_messaging/index.d.ts",
+      "import": "./dist/proto/native_messaging/index.js"
+    },
+    "./types": {
+      "types": "./dist/types/index.d.ts",
+      "import": "./dist/types/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "clean": "rimraf dist"
+  },
+  "dependencies": {
+    "@bufbuild/protobuf": "^2.0.0",
+    "uuid": "^9.0.1"
+  },
+  "devDependencies": {
+    "rimraf": "^5.0.5",
+    "typescript": "^5.3.3"
+  }
+}

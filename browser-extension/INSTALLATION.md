@@ -40,8 +40,8 @@ DMM Games と DLsite の購入済みゲームを自動的に Launcherg デスク
 1. **ビルド**
    ```bash
    cd browser-extension
-   npm install
-   npm run build
+   pnpm install
+   pnpm run build
    ```
 
 2. **Chrome/Edge にインストール**

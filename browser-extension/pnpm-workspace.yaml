@@ -1,0 +1,6 @@
+packages:
+  - background
+  - content-scripts/dlsite
+  - content-scripts/dmm
+  - popup
+  - shared

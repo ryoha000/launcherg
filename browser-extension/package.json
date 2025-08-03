@@ -1,29 +1,28 @@
 {
   "name": "launcherg-browser-extension",
+  "type": "module",
   "version": "1.0.0",
+  "packageManager": "pnpm@8.0.0",
   "description": "Browser extension for syncing DL store games to Launcherg",
   "scripts": {
-    "build": "npm run protobuf:generate && vite build",
-    "dev": "npm run protobuf:generate && vite build --watch",
+    "build": "pnpm run protobuf:generate && pnpm run copy-assets && pnpm run build:workspaces",
+    "build:workspaces": "pnpm run --filter @launcherg/shared build && pnpm run --filter !@launcherg/shared build",
+    "dev": "pnpm run protobuf:generate && pnpm run copy-assets && pnpm run -r dev",
+    "clean": "rimraf dist && pnpm run -r clean",
+    "copy-assets": "node scripts/copy-assets.js",
+    "protobuf:generate": "buf generate --template ../proto/buf.gen.yaml ../proto --output shared/src",
+    "protobuf:lint": "buf lint ../proto",
+    "protobuf:format": "buf format -w ../proto",
     "test": "vitest",
     "test:ui": "vitest --ui",
     "test:playwright": "playwright test",
     "test:playwright:ui": "playwright test --ui",
-    "coverage": "vitest --coverage",
-    "clean": "rimraf dist",
-    "protobuf:generate": "buf generate --template ../proto/buf.gen.yaml ../proto",
-    "protobuf:lint": "buf lint ../proto",
-    "protobuf:format": "buf format -w ../proto"
-  },
-  "dependencies": {
-    "@bufbuild/protobuf": "^2.0.0",
-    "uuid": "^9.0.1"
+    "coverage": "vitest --coverage"
   },
   "devDependencies": {
     "@bufbuild/buf": "^1.47.0",
     "@bufbuild/protoc-gen-es": "^2.0.0",
     "@playwright/test": "^1.54.2",
-    "@types/chrome": "^0.0.268",
     "@types/node": "^20.11.5",
     "@vitest/coverage-v8": "^3.2.4",
     "@vitest/ui": "^3.2.4",
@@ -31,7 +30,6 @@
     "playwright": "^1.54.2",
     "rimraf": "^5.0.5",
     "typescript": "^5.3.3",
-    "vite": "^7.0.6",
     "vitest": "^3.2.4"
   }
 }

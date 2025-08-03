@@ -1,6 +1,6 @@
-import { test, expect } from '@playwright/test'
-import { readFileSync } from 'fs'
-import { resolve } from 'path'
+import { readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
+import { expect, test } from '@playwright/test'
 
 // DLsite Play.htmlファイルのパス
 const dlsitePlayHtmlPath = resolve(__dirname, '../content-scripts/data/DLsite Play.html')
@@ -9,10 +9,10 @@ test.describe('DLsite Play.html パース検証', () => {
   test('実際のDLsite Play.htmlファイルから正しくゲーム情報を抽出できること', async ({ page }) => {
     // HTMLファイルを読み込み
     const htmlContent = readFileSync(dlsitePlayHtmlPath, 'utf-8')
-    
+
     // file:// プロトコルでHTMLを読み込み（データ構造の正確性を保持）
-    await page.setContent(htmlContent, { 
-      waitUntil: 'load'
+    await page.setContent(htmlContent, {
+      waitUntil: 'load',
     })
 
     // ページがDLsiteライブラリページとして認識されるように設定
@@ -22,9 +22,9 @@ test.describe('DLsite Play.html パース検証', () => {
           hostname: 'play.dlsite.com',
           pathname: '/library',
           href: 'https://play.dlsite.com/library',
-          search: ''
+          search: '',
         },
-        writable: true
+        writable: true,
       })
     })
 
@@ -33,14 +33,14 @@ test.describe('DLsite Play.html パース検証', () => {
       // ゲームコンテナを検索
       const gameContainers = document.querySelectorAll('[data-index]')
       console.log('Found game containers:', gameContainers.length)
-      
+
       const games: any[] = []
       const seenStoreIds = new Set<string>()
 
       // extractStoreIdFromUrl関数（DLsiteExtractorと同じロジック）
       function extractStoreIdFromUrl(thumbnailUrl: string): string | null {
         const fileName = thumbnailUrl.split('/').pop() || ''
-        const rjMatch = fileName.match(/(RJ|VJ|BJ)([0-9]+)/)
+        const rjMatch = fileName.match(/(RJ|VJ|BJ)(\d+)/)
         if (!rjMatch) {
           return null
         }
@@ -104,7 +104,8 @@ test.describe('DLsite Play.html パース検証', () => {
 
           games.push(gameData)
           console.log(`Extracted game ${index + 1}:`, gameData)
-        } catch (error) {
+        }
+        catch (error) {
           console.log(`Error extracting game from container ${index}:`, error)
         }
       })
@@ -112,7 +113,7 @@ test.describe('DLsite Play.html パース検証', () => {
       return {
         games,
         containerCount: gameContainers.length,
-        uniqueStoreIds: Array.from(seenStoreIds)
+        uniqueStoreIds: Array.from(seenStoreIds),
       }
     })
 
@@ -130,7 +131,7 @@ test.describe('DLsite Play.html パース検証', () => {
       expect(game.title).toBeTruthy()
       expect(game.purchase_url).toContain('dlsite.com')
       expect(game.thumbnail_url).toContain('img.dlsite.jp')
-      
+
       // メーカー名が存在することを確認
       expect(game.additional_data.maker_name).toBeTruthy()
     }
@@ -155,7 +156,7 @@ test.describe('DLsite Play.html パース検証', () => {
         hasThumbnails: !!document.querySelector('._thumbnail_1kd4u_117'),
         hasDataIndex: !!document.querySelector('[data-index]'),
         dataIndexCount: document.querySelectorAll('[data-index]').length,
-        thumbnailCount: document.querySelectorAll('._thumbnail_1kd4u_117 span').length
+        thumbnailCount: document.querySelectorAll('._thumbnail_1kd4u_117 span').length,
       }
     })
 
@@ -164,7 +165,7 @@ test.describe('DLsite Play.html パース検証', () => {
     expect(elementCheck.hasThumbnails).toBe(true)
     expect(elementCheck.dataIndexCount).toBeGreaterThan(0)
     expect(elementCheck.thumbnailCount).toBeGreaterThan(0)
-    
+
     console.log('Element check results:', elementCheck)
   })
 
@@ -176,7 +177,7 @@ test.describe('DLsite Play.html パース検証', () => {
     const extractionTest = await page.evaluate(() => {
       function extractStoreIdFromUrl(thumbnailUrl: string): string | null {
         const fileName = thumbnailUrl.split('/').pop() || ''
-        const rjMatch = fileName.match(/(RJ|VJ|BJ)([0-9]+)/)
+        const rjMatch = fileName.match(/(RJ|VJ|BJ)(\d+)/)
         if (!rjMatch) {
           return null
         }
@@ -185,12 +186,12 @@ test.describe('DLsite Play.html パース検証', () => {
 
       const results: any[] = []
       const thumbnailElements = document.querySelectorAll('._thumbnail_1kd4u_117 span')
-      
+
       thumbnailElements.forEach((element, index) => {
         const htmlElement = element as HTMLElement
         const bgImage = htmlElement.style.backgroundImage
         const match = bgImage.match(/url\("?(.+?)"?\)/)
-        
+
         if (match) {
           const url = match[1]
           const storeId = extractStoreIdFromUrl(url)
@@ -198,7 +199,7 @@ test.describe('DLsite Play.html パース検証', () => {
             index,
             url,
             storeId,
-            valid: storeId ? /^(RJ|VJ|BJ)\d+$/.test(storeId) : false
+            valid: storeId ? /^(?:RJ|VJ|BJ)\d+$/.test(storeId) : false,
           })
         }
       })
@@ -210,7 +211,7 @@ test.describe('DLsite Play.html パース検証', () => {
 
     // 各抽出結果を検証
     expect(extractionTest.length).toBeGreaterThan(0)
-    
+
     const validExtractions = extractionTest.filter(result => result.valid)
     expect(validExtractions.length).toBeGreaterThan(0)
 

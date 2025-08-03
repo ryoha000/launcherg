@@ -91,12 +91,12 @@ cd launcherg/browser-extension
 
 2. 依存関係をインストール
 ```bash
-npm install
+pnpm install
 ```
 
 3. 拡張機能をビルド
 ```bash
-npm run build
+pnpm run build
 ```
 
 4. Chromeで開発者モードを有効化
@@ -160,8 +160,6 @@ browser-extension/
 │   │   ├── popup.html
 │   │   ├── popup.ts
 │   │   └── styles.css
-│   └── config/                # 設定ファイル
-│       └── extraction-rules.json
 ├── webpack.config.js          # ビルド設定
 ├── tsconfig.json             # TypeScript設定
 └── package.json              # プロジェクト設定
@@ -171,22 +169,22 @@ browser-extension/
 
 1. **依存関係インストール**
 ```bash
-npm install
+pnpm install
 ```
 
 2. **開発モードでビルド**
 ```bash
-npm run dev
+pnpm run dev
 ```
 
 3. **本番ビルド**
 ```bash
-npm run build
+pnpm run build
 ```
 
 4. **ファイル監視モード**
 ```bash
-npm run dev
+pnpm run dev
 # ファイル変更を監視して自動再ビルド
 ```
 
@@ -197,42 +195,6 @@ npm run dev
 - **Chrome Extensions API**: ブラウザ拡張機能API
 - **Native Messaging API**: デスクトップアプリとの通信
 
-### 抽出ルールの追加
-
-新しいサイトに対応する場合、`src/config/extraction-rules.json` を編集：
-
-```json
-{
-  "sites": {
-    "new_site": {
-      "name": "新しいサイト",
-      "domain": "example.com",
-      "detectionRules": [
-        {
-          "name": "library_page",
-          "selector": ".game-library",
-          "required": true
-        }
-      ],
-      "gameExtractionRules": {
-        "container": ".game-item",
-        "fields": {
-          "store_id": {
-            "selectors": ["[data-game-id]"],
-            "attribute": "data-game-id",
-            "required": true
-          },
-          "title": {
-            "selectors": [".game-title"],
-            "processor": "text",
-            "required": true
-          }
-        }
-      }
-    }
-  }
-}
-```
 
 ### デバッグ方法
 
@@ -437,23 +399,3 @@ npm run dev
 - **オープンソース**: 全ソースコードがGitHubで公開
 - **監査可能**: セキュリティ専門家による第三者監査を歓迎
 - **更新通知**: プライバシーポリシーの変更時は事前通知
-
----
-
-## 📝 ライセンス
-
-このプロジェクトは [MIT License](../LICENSE) の下で公開されています。
-
-## 🤝 貢献
-
-バグレポート、機能要望、プルリクエストを歓迎しています。詳細は [CONTRIBUTING.md](../CONTRIBUTING.md) をご覧ください。
-
-## 📞 サポート
-
-- **GitHub Issues**: https://github.com/your-repo/launcherg/issues
-- **Discord**: https://discord.gg/launcherg
-- **Email**: support@launcherg.example.com
-
----
-
-**Launcherg DL Store Sync** - あなたのゲームライブラリ管理をもっと簡単に。

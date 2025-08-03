@@ -1,0 +1,22 @@
+{
+  "name": "@launcherg/content-scripts-dmm",
+  "type": "module",
+  "version": "1.0.0",
+  "description": "DMM content script for Launcherg browser extension",
+  "scripts": {
+    "build": "vite build",
+    "dev": "vite build --watch",
+    "clean": "rimraf dist"
+  },
+  "dependencies": {
+    "@bufbuild/protobuf": "^2.0.0",
+    "@launcherg/shared": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/chrome": "^0.0.268",
+    "@types/node": "^20.11.5",
+    "rimraf": "^5.0.5",
+    "typescript": "^5.3.3",
+    "vite": "^7.0.6"
+  }
+}
