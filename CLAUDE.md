@@ -131,7 +131,6 @@ npm run tauri build
 
 ### データベース
 - SQLiteを使用、マイグレーションは`src-tauri/migrations/`に配置
-- SQLxのオフラインモード（`.sqlx/`ディレクトリ）を使用
 
 ### 開発時の注意
 - TypeScriptは厳格モード有効
