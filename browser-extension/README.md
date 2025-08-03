@@ -116,7 +116,7 @@ npm run build
 
 2. **対応サイトにアクセス**
    - DMM Games: [購入済みゲーム一覧](https://games.dmm.co.jp/library)
-   - DLsite: [購入済み作品一覧](https://www.dlsite.com/home/library)
+   - DLsite: [購入済み作品一覧](https://play.dlsite.com/home/library)
 
 3. **自動同期を確認**
    - ページ読み込み完了後、自動的にゲーム情報を抽出

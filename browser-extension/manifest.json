@@ -13,7 +13,7 @@
   ],
   "host_permissions": [
     "https://games.dmm.co.jp/*",
-    "https://www.dlsite.com/*"
+    "https://play.dlsite.com/*"
   ],
   "background": {
     "service_worker": "background/background.js",
@@ -25,15 +25,17 @@
         "https://games.dmm.co.jp/*"
       ],
       "js": [
+        "chunks/messages_pb-G4UeCIP6.js",
         "content-scripts/dmm-extractor.js"
       ],
       "run_at": "document_idle"
     },
     {
       "matches": [
-        "https://www.dlsite.com/*"
+        "https://play.dlsite.com/*"
       ],
       "js": [
+        "chunks/messages_pb-G4UeCIP6.js",
         "content-scripts/dlsite-extractor.js"
       ],
       "run_at": "document_idle"

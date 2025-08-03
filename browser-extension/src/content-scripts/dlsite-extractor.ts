@@ -1,6 +1,4 @@
-// Extension Internal protobuf types
-
-import type { ExtractedGameData, SiteConfig } from './base-extractor'
+// DLsite用独立型抽出器
 
 import { create, fromJson, toJson } from '@bufbuild/protobuf'
 
@@ -8,63 +6,43 @@ import {
   ExtensionRequestSchema,
   ExtensionResponseSchema,
   GameDataSchema,
-  GetConfigRequestSchema,
   ShowNotificationRequestSchema,
   SyncGamesRequestSchema,
 } from '../proto/extension_internal/messages_pb'
 
-import { BaseExtractor } from './base-extractor'
+// ゲームデータのインターフェース
+interface ExtractedGameData {
+  store_id: string
+  title: string
+  purchase_url: string
+  purchase_date?: string
+  thumbnail_url?: string
+  additional_data: Record<string, string>
+}
 
-// DLsite用の設定を読み込み
-let dlsiteConfig: SiteConfig
-
+// ユーティリティ関数
 function generateRequestId(): string {
   return Date.now().toString(36) + Math.random().toString(36).substr(2)
 }
 
-// 設定を動的に読み込みをプロトバフで実行
-const getConfigRequest = create(ExtensionRequestSchema, {
-  requestId: generateRequestId(),
-  request: {
-    case: 'getConfig',
-    value: create(GetConfigRequestSchema, {
-      site: 'dlsite',
-    }),
-  },
-})
-
-chrome.runtime.sendMessage(toJson(ExtensionRequestSchema, getConfigRequest), (responseJson) => {
-  try {
-    const response = fromJson(ExtensionResponseSchema, responseJson)
-    if (response && response.success && response.response.case === 'configResult') {
-      dlsiteConfig = JSON.parse(response.response.value.configJson)
-      initDLsiteExtractor()
-    }
+// URLからstore_idを抽出するヘルパー関数
+function extractStoreIdFromUrl(thumbnailUrl: string): string | null {
+  // ファイル名の部分のみを対象とする
+  const fileName = thumbnailUrl.split('/').pop() || ''
+  const rjMatch = fileName.match(/(RJ|VJ|BJ)([0-9]+)/)
+  if (!rjMatch) {
+    return null
   }
-  catch (error) {
-    console.error('[DLsite Extractor] Failed to parse config response:', error)
-  }
-})
-
-function initDLsiteExtractor() {
-  if (!dlsiteConfig) {
-    console.error('[DLsite Extractor] Config not loaded')
-    return
-  }
-
-  const extractor = new DLsiteExtractor(dlsiteConfig)
-
-  if (extractor.shouldExtract()) {
-    console.log('[DLsite Extractor] Starting extraction on DLsite')
-    extractor.extractAndSync()
-  }
+  return rjMatch[1] + rjMatch[2]
 }
 
-class DLsiteExtractor extends BaseExtractor {
+// DLsiteExtractorクラスの定義
+class DLsiteExtractor {
   private isExtracting: boolean = false
+  private debugMode: boolean = true
 
-  constructor(config: SiteConfig) {
-    super(config, true) // デバッグモード有効
+  constructor() {
+    // 設定不要の独立型抽出器
   }
 
   shouldExtract(): boolean {
@@ -73,17 +51,92 @@ class DLsiteExtractor extends BaseExtractor {
       return false
     }
 
-    // 購入済み作品ページかどうか確認
-    const isDLsiteLibrary = window.location.pathname.includes('/library')
-      || window.location.pathname.includes('/mypage')
-      || window.location.search.includes('purchase')
+    // 新しいDLsiteのReactベースのページを検出
+    const rootElement = document.getElementById('root')
+    const hasLibraryContent = rootElement && (
+      document.querySelector('._thumbnail_1kd4u_117') !== null ||
+      document.querySelector('[data-index]') !== null
+    )
+    
+    return !!hasLibraryContent
+  }
 
-    if (!isDLsiteLibrary) {
-      return false
-    }
+  extractGames(): ExtractedGameData[] {
+    // 新しいHTML構造に対応した直接的な抽出
+    const gameContainers = document.querySelectorAll('[data-index]')
+    this.debug(`Found ${gameContainers.length} potential game containers`)
 
-    // 検出ルールによる確認
-    return this.detectPage()
+    const games: ExtractedGameData[] = []
+    const seenStoreIds = new Set<string>()
+
+    gameContainers.forEach((container, index) => {
+      try {
+        // 実際のゲームアイテムかどうかを確認（サムネイルがあるか）
+        const thumbnailElement = container.querySelector('._thumbnail_1kd4u_117 span') as HTMLElement
+        if (!thumbnailElement) {
+          return
+        }
+
+        // サムネイルURLから情報を抽出
+        const bgImage = thumbnailElement.style.backgroundImage
+        const thumbnailMatch = bgImage.match(/url\("?(.+?)"\)/)
+        if (!thumbnailMatch) {
+          return
+        }
+
+        const thumbnailUrl = thumbnailMatch[1]
+
+        // URLからstore_idを抽出
+        const storeId = extractStoreIdFromUrl(thumbnailUrl)
+        this.debug(`Extracted store_id "${storeId}" from URL: ${thumbnailUrl}`)
+        if (!storeId) {
+          return
+        }
+
+        // 重複チェック
+        if (seenStoreIds.has(storeId)) {
+          return
+        }
+        seenStoreIds.add(storeId)
+
+        // タイトルを抽出
+        const titleElement = container.querySelector('._workName_1kd4u_192 span')
+        const title = titleElement?.textContent?.trim() || ''
+
+        // メーカー名を抽出
+        const makerElement = container.querySelector('._makerName_1kd4u_196 span')
+        const makerName = makerElement?.textContent?.trim() || ''
+
+        // 購入日を抽出（親要素から探す）
+        let purchaseDate = ''
+        const headerElement = container.closest('[data-index]')?.querySelector('._header_1kd4u_27 span')
+        if (headerElement?.textContent?.includes('購入')) {
+          purchaseDate = headerElement.textContent.replace('購入', '').trim()
+        }
+
+        // 購入URLを構築
+        const purchaseUrl = `https://play.dlsite.com/maniax/work/=/product_id/${storeId}.html`
+
+        const gameData: ExtractedGameData = {
+          store_id: storeId,
+          title,
+          purchase_url: purchaseUrl,
+          purchase_date: purchaseDate,
+          thumbnail_url: thumbnailUrl,
+          additional_data: {
+            maker_name: makerName,
+          },
+        }
+
+        games.push(gameData)
+        this.debug(`Extracted game ${index + 1}:`, gameData)
+      }
+      catch (error) {
+        this.debug(`Error extracting game from container ${index}:`, error)
+      }
+    })
+
+    return games
   }
 
   async extractAndSync(): Promise<void> {
@@ -165,7 +218,7 @@ class DLsiteExtractor extends BaseExtractor {
   private processDLsiteGame(game: ExtractedGameData): ExtractedGameData {
     // DLsiteのURLを正規化
     if (game.purchase_url && !game.purchase_url.startsWith('http')) {
-      game.purchase_url = `https://www.dlsite.com${game.purchase_url}`
+      game.purchase_url = `https://play.dlsite.com${game.purchase_url}`
     }
 
     // DLsite特有のstore_id処理（RJ/VJ/BJ codes）
@@ -190,7 +243,7 @@ class DLsiteExtractor extends BaseExtractor {
         game.thumbnail_url = `https:${game.thumbnail_url}`
       }
       else if (!game.thumbnail_url.startsWith('http')) {
-        game.thumbnail_url = `https://www.dlsite.com${game.thumbnail_url}`
+        game.thumbnail_url = `https://play.dlsite.com${game.thumbnail_url}`
       }
     }
 
@@ -312,6 +365,26 @@ class DLsiteExtractor extends BaseExtractor {
       }
     }, 4000)
   }
+
+  private debug(message: string, ...args: any[]): void {
+    if (this.debugMode) {
+      console.log(`[DLsite Extractor] ${message}`, ...args)
+    }
+  }
+}
+
+// グローバル変数とヘルパー関数
+let currentUrl = window.location.href
+
+function initDLsiteExtractor() {
+  const extractor = new DLsiteExtractor()
+
+  if (extractor.shouldExtract()) {
+    console.log('[DLsite Extractor] Target page detected - Starting extraction on DLsite')
+    extractor.extractAndSync()
+  } else {
+    console.log('[DLsite Extractor] Not a target page - skipping extraction')
+  }
 }
 
 // CSS animation
@@ -331,15 +404,12 @@ style.textContent = `
 document.head.appendChild(style)
 
 // ページ変更の監視（SPA対応）
-let currentUrl = window.location.href
 const observer = new MutationObserver(() => {
   if (window.location.href !== currentUrl) {
     currentUrl = window.location.href
     // URL変更時に再度チェック
     setTimeout(() => {
-      if (dlsiteConfig) {
-        initDLsiteExtractor()
-      }
+      initDLsiteExtractor()
     }, 2000)
   }
 })
@@ -349,4 +419,10 @@ observer.observe(document.body, {
   subtree: true,
 })
 
+// 初期化処理
 console.log('[DLsite Extractor] Script loaded')
+
+// 即座に抽出を開始（設定不要）
+setTimeout(() => {
+  initDLsiteExtractor()
+}, 1000)

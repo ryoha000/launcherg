@@ -51,8 +51,19 @@ export default defineConfig({
       },
       output: {
         entryFileNames: '[name].js',
-        chunkFileNames: '[name].js',
+        chunkFileNames: (chunkInfo) => {
+          // 共有チャンクを作らず、各エントリポイントに埋め込む
+          return `chunks/[name]-[hash].js`;
+        },
         assetFileNames: '[name].[ext]',
+        manualChunks: (id) => {
+          // すべてを個別のエントリポイントに含める
+          return undefined;
+        },
+      },
+      external: (id) => {
+        // chromeのみを外部依存として扱い、他は全てバンドルする
+        return id === 'chrome';
       },
     },
     target: 'esnext',

@@ -98,7 +98,7 @@ DMM Games と DLsite の購入済みゲームを自動的に Launcherg デスク
 
 1. **権限確認**
    - DMM Games: `https://games.dmm.co.jp/*`
-   - DLsite: `https://www.dlsite.com/*`
+   - DLsite: `https://play.dlsite.com/*`
 
 2. **デバッグモード有効化**
    - F12 → Console で `[Background]` や `[DMM Extractor]` のログを確認

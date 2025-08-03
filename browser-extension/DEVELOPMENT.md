@@ -424,7 +424,8 @@ class ExtractionResult {
        // サイト固有の処理
        if (game.purchase_url && !game.purchase_url.startsWith('http')) {
          game.purchase_url = 'http`https://example.com${  game.purchase_url}`  }
- game.additional_data.store_name = 'New 'New Site'
+
+ game.additional_data.store_name = 'New 'New Site'
        gametional_data.extraction_source = 'news'newsite-extractor'
 
        return;game
@@ -627,7 +628,7 @@ class ExtractionResult {
      "description": "Sync your purchased games from DL stores to Launcherg",
      "permissions": ["nativeMessaging", "activeTab", "storage"],
      "host_permissions": [
-       "https://games.dmm.co.jp/*",
+       "https://play.dlsite.comp/*",
        "https://www.dlsite.com/*"
      ]
    }

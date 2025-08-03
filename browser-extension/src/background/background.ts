@@ -404,7 +404,7 @@ class BackgroundService {
 
     // アクティブなタブでDMM/DLsiteのページがあるかチェック
     const tabs = await chrome.tabs.query({
-      url: ['https://games.dmm.co.jp/*', 'https://www.dlsite.com/*'],
+      url: ['https://games.dmm.co.jp/*', 'https://play.dlsite.com/*'],
     })
 
     for (const tab of tabs) {
