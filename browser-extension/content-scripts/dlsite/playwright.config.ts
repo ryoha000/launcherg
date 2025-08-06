@@ -2,7 +2,7 @@ import process from 'node:process'
 import { defineConfig, devices } from '@playwright/test'
 
 export default defineConfig({
-  testDir: './content-scripts/dlsite/test/playwright',
+  testDir: './test/playwright',
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,

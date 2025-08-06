@@ -3,7 +3,7 @@ import { resolve } from 'node:path'
 import { expect, test } from '@playwright/test'
 
 // DLsite Play.htmlファイルのパス
-const dlsitePlayHtmlPath = resolve(__dirname, '../content-scripts/data/DLsite Play.html')
+const dlsitePlayHtmlPath = resolve(__dirname, '../data/DLsite Play.html')
 
 test.describe('DLsite Play.html パース検証', () => {
   test('実際のDLsite Play.htmlファイルから正しくゲーム情報を抽出できること', async ({ page }) => {

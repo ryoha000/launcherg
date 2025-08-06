@@ -25,7 +25,6 @@
         "https://games.dmm.co.jp/*"
       ],
       "js": [
-        "chunks/messages_pb-G4UeCIP6.js",
         "content-scripts/dmm-extractor.js"
       ],
       "run_at": "document_idle"
@@ -35,7 +34,6 @@
         "https://play.dlsite.com/*"
       ],
       "js": [
-        "chunks/messages_pb-G4UeCIP6.js",
         "content-scripts/dlsite-extractor.js"
       ],
       "run_at": "document_idle"

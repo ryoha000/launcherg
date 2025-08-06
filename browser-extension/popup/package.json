@@ -6,7 +6,8 @@
   "scripts": {
     "build": "vite build",
     "dev": "vite build --watch",
-    "clean": "rimraf dist"
+    "clean": "rimraf dist",
+    "test": "vitest"
   },
   "dependencies": {
     "@bufbuild/buf": "^1.47.0",
@@ -17,8 +18,11 @@
   "devDependencies": {
     "@types/chrome": "0.1.1",
     "@types/node": "24.1.0",
+    "@vitest/ui": "^3.2.4",
+    "happy-dom": "^18.0.1",
     "rimraf": "6.0.1",
     "typescript": "5.3.3",
-    "vite": "7.0.6"
+    "vite": "7.0.6",
+    "vitest": "^3.2.4"
   }
 }

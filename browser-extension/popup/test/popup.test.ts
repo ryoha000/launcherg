@@ -4,21 +4,21 @@ import { fileURLToPath } from 'node:url'
 import { create, fromJson, toJson } from '@bufbuild/protobuf'
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-// PopupControllerをインポート
-import { PopupController } from '../../src/popup/popup'
 import {
   ExtensionRequestSchema,
   ExtensionResponseSchema,
   GetStatusResponseSchema,
   StatusDataSchema,
-} from '../../src/proto/extension_internal/messages_pb'
+} from '../../shared/src/proto/extension_internal/messages_pb'
+// PopupControllerをインポート
+import { PopupController } from '../src/popup'
 
 // __dirname の代替
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
 
 // HTMLを読み込む、スクリプトタグを除外
-const popupHtmlRaw = readFileSync(resolve(__dirname, '../../src/popup/popup.html'), 'utf-8')
+const popupHtmlRaw = readFileSync(resolve(__dirname, '../src/popup.html'), 'utf-8')
 const popupHtml = popupHtmlRaw
   .replace(/<script[^>]*>.*?<\/script>/gs, '')
   .replace(/<link[^>]*rel="stylesheet"[^>]*>/g, '')
