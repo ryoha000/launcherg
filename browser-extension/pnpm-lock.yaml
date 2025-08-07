@@ -177,6 +177,9 @@ importers:
         specifier: ^9.0.1
         version: 9.0.1
     devDependencies:
+      '@types/chrome':
+        specifier: ^0.0.268
+        version: 0.0.268
       '@vitest/ui':
         specifier: ^3.2.4
         version: 3.2.4(vitest@3.2.4)

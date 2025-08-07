@@ -1,6 +1,6 @@
 // DOM操作関連の純粋関数
 
-import type { ExtractedGameData } from './types'
+import type { ExtractedGameData } from '@launcherg/shared'
 import { extractStoreIdFromUrl } from './utils'
 
 // ページが抽出対象かどうかを判定する純粋関数

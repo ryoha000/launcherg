@@ -1,25 +1,20 @@
 // Extension Internal protobuf types
 
+import type { ExtractedGameData } from '@launcherg/shared'
 import { create, fromJson, toJson } from '@bufbuild/protobuf'
+import {
+  addNotificationStyles,
+  generateRequestId,
+  sendSyncRequest,
+  showNotification,
+  waitForPageLoad,
+} from '@launcherg/shared'
 
 import {
   ExtensionRequestSchema,
   ExtensionResponseSchema,
-  GameDataSchema,
   GetConfigRequestSchema,
-  ShowNotificationRequestSchema,
-  SyncGamesRequestSchema,
 } from '@launcherg/shared/proto/extension_internal'
-
-// ゲームデータの型定義
-interface ExtractedGameData {
-  store_id: string
-  title: string
-  purchase_url: string
-  purchase_date?: string
-  thumbnail_url?: string
-  additional_data: Record<string, string>
-}
 
 // サイト設定の型定義
 interface ExtractionRule {
@@ -46,10 +41,6 @@ interface SiteConfig {
 
 // DMM Games用の設定を読み込み
 let dmmConfig: SiteConfig
-
-function generateRequestId(): string {
-  return Date.now().toString(36) + Math.random().toString(36).substr(2)
-}
 
 // 設定を動的に読み込みをプロトバフで実行
 const getConfigRequest = create(ExtensionRequestSchema, {
@@ -298,74 +289,6 @@ function normalizeDMMDate(dateStr: string): string {
   }
 }
 
-// ページ読み込み待機の純粋関数
-function waitForPageLoad(): Promise<void> {
-  return new Promise((resolve) => {
-    if (document.readyState === 'complete') {
-      // 追加で少し待機（動的コンテンツの読み込み待ち）
-      setTimeout(resolve, 1000)
-    }
-    else {
-      window.addEventListener('load', () => {
-        setTimeout(resolve, 1000)
-      })
-    }
-  })
-}
-
-// ページ内通知の純粋関数
-function showInPageNotification(message: string, type: 'success' | 'error'): void {
-  const notification = document.createElement('div')
-  notification.style.cssText = `
-    position: fixed;
-    top: 20px;
-    right: 20px;
-    background: ${type === 'success' ? '#4CAF50' : '#f44336'};
-    color: white;
-    padding: 12px 20px;
-    border-radius: 4px;
-    z-index: 10000;
-    font-family: Arial, sans-serif;
-    font-size: 14px;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.3);
-    animation: slideIn 0.3s ease-out;
-  `
-
-  notification.textContent = message
-  document.body.appendChild(notification)
-
-  // 3秒後に自動削除
-  setTimeout(() => {
-    if (notification.parentNode) {
-      notification.parentNode.removeChild(notification)
-    }
-  }, 3000)
-}
-
-// 通知の純粋関数
-function showNotification(message: string, type: 'success' | 'error' = 'success'): void {
-  // プロトバフで通知メッセージを作成
-  const notificationRequest = create(ExtensionRequestSchema, {
-    requestId: generateRequestId(),
-    request: {
-      case: 'showNotification',
-      value: create(ShowNotificationRequestSchema, {
-        title: 'Launcherg DL Store Sync',
-        message,
-        iconType: type,
-      }),
-    },
-  })
-
-  // ブラウザ通知を表示
-  chrome.runtime.sendMessage(
-    toJson(ExtensionRequestSchema, notificationRequest),
-  )
-
-  // ページ内通知も表示（オプション）
-  showInPageNotification(message, type)
-}
-
 // 抽出状態管理
 let isExtracting = false
 
@@ -395,62 +318,20 @@ async function extractAndSync(config: SiteConfig): Promise<void> {
     // DMM特有の処理
     const processedGames = games.map(game => processDMMGame(game))
 
-    // プロトバフでゲームデータを変換
-    const gameDataList = processedGames.map(game =>
-      create(GameDataSchema, {
-        storeId: game.store_id,
-        title: game.title,
-        purchaseUrl: game.purchase_url,
-        purchaseDate: game.purchase_date || '',
-        thumbnailUrl: game.thumbnail_url || '',
-        additionalData: game.additional_data,
-      }),
-    )
-
-    // プロトバフメッセージを作成
-    const syncRequest = create(ExtensionRequestSchema, {
-      requestId: generateRequestId(),
-      request: {
-        case: 'syncGames',
-        value: create(SyncGamesRequestSchema, {
-          store: 'DMM',
-          games: gameDataList,
-          source: 'dmm-extractor',
-        }),
+    // 共通の同期機能を使用
+    sendSyncRequest(
+      'DMM',
+      processedGames,
+      'dmm-extractor',
+      (response) => {
+        console.log('[DMM Extractor] Sync successful:', response)
+        showNotification(
+          `DMM: ${processedGames.length}個のゲームを同期しました`,
+        )
       },
-    })
-
-    // バックグラウンドスクリプトに送信
-    chrome.runtime.sendMessage(
-      toJson(ExtensionRequestSchema, syncRequest),
-      (responseJson) => {
-        try {
-          const response = fromJson(ExtensionResponseSchema, responseJson)
-          if (
-            response
-            && response.success
-            && response.response.case === 'syncGamesResult'
-          ) {
-            console.log('[DMM Extractor] Sync successful:', response)
-            showNotification(
-              `DMM: ${processedGames.length}個のゲームを同期しました`,
-            )
-          }
-          else {
-            console.error('[DMM Extractor] Sync failed:', response)
-            showNotification('DMM: 同期に失敗しました', 'error')
-          }
-        }
-        catch (error) {
-          console.error(
-            '[DMM Extractor] Failed to parse sync response:',
-            error,
-          )
-          showNotification(
-            'DMM: 同期レスポンスの解析に失敗しました',
-            'error',
-          )
-        }
+      (error) => {
+        console.error('[DMM Extractor] Sync failed:', error)
+        showNotification('DMM: 同期に失敗しました', 'error')
       },
     )
   }
@@ -463,22 +344,8 @@ async function extractAndSync(config: SiteConfig): Promise<void> {
   }
 }
 
-
-// CSS animation
-const style = document.createElement('style')
-style.textContent = `
-  @keyframes slideIn {
-    from {
-      transform: translateX(100%);
-      opacity: 0;
-    }
-    to {
-      transform: translateX(0);
-      opacity: 1;
-    }
-  }
-`
-document.head.appendChild(style)
+// 通知スタイルを追加
+addNotificationStyles()
 
 // ページ変更の監視（SPA対応）
 let currentUrl = window.location.href

@@ -49,8 +49,8 @@ class BackgroundService {
 
   private setupMessageListeners(): void {
     // Content Scriptからのメッセージを処理
-    chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-      this.handleMessage(message, sender, sendResponse)
+    chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
+      this.handleMessage(message, _sender, sendResponse)
       return true // 非同期レスポンスを有効にする
     })
   }
@@ -71,7 +71,7 @@ class BackgroundService {
 
   private async handleMessage(
     message: any,
-    sender: chrome.runtime.MessageSender,
+    _sender: chrome.runtime.MessageSender,
     sendResponse: (response?: any) => void,
   ): Promise<void> {
     try {
@@ -292,7 +292,7 @@ class BackgroundService {
 
   private async handleProtobufGetStatus(
     requestId: string,
-    getStatusRequest: GetStatusRequest,
+    _getStatusRequest: GetStatusRequest,
     sendResponse: (response?: any) => void,
   ): Promise<void> {
     try {
@@ -422,7 +422,7 @@ class BackgroundService {
 
   private async handleProtobufDebugNativeMessage(
     requestId: string,
-    debugRequest: DebugNativeMessageRequest,
+    _debugRequest: DebugNativeMessageRequest,
     sendResponse: (response?: any) => void,
   ): Promise<void> {
     try {
@@ -502,7 +502,7 @@ chrome.runtime.onInstalled.addListener((details) => {
 })
 
 // タブ更新時の処理
-chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
+chrome.tabs.onUpdated.addListener((_tabId, changeInfo, tab) => {
   if (changeInfo.status === 'complete' && tab.url) {
     const isDMMGames = tab.url.includes('games.dmm.co.jp')
     const isDLsite = tab.url.includes('dlsite.com')

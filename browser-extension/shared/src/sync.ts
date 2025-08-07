@@ -7,7 +7,7 @@ import {
   ExtensionResponseSchema,
   GameDataSchema,
   SyncGamesRequestSchema,
-} from '@launcherg/shared/proto/extension_internal'
+} from './proto/extension_internal'
 import { generateRequestId } from './utils'
 
 // ゲームデータをProtobufメッセージに変換する純粋関数
@@ -23,7 +23,7 @@ export function convertToGameDataSchema(game: ExtractedGameData): any {
 }
 
 // 同期リクエストを作成する純粋関数
-export function createSyncRequest(games: ExtractedGameData[]): any {
+export function createSyncRequest(storeName: string, games: ExtractedGameData[], source: string): any {
   const gameDataList = games.map(game => convertToGameDataSchema(game))
 
   return create(ExtensionRequestSchema, {
@@ -31,9 +31,9 @@ export function createSyncRequest(games: ExtractedGameData[]): any {
     request: {
       case: 'syncGames',
       value: create(SyncGamesRequestSchema, {
-        store: 'DLSite',
+        store: storeName,
         games: gameDataList,
-        source: 'dlsite-extractor',
+        source,
       }),
     },
   })
@@ -65,11 +65,13 @@ export function processSyncResponse(
 
 // 同期リクエストを送信する関数
 export function sendSyncRequest(
+  storeName: string,
   games: ExtractedGameData[],
+  source: string,
   onSuccess: (response: any) => void,
   onError: (error: string) => void,
 ): void {
-  const syncRequest = createSyncRequest(games)
+  const syncRequest = createSyncRequest(storeName, games, source)
 
   chrome.runtime.sendMessage(
     toJson(ExtensionRequestSchema, syncRequest),

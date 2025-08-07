@@ -5,6 +5,7 @@
     "module": "ESNext",
     "moduleResolution": "node",
     "resolveJsonModule": true,
+    "types": ["chrome", "node"],
     "allowImportingTsExtensions": false,
     "strict": true,
     "noFallthroughCasesInSwitch": true,

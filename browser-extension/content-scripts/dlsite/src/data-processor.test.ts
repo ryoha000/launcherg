@@ -1,4 +1,4 @@
-import type { ExtractedGameData } from './types'
+import type { ExtractedGameData } from '@launcherg/shared'
 import { describe, expect, it } from 'vitest'
 import {
   cleanDLsiteTitle,

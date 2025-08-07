@@ -1,10 +1,13 @@
 // DLsite用独立型抽出器のメインエントリーポイント
 
+import {
+  addNotificationStyles,
+  sendSyncRequest,
+  showNotification,
+  waitForPageLoad,
+} from '@launcherg/shared'
 import { processGames } from './data-processor'
 import { extractAllGames, shouldExtract } from './dom-extractor'
-import { addNotificationStyles, showNotification } from './notification'
-import { sendSyncRequest } from './sync'
-import { waitForPageLoad } from './utils'
 
 // グローバル状態管理
 let isExtracting = false
@@ -21,8 +24,8 @@ async function extractAndSync(): Promise<void> {
   isExtracting = true
 
   try {
-    // ページが完全に読み込まれるまで待機
-    await waitForPageLoad()
+    // ページが完全に読み込まれるまで待機（DLsiteは動的コンテンツが多いので長めの待機）
+    await waitForPageLoad(2000)
 
     // ゲーム情報を抽出
     const games = extractAllGames(debugMode)
@@ -39,7 +42,9 @@ async function extractAndSync(): Promise<void> {
 
     // 同期リクエストを送信
     sendSyncRequest(
+      'DLSite',
       processedGames,
+      'dlsite-extractor',
       (response) => {
         console.log('[DLsite Extractor] Sync successful:', response)
         showNotification(

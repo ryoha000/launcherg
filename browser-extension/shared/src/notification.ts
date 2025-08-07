@@ -4,10 +4,10 @@ import { create, toJson } from '@bufbuild/protobuf'
 import {
   ExtensionRequestSchema,
   ShowNotificationRequestSchema,
-} from '@launcherg/shared/proto/extension_internal'
+} from './proto/extension_internal'
 import { generateRequestId } from './utils'
 
-// ページ内通知を表示する純粋関数（副作用あり）
+// ページ内通知を表示する関数（副作用あり）
 export function showInPageNotification(
   message: string,
   type: 'success' | 'error',

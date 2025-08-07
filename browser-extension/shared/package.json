@@ -4,16 +4,20 @@
   "version": "1.0.0",
   "description": "Shared utilities for Launcherg browser extension",
   "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "import": "./dist/index.js"
+    },
     "./proto/extension_internal": {
-      "types": "./dist/proto/extension_internal/index.d.ts",
+      "types": "./src/proto/extension_internal/index.ts",
       "import": "./dist/proto/extension_internal/index.js"
     },
     "./proto/native_messaging": {
-      "types": "./dist/proto/native_messaging/index.d.ts",
+      "types": "./src/proto/native_messaging/index.ts",
       "import": "./dist/proto/native_messaging/index.js"
     },
     "./types": {
-      "types": "./dist/types/index.d.ts",
+      "types": "./src/types/index.ts",
       "import": "./dist/types/index.js"
     }
   },
@@ -21,13 +25,15 @@
     "build": "tsc",
     "dev": "tsc --watch",
     "clean": "rimraf dist",
-    "test": "vitest"
+    "test": "vitest run",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
     "@bufbuild/protobuf": "^2.0.0",
     "uuid": "^9.0.1"
   },
   "devDependencies": {
+    "@types/chrome": "^0.0.268",
     "@vitest/ui": "^3.2.4",
     "happy-dom": "^18.0.1",
     "rimraf": "^5.0.5",

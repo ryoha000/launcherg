@@ -1,19 +1,32 @@
 // データ処理関連の純粋関数
 
-import type { ExtractedGameData } from './types'
+import type { ExtractedGameData } from '@launcherg/shared'
 
 // DLsiteの日付フォーマットを正規化する純粋関数
 export function normalizeDLsiteDate(dateStr: string): string {
   try {
     // DLsite日付フォーマット対応: "YYYY年MM月DD日", "YYYY/MM/DD", "YYYY-MM-DD"
-    const cleanDate = dateStr
+    // 日本時間（JST）基準での正規化: 文字列から年月日を直接抽出し、タイムゾーンに依存しない整形を行う
+    const normalized = dateStr
       .replace(/年/g, '/')
       .replace(/月/g, '/')
       .replace(/日/g, '')
       .replace(/\s+/g, '')
+      .replace(/-/g, '/')
 
-    const date = new Date(cleanDate)
-    return date.toISOString().split('T')[0]
+    const match = normalized.match(/^(\d{4})\/(\d{1,2})\/(\d{1,2})$/)
+    if (!match)
+      return dateStr
+
+    const year = Number(match[1])
+    const month = Number(match[2])
+    const day = Number(match[3])
+    if (!Number.isFinite(year) || !Number.isFinite(month) || !Number.isFinite(day))
+      return dateStr
+
+    const mm = String(month).padStart(2, '0')
+    const dd = String(day).padStart(2, '0')
+    return `${year}-${mm}-${dd}`
   }
   catch {
     return dateStr
@@ -53,19 +66,18 @@ export function normalizeStoreId(storeId: string, purchaseUrl: string): string {
   if (!storeId)
     return storeId
 
+  // 既に正しい形式ならそれを優先
+  if (/^(?:RJ|VJ|BJ)\d+$/.test(storeId))
+    return storeId
+
   // URLから作品コードを抽出
   const match = purchaseUrl.match(/\/(RJ|VJ|BJ)(\d+)/)
-  if (match) {
+  if (match)
     return match[1] + match[2]
-  }
 
-  // 既存のstore_idが正しい形式かチェック
-  if (!storeId.match(/^(RJ|VJ|BJ)\d+$/)) {
-    // 数字のみの場合はRJを付加（最も一般的）
-    if (storeId.match(/^\d+$/)) {
-      return `RJ${storeId}`
-    }
-  }
+  // 数字のみの場合はRJを付加
+  if (/^\d+$/.test(storeId))
+    return `RJ${storeId}`
 
   return storeId
 }
