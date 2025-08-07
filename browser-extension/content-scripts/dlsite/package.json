@@ -7,20 +7,19 @@
     "build": "vite build",
     "dev": "vite build --watch",
     "clean": "rimraf dist",
-    "test": "vitest",
-    "test:playwright": "playwright test"
+    "test": "vitest"
   },
   "dependencies": {
     "@bufbuild/protobuf": "^2.0.0",
     "@launcherg/shared": "workspace:*"
   },
   "devDependencies": {
-    "@playwright/test": "^1.54.2",
     "@types/chrome": "^0.0.268",
+    "@types/jsdom": "^21.1.7",
     "@types/node": "^20.11.5",
     "@vitest/ui": "^3.2.4",
     "happy-dom": "^18.0.1",
-    "playwright": "^1.54.2",
+    "jsdom": "^26.1.0",
     "rimraf": "^5.0.5",
     "typescript": "^5.3.3",
     "vite": "^7.0.6",

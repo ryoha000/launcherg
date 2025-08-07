@@ -6,7 +6,7 @@ export default defineConfig({
     emptyOutDir: false,
     outDir: '../../dist/content-scripts',
     lib: {
-      entry: resolve(__dirname, 'src/dlsite-extractor.ts'),
+      entry: resolve(__dirname, 'src/main.ts'),
       name: 'dlsite-extractor',
       fileName: 'dlsite-extractor',
       formats: ['es'],

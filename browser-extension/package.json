@@ -20,7 +20,8 @@
     "test:dlsite": "pnpm run --filter @launcherg/content-scripts-dlsite test",
     "test:popup": "pnpm run --filter @launcherg/popup test",
     "test:shared": "pnpm run --filter @launcherg/shared test",
-    "coverage": "vitest --coverage"
+    "coverage": "vitest --coverage",
+    "precommit": "cd ../ && npm run precommit"
   },
   "devDependencies": {
     "@bufbuild/buf": "^1.47.0",

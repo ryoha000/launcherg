@@ -1,0 +1,126 @@
+// データ処理関連の純粋関数
+
+import type { ExtractedGameData } from './types'
+
+// DLsiteの日付フォーマットを正規化する純粋関数
+export function normalizeDLsiteDate(dateStr: string): string {
+  try {
+    // DLsite日付フォーマット対応: "YYYY年MM月DD日", "YYYY/MM/DD", "YYYY-MM-DD"
+    const cleanDate = dateStr
+      .replace(/年/g, '/')
+      .replace(/月/g, '/')
+      .replace(/日/g, '')
+      .replace(/\s+/g, '')
+
+    const date = new Date(cleanDate)
+    return date.toISOString().split('T')[0]
+  }
+  catch {
+    return dateStr
+  }
+}
+
+// DLsiteのタイトルをクリーンアップする純粋関数
+export function cleanDLsiteTitle(title: string): string {
+  // DLsiteのタイトルから不要な情報を除去
+  return title
+    .replace(/\[.*?\]/g, '') // [サークル名] などを除去
+    .replace(/（.*?）/g, '') // 全角括弧の内容を除去
+    .replace(/\(.*?\)/g, '') // 半角括弧の内容を除去
+    .replace(/\s+/g, ' ') // 連続する空白を単一の空白に
+    .trim()
+}
+
+// URLを正規化する純粋関数
+export function normalizeUrl(url: string, _urlType: 'purchase' | 'thumbnail'): string {
+  if (!url)
+    return url
+
+  // HTTPSプロトコルの追加
+  if (url.startsWith('//')) {
+    return `https:${url}`
+  }
+
+  if (!url.startsWith('http')) {
+    return `https://play.dlsite.com${url}`
+  }
+
+  return url
+}
+
+// store_idを正規化する純粋関数
+export function normalizeStoreId(storeId: string, purchaseUrl: string): string {
+  if (!storeId)
+    return storeId
+
+  // URLから作品コードを抽出
+  const match = purchaseUrl.match(/\/(RJ|VJ|BJ)(\d+)/)
+  if (match) {
+    return match[1] + match[2]
+  }
+
+  // 既存のstore_idが正しい形式かチェック
+  if (!storeId.match(/^(RJ|VJ|BJ)\d+$/)) {
+    // 数字のみの場合はRJを付加（最も一般的）
+    if (storeId.match(/^\d+$/)) {
+      return `RJ${storeId}`
+    }
+  }
+
+  return storeId
+}
+
+// 作品の種類を判定する純粋関数
+export function determineWorkType(storeId: string): string {
+  if (storeId.startsWith('RJ')) {
+    return 'doujin'
+  }
+  else if (storeId.startsWith('VJ')) {
+    return 'voice'
+  }
+  else if (storeId.startsWith('BJ')) {
+    return 'book'
+  }
+  return 'unknown'
+}
+
+// DLsiteのゲームデータを処理する純粋関数
+export function processDLsiteGame(game: ExtractedGameData): ExtractedGameData {
+  // 新しいオブジェクトを作成して不変性を保つ
+  const processedGame: ExtractedGameData = {
+    ...game,
+    additional_data: { ...game.additional_data },
+  }
+
+  // URLの正規化
+  processedGame.purchase_url = normalizeUrl(processedGame.purchase_url, 'purchase')
+  if (processedGame.thumbnail_url) {
+    processedGame.thumbnail_url = normalizeUrl(processedGame.thumbnail_url, 'thumbnail')
+  }
+
+  // store_idの正規化
+  processedGame.store_id = normalizeStoreId(processedGame.store_id, processedGame.purchase_url)
+
+  // 購入日の正規化
+  if (processedGame.purchase_date) {
+    processedGame.purchase_date = normalizeDLsiteDate(processedGame.purchase_date)
+  }
+
+  // タイトルのクリーンアップ
+  if (processedGame.title) {
+    processedGame.title = cleanDLsiteTitle(processedGame.title)
+  }
+
+  // DLsite特有の追加情報
+  processedGame.additional_data.store_name = 'DLsite'
+  processedGame.additional_data.extraction_source = 'dlsite-extractor'
+  processedGame.additional_data.extraction_timestamp = new Date().toISOString()
+  processedGame.additional_data.work_type = determineWorkType(processedGame.store_id)
+
+  return processedGame
+}
+
+// ゲームデータのリストを処理する純粋関数
+export function processGames(games: ExtractedGameData[]): ExtractedGameData[] {
+  return games.map(game => processDLsiteGame(game))
+}
