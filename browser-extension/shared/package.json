@@ -4,10 +4,6 @@
   "version": "1.0.0",
   "description": "Shared utilities for Launcherg browser extension",
   "exports": {
-    "./base-extractor": {
-      "types": "./dist/base-extractor/index.d.ts",
-      "import": "./dist/base-extractor/index.js"
-    },
     "./proto/extension_internal": {
       "types": "./dist/proto/extension_internal/index.d.ts",
       "import": "./dist/proto/extension_internal/index.js"
