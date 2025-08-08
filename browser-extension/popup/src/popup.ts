@@ -7,6 +7,7 @@ import type {
 } from '@launcherg/shared/proto/extension_internal'
 
 import { create, fromJson, toJson } from '@bufbuild/protobuf'
+import { logger } from '@launcherg/shared'
 
 import {
   DebugNativeMessageRequestSchema,
@@ -23,6 +24,7 @@ interface ExtensionConfig {
 }
 
 // SyncStatusはprotobufのStatusDataを使用するため削除
+const log = logger('popup')
 
 interface LogEntry {
   timestamp: string
@@ -70,7 +72,7 @@ export class PopupController {
 
     for (const id of requiredElements) {
       if (!document.getElementById(id)) {
-        console.error(`Required element not found: ${id}`)
+        log.warn(`Required element not found: ${id}`)
       }
     }
   }
@@ -94,7 +96,7 @@ export class PopupController {
       }
     }
     catch (error) {
-      console.error('Failed to load stored data:', error)
+      log.error('Failed to load stored data:', error)
       this.addLog('error', 'ストレージからのデータ読み込みに失敗しました')
     }
   }
@@ -550,7 +552,7 @@ export class PopupController {
       }
     }
     catch (error) {
-      console.error('Failed to get status:', error)
+      log.error('Failed to get status:', error)
       this.updateConnectionStatus('disconnected')
       this.addLog('error', 'ステータスの取得に失敗しました')
     }
@@ -649,7 +651,7 @@ export class PopupController {
       }
     }
     catch (error) {
-      console.error('Manual sync failed:', error)
+      log.error('Manual sync failed:', error)
       const errorMessage
         = error instanceof Error ? error.message : 'Unknown error'
       this.addLog('error', `手動同期に失敗: ${errorMessage}`)
@@ -678,7 +680,7 @@ export class PopupController {
       this.addLog('info', '設定を保存しました')
     }
     catch (error) {
-      console.error('Failed to save config:', error)
+      log.error('Failed to save config:', error)
       this.addLog('error', '設定の保存に失敗しました')
     }
   }
@@ -730,7 +732,7 @@ export class PopupController {
       await chrome.storage.local.set({ sync_logs: this.logs })
     }
     catch (error) {
-      console.error('Failed to save logs:', error)
+      log.error('Failed to save logs:', error)
     }
   }
 

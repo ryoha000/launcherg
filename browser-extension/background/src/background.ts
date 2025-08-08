@@ -17,6 +17,8 @@ import type {
 import { create, fromJson, toJson, toJsonString } from '@bufbuild/protobuf'
 
 import { TimestampSchema } from '@bufbuild/protobuf/wkt'
+import { logger } from '@launcherg/shared'
+
 import {
   DebugNativeMessageResponseSchema,
   ExtensionRequestSchema,
@@ -27,7 +29,6 @@ import {
   SyncGamesResponseSchema,
   SyncResultSchema,
 } from '@launcherg/shared/proto/extension_internal'
-
 import {
   ExtractedGameDataSchema,
   HealthCheckRequestSchema,
@@ -38,6 +39,7 @@ import {
 } from '@launcherg/shared/proto/native_messaging'
 
 // 型定義はprotobufから取得するため、interfaceは削除
+const log = logger('background')
 
 class BackgroundService {
   private nativeHostName = 'moe.ryoha.launcherg.extension_host'
@@ -89,7 +91,7 @@ class BackgroundService {
           break
 
         case 'getConfig': {
-          console.warn('[Background] getConfig is deprecated')
+          log.warn('getConfig is deprecated')
           const errorResponse = create(ExtensionResponseSchema, {
             requestId: extensionRequest.requestId,
             success: false,
@@ -125,10 +127,7 @@ class BackgroundService {
           break
 
         default: {
-          console.warn(
-            '[Background] Unknown request type:',
-            extensionRequest.request.case,
-          )
+          log.warn('Unknown request type:', extensionRequest.request.case)
           const errorResponse = create(ExtensionResponseSchema, {
             requestId: extensionRequest.requestId,
             success: false,
@@ -140,7 +139,7 @@ class BackgroundService {
       }
     }
     catch (error) {
-      console.error('[Background] Error handling message:', error)
+      log.error('Error handling message:', error)
       const errorMessage
         = error instanceof Error ? error.message : 'Unknown error'
 
@@ -160,9 +159,7 @@ class BackgroundService {
     syncGamesRequest: SyncGamesRequest,
     sendResponse: (response?: any) => void,
   ): Promise<void> {
-    console.log(
-      `[Background] Syncing ${syncGamesRequest.games.length} games from ${syncGamesRequest.store}`,
-    )
+    log.info(`Syncing ${syncGamesRequest.games.length} games from ${syncGamesRequest.store}`)
 
     try {
       const extractedGames = syncGamesRequest.games.map(game =>
@@ -229,7 +226,7 @@ class BackgroundService {
       }
     }
     catch (error) {
-      console.error('[Background] Sync failed:', error)
+      log.error('Sync failed:', error)
       const errorMessage
         = error instanceof Error ? error.message : 'Unknown error'
 
@@ -276,7 +273,7 @@ class BackgroundService {
       sendResponse(toJson(ExtensionResponseSchema, response))
     }
     catch (error) {
-      console.error('[Background] Notification failed:', error)
+      log.error('Notification failed:', error)
       const errorMessage
         = error instanceof Error ? error.message : 'Unknown error'
 
@@ -340,7 +337,7 @@ class BackgroundService {
       sendResponse(toJson(ExtensionResponseSchema, response))
     }
     catch (error) {
-      console.error('[Background] Get status failed:', error)
+      log.error('Get status failed:', error)
       const errorMessage
         = error instanceof Error ? error.message : 'Unknown error'
 
@@ -364,11 +361,7 @@ class BackgroundService {
 
       // JSONとして送信（ProtoBuf専用のシリアライザを使用）
       const jsonString = toJsonString(NativeMessageSchema, message)
-      console.log(
-        '[Background] Sending native message:',
-        jsonString,
-        toJson(NativeMessageSchema, message),
-      )
+      log.debug('Sending native message:', jsonString, toJson(NativeMessageSchema, message))
 
       chrome.runtime.sendNativeMessage(
         this.nativeHostName,
@@ -385,14 +378,11 @@ class BackgroundService {
               // JSONレスポンスをProtoBuf形式にパース
               // const jsonString = JSON.stringify(response)
               const nativeResponse = fromJson(NativeResponseSchema, response)
-              console.log(
-                '[Background] Received native response:',
-                nativeResponse,
-              )
+              log.debug('Received native response:', nativeResponse)
               resolve(nativeResponse)
             }
             catch (e) {
-              console.error('[Background] Failed to parse JSON response:', e)
+              log.error('Failed to parse JSON response:', e)
               reject(e)
             }
           }
@@ -405,7 +395,7 @@ class BackgroundService {
   }
 
   private async performPeriodicSync(): Promise<void> {
-    console.log('[Background] Performing periodic sync check')
+    log.info('Performing periodic sync check')
 
     // アクティブなタブでDMM/DLsiteのページがあるかチェック
     const tabs = await chrome.tabs.query({
@@ -454,7 +444,7 @@ class BackgroundService {
       sendResponse(toJson(ExtensionResponseSchema, response))
     }
     catch (error) {
-      console.error('[Background] Debug native message failed:', error)
+      log.error('Debug native message failed:', error)
       const errorMessage
         = error instanceof Error ? error.message : 'Unknown error'
 
@@ -481,12 +471,11 @@ class BackgroundService {
 
 // Service Worker起動時に初期化
 const backgroundService = new BackgroundService()
-
-console.log('[Background] Service worker initialized')
+log.info('Service worker initialized')
 
 // 拡張機能インストール時の処理
 chrome.runtime.onInstalled.addListener((details) => {
-  console.log('[Background] Extension installed:', details.reason)
+  log.info('Extension installed:', details.reason)
 
   if (details.reason === 'install') {
     // 初回インストール時の処理
@@ -508,7 +497,7 @@ chrome.tabs.onUpdated.addListener((_tabId, changeInfo, tab) => {
     const isDLsite = tab.url.includes('dlsite.com')
 
     if (isDMMGames || isDLsite) {
-      console.log(`[Background] Target site loaded: ${tab.url}`)
+      log.debug(`Target site loaded: ${tab.url}`)
       // 必要に応じて自動同期をトリガー
     }
   }

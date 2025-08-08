@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 // 共有ロガー（名前空間 + ログレベル）
 
 export type LogLevel = 'silent' | 'error' | 'warn' | 'info' | 'debug'

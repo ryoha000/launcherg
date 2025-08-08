@@ -5,6 +5,7 @@ import { create, fromJson, toJson } from '@bufbuild/protobuf'
 import {
   addNotificationStyles,
   generateRequestId,
+  logger,
   sendSyncRequest,
   showNotification,
   waitForPageLoad,
@@ -41,6 +42,7 @@ interface SiteConfig {
 
 // DMM Games用の設定を読み込み
 let dmmConfig: SiteConfig
+const log = logger('dmm-extractor')
 
 // 設定を動的に読み込みをプロトバフで実行
 const getConfigRequest = create(ExtensionRequestSchema, {
@@ -68,19 +70,19 @@ chrome.runtime.sendMessage(
       }
     }
     catch (error) {
-      console.error('[DMM Extractor] Failed to parse config response:', error)
+      log.error('Failed to parse config response:', error)
     }
   },
 )
 
 function initDMMExtractor() {
   if (!dmmConfig) {
-    console.error('[DMM Extractor] Config not loaded')
+    log.error('Config not loaded')
     return
   }
 
   if (shouldExtract(dmmConfig)) {
-    console.log('[DMM Extractor] Starting extraction on DMM Games')
+    log.info('Starting extraction on DMM Games')
     extractAndSync(dmmConfig)
   }
 }
@@ -90,11 +92,11 @@ function detectPage(config: SiteConfig): boolean {
   for (const rule of config.detectionRules) {
     const element = findElement(rule)
     if (rule.required && !element) {
-      console.log(`[DMM Extractor] Required detection rule failed: ${rule.name}`)
+      log.debug(`Required detection rule failed: ${rule.name}`)
       return false
     }
     if (element) {
-      console.log(`[DMM Extractor] Detection rule matched: ${rule.name}`)
+      log.debug(`Detection rule matched: ${rule.name}`)
       return true
     }
   }
@@ -113,7 +115,7 @@ function findElement(rule: ExtractionRule, container: HTMLElement | Document = d
       }
     }
     catch (error) {
-      console.log(`[DMM Extractor] Invalid selector: ${selector}`, error)
+      log.debug(`Invalid selector: ${selector}`, error)
     }
   }
 
@@ -190,12 +192,12 @@ function extractSingleGame(container: HTMLElement, config: SiteConfig): Extracte
         }
       }
       else if (rule.required) {
-        console.log(`[DMM Extractor] Required field missing: ${fieldName}`)
+        log.debug(`Required field missing: ${fieldName}`)
         return null
       }
     }
     catch (error) {
-      console.log(`[DMM Extractor] Error extracting field ${fieldName}:`, error)
+      log.debug(`Error extracting field ${fieldName}:`, error)
       if (rule.required) {
         return null
       }
@@ -204,7 +206,7 @@ function extractSingleGame(container: HTMLElement, config: SiteConfig): Extracte
 
   // 必須フィールドの確認
   if (!gameData.store_id || !gameData.title || !gameData.purchase_url) {
-    console.log('[DMM Extractor] Missing required fields:', gameData)
+    log.debug('Missing required fields:', gameData)
     return null
   }
 
@@ -214,7 +216,7 @@ function extractSingleGame(container: HTMLElement, config: SiteConfig): Extracte
 // ゲーム情報抽出の純粋関数
 function extractGames(config: SiteConfig): ExtractedGameData[] {
   const containers = document.querySelectorAll(config.gameExtractionRules.container)
-  console.log(`[DMM Extractor] Found ${containers.length} game containers`)
+  log.debug(`Found ${containers.length} game containers`)
 
   const games: ExtractedGameData[] = []
 
@@ -223,11 +225,11 @@ function extractGames(config: SiteConfig): ExtractedGameData[] {
       const gameData = extractSingleGame(container as HTMLElement, config)
       if (gameData) {
         games.push(gameData)
-        console.log(`[DMM Extractor] Extracted game ${index + 1}:`, gameData)
+        log.debug(`Extracted game ${index + 1}:`, gameData)
       }
     }
     catch (error) {
-      console.log(`[DMM Extractor] Error extracting game ${index + 1}:`, error)
+      log.debug(`Error extracting game ${index + 1}:`, error)
     }
   })
 
@@ -295,7 +297,7 @@ let isExtracting = false
 // メインの抽出と同期処理
 async function extractAndSync(config: SiteConfig): Promise<void> {
   if (isExtracting) {
-    console.log('[DMM Extractor] Already extracting, skipping')
+    log.debug('Already extracting, skipping')
     return
   }
 
@@ -309,11 +311,11 @@ async function extractAndSync(config: SiteConfig): Promise<void> {
     const games = extractGames(config)
 
     if (games.length === 0) {
-      console.log('[DMM Extractor] No games found')
+      log.info('No games found')
       return
     }
 
-    console.log(`[DMM Extractor] Found ${games.length} games`)
+    log.info(`Found ${games.length} games`)
 
     // DMM特有の処理
     const processedGames = games.map(game => processDMMGame(game))
@@ -324,19 +326,19 @@ async function extractAndSync(config: SiteConfig): Promise<void> {
       processedGames,
       'dmm-extractor',
       (response) => {
-        console.log('[DMM Extractor] Sync successful:', response)
+        log.info('Sync successful:', response)
         showNotification(
           `DMM: ${processedGames.length}個のゲームを同期しました`,
         )
       },
       (error) => {
-        console.error('[DMM Extractor] Sync failed:', error)
+        log.error('Sync failed:', error)
         showNotification('DMM: 同期に失敗しました', 'error')
       },
     )
   }
   catch (error) {
-    console.error('[DMM Extractor] Extraction failed:', error)
+    log.error('Extraction failed:', error)
     showNotification('DMM: ゲーム情報の抽出に失敗しました', 'error')
   }
   finally {
@@ -366,4 +368,4 @@ observer.observe(document.body, {
   subtree: true,
 })
 
-console.log('[DMM Extractor] Script loaded')
+log.info('Script loaded')
