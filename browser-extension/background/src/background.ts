@@ -43,9 +43,8 @@ const log = logger('background')
 
 class BackgroundService {
   private nativeHostName = 'moe.ryoha.launcherg.extension_host'
-  private lastSyncAt: number | null = null
-  private aggregatedCount: number = 0
-  private aggregateTimerId: number | null = null
+  private static readonly AGGREGATE_ALARM = 'notify_aggregate'
+  private static readonly AGGREGATE_COUNT_KEY = 'aggregate_sync_count'
 
   constructor() {
     this.setupMessageListeners()
@@ -70,6 +69,10 @@ class BackgroundService {
     chrome.alarms.onAlarm.addListener((alarm) => {
       if (alarm.name === 'periodic_sync') {
         this.performPeriodicSync()
+        return
+      }
+      if (alarm.name === BackgroundService.AGGREGATE_ALARM) {
+        void this.fireAggregateNotification()
       }
     })
   }
@@ -86,9 +89,6 @@ class BackgroundService {
       // リクエストタイプに応じて処理を分岐
       switch (extensionRequest.request.case) {
         case 'syncGames': {
-          // 集計: フロントからの同期件数を蓄積し、30秒後にまとめて通知
-          const count = extensionRequest.request.value?.games?.length || 0
-          this.recordSyncAggregation(count)
           await this.handleProtobufSyncGames(
             extensionRequest.requestId,
             extensionRequest.request.value,
@@ -167,6 +167,8 @@ class BackgroundService {
     sendResponse: (response?: any) => void,
   ): Promise<void> {
     log.info(`Syncing ${syncGamesRequest.games.length} games from ${syncGamesRequest.store}`)
+    // 集計: フロントからの同期件数を蓄積し、30秒後にまとめて通知（alarms使用でSW休止対策）
+    await this.recordSyncAggregation(syncGamesRequest.games.length || 0)
 
     try {
       const extractedGames = syncGamesRequest.games.map(game =>
@@ -258,8 +260,8 @@ class BackgroundService {
     sendResponse: (response?: any) => void,
   ): Promise<void> {
     try {
-      const iconPath =
-        notificationRequest.iconType === 'error'
+      const iconPath
+        = notificationRequest.iconType === 'error'
           ? 'icons/icon32_error.png'
           : 'icons/icon32.png'
       const iconUrl = chrome.runtime.getURL(iconPath)
@@ -296,31 +298,49 @@ class BackgroundService {
     }
   }
 
-  private recordSyncAggregation(count: number): void {
-    const now = Date.now()
-    this.lastSyncAt = now
-    this.aggregatedCount += count
+  private async recordSyncAggregation(count: number): Promise<void> {
+    const current = await this.getAggregateCount()
+    await this.setAggregateCount(current + count)
+    // 30秒後に一度だけ発火するアラームを再スケジュール
+    chrome.alarms.create(BackgroundService.AGGREGATE_ALARM, {
+      when: Date.now() + 30_000,
+    })
+  }
 
-    if (this.aggregateTimerId !== null) {
-      clearTimeout(this.aggregateTimerId)
+  private async fireAggregateNotification(): Promise<void> {
+    const total = await this.getAggregateCount()
+    if (total > 0) {
+      const title = 'Launcherg DL Store Sync'
+      const message = `過去30秒間に合計${total}件を同期しました`
+      await chrome.notifications.create({
+        type: 'basic',
+        iconUrl: chrome.runtime.getURL('icons/icon32.png'),
+        title,
+        message,
+      })
+      await this.setAggregateCount(0)
     }
+  }
 
-    // 30秒間追加のsyncが来なければまとめて通知
-    this.aggregateTimerId = setTimeout(() => {
-      if (this.aggregatedCount > 0) {
-        const title = 'Launcherg DL Store Sync'
-        const message = `過去30秒間に合計${this.aggregatedCount}件を同期しました`
-        // 内部から通知を作成（共通の通知ロジックを利用）
-        void chrome.notifications.create({
-          type: 'basic',
-          iconUrl: chrome.runtime.getURL('icons/icon32.png'),
-          title,
-          message,
-        })
-      }
-      this.aggregatedCount = 0
-      this.aggregateTimerId = null
-    }, 30_000) as unknown as number
+  private async getAggregateCount(): Promise<number> {
+    return new Promise((resolve) => {
+      chrome.storage.local.get(
+        [BackgroundService.AGGREGATE_COUNT_KEY],
+        (items) => {
+          const value = items[BackgroundService.AGGREGATE_COUNT_KEY]
+          resolve(typeof value === 'number' ? value : 0)
+        },
+      )
+    })
+  }
+
+  private async setAggregateCount(value: number): Promise<void> {
+    return new Promise((resolve) => {
+      chrome.storage.local.set(
+        { [BackgroundService.AGGREGATE_COUNT_KEY]: value },
+        () => resolve(),
+      )
+    })
   }
 
   private async handleProtobufGetStatus(

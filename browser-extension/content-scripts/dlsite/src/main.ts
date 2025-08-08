@@ -54,13 +54,9 @@ async function extractAndSync(): Promise<void> {
       'dlsite-extractor',
       (response) => {
         log.info('Sync successful:', response)
-        showNotification(
-          `DLsite: ${processedGames.length}個の作品を同期しました`,
-        )
       },
       (error) => {
         log.error('Sync failed:', error)
-        showNotification('DLsite: 同期に失敗しました', 'error')
       },
     )
   }
