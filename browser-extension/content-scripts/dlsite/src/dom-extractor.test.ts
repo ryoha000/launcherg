@@ -8,16 +8,16 @@ describe('dom-extractor', () => {
       const rootElement = document.createElement('div')
       rootElement.id = 'root'
 
-      // モックの要素を追加
-      const mockElement = document.createElement('div')
-      mockElement.setAttribute('data-index', '0')
-      document.body.appendChild(mockElement)
+      // モックの要素（img.dlsite.jp を含む画像）を追加
+      const img = document.createElement('img')
+      img.setAttribute('src', 'https://img.dlsite.jp/sample.jpg')
+      document.body.appendChild(img)
 
       const result = shouldExtract(hostname, rootElement)
       expect(result).toBe(true)
 
       // クリーンアップ
-      document.body.removeChild(mockElement)
+      document.body.removeChild(img)
     })
 
     it('dLsiteドメインでない場合はfalseを返す', () => {

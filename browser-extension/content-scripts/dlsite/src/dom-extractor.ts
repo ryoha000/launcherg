@@ -13,79 +13,127 @@ export function shouldExtract(hostname: string, rootElement: HTMLElement | null)
     return false
   }
 
-  if (!rootElement) return false
+  if (!rootElement)
+    return false
 
-  // 旧実装セレクタ or 安定痕跡（img.dlsite.jp を含む画像/背景画像）
-  const hasOldSelectors =
-    document.querySelector('._thumbnail_1kd4u_117') !== null
-    || document.querySelector('[data-index]') !== null
+  // 安定痕跡（img.dlsite.jp を含む画像/背景画像）
+  const hasDlsiteImages
+    = document.querySelector('img[src*="img.dlsite.jp"]') !== null
+      || document.querySelector('[style*="img.dlsite.jp"]') !== null
 
-  const hasDlsiteImages =
-    document.querySelector('img[src*="img.dlsite.jp"]') !== null
-    || document.querySelector('[style*="img.dlsite.jp"]') !== null
-
-  return hasOldSelectors || hasDlsiteImages
+  return hasDlsiteImages
 }
 
 // ゲームコンテナー要素を取得する純粋関数
 export function extractGameContainers(): NodeListOf<Element> {
-  return document.querySelectorAll('[data-index]')
+  // サムネイル画像そのもの、または背景画像を持つ要素を候補にする
+  return document.querySelectorAll('img, [style*="img.dlsite.jp"], [style*="background-image"]')
 }
 
 function findThumbnailUrlInContainer(container: Element): string | null {
   // 優先: <img src> / srcset
-  const img = container.querySelector('img') as HTMLImageElement | null
+  const imgSelf = (container as HTMLImageElement).src !== undefined ? (container as HTMLImageElement) : null
+  const img = imgSelf || (container.querySelector('img') as HTMLImageElement | null)
   if (img) {
     const src = img.src || ''
-    if (/img\.dlsite\.jp/.test(src)) return src
+    if (src)
+      return src
     const srcset = img.srcset || ''
     const candidates = srcset.split(',').map(s => s.trim().split(' ')[0]).filter(Boolean)
-    const best = candidates.find(u => /img\.dlsite\.jp/.test(u))
-    if (best) return best
+    const best = candidates.find(u => u)
+    if (best)
+      return best
   }
   // 次: 背景画像
-  const bgHolder = container.querySelector('[style*="background-image"]') as HTMLElement | null
+  const selfStyleEl = (container as HTMLElement).style?.backgroundImage ? (container as HTMLElement) : null
+  const bgHolder = selfStyleEl || (container.querySelector('[style*="background-image"]') as HTMLElement | null)
   if (bgHolder) {
     const bg = bgHolder.style.backgroundImage || ''
     const m = bg.match(/url\("?(.+?)"?\)/)
-    if (m && /img\.dlsite\.jp/.test(m[1])) return m[1]
+    if (m)
+      return m[1]
   }
   return null
 }
 
-function extractTitleHeuristically(container: Element): string {
-  const heading = container.querySelector('[role="heading"], h1, h2, h3, [title]') as HTMLElement | null
-  if (heading) {
-    const t = (heading.getAttribute('title') || heading.textContent || '').trim()
-    if (t) return t
+// 葉ノード抽出のためのヘルパー
+function isDateLike(text: string): boolean {
+  return /\d{4}年\d{1,2}月\d{1,2}日/.test(text) || /\d{4}[-/]\d{1,2}[-/]\d{1,2}/.test(text)
+}
+
+function isCategoryWord(text: string): boolean {
+  return text === 'ゲーム' || text === '音声' || text === '書籍'
+}
+
+function collectLeafTexts(container: Element): Array<{ el: Element, text: string }> {
+  const results: Array<{ el: Element, text: string }> = []
+  const all = container.querySelectorAll('*')
+  for (const el of Array.from(all)) {
+    const elem = el as Element
+    if (elem.children.length === 0) {
+      const t = (elem.textContent || '').trim()
+      if (t)
+        results.push({ el: elem, text: t })
+    }
   }
-  const spans = container.querySelectorAll('span, div')
-  for (const el of Array.from(spans)) {
-    const t = (el.textContent || '').trim()
-    if (t && t.length >= 2 && !/購入/.test(t) && !/\d{4}[-/年]\d{1,2}[-/月]\d{1,2}/.test(t)) return t
+  return results
+}
+
+function extractTitle(container: Element): string {
+  const leafs = collectLeafTexts(container)
+  for (const { text } of leafs) {
+    if (/購入/.test(text))
+      continue
+    if (isDateLike(text))
+      continue
+    if (isCategoryWord(text))
+      continue
+    return text
   }
   return ''
 }
 
-function extractMakerHeuristically(container: Element): string {
-  const a = container.querySelector('a[href*="/circle/"]') as HTMLAnchorElement | null
-  if (a?.textContent) return a.textContent.trim()
-  const spans = container.querySelectorAll('span, div')
-  for (const el of Array.from(spans)) {
-    const t = (el.textContent || '').trim()
-    if (t && t.length <= 40 && !/\d{4}[-/年]\d{1,2}[-/月]\d{1,2}/.test(t)) return t
+function extractMaker(container: Element): string {
+  const leafs = collectLeafTexts(container)
+  const title = extractTitle(container)
+  let seenTitle = false
+  for (const { text } of leafs) {
+    if (!seenTitle) {
+      if (text === title)
+        seenTitle = true
+      continue
+    }
+    if (/購入/.test(text))
+      continue
+    if (isDateLike(text))
+      continue
+    if (isCategoryWord(text))
+      continue
+    if (text === title)
+      continue
+    if (title.includes(text))
+      continue
+    // 記号のみは除外
+    if (/^[\p{P}\p{S}\s]+$/u.test(text))
+      continue
+    return text
   }
   return ''
 }
 
-function extractDateHeuristically(container: Element): string {
+function extractDate(container: Element): string {
   const text = container.textContent || ''
-  const m = text.match(/(\d{4})[-/年](\d{1,2})[-/月](\d{1,2})/)
-  if (!m) return ''
-  const y = m[1]
-  const mm = String(m[2]).padStart(2, '0')
-  const dd = String(m[3]).padStart(2, '0')
-  return `${y}-${mm}-${dd}`
+  // 「購入YYYY年MM月DD日」のパターンを優先
+  const purchaseMatch = text.match(/購入(\d{4}年\d{1,2}月\d{1,2}日)/)
+  if (purchaseMatch)
+    return purchaseMatch[1]
+  // 日本語表記を優先的にそのまま返す
+  let m = text.match(/\d{4}年\d{1,2}月\d{1,2}日/)
+  if (m)
+    return m[0]
+  // スラッシュやハイフン区切りも許容（そのまま返す）
+  m = text.match(/\d{4}[-/]\d{1,2}[-/]\d{1,2}/)
+  return m ? m[0] : ''
 }
 
 // コンテナー要素からゲームデータを抽出する純粋関数
@@ -94,19 +142,16 @@ export function extractGameDataFromContainer(
   index: number,
 ): ExtractedGameData | null {
   try {
-    // まずは旧DOM構造のサムネイル
-    let thumbnailUrl: string | null = null
-    const oldThumb = container.querySelector('._thumbnail_1kd4u_117 span') as HTMLElement | null
-    if (oldThumb) {
-      const bgImage = oldThumb.style.backgroundImage
-      const thumbnailMatch = bgImage.match(/url\("?(.+?)"\)/)
-      if (thumbnailMatch) thumbnailUrl = thumbnailMatch[1]
-    }
-    // フォールバック: img/srcset or 背景画像
-    if (!thumbnailUrl) {
-      thumbnailUrl = findThumbnailUrlInContainer(container)
-    }
-    if (!thumbnailUrl) return null
+    // 画像要素からカードコンテキストを特定
+    const card
+      = container.closest('[data-index], article, li, [role="listitem"]')
+        || container.parentElement
+        || container
+
+    // サムネイルURL検出: img/srcset or 背景画像（カード全体から）
+    const thumbnailUrl: string | null = findThumbnailUrlInContainer(card)
+    if (!thumbnailUrl)
+      return null
 
     // URLからstore_idを抽出
     const storeId = extractStoreIdFromUrl(thumbnailUrl)
@@ -116,22 +161,13 @@ export function extractGameDataFromContainer(
     }
 
     // タイトルを抽出
-    const titleElement = container.querySelector('._workName_1kd4u_192 span')
-    const title = (titleElement?.textContent?.trim() || extractTitleHeuristically(container))
+    let title = extractTitle(card)
 
     // メーカー名を抽出
-    const makerElement = container.querySelector('._makerName_1kd4u_196 span')
-    const makerName = (makerElement?.textContent?.trim() || extractMakerHeuristically(container))
+    const makerName = extractMaker(card)
 
-    // 購入日を抽出（親要素から探す）
-    let purchaseDate = ''
-    const headerElement = container.closest('[data-index]')?.querySelector('._header_1kd4u_27 span')
-    if (headerElement?.textContent?.includes('購入')) {
-      purchaseDate = headerElement.textContent.replace('購入', '').trim()
-    }
-    if (!purchaseDate) {
-      purchaseDate = extractDateHeuristically(container)
-    }
+    // 購入日を抽出
+    const purchaseDate = extractDate(card)
 
     // 購入URLを構築
     const purchaseUrl = `https://play.dlsite.com/maniax/work/=/product_id/${storeId}.html`
