@@ -435,6 +435,13 @@ class BackgroundService {
               // const jsonString = JSON.stringify(response)
               const nativeResponse = fromJson(NativeResponseSchema, response)
               log.debug('Received native response:', nativeResponse)
+              try {
+                const responseJson = toJson(NativeResponseSchema, nativeResponse)
+                log.info('Native host response (json):', JSON.stringify(responseJson))
+              }
+              catch (jsonErr) {
+                log.warn('Failed to serialize native response to JSON:', jsonErr)
+              }
               resolve(nativeResponse)
             }
             catch (e) {
