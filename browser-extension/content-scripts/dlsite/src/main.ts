@@ -2,6 +2,7 @@
 
 import {
   addNotificationStyles,
+  logger,
   sendSyncRequest,
   setLogLevel,
   showNotification,
@@ -13,11 +14,12 @@ import { extractAllGames, shouldExtract } from './dom-extractor'
 // グローバル状態管理
 let isExtracting = false
 let currentUrl = window.location.href
+const log = logger('dlsite-extractor')
 
 // 抽出と同期を実行するメイン関数
 async function extractAndSync(): Promise<void> {
   if (isExtracting) {
-    console.log('[DLsite Extractor] Already extracting, skipping')
+    log.debug('Already extracting, skipping')
     return
   }
 
@@ -31,11 +33,11 @@ async function extractAndSync(): Promise<void> {
     const games = extractAllGames()
 
     if (games.length === 0) {
-      console.log('[DLsite Extractor] No games found')
+      log.info('No games found')
       return
     }
 
-    console.log(`[DLsite Extractor] Found ${games.length} games`)
+    log.info(`Found ${games.length} games`)
 
     // DLsite特有の処理を適用
     const processedGames = processGames(games)
@@ -46,19 +48,19 @@ async function extractAndSync(): Promise<void> {
       processedGames,
       'dlsite-extractor',
       (response) => {
-        console.log('[DLsite Extractor] Sync successful:', response)
+        log.info('Sync successful:', response)
         showNotification(
           `DLsite: ${processedGames.length}個の作品を同期しました`,
         )
       },
       (error) => {
-        console.error('[DLsite Extractor] Sync failed:', error)
+        log.error('Sync failed:', error)
         showNotification('DLsite: 同期に失敗しました', 'error')
       },
     )
   }
   catch (error) {
-    console.error('[DLsite Extractor] Extraction failed:', error)
+    log.error('Extraction failed:', error)
     showNotification('DLsite: 作品情報の抽出に失敗しました', 'error')
   }
   finally {
@@ -71,13 +73,11 @@ function initDLsiteExtractor(): void {
   const rootElement = document.getElementById('root')
 
   if (shouldExtract(window.location.hostname, rootElement)) {
-    console.log(
-      '[DLsite Extractor] Target page detected - Starting extraction on DLsite',
-    )
+    log.info('Target page detected - Starting extraction on DLsite')
     extractAndSync()
   }
   else {
-    console.log('[DLsite Extractor] Not a target page - skipping extraction')
+    log.debug('Not a target page - skipping extraction')
   }
 }
 
@@ -101,7 +101,7 @@ function setupPageChangeObserver(): void {
 
 // メイン初期化処理
 function main(): void {
-  console.log('[DLsite Extractor] Script loaded')
+  log.info('Script loaded')
 
   // CSSアニメーションを追加
   addNotificationStyles()
