@@ -15,6 +15,8 @@ import { extractAllGames, shouldExtract } from './dom-extractor'
 let isExtracting = false
 let currentUrl = window.location.href
 const log = logger('dlsite-extractor')
+let pollingTimerId: number | null = null
+let didInitialWait = false
 
 // 抽出と同期を実行するメイン関数
 async function extractAndSync(): Promise<void> {
@@ -26,8 +28,11 @@ async function extractAndSync(): Promise<void> {
   isExtracting = true
 
   try {
-    // ページが完全に読み込まれるまで待機（DLsiteは動的コンテンツが多いので長めの待機）
-    await waitForPageLoad(2000)
+    // 初回のみページロード完了を待機
+    if (!didInitialWait) {
+      await waitForPageLoad(2000)
+      didInitialWait = true
+    }
 
     // ゲーム情報を抽出
     const games = extractAllGames()
@@ -74,10 +79,30 @@ function initDLsiteExtractor(): void {
 
   if (shouldExtract(window.location.hostname, rootElement)) {
     log.info('Target page detected - Starting extraction on DLsite')
-    extractAndSync()
+    startPolling()
   }
   else {
     log.debug('Not a target page - skipping extraction')
+    stopPolling()
+  }
+}
+
+function startPolling(): void {
+  if (pollingTimerId !== null)
+    return
+  // 即時実行 + 500ms間隔で実行
+  void extractAndSync()
+  pollingTimerId = window.setInterval(() => {
+    void extractAndSync()
+  }, 500)
+  log.debug('Started polling every 500ms')
+}
+
+function stopPolling(): void {
+  if (pollingTimerId !== null) {
+    clearInterval(pollingTimerId)
+    pollingTimerId = null
+    log.debug('Stopped polling')
   }
 }
 
@@ -88,6 +113,8 @@ function setupPageChangeObserver(): void {
       currentUrl = window.location.href
       // URL変更時に再度チェック
       setTimeout(() => {
+        // 初期待機をリセット
+        didInitialWait = false
         initDLsiteExtractor()
       }, 2000)
     }
