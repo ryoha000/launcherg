@@ -43,6 +43,9 @@ const log = logger('background')
 
 class BackgroundService {
   private nativeHostName = 'moe.ryoha.launcherg.extension_host'
+  private lastSyncAt: number | null = null
+  private aggregatedCount: number = 0
+  private aggregateTimerId: number | null = null
 
   constructor() {
     this.setupMessageListeners()
@@ -82,13 +85,17 @@ class BackgroundService {
 
       // リクエストタイプに応じて処理を分岐
       switch (extensionRequest.request.case) {
-        case 'syncGames':
+        case 'syncGames': {
+          // 集計: フロントからの同期件数を蓄積し、30秒後にまとめて通知
+          const count = extensionRequest.request.value?.games?.length || 0
+          this.recordSyncAggregation(count)
           await this.handleProtobufSyncGames(
             extensionRequest.requestId,
             extensionRequest.request.value,
             sendResponse,
           )
           break
+        }
 
         case 'getConfig': {
           log.warn('getConfig is deprecated')
@@ -251,12 +258,14 @@ class BackgroundService {
     sendResponse: (response?: any) => void,
   ): Promise<void> {
     try {
+      const iconPath =
+        notificationRequest.iconType === 'error'
+          ? 'icons/icon32_error.png'
+          : 'icons/icon32.png'
+      const iconUrl = chrome.runtime.getURL(iconPath)
       await chrome.notifications.create({
         type: 'basic',
-        iconUrl:
-          notificationRequest.iconType === 'error'
-            ? 'icons/icon32_error.png'
-            : 'icons/icon32.png',
+        iconUrl,
         title: notificationRequest.title,
         message: notificationRequest.message,
       })
@@ -285,6 +294,33 @@ class BackgroundService {
       })
       sendResponse(toJson(ExtensionResponseSchema, errorResponse))
     }
+  }
+
+  private recordSyncAggregation(count: number): void {
+    const now = Date.now()
+    this.lastSyncAt = now
+    this.aggregatedCount += count
+
+    if (this.aggregateTimerId !== null) {
+      clearTimeout(this.aggregateTimerId)
+    }
+
+    // 30秒間追加のsyncが来なければまとめて通知
+    this.aggregateTimerId = setTimeout(() => {
+      if (this.aggregatedCount > 0) {
+        const title = 'Launcherg DL Store Sync'
+        const message = `過去30秒間に合計${this.aggregatedCount}件を同期しました`
+        // 内部から通知を作成（共通の通知ロジックを利用）
+        void chrome.notifications.create({
+          type: 'basic',
+          iconUrl: chrome.runtime.getURL('icons/icon32.png'),
+          title,
+          message,
+        })
+      }
+      this.aggregatedCount = 0
+      this.aggregateTimerId = null
+    }, 30_000) as unknown as number
   }
 
   private async handleProtobufGetStatus(
