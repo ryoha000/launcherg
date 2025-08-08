@@ -10,7 +10,7 @@
     "dev": "pnpm run protobuf:generate && pnpm run copy-assets && pnpm run -r dev",
     "clean": "rimraf dist && pnpm run -r clean",
     "copy-assets": "node scripts/copy-assets.js",
-    "protobuf:generate": "buf generate --template ../proto/buf.gen.yaml ../proto --output shared/src",
+    "protobuf:generate": "cd ../proto && buf generate --template ./buf.gen.yaml .",
     "protobuf:lint": "buf lint ../proto",
     "protobuf:format": "buf format -w ../proto",
     "test": "pnpm -r run test",
