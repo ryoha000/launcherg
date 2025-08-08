@@ -1,7 +1,10 @@
 // DOM操作関連の純粋関数
 
 import type { ExtractedGameData } from '@launcherg/shared'
+import { logger } from '@launcherg/shared'
 import { extractStoreIdFromUrl } from './utils'
+
+const log = logger('dlsite-extractor')
 
 // ページが抽出対象かどうかを判定する純粋関数
 export function shouldExtract(hostname: string, rootElement: HTMLElement | null): boolean {
@@ -28,7 +31,6 @@ export function extractGameContainers(): NodeListOf<Element> {
 export function extractGameDataFromContainer(
   container: Element,
   index: number,
-  debugMode: boolean = false,
 ): ExtractedGameData | null {
   try {
     // 実際のゲームアイテムかどうかを確認（サムネイルがあるか）
@@ -50,9 +52,7 @@ export function extractGameDataFromContainer(
 
     // URLからstore_idを抽出
     const storeId = extractStoreIdFromUrl(thumbnailUrl)
-    if (debugMode) {
-      console.log(`[DLsite Extractor] Extracted store_id "${storeId}" from URL: ${thumbnailUrl}`)
-    }
+    log.debug(`Extracted store_id "${storeId}" from URL: ${thumbnailUrl}`)
     if (!storeId) {
       return null
     }
@@ -92,32 +92,26 @@ export function extractGameDataFromContainer(
       },
     }
 
-    if (debugMode) {
-      console.log(`[DLsite Extractor] Extracted game ${index + 1}:`, gameData)
-    }
+    log.debug(`Extracted game ${index + 1}:`, gameData)
 
     return gameData
   }
   catch (error) {
-    if (debugMode) {
-      console.log(`[DLsite Extractor] Error extracting game from container ${index}:`, error)
-    }
+    log.debug(`Error extracting game from container ${index}:`, error)
     return null
   }
 }
 
 // すべてのゲームデータを抽出する純粋関数
-export function extractAllGames(debugMode: boolean = false): ExtractedGameData[] {
+export function extractAllGames(): ExtractedGameData[] {
   const gameContainers = extractGameContainers()
-  if (debugMode) {
-    console.log(`[DLsite Extractor] Found ${gameContainers.length} potential game containers`)
-  }
+  log.debug(`Found ${gameContainers.length} potential game containers`)
 
   const games: ExtractedGameData[] = []
   const seenStoreIds = new Set<string>()
 
   gameContainers.forEach((container, index) => {
-    const gameData = extractGameDataFromContainer(container, index, debugMode)
+    const gameData = extractGameDataFromContainer(container, index)
 
     if (gameData) {
       // 重複チェック

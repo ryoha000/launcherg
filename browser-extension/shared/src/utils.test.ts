@@ -1,5 +1,5 @@
-import { describe, expect, it, vi } from 'vitest'
-import { debug, generateRequestId } from './utils'
+import { describe, expect, it } from 'vitest'
+import { generateRequestId } from './utils'
 
 describe('utils', () => {
   describe('generateRequestId', () => {
@@ -18,19 +18,5 @@ describe('utils', () => {
     })
   })
 
-  describe('debug', () => {
-    it('debugModeがtrueの場合、メッセージを出力する', () => {
-      const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
-      debug(true, 'Test message', 'arg1', 'arg2')
-      expect(consoleSpy).toHaveBeenCalledWith('Test message', 'arg1', 'arg2')
-      consoleSpy.mockRestore()
-    })
-
-    it('debugModeがfalseの場合、メッセージを出力しない', () => {
-      const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
-      debug(false, 'Test message', 'arg1', 'arg2')
-      expect(consoleSpy).not.toHaveBeenCalled()
-      consoleSpy.mockRestore()
-    })
-  })
+  // debug() は logger に置換したためテスト対象外
 })

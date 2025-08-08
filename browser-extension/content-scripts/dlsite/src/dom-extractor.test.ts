@@ -152,7 +152,7 @@ describe('dom-extractor', () => {
       container.appendChild(thumbnailWrapper)
 
       const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
-      const result = extractGameDataFromContainer(container, 0, true)
+      const result = extractGameDataFromContainer(container, 0)
 
       expect(result).toBeNull()
       consoleSpy.mockRestore()

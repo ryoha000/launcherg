@@ -3,6 +3,7 @@
 import {
   addNotificationStyles,
   sendSyncRequest,
+  setLogLevel,
   showNotification,
   waitForPageLoad,
 } from '@launcherg/shared'
@@ -12,7 +13,6 @@ import { extractAllGames, shouldExtract } from './dom-extractor'
 // グローバル状態管理
 let isExtracting = false
 let currentUrl = window.location.href
-const debugMode = true
 
 // 抽出と同期を実行するメイン関数
 async function extractAndSync(): Promise<void> {
@@ -28,7 +28,7 @@ async function extractAndSync(): Promise<void> {
     await waitForPageLoad(2000)
 
     // ゲーム情報を抽出
-    const games = extractAllGames(debugMode)
+    const games = extractAllGames()
 
     if (games.length === 0) {
       console.log('[DLsite Extractor] No games found')
@@ -116,4 +116,8 @@ function main(): void {
 }
 
 // スクリプトの実行
+// 開発時はデバッグログを有効化
+if ((import.meta as any).env?.MODE === 'development') {
+  setLogLevel('debug')
+}
 main()

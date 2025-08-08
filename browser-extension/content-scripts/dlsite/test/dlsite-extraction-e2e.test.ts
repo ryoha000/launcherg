@@ -56,7 +56,7 @@ describe('dLsite Play.html E2Eテスト（JSDOMバックエンド）', () => {
     expect(isTargetPage).toBe(true)
 
     // ゲーム情報を抽出
-    const games = extractAllGames(false) // debugMode = false
+    const games = extractAllGames()
 
     console.log(`抽出されたゲーム数: ${games.length}`)
 
@@ -82,7 +82,7 @@ describe('dLsite Play.html E2Eテスト（JSDOMバックエンド）', () => {
 
   it('データ処理パイプライン全体が正しく動作すること', () => {
     // 生データを抽出
-    const rawGames = extractAllGames(false)
+    const rawGames = extractAllGames()
 
     // データ処理を適用
     const processedGames = processGames(rawGames)
@@ -207,7 +207,7 @@ describe('dLsite Play.html E2Eテスト（JSDOMバックエンド）', () => {
     const testDom = new JSDOM(testHtml)
     globalThis.document = testDom.window.document
 
-    const games = extractAllGames(false)
+    const games = extractAllGames()
 
     // RJ123456が重複していても、1つしか抽出されないことを確認
     expect(games.length).toBe(2)
