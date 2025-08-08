@@ -836,6 +836,7 @@ export class PopupController {
 
 if (typeof globalThis !== 'undefined') {
   document.addEventListener('DOMContentLoaded', () => {
+    // eslint-disable-next-line no-new
     new PopupController()
   })
 }
