@@ -199,7 +199,7 @@ class BackgroundService {
         nativeMessage,
       )
 
-      if (nativeResponse && nativeResponse.success) {
+        if (nativeResponse && nativeResponse.success) {
         let syncResult
         if (nativeResponse.response.case === 'syncGamesResult') {
           const syncBatchResult = nativeResponse.response.value
@@ -209,6 +209,22 @@ class BackgroundService {
             errors: syncBatchResult.errors,
             syncedGames: syncBatchResult.syncedGames,
           })
+
+            // 成功件数の通知（0件は通知しない）
+            const success = Number(syncBatchResult.successCount || 0)
+            if (success > 0) {
+              const iconUrl = chrome.runtime.getURL('icons/icon32.png')
+              await chrome.notifications.create({
+                type: 'basic',
+                iconUrl,
+                title: 'DMM 同期',
+                message: `新規 ${success} 件を同期しました`,
+              })
+            }
+            else {
+              // 通知不要、警告ログのみ
+              console.warn('DMM: 同期成功 0 件（重複のみの可能性）')
+            }
         }
 
         const response = create(ExtensionResponseSchema, {
@@ -279,7 +295,7 @@ class BackgroundService {
         nativeMessage,
       )
 
-      if (nativeResponse && nativeResponse.success) {
+        if (nativeResponse && nativeResponse.success) {
         let syncResult
         if (nativeResponse.response.case === 'syncGamesResult') {
           const syncBatchResult = nativeResponse.response.value
@@ -289,6 +305,22 @@ class BackgroundService {
             errors: syncBatchResult.errors,
             syncedGames: syncBatchResult.syncedGames,
           })
+
+            // 成功件数の通知（0件は通知しない）
+            const success = Number(syncBatchResult.successCount || 0)
+            if (success > 0) {
+              const iconUrl = chrome.runtime.getURL('icons/icon32.png')
+              await chrome.notifications.create({
+                type: 'basic',
+                iconUrl,
+                title: 'DLsite 同期',
+                message: `新規 ${success} 件を同期しました`,
+              })
+            }
+            else {
+              // 通知不要、警告ログのみ
+              console.warn('DLsite: 同期成功 0 件（重複のみの可能性）')
+            }
         }
 
         const response = create(ExtensionResponseSchema, {
