@@ -1,0 +1,10 @@
+version: v2
+managed:
+  enabled: true
+plugins:
+  # TypeScript用のprotobuf-es v2生成
+  - remote: buf.build/bufbuild/es:v2.0.0
+    out: ../browser-extension/shared/src/proto
+    opt:
+      - target=ts
+      - import_extension=none

@@ -51,23 +51,23 @@
   onmousedown={closeWheelClick}
 >
   <div
-    class="flex items-center gap-2 px-3 h-10 transition-all cursor-pointer border-(b-1px r-1px solid border-primary) group max-w-60 {selected
-      ? 'bg-bg-primary border-b-transparent'
+    class="group  h-10 max-w-60 flex cursor-pointer items-center gap-2 border-(b-1px r-1px border-primary solid) px-3 transition-all {selected
+      ? 'border-b-transparent bg-bg-primary'
       : 'bg-bg-disabled hover:bg-bg-primary'}"
   >
-    <div class='{tabIcon} w-5 h-5 flex-shrink-0'></div>
+    <div class='{tabIcon} h-5 w-5 flex-shrink-0'></div>
     <div
-      class="text-body2 whitespace-nowrap text-ellipsis overflow-hidden {selected
+      class="overflow-hidden text-ellipsis whitespace-nowrap text-body2 {selected
         ? 'text-text-primary'
         : 'text-text-tertiary'}"
     >
       {tab.title}
     </div>
     <div
-      class='rounded hover:bg-bg-secondary flex items-center justify-center transition-all'
+      class='flex items-center justify-center rounded transition-all hover:bg-bg-secondary'
     >
       <button
-        class="group-hover:opacity-100 opacity-0 transition-all w-5 h-5 i-iconoir-cancel {selected
+        class="i-iconoir-cancel  h-5 w-5 opacity-0 transition-all group-hover:opacity-100 {selected
           ? 'color-text-secondary'
           : 'color-text-tertiary'}"
         onclick={onClickCloseTabButton}

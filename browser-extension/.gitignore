@@ -1,0 +1,10 @@
+node_modules/
+dist/
+*.log
+.env
+.DS_Store
+*.pem
+
+# Playwright
+playwright-report/
+test-results/

@@ -363,58 +363,58 @@
   }
 </script>
 
-<div class='p-6 max-w-4xl mx-auto h-full overflow-y-auto'>
+<div class='mx-auto h-full max-w-4xl overflow-y-auto p-6'>
   <div class='space-y-6'>
     <!-- Header -->
     <div class='flex items-center justify-between'>
-      <h1 class='text-2xl font-bold text-(text-primary)'>ProcTail デバッグ</h1>
+      <h1 class='text-(2xl text-primary) font-bold'>ProcTail デバッグ</h1>
       <div class='flex gap-2'>
         <Button variant='normal' onclick={checkServiceAvailability} text='再接続' />
         <div class='flex items-center gap-2'>
-          <div class='w-3 h-3 rounded-full' class:bg-green-500={isServiceAvailable} class:bg-red-500={!isServiceAvailable}></div>
-          <span class='text-sm text-(text-secondary)'>{isServiceAvailable ? '接続済み' : '未接続'}</span>
+          <div class='h-3 w-3 rounded-full' class:bg-green-500={isServiceAvailable} class:bg-red-500={!isServiceAvailable}></div>
+          <span class='text-(sm text-secondary)'>{isServiceAvailable ? '接続済み' : '未接続'}</span>
         </div>
       </div>
     </div>
 
     <!-- Error Display -->
     {#if error}
-      <div class='bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded'>
+      <div class='border border-red-400 rounded bg-red-100 px-4 py-3 text-red-700'>
         {error}
       </div>
     {/if}
 
     <!-- ProcTail Manager Status -->
     {#if managerStatus}
-      <div class='bg-(bg-secondary) border border-(border-primary) rounded p-4'>
-        <h3 class='text-lg font-semibold mb-3 text-(text-primary)'>ProcTail マネージャー</h3>
-        <div class='grid grid-cols-2 gap-4 text-sm mb-4'>
+      <div class='border border-(border-primary) rounded bg-(bg-secondary) p-4'>
+        <h3 class='mb-3 text-(lg text-primary) font-semibold'>ProcTail マネージャー</h3>
+        <div class='grid grid-cols-2 mb-4 gap-4 text-sm'>
           <div>
-            <span class='font-medium text-(text-secondary)'>現在のバージョン:</span>
+            <span class='text-(text-secondary) font-medium'>現在のバージョン:</span>
             <span class='text-(text-primary)'>{managerStatus.current_version || '未インストール'}</span>
           </div>
           <div>
-            <span class='font-medium text-(text-secondary)'>実行可能ファイル:</span>
+            <span class='text-(text-secondary) font-medium'>実行可能ファイル:</span>
             <span class='text-(text-primary)'>{managerStatus.executable_exists ? '存在' : '不存在'}</span>
           </div>
           <div>
-            <span class='font-medium text-(text-secondary)'>プロセス状態:</span>
+            <span class='text-(text-secondary) font-medium'>プロセス状態:</span>
             <span class='text-(text-primary)'>{managerStatus.is_running ? '実行中' : '停止中'}</span>
           </div>
           <div>
-            <span class='font-medium text-(text-secondary)'>アップデート:</span>
+            <span class='text-(text-secondary) font-medium'>アップデート:</span>
             <span class='text-(text-primary)'>{managerStatus.update_available ? '利用可能' : '最新'}</span>
           </div>
         </div>
 
         {#if latestVersion}
           <div class='mb-4'>
-            <span class='font-medium text-(text-secondary)'>最新バージョン:</span>
+            <span class='text-(text-secondary) font-medium'>最新バージョン:</span>
             <span class='text-(text-primary)'>{latestVersion.version}</span>
           </div>
         {/if}
 
-        <div class='flex gap-2 flex-wrap'>
+        <div class='flex flex-wrap gap-2'>
           {#if managerStatus.update_available}
             <Button
               onclick={downloadAndInstall}
@@ -438,39 +438,39 @@
 
     <!-- Service Status -->
     {#if serviceStatus}
-      <div class='bg-(bg-secondary) border border-(border-primary) rounded p-4'>
-        <h3 class='text-lg font-semibold mb-3 text-(text-primary)'>サービス状態</h3>
+      <div class='border border-(border-primary) rounded bg-(bg-secondary) p-4'>
+        <h3 class='mb-3 text-(lg text-primary) font-semibold'>サービス状態</h3>
         <div class='grid grid-cols-2 gap-4 text-sm'>
           <div>
-            <span class='font-medium text-(text-secondary)'>状態:</span>
+            <span class='text-(text-secondary) font-medium'>状態:</span>
             <span class='text-(text-primary)'>{serviceStatus.Service.Status}</span>
           </div>
           <div>
-            <span class='font-medium text-(text-secondary)'>バージョン:</span>
+            <span class='text-(text-secondary) font-medium'>バージョン:</span>
             <span class='text-(text-primary)'>{serviceStatus.Service.Version}</span>
           </div>
           <div>
-            <span class='font-medium text-(text-secondary)'>起動時間:</span>
+            <span class='text-(text-secondary) font-medium'>起動時間:</span>
             <span class='text-(text-primary)'>{serviceStatus.Service.StartTime}</span>
           </div>
           <div>
-            <span class='font-medium text-(text-secondary)'>稼働時間:</span>
+            <span class='text-(text-secondary) font-medium'>稼働時間:</span>
             <span class='text-(text-primary)'>{serviceStatus.Service.Uptime}</span>
           </div>
           <div>
-            <span class='font-medium text-(text-secondary)'>アクティブタグ:</span>
+            <span class='text-(text-secondary) font-medium'>アクティブタグ:</span>
             <span class='text-(text-primary)'>{serviceStatus.Monitoring.ActiveTags}</span>
           </div>
           <div>
-            <span class='font-medium text-(text-secondary)'>監視プロセス:</span>
+            <span class='text-(text-secondary) font-medium'>監視プロセス:</span>
             <span class='text-(text-primary)'>{serviceStatus.Monitoring.ActiveProcesses}</span>
           </div>
           <div>
-            <span class='font-medium text-(text-secondary)'>総イベント数:</span>
+            <span class='text-(text-secondary) font-medium'>総イベント数:</span>
             <span class='text-(text-primary)'>{serviceStatus.Monitoring.TotalEvents}</span>
           </div>
           <div>
-            <span class='font-medium text-(text-secondary)'>メモリ使用量:</span>
+            <span class='text-(text-secondary) font-medium'>メモリ使用量:</span>
             <span class='text-(text-primary)'>{serviceStatus.Resources.MemoryUsageMB.toFixed(1)} MB</span>
           </div>
         </div>
@@ -479,19 +479,19 @@
 
     <!-- Health Check -->
     {#if healthCheck}
-      <div class='bg-(bg-secondary) border border-(border-primary) rounded p-4'>
-        <h3 class='text-lg font-semibold mb-3 text-(text-primary)'>ヘルスチェック</h3>
+      <div class='border border-(border-primary) rounded bg-(bg-secondary) p-4'>
+        <h3 class='mb-3 text-(lg text-primary) font-semibold'>ヘルスチェック</h3>
         <div class='space-y-2'>
           <div>
-            <span class='font-medium text-(text-secondary)'>状態:</span>
+            <span class='text-(text-secondary) font-medium'>状態:</span>
             <span class='text-(text-primary)'>{healthCheck.Status}</span>
           </div>
           <div>
-            <span class='font-medium text-(text-secondary)'>チェック時間:</span>
+            <span class='text-(text-secondary) font-medium'>チェック時間:</span>
             <span class='text-(text-primary)'>{healthCheck.CheckTime}</span>
           </div>
           <div class='mt-3'>
-            <span class='font-medium text-(text-secondary)'>詳細:</span>
+            <span class='text-(text-secondary) font-medium'>詳細:</span>
             <div class='mt-1 space-y-1'>
               {#each Object.entries(healthCheck.Details) as [key, value]}
                 <div class='flex justify-between'>
@@ -506,26 +506,26 @@
     {/if}
 
     <!-- Watch Targets -->
-    <div class='bg-(bg-secondary) border border-(border-primary) rounded p-4'>
-      <h3 class='text-lg font-semibold mb-3 text-(text-primary)'>監視対象</h3>
+    <div class='border border-(border-primary) rounded bg-(bg-secondary) p-4'>
+      <h3 class='mb-3 text-(lg text-primary) font-semibold'>監視対象</h3>
 
       <!-- Add Watch Target -->
-      <div class='mb-4 p-3 bg-(bg-tertiary) rounded'>
-        <h4 class='font-medium mb-2 text-(text-secondary)'>監視対象を追加</h4>
-        <div class='grid grid-cols-1 md:grid-cols-3 gap-2'>
+      <div class='mb-4 rounded bg-(bg-tertiary) p-3'>
+        <h4 class='mb-2 text-(text-secondary) font-medium'>監視対象を追加</h4>
+        <div class='grid grid-cols-1 gap-2 md:grid-cols-3'>
           <Input bind:value={addTargetForm.processId} placeholder='プロセスID (例: 1234)' />
           <Input bind:value={addTargetForm.tag} placeholder='タグ (例: game-process)' />
           <Button onclick={addWatchTarget} text='追加' disabled={loading} />
         </div>
-        <div class='text-xs text-(text-tertiary) mt-2'>
+        <div class='mt-2 text-(xs text-tertiary)'>
           プロセスIDはタスクマネージャーで確認できます
         </div>
       </div>
 
       <!-- Remove Watch Target -->
-      <div class='mb-4 p-3 bg-(bg-tertiary) rounded'>
-        <h4 class='font-medium mb-2 text-(text-secondary)'>監視対象を削除</h4>
-        <div class='grid grid-cols-1 md:grid-cols-2 gap-2'>
+      <div class='mb-4 rounded bg-(bg-tertiary) p-3'>
+        <h4 class='mb-2 text-(text-secondary) font-medium'>監視対象を削除</h4>
+        <div class='grid grid-cols-1 gap-2 md:grid-cols-2'>
           <Input bind:value={removeTargetTag} placeholder='削除するタグ名' />
           <Button onclick={removeWatchTarget} text='削除' disabled={loading} variant='error' />
         </div>
@@ -535,32 +535,32 @@
       {#if watchTargets.length > 0}
         <div class='space-y-2'>
           {#each watchTargets as target}
-            <div class='flex items-center justify-between p-3 bg-(bg-tertiary) rounded border border-(border-secondary)'>
+            <div class='border-border-secondary flex items-center justify-between border rounded bg-(bg-tertiary) p-3'>
               <div class='flex flex-col gap-2'>
                 <div class='flex items-center justify-between'>
                   <div class='flex items-center gap-2'>
-                    <span class='text-(text-secondary) text-xs font-medium'>タグ:</span>
-                    <span class='font-semibold text-(text-primary) text-sm bg-(bg-primary) text-(bg-secondary) px-3 py-1 rounded font-mono'>{target.Tag}</span>
+                    <span class='text-(xs text-secondary) font-medium'>タグ:</span>
+                    <span class='rounded bg-(bg-primary) px-3 py-1 text-(sm bg-secondary text-primary) font-semibold font-mono'>{target.Tag}</span>
                   </div>
                   <div class='flex items-center gap-1'>
-                    <div class='w-3 h-3 rounded-full' class:bg-green-500={target.IsRunning} class:bg-red-500={!target.IsRunning}></div>
+                    <div class='h-3 w-3 rounded-full' class:bg-green-500={target.IsRunning} class:bg-red-500={!target.IsRunning}></div>
                     <span class='text-sm font-medium' class:text-green-700={target.IsRunning} class:text-red-700={!target.IsRunning}>
                       {target.IsRunning ? '実行中' : '停止'}
                     </span>
                   </div>
                 </div>
-                <div class='grid grid-cols-1 md:grid-cols-3 gap-3 text-sm'>
+                <div class='grid grid-cols-1 gap-3 text-sm md:grid-cols-3'>
                   <div class='flex flex-col gap-1'>
-                    <span class='text-(text-secondary) text-xs'>プロセス名</span>
+                    <span class='text-(xs text-secondary)'>プロセス名</span>
                     <span class='text-(text-primary) font-medium'>{target.ProcessName || '(不明)'}</span>
                   </div>
                   <div class='flex flex-col gap-1'>
-                    <span class='text-(text-secondary) text-xs'>プロセスID</span>
+                    <span class='text-(xs text-secondary)'>プロセスID</span>
                     <span class='text-(text-primary) font-mono'>{target.ProcessId || 'N/A'}</span>
                   </div>
                   <div class='flex flex-col gap-1'>
-                    <span class='text-(text-secondary) text-xs'>開始時刻</span>
-                    <span class='text-(text-primary) text-xs'>
+                    <span class='text-(xs text-secondary)'>開始時刻</span>
+                    <span class='text-(xs text-primary)'>
                       {target.StartTime && !Number.isNaN(new Date(target.StartTime).getTime())
                         ? new Date(target.StartTime).toLocaleString()
                         : 'N/A'}
@@ -568,7 +568,7 @@
                   </div>
                 </div>
                 {#if !target.IsRunning}
-                  <div class='mt-2 text-xs text-(text-tertiary) bg-orange-100 text-orange-800 px-2 py-1 rounded'>
+                  <div class='mt-2 rounded bg-orange-100 px-2 py-1 text-(xs orange-800 text-tertiary)'>
                     ⚠️ このプロセスは終了していますが、監視対象として登録されたままです。イベント履歴は保持されています。
                   </div>
                 {/if}
@@ -577,9 +577,9 @@
           {/each}
         </div>
       {:else}
-        <div class='text-center py-8'>
-          <p class='text-(text-secondary) text-lg'>監視対象がありません</p>
-          <p class='text-(text-tertiary) text-sm mt-1'>上記のフォームからプロセスを追加してください</p>
+        <div class='py-8 text-center'>
+          <p class='text-(lg text-secondary)'>監視対象がありません</p>
+          <p class='mt-1 text-(sm text-tertiary)'>上記のフォームからプロセスを追加してください</p>
         </div>
       {/if}
 
@@ -589,47 +589,47 @@
     </div>
 
     <!-- Events -->
-    <div class='bg-(bg-secondary) border border-(border-primary) rounded p-4'>
-      <h3 class='text-lg font-semibold mb-3 text-(text-primary)'>イベント</h3>
+    <div class='border border-(border-primary) rounded bg-(bg-secondary) p-4'>
+      <h3 class='mb-3 text-(lg text-primary) font-semibold'>イベント</h3>
 
       <!-- Get Events -->
-      <div class='mb-4 p-3 bg-(bg-tertiary) rounded'>
-        <h4 class='font-medium mb-2 text-(text-secondary)'>イベントを取得</h4>
-        <div class='grid grid-cols-1 md:grid-cols-4 gap-2'>
+      <div class='mb-4 rounded bg-(bg-tertiary) p-3'>
+        <h4 class='mb-2 text-(text-secondary) font-medium'>イベントを取得</h4>
+        <div class='grid grid-cols-1 gap-2 md:grid-cols-4'>
           <Input bind:value={getEventsForm.tag} placeholder='タグ' />
           <Input bind:value={getEventsForm.count} placeholder='件数 (50)' />
           <Input bind:value={getEventsForm.eventType} placeholder='イベントタイプ' />
           <Button onclick={getEvents} text='取得' disabled={loading} />
         </div>
-        <div class='text-xs text-(text-tertiary) mt-2'>
+        <div class='mt-2 text-(xs text-tertiary)'>
           イベントタイプ: File, ProcessStart, ProcessEnd など
         </div>
       </div>
 
       <!-- Clear Events -->
-      <div class='mb-4 p-3 bg-(bg-tertiary) rounded'>
-        <h4 class='font-medium mb-2 text-(text-secondary)'>イベントをクリア</h4>
-        <div class='grid grid-cols-1 md:grid-cols-2 gap-2'>
+      <div class='mb-4 rounded bg-(bg-tertiary) p-3'>
+        <h4 class='mb-2 text-(text-secondary) font-medium'>イベントをクリア</h4>
+        <div class='grid grid-cols-1 gap-2 md:grid-cols-2'>
           <Input bind:value={clearEventsTag} placeholder='クリアするタグ名' />
           <Button onclick={clearEvents} text='クリア' disabled={loading} variant='error' />
         </div>
-        <div class='text-xs text-(text-tertiary) mt-2'>
+        <div class='mt-2 text-(xs text-tertiary)'>
           指定したタグのすべてのイベントが削除されます
         </div>
       </div>
 
       <!-- Events List -->
       {#if events.length > 0}
-        <div class='space-y-2 max-h-96 overflow-y-auto border border-(border-secondary) rounded p-2'>
-          <div class='text-sm text-(text-secondary) mb-2 px-2'>
+        <div class='border-border-secondary max-h-96 overflow-y-auto border rounded p-2 space-y-2'>
+          <div class='mb-2 px-2 text-(sm text-secondary)'>
             {events.length}件のイベントが見つかりました
           </div>
           {#each events as event, index}
-            <div class='p-3 bg-(bg-tertiary) rounded border border-(border-secondary) hover:bg-(bg-secondary) transition-colors'>
-              <div class='flex items-center justify-between mb-2'>
+            <div class='border-border-secondary border rounded bg-(bg-tertiary) p-3 transition-colors hover:bg-(bg-secondary)'>
+              <div class='mb-2 flex items-center justify-between'>
                 <div class='flex items-center gap-2'>
-                  <span class='text-xs text-(text-tertiary) font-mono'>#{events.length - index}</span>
-                  <span class='font-medium text-(text-primary) px-2 py-1 rounded text-xs'
+                  <span class='text-(xs text-tertiary) font-mono'>#{events.length - index}</span>
+                  <span class='rounded px-2 py-1 text-(xs text-primary) font-medium'
                         class:bg-blue-100={formatEventType(event) === 'ファイル操作'}
                         class:bg-green-100={formatEventType(event) === 'プロセス開始'}
                         class:bg-red-100={formatEventType(event) === 'プロセス終了'}
@@ -639,20 +639,20 @@
                     {formatEventType(event)}
                   </span>
                 </div>
-                <span class='text-xs text-(text-secondary) font-mono'>
+                <span class='text-(xs text-secondary) font-mono'>
                   {new Date(getEventTimestamp(event)).toLocaleString()}
                 </span>
               </div>
-              <div class='text-sm text-(text-primary) bg-(bg-quaternary) p-2 rounded font-mono text-wrap break-all'>
+              <div class='bg-bg-quaternary break-all rounded p-2 text-(wrap sm text-primary) font-mono'>
                 {getEventDetails(event)}
               </div>
             </div>
           {/each}
         </div>
       {:else}
-        <div class='text-center py-8 border border-(border-secondary) rounded bg-(bg-tertiary)'>
-          <p class='text-(text-secondary) text-lg'>イベントがありません</p>
-          <p class='text-(text-tertiary) text-sm mt-1'>上記のフォームからイベントを取得してください</p>
+        <div class='border-border-secondary border rounded bg-(bg-tertiary) py-8 text-center'>
+          <p class='text-(lg text-secondary)'>イベントがありません</p>
+          <p class='mt-1 text-(sm text-tertiary)'>上記のフォームからイベントを取得してください</p>
         </div>
       {/if}
     </div>

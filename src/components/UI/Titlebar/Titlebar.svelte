@@ -22,11 +22,11 @@
   })
 </script>
 
-<div class='grid grid-cols-[1fr_auto] items-center h-8 bg-[#202020] text-(text-primary)'>
+<div class='grid grid-cols-[1fr_auto] h-8 items-center bg-[#202020] text-(text-primary)'>
   <div data-tauri-drag-region class='h-full'></div>
-  <div class='ml-auto flex items-center h-full'>
+  <div class='ml-auto h-full flex items-center'>
     <button class='h-7 w-7 flex items-center justify-center rounded-1 bg-transparent transition-all' aria-label='Open Settings' onclick={navigateToSettings}>
-      <div class="w-5 h-5 {isFocused() ? 'color-[#e5e5e5' : 'color-[#797979]'} i-material-symbols-settings-outline-rounded"></div>
+      <div class="h-5 w-5 {isFocused() ? 'color-[#e5e5e5' : 'color-[#797979]'} i-material-symbols-settings-outline-rounded"></div>
     </button>
     <ControlButton variant='normal' isFocused={isFocused()} onclick={minimize}>
       <Minimize />

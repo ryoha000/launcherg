@@ -13,9 +13,9 @@ use crate::domain::{
     collection::{
         CollectionElement, CollectionElementInfo, CollectionElementInstall, CollectionElementLike,
         CollectionElementPaths, CollectionElementPlay, CollectionElementThumbnail,
-        NewCollectionElement, NewCollectionElementInfo, NewCollectionElementInstall,
-        NewCollectionElementLike, NewCollectionElementPaths, NewCollectionElementPlay,
-        NewCollectionElementThumbnail,
+        NewCollectionElement, NewCollectionElementInfo, 
+        NewCollectionElementInstall, NewCollectionElementLike, NewCollectionElementPaths, 
+        NewCollectionElementPlay, NewCollectionElementThumbnail,
     },
     repository::collection::CollectionRepository,
     Id,
@@ -43,6 +43,8 @@ impl CollectionRepository for RepositoryImpl<CollectionElement> {
             element.thumbnail = self
                 .get_element_thumbnail_by_element_id(&element_id)
                 .await?;
+            // EGS マッピング
+            element.erogamescape = self.get_element_erogamescape_by_element_id(&element_id).await?;
 
             result.push(element);
         }
@@ -63,7 +65,8 @@ impl CollectionRepository for RepositoryImpl<CollectionElement> {
                 cei_install.id as install_id, cei_install.install_at, cei_install.created_at as install_created_at, cei_install.updated_at as install_updated_at,
                 cei_play.id as play_id, cei_play.last_play_at, cei_play.created_at as play_created_at, cei_play.updated_at as play_updated_at,
                 cei_like.id as like_id, cei_like.like_at, cei_like.created_at as like_created_at, cei_like.updated_at as like_updated_at,
-                cet.id as thumbnail_id, cet.thumbnail_width, cet.thumbnail_height, cet.created_at as thumbnail_created_at, cet.updated_at as thumbnail_updated_at
+                cet.id as thumbnail_id, cet.thumbnail_width, cet.thumbnail_height, cet.created_at as thumbnail_created_at, cet.updated_at as thumbnail_updated_at,
+                cee.id as egs_id, cee.erogamescape_id as egs_erogamescape_id, cee.created_at as egs_created_at, cee.updated_at as egs_updated_at
             FROM collection_elements ce
             LEFT JOIN collection_element_info_by_erogamescape cei ON ce.id = cei.collection_element_id
             LEFT JOIN collection_element_paths cep ON ce.id = cep.collection_element_id
@@ -71,6 +74,8 @@ impl CollectionRepository for RepositoryImpl<CollectionElement> {
             LEFT JOIN collection_element_plays cei_play ON ce.id = cei_play.collection_element_id
             LEFT JOIN collection_element_likes cei_like ON ce.id = cei_like.collection_element_id
             LEFT JOIN collection_element_thumbnails cet ON ce.id = cet.collection_element_id
+            -- DLStore廃止
+            LEFT JOIN collection_element_erogamescape_map cee ON ce.id = cee.collection_element_id
             WHERE ce.id = ?"
         )
         .bind(id.value)
@@ -193,6 +198,24 @@ impl CollectionRepository for RepositoryImpl<CollectionElement> {
                     .and_utc()
                     .with_timezone(&chrono::Local),
                 row.get::<chrono::NaiveDateTime, _>("thumbnail_updated_at")
+                    .and_utc()
+                    .with_timezone(&chrono::Local),
+            ))
+        } else {
+            None
+        };
+
+        // DLStore廃止
+        // EGS マッピング（JOINで取得）
+        element.erogamescape = if let Some(egs_row_id) = row.get::<Option<i32>, _>("egs_id") {
+            Some(crate::domain::collection::CollectionElementErogamescape::new(
+                Id::new(egs_row_id),
+                id.clone(),
+                row.get("egs_erogamescape_id"),
+                row.get::<chrono::NaiveDateTime, _>("egs_created_at")
+                    .and_utc()
+                    .with_timezone(&chrono::Local),
+                row.get::<chrono::NaiveDateTime, _>("egs_updated_at")
                     .and_utc()
                     .with_timezone(&chrono::Local),
             ))
@@ -550,5 +573,154 @@ impl CollectionRepository for RepositoryImpl<CollectionElement> {
         .fetch_all(&*pool)
         .await?;
         Ok(ids.into_iter().map(|v| Id::new(v.0)).collect())
+    }
+
+    async fn get_element_erogamescape_by_element_id(
+        &self,
+        id: &Id<CollectionElement>,
+    ) -> anyhow::Result<Option<crate::domain::collection::CollectionElementErogamescape>> {
+        let pool = self.pool.0.clone();
+        let row = query_as::<_, super::models::collection::CollectionElementErogamescapeTable>(
+            "SELECT * FROM collection_element_erogamescape_map WHERE collection_element_id = ?",
+        )
+        .bind(id.value)
+        .fetch_optional(&*pool)
+        .await?;
+        Ok(row.map(|t| t.try_into()).transpose()?)
+    }
+
+
+    // EGS ID マッピング操作
+    async fn get_collection_id_by_erogamescape_id(
+        &self,
+        erogamescape_id: i32,
+    ) -> anyhow::Result<Option<Id<CollectionElement>>> {
+        let pool = self.pool.0.clone();
+        let row: Option<(i32,)> = sqlx::query_as(
+            "SELECT collection_element_id FROM collection_element_erogamescape_map WHERE erogamescape_id = ?",
+        )
+        .bind(erogamescape_id)
+        .fetch_optional(&*pool)
+        .await?;
+        Ok(row.map(|v| Id::new(v.0)))
+    }
+
+    async fn upsert_erogamescape_map(
+        &self,
+        collection_element_id: &Id<CollectionElement>,
+        erogamescape_id: i32,
+    ) -> anyhow::Result<()> {
+        let pool = self.pool.0.clone();
+        query(
+            "INSERT INTO collection_element_erogamescape_map (collection_element_id, erogamescape_id) VALUES (?, ?)\n             ON CONFLICT(collection_element_id) DO UPDATE SET erogamescape_id = excluded.erogamescape_id, updated_at = CURRENT_TIMESTAMP",
+        )
+        .bind(collection_element_id.value)
+        .bind(erogamescape_id)
+        .execute(&*pool)
+        .await?;
+        Ok(())
+    }
+
+    async fn allocate_new_collection_element_id(&self) -> anyhow::Result<Id<CollectionElement>> {
+        let pool = self.pool.0.clone();
+        let mut tx = pool.begin().await?;
+        // MAX(id) + 1 で採番
+        let max_id: Option<(i32,)> = sqlx::query_as("SELECT COALESCE(MAX(id), 0) FROM collection_elements")
+            .fetch_optional(&mut *tx)
+            .await?;
+        let next_id = max_id.map(|v| v.0).unwrap_or(0) + 1;
+        // 予約挿入（重複があればエラー）
+        query("INSERT INTO collection_elements (id) VALUES (?)")
+            .bind(next_id)
+            .execute(&mut *tx)
+            .await?;
+        tx.commit().await?;
+        Ok(Id::new(next_id))
+    }
+
+    async fn get_erogamescape_id_by_collection_id(
+        &self,
+        id: &Id<CollectionElement>,
+    ) -> anyhow::Result<Option<i32>> {
+        let pool = self.pool.0.clone();
+        let row: Option<(i32,)> = sqlx::query_as(
+            "SELECT erogamescape_id FROM collection_element_erogamescape_map WHERE collection_element_id = ?",
+        )
+        .bind(id.value)
+        .fetch_optional(&*pool)
+        .await?;
+        Ok(row.map(|v| v.0))
+    }
+
+    async fn get_collection_id_by_dmm_mapping(
+        &self,
+        store_id: &str,
+        category: &str,
+        subcategory: &str,
+    ) -> anyhow::Result<Option<Id<CollectionElement>>> {
+        let pool = self.pool.0.clone();
+        let row: Option<(i32,)> = sqlx::query_as(
+            "SELECT collection_element_id FROM collection_element_dmm WHERE store_id = ? AND category = ? AND subcategory = ?",
+        )
+        .bind(store_id)
+        .bind(category)
+        .bind(subcategory)
+        .fetch_optional(&*pool)
+        .await?;
+        Ok(row.map(|v| Id::new(v.0)))
+    }
+
+    async fn upsert_dmm_mapping(
+        &self,
+        collection_element_id: &Id<CollectionElement>,
+        store_id: &str,
+        category: &str,
+        subcategory: &str,
+    ) -> anyhow::Result<()> {
+        let pool = self.pool.0.clone();
+        sqlx::query(
+            "INSERT INTO collection_element_dmm (collection_element_id, store_id, category, subcategory) VALUES (?, ?, ?, ?)\n             ON CONFLICT(collection_element_id) DO UPDATE SET store_id = excluded.store_id, category = excluded.category, subcategory = excluded.subcategory, updated_at = CURRENT_TIMESTAMP",
+        )
+        .bind(collection_element_id.value)
+        .bind(store_id)
+        .bind(category)
+        .bind(subcategory)
+        .execute(&*pool)
+        .await?;
+        Ok(())
+    }
+
+    async fn get_collection_id_by_dlsite_mapping(
+        &self,
+        store_id: &str,
+        category: &str,
+    ) -> anyhow::Result<Option<Id<CollectionElement>>> {
+        let pool = self.pool.0.clone();
+        let row: Option<(i32,)> = sqlx::query_as(
+            "SELECT collection_element_id FROM collection_element_dlsite WHERE store_id = ? AND category = ?",
+        )
+        .bind(store_id)
+        .bind(category)
+        .fetch_optional(&*pool)
+        .await?;
+        Ok(row.map(|v| Id::new(v.0)))
+    }
+
+    async fn upsert_dlsite_mapping(
+        &self,
+        collection_element_id: &Id<CollectionElement>,
+        store_id: &str,
+        category: &str,
+    ) -> anyhow::Result<()> {
+        let pool = self.pool.0.clone();
+        sqlx::query(
+            "INSERT INTO collection_element_dlsite (collection_element_id, store_id, category) VALUES (?, ?, ?)\n             ON CONFLICT(collection_element_id) DO UPDATE SET store_id = excluded.store_id, category = excluded.category, updated_at = CURRENT_TIMESTAMP",
+        )
+        .bind(collection_element_id.value)
+        .bind(store_id)
+        .bind(category)
+        .execute(&*pool)
+        .await?;
+        Ok(())
     }
 }

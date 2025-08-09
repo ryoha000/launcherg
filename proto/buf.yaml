@@ -1,0 +1,17 @@
+version: v2
+modules:
+  - path: .
+    name: buf.build/launcherg/proto
+deps:
+  - buf.build/googleapis/googleapis
+lint:
+  use:
+    - BASIC
+    - COMMENTS
+    - FILE_LAYOUT
+  except:
+    - COMMENT_FIELD
+    - COMMENT_ENUM_VALUE
+breaking:
+  use:
+    - FILE

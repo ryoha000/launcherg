@@ -103,17 +103,26 @@
   let isOpenDelete = $state(false)
   let isOpenOtherInformation = $state(false)
   let isOpenQrCode = $state(false)
+
+  const handleInstall = async () => {
+    // DLStore廃止のため、Installは無効
+    showErrorToast('ストア連携によるインストールは利用できません')
+  }
 </script>
 
 {#await elementPromise then element}
-  <div class='flex items-center gap-4 flex-wrap w-full min-w-0'>
-    <PlayButton play={({ isAdmin }) => play(isAdmin)} />
+  <div class='min-w-0 w-full flex flex-wrap items-center gap-4'>
+    <PlayButton
+      gameStatus={element.installStatus}
+      play={({ isAdmin }) => play(isAdmin)}
+      install={handleInstall}
+    />
     <Button
       leftIcon='i-material-symbols-drive-file-rename-outline'
       text='Memo'
       onclick={() => goto(`/memos/${id}?gamename=${name}`)}
     />
-    <div class='flex items-center gap-2 ml-auto'>
+    <div class='ml-auto flex items-center gap-2'>
       <ButtonCancel
         icon='i-material-symbols-qr-code'
         onclick={() => (isOpenQrCode = true)}

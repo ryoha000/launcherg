@@ -49,7 +49,7 @@
   }
 </script>
 
-<div class='w-full min-w-0'>
+<div class='min-w-0 w-full'>
   <!-- svelte-ignore a11y_no_static_element_interactions -->
   <div
     use:simplebar

@@ -10,7 +10,7 @@
 </script>
 
 <div class='h-full w-full overflow-x-hidden overflow-y-auto'>
-  <div class='w-full min-h-0 flex justify-center'>
+  <div class='min-h-0 w-full flex justify-center'>
     {#key work.imgUrl}
       <WorkLayout {work} />
     {/key}

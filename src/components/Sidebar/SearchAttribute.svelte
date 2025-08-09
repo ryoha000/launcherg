@@ -14,7 +14,7 @@
 </script>
 
 <button
-  class='rounded-2xl border-(border-primary solid ~) p-(x-4 y-1) hover:(border-border-button-hover) transition-all'
+  class='border border-(border-primary solid) rounded-2xl p-(x-4 y-1) transition-all hover:(border-border-button-hover)'
   class:bg-transparent={!attribute.enabled}
   class:hover:bg-bg-button-hover={!attribute.enabled}
   class:bg-text-primary={attribute.enabled}
@@ -22,7 +22,7 @@
   {onclick}
 >
   <div
-    class='text-(body3) whitespace-nowrap font-medium'
+    class='whitespace-nowrap text-(body3) font-medium'
     class:text-text-primary={!attribute.enabled}
     class:text-bg-primary={attribute.enabled}
   >

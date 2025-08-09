@@ -2,9 +2,9 @@ use crate::domain::{
     collection::{
         CollectionElement, CollectionElementInfo, CollectionElementInstall, CollectionElementLike,
         CollectionElementPaths, CollectionElementPlay, CollectionElementThumbnail,
-        NewCollectionElement, NewCollectionElementInfo, NewCollectionElementInstall,
-        NewCollectionElementLike, NewCollectionElementPaths, NewCollectionElementPlay,
-        NewCollectionElementThumbnail,
+        CollectionElementErogamescape, NewCollectionElement, NewCollectionElementInfo, 
+        NewCollectionElementInstall, NewCollectionElementLike, NewCollectionElementPaths, 
+        NewCollectionElementPlay, NewCollectionElementThumbnail,
     },
     Id,
 };
@@ -94,4 +94,57 @@ pub trait CollectionRepository {
         height: i32,
     ) -> Result<()>;
     async fn get_null_thumbnail_size_element_ids(&self) -> Result<Vec<Id<CollectionElement>>>;
+
+    async fn get_element_erogamescape_by_element_id(
+        &self,
+        id: &Id<CollectionElement>,
+    ) -> Result<Option<CollectionElementErogamescape>>;
+
+    // EGS ID マッピング操作
+    async fn get_collection_id_by_erogamescape_id(
+        &self,
+        erogamescape_id: i32,
+    ) -> Result<Option<Id<CollectionElement>>>;
+    async fn upsert_erogamescape_map(
+        &self,
+        collection_element_id: &Id<CollectionElement>,
+        erogamescape_id: i32,
+    ) -> Result<()>;
+    // 正のIDを自前採番して即座に collection_elements に予約挿入する
+    async fn allocate_new_collection_element_id(&self) -> Result<Id<CollectionElement>>;
+
+    // 逆引き: collection_element_id -> erogamescape_id
+    async fn get_erogamescape_id_by_collection_id(
+        &self,
+        id: &Id<CollectionElement>,
+    ) -> Result<Option<i32>>;
+
+    // DMM / DLsite マッピング操作（Native Host用）
+    async fn get_collection_id_by_dmm_mapping(
+        &self,
+        store_id: &str,
+        category: &str,
+        subcategory: &str,
+    ) -> Result<Option<Id<CollectionElement>>>;
+
+    async fn upsert_dmm_mapping(
+        &self,
+        collection_element_id: &Id<CollectionElement>,
+        store_id: &str,
+        category: &str,
+        subcategory: &str,
+    ) -> Result<()>;
+
+    async fn get_collection_id_by_dlsite_mapping(
+        &self,
+        store_id: &str,
+        category: &str,
+    ) -> Result<Option<Id<CollectionElement>>>;
+
+    async fn upsert_dlsite_mapping(
+        &self,
+        collection_element_id: &Id<CollectionElement>,
+        store_id: &str,
+        category: &str,
+    ) -> Result<()>;
 }

@@ -43,7 +43,7 @@
   }
 </script>
 
-<div class='flex gap-2 items-end'>
+<div class='flex items-end gap-2'>
   <div class='flex-1'>
     <Input value={path} {label} {placeholder} on:update />
   </div>

@@ -20,6 +20,10 @@ Launchergは、Tauriベースのデスクトップアプリケーションで、
 - **SQLx + SQLite** - データベース
 - **Axum** - 内部HTTPサーバー
 
+## 通信プロトコル
+
+- 拡張機能 <-> native-messaging-host の通信する内容は ProtoBuf で定義されたものを使い、tauri 内の frontend(TypeScript) <-> backend(Rust) はJSONでやり取りする。
+
 ## CLIで実行するコマンド
 
 **重要**: Claude CodeはCLIで完結するコマンドのみを実行します。アプリケーションの起動（`npm run dev`、`npm run tauri dev`など）は実行しません。
@@ -127,7 +131,6 @@ npm run tauri build
 
 ### データベース
 - SQLiteを使用、マイグレーションは`src-tauri/migrations/`に配置
-- SQLxのオフラインモード（`.sqlx/`ディレクトリ）を使用
 
 ### 開発時の注意
 - TypeScriptは厳格モード有効

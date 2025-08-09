@@ -21,7 +21,7 @@
 </script>
 
 {#if isLandscape}
-  <div class='p-(x-8 y-8) w-full min-h-0 max-w-192 space-y-8'>
+  <div class='max-w-192 min-h-0 w-full p-(x-8 y-8) space-y-8'>
     <div class='w-full space-y-8'>
       <WorkImage name={work.name} src={work.imgUrl} />
       <WorkMain {work} />
@@ -29,7 +29,7 @@
     <Detail {work} />
   </div>
 {:else}
-  <div class='p-(x-8 y-8) w-full min-h-0 max-w-256 space-y-8'>
+  <div class='max-w-256 min-h-0 w-full p-(x-8 y-8) space-y-8'>
     <div
       class='grid grid-cols-[repeat(auto-fill,_minmax(320px,_1fr))] w-full gap-8'
     >

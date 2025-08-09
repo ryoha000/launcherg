@@ -3,6 +3,7 @@ use std::sync::Arc;
 use tauri::AppHandle;
 
 use crate::{
+    domain::pubsub::PubSubService,
     infrastructure::{
         explorerimpl::explorer::{Explorers, ExplorersExt},
         pubsubimpl::pubsub::{PubSub, PubSubExt},
@@ -14,14 +15,15 @@ use crate::{
     },
     usecase::{
         all_game_cache::AllGameCacheUseCase, collection::CollectionUseCase,
-        explored_cache::ExploredCacheUseCase, file::FileUseCase,
-        process::ProcessUseCase,
+        explored_cache::ExploredCacheUseCase, extension_manager::ExtensionManagerUseCase,
+        file::FileUseCase, process::ProcessUseCase,
     },
 };
 
 pub struct Modules {
     collection_use_case: CollectionUseCase<Repositories>,
     explored_cache_use_case: ExploredCacheUseCase<Repositories>,
+    extension_manager_use_case: ExtensionManagerUseCase<Repositories, PubSub>,
     file_use_case: FileUseCase<Explorers>,
     all_game_cache_use_case: AllGameCacheUseCase<Repositories>,
     process_use_case: ProcessUseCase<Windows>,
@@ -31,10 +33,11 @@ pub trait ModulesExt {
     type Repositories: RepositoriesExt;
     type Explorers: ExplorersExt;
     type Windows: WindowsExt;
-    type PubSub: PubSubExt;
+    type PubSub: PubSubExt + PubSubService;
 
     fn collection_use_case(&self) -> &CollectionUseCase<Self::Repositories>;
     fn explored_cache_use_case(&self) -> &ExploredCacheUseCase<Self::Repositories>;
+    fn extension_manager_use_case(&self) -> &ExtensionManagerUseCase<Self::Repositories, Self::PubSub>;
     fn all_game_cache_use_case(&self) -> &AllGameCacheUseCase<Self::Repositories>;
     fn file_use_case(&self) -> &FileUseCase<Self::Explorers>;
     fn process_use_case(&self) -> &ProcessUseCase<Self::Windows>;
@@ -52,6 +55,9 @@ impl ModulesExt for Modules {
     }
     fn explored_cache_use_case(&self) -> &ExploredCacheUseCase<Self::Repositories> {
         &self.explored_cache_use_case
+    }
+    fn extension_manager_use_case(&self) -> &ExtensionManagerUseCase<Self::Repositories, Self::PubSub> {
+        &self.extension_manager_use_case
     }
     fn all_game_cache_use_case(&self) -> &AllGameCacheUseCase<Self::Repositories> {
         &self.all_game_cache_use_case
@@ -78,6 +84,7 @@ impl Modules {
 
         let collection_use_case = CollectionUseCase::new(repositories.clone());
         let explored_cache_use_case = ExploredCacheUseCase::new(repositories.clone());
+        let extension_manager_use_case = ExtensionManagerUseCase::new(repositories.clone(), pubsub.clone());
         let all_game_cache_use_case: AllGameCacheUseCase<Repositories> =
             AllGameCacheUseCase::new(repositories.clone());
 
@@ -88,6 +95,7 @@ impl Modules {
         Self {
             collection_use_case,
             explored_cache_use_case,
+            extension_manager_use_case,
             all_game_cache_use_case,
             file_use_case,
             process_use_case,

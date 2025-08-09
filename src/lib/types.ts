@@ -1,5 +1,6 @@
 export interface Work {
   id: number
+  erogamescapeId?: number | null
   name: string
   brandId: number
   brandName: string
@@ -46,7 +47,8 @@ export interface Collection {
 }
 
 export interface CollectionElement {
-  id: number // Work.id と同じ
+  id: number // 内部ID（CollectionElementの自前採番ID）
+  erogamescapeId?: number | null
   gamename: string
   gamenameRuby: string
   brandname: string
@@ -63,7 +65,30 @@ export interface CollectionElement {
   thumbnail: string
   thumbnailWidth: number | null
   thumbnailHeight: number | null
+  // dlStore?: DLStoreInfo | null (廃止)
+  dmm?: DmmInfo | null
+  dlsite?: DlsiteInfo | null
+  installStatus: GameInstallStatus
+  canPlay: boolean
+  canInstall: boolean
 }
+
+// DLStoreInfo 廃止
+
+export interface DmmInfo {
+  id: number
+  collectionElementId: number
+  category: string
+  subcategory: string
+}
+
+export interface DlsiteInfo {
+  id: number
+  collectionElementId: number
+  category: string
+}
+
+export type GameInstallStatus = 'installed' | 'owned-not-installed' | 'not-owned'
 
 export interface CollectionElementsWithLabel {
   label: string

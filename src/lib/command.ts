@@ -121,6 +121,10 @@ export async function commandGetGameCandidates(filepath: string) {
   })
 }
 
+export async function commandGetGameCandidatesByName(gameName: string) {
+  return await invoke<[number, string][]>('get_game_candidates_by_name', { gameName })
+}
+
 export async function commandGetExePathByLnk(filepath: string) {
   return await invoke<string>('get_exe_path_by_lnk', {
     filepath,
@@ -206,4 +210,79 @@ export async function commandProcTailManagerStop() {
 
 export async function commandProcTailManagerIsRunning() {
   return await invoke<boolean>('proctail_manager_is_running')
+}
+
+export async function commandOpenStorePage(purchaseUrl: string) {
+  return await invoke<void>('open_store_page', { purchaseUrl })
+}
+
+export async function commandLinkInstalledGame(
+  collectionElementId: number,
+  exePath: string,
+) {
+  return await invoke<void>('link_installed_game', {
+    collectionElementId,
+    exePath,
+  })
+}
+
+// DLStore関連のコマンドは廃止
+
+// 拡張機能連携用の新しいコマンド
+
+export async function commandGetSyncStatus() {
+  return await invoke<any>('get_sync_status')
+}
+
+export async function commandSetExtensionConfig(config: any) {
+  return await invoke<void>('set_extension_config', { config })
+}
+
+// 拡張機能インストーラー関連の型定義
+interface ExtensionManifestInfo {
+  name: string
+  version: string
+  extension_id: string
+  description: string
+}
+
+interface ExtensionPackageInfo {
+  version: string
+  package_path: string
+  manifest_info: ExtensionManifestInfo
+}
+
+export async function commandGenerateExtensionPackage() {
+  return await invoke<ExtensionPackageInfo>('generate_extension_package')
+}
+
+export async function commandSetupNativeMessagingHost(options?: { extensionId?: string }) {
+  return await invoke<string>('setup_native_messaging_host', options || {})
+}
+
+export async function commandGetExtensionPackageInfo() {
+  return await invoke<ExtensionPackageInfo | null>('get_extension_package_info')
+}
+
+export async function commandCopyExtensionForDevelopment() {
+  return await invoke<string>('copy_extension_for_development')
+}
+
+export async function commandGetDevExtensionInfo() {
+  return await invoke<string | null>('get_dev_extension_info')
+}
+
+export interface RegistryKeyInfo {
+  browser: string
+  key_path: string
+  value: string | null
+  exists: boolean
+}
+
+export async function commandCheckRegistryKeys() {
+  return await invoke<RegistryKeyInfo[]>('check_registry_keys')
+}
+
+export async function commandRemoveRegistryKeys() {
+  return await invoke<string[]>('remove_registry_keys')
 }
