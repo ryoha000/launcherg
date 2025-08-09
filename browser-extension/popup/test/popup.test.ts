@@ -109,7 +109,7 @@ describe('popupController', () => {
       tabs: {
         query: vi.fn().mockResolvedValue([{
           id: 1,
-          url: 'https://games.dmm.co.jp/test',
+          url: 'https://dlsoft.dmm.co.jp/test',
           title: 'Test Page',
         }]),
         sendMessage: vi.fn().mockImplementation((tabId, message, callback) => {

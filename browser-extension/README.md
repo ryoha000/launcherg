@@ -31,7 +31,7 @@ Launchergアプリケーション用のブラウザ拡張機能です。DMM Game
 
 | サイト | URL | 抽出可能情報 | 備考 |
 |--------|-----|--------------|------|
-| **DMM Games** | games.dmm.co.jp | ゲームID, タイトル, 購入URL, サムネイル, 購入日 | 購入済みゲーム一覧ページ |
+| **DMM Games** | dlsoft.dmm.co.jp | ゲームID, タイトル, 購入URL, サムネイル, 購入日 | 購入済みゲーム一覧ページ |
 | **DLsite** | www.dlsite.com | 作品ID, タイトル, 購入URL, サムネイル, 購入日 | 購入済み作品一覧ページ |
 
 ### 将来対応予定
@@ -115,7 +115,7 @@ pnpm run build
    ```
 
 2. **対応サイトにアクセス**
-   - DMM Games: [購入済みゲーム一覧](https://games.dmm.co.jp/library)
+   - DMM Games: [購入済みゲーム一覧](https://dlsoft.dmm.co.jp/library)
    - DLsite: [購入済み作品一覧](https://play.dlsite.com/home/library)
 
 3. **自動同期を確認**
@@ -260,7 +260,7 @@ pnpm run dev
 ```json
 {
   "allowed_domains": [
-    "games.dmm.co.jp",
+    "dlsoft.dmm.co.jp",
     "www.dlsite.com",
     "custom-store.example.com"
   ]

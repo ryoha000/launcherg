@@ -548,7 +548,7 @@ class BackgroundService {
 
     // アクティブなタブでDMM/DLsiteのページがあるかチェック
     const tabs = await chrome.tabs.query({
-      url: ['https://games.dmm.co.jp/*', 'https://play.dlsite.com/*'],
+      url: ['https://dlsoft.dmm.co.jp/*', 'https://play.dlsite.com/*'],
     })
 
     for (const tab of tabs) {
@@ -575,7 +575,7 @@ class BackgroundService {
       }
       // 受信側がいない場合は対象サイトのコンテンツスクリプトを注入して再試行
       const files: string[] = []
-      if (tab.url.includes('games.dmm.co.jp'))
+      if (tab.url.includes('dlsoft.dmm.co.jp'))
         files.push('content-scripts/dmm-extractor.js')
       if (tab.url.includes('play.dlsite.com'))
         files.push('content-scripts/dlsite-extractor.js')
@@ -679,7 +679,7 @@ chrome.runtime.onInstalled.addListener((details) => {
 // タブ更新時の処理
 chrome.tabs.onUpdated.addListener((_tabId, changeInfo, tab) => {
   if (changeInfo.status === 'complete' && tab.url) {
-    const isDMMGames = tab.url.includes('games.dmm.co.jp')
+    const isDMMGames = tab.url.includes('dlsoft.dmm.co.jp')
     const isDLsite = tab.url.includes('dlsite.com')
 
     if (isDMMGames || isDLsite) {

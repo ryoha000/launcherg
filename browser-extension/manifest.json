@@ -13,7 +13,7 @@
     "scripting"
   ],
   "host_permissions": [
-    "https://games.dmm.co.jp/*",
+    "https://dlsoft.dmm.co.jp/*",
     "https://play.dlsite.com/*"
   ],
   "background": {
@@ -23,7 +23,7 @@
   "content_scripts": [
     {
       "matches": [
-        "https://games.dmm.co.jp/*"
+        "https://dlsoft.dmm.co.jp/*"
       ],
       "js": [
         "content-scripts/dmm-extractor.js"

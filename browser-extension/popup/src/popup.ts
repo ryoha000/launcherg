@@ -480,7 +480,7 @@ export class PopupController {
             {
               store_id: 'test_game_123',
               title: 'テストゲーム',
-              purchase_url: 'https://games.dmm.co.jp/game/test_game_123',
+              purchase_url: 'https://dlsoft.dmm.co.jp/game/test_game_123',
               purchase_date: '2025-01-30',
               thumbnail_url: 'https://example.com/thumbnail.jpg',
               additional_data: {
@@ -498,7 +498,7 @@ export class PopupController {
         type: 'set_config',
         payload: {
           auto_sync: true,
-          allowed_domains: ['games.dmm.co.jp', 'www.dlsite.com'],
+          allowed_domains: ['dlsoft.dmm.co.jp', 'www.dlsite.com'],
           sync_interval_minutes: 30,
           debug_mode: true,
         },
@@ -630,7 +630,7 @@ export class PopupController {
       }
 
       // タブのURLをチェック
-      const isDMMGames = currentTab.url?.includes('games.dmm.co.jp')
+      const isDMMGames = currentTab.url?.includes('dlsoft.dmm.co.jp')
       const isDLsite = currentTab.url?.includes('dlsite.com')
 
       if (!isDMMGames && !isDLsite) {

@@ -160,7 +160,7 @@ cargo build --release --bin native-messaging-host
   "type": "set_config",
   "payload": {
     "auto_sync": true,
-    "allowed_domains": ["games.dmm.co.jp"],
+    "allowed_domains": ["dlsoft.dmm.co.jp"],
     "sync_interval_minutes": 5,
     "debug_mode": false
   }

@@ -33,7 +33,7 @@
       {
         store_id: 'test_001',
         title: 'テストゲーム1',
-        purchase_url: 'https://games.dmm.co.jp/detail/test_001',
+        purchase_url: 'https://dlsoft.dmm.co.jp/detail/test_001',
         additional_data: {
           erogamescape_id: '12345',
         },
@@ -659,7 +659,7 @@
             <ul class='text-(sm text-secondary) space-y-1'>
               <li class='flex items-center gap-2'>
                 <div class='h-2 w-2 rounded-full bg-green-500'></div>
-                DMM Games (games.dmm.co.jp) - 購入済みゲーム一覧
+                DMM Games (dlsoft.dmm.co.jp) - 購入済みゲーム一覧
               </li>
               <li class='flex items-center gap-2'>
                 <div class='h-2 w-2 rounded-full bg-green-500'></div>

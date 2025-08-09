@@ -97,7 +97,7 @@ DMM Games と DLsite の購入済みゲームを自動的に Launcherg デスク
 ### 同期が動作しない
 
 1. **権限確認**
-   - DMM Games: `https://games.dmm.co.jp/*`
+   - DMM Games: `https://dlsoft.dmm.co.jp/*`
    - DLsite: `https://play.dlsite.com/*`
 
 2. **デバッグモード有効化**
