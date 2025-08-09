@@ -12,7 +12,8 @@ use tokio::io::{self as tokio_io, AsyncReadExt, AsyncWriteExt};
 use prost::Message;
  
 use serde_json;
-// interface層では直接sqlxなどのDBクライアントに依存しない
+use serde::Deserialize;
+use thiserror::Error;
  
 
 // プロトタイプを使用
@@ -29,6 +30,74 @@ enum RequestFormat {
     Protobuf,
     Json,
     JsonBuf,
+}
+
+// 共通エラー型（最小導入）
+type HostResult<T> = Result<T, HostError>;
+
+#[derive(Debug, Error)]
+enum HostError {
+    #[error("IO error: {0}")]
+    Io(#[from] std::io::Error),
+    #[error("Protobuf decode error: {0}")]
+    Decode(#[from] prost::DecodeError),
+    #[error("UTF-8 error: {0}")]
+    Utf8(#[from] std::str::Utf8Error),
+    #[error("JSON error: {0}")]
+    Json(#[from] serde_json::Error),
+    #[error("Message too large: {0} bytes (limit 1048576)")]
+    TooLarge(usize),
+    #[error("Protocol error: {0}")]
+    Protocol(String),
+}
+
+// エラーチェーンを1行の文字列に整形
+fn error_chain_to_string<E: std::error::Error + ?Sized>(err: &E) -> String {
+    let mut msgs = vec![err.to_string()];
+    let mut curr = err.source();
+    while let Some(src) = curr {
+        msgs.push(src.to_string());
+        curr = src.source();
+    }
+    msgs.join(": ")
+}
+
+// anyhow::Error 専用（chain() が使えるため安全）
+fn anyhow_chain_to_string(err: &anyhow::Error) -> String {
+    err.chain().map(|e| e.to_string()).collect::<Vec<_>>().join(": ")
+}
+
+// 4バイト長 + 本体のフレーミングを読み取り（None=EOF）
+async fn read_framed() -> HostResult<Option<Vec<u8>>> {
+    let mut stdin = tokio_io::stdin();
+
+    let mut length_bytes = [0u8; 4];
+    if let Err(e) = stdin.read_exact(&mut length_bytes).await {
+        if e.kind() == ErrorKind::UnexpectedEof {
+            return Ok(None);
+        }
+        return Err(HostError::Io(e));
+    }
+
+    let length = u32::from_le_bytes(length_bytes) as usize;
+    if length > 1024 * 1024 {
+        return Err(HostError::TooLarge(length));
+    }
+
+    let mut message_bytes = vec![0u8; length];
+    stdin.read_exact(&mut message_bytes).await?;
+    Ok(Some(message_bytes))
+}
+
+// 統一的なエラーレスポンス送信
+async fn send_error_response(request_id: &str, message: String, preferred_format: RequestFormat) -> Result<(), Box<dyn std::error::Error>> {
+    let response = NativeResponse {
+        success: false,
+        error: message,
+        request_id: request_id.to_string(),
+        response: None,
+    };
+    send_response_with_format(&response, preferred_format).await
 }
 
 #[tokio::main]
@@ -62,39 +131,18 @@ async fn main() {
 }
 
 async fn handle_message(ctx: &AppCtx) -> Result<bool, Box<dyn std::error::Error>> {
-    let mut stdin = tokio_io::stdin();
-
-    // メッセージ長を読み取り（4バイト、リトルエンディアン）
-    let mut length_bytes = [0u8; 4];
-    if let Err(e) = stdin.read_exact(&mut length_bytes).await {
-        if e.kind() == ErrorKind::UnexpectedEof {
-            // EOFの場合は正常終了
-            return Ok(false);
-        } else {
-            return Err(e.into());
+    // フレームを読み取り
+    let message_bytes = match read_framed().await {
+        Ok(Some(bytes)) => bytes,
+        Ok(None) => return Ok(false),
+        Err(HostError::TooLarge(length)) => {
+            let error_msg = format!("Message too large: {} bytes (limit 1048576)", length);
+            // 形式は拡張が既定で使用するBuf JSONに合わせる
+            send_error_response("", error_msg, RequestFormat::JsonBuf).await?;
+            return Ok(true);
         }
-    }
-    
-    let length = u32::from_le_bytes(length_bytes) as usize;
-    
-    // セキュリティチェック
-    if length > 1024 * 1024 { // 1MB制限
-        // サイズ超過はエラー応答を返して継続
-        let error_msg = format!("Message too large: {} bytes (limit 1048576)", length);
-        let response = NativeResponse {
-            success: false,
-            error: error_msg,
-            request_id: String::new(),
-            response: None,
-        };
-        // 形式は拡張が既定で使用するBuf JSONに合わせる
-        send_response_with_format(&response, RequestFormat::JsonBuf).await?;
-        return Ok(true);
-    }
-    
-    // メッセージ本体を読み取り
-    let mut message_bytes = vec![0u8; length];
-    stdin.read_exact(&mut message_bytes).await?;
+        Err(e) => return Err(e.into()),
+    };
     
     // リクエスト形式を判定し、メッセージをパース
     let (message, format) = match parse_message(&message_bytes) {
@@ -110,13 +158,7 @@ async fn handle_message(ctx: &AppCtx) -> Result<bool, Box<dyn std::error::Error>
                 }
             }
 
-            let response = NativeResponse {
-                success: false,
-                error: err.to_string(),
-                request_id,
-                response: None,
-            };
-            send_response_with_format(&response, RequestFormat::JsonBuf).await?;
+            send_error_response(&request_id, err.to_string(), RequestFormat::JsonBuf).await?;
             return Ok(true);
         }
     };
@@ -167,14 +209,7 @@ async fn handle_sync_dmm_games(ctx: &AppCtx, request: &DmmSyncGamesRequest, requ
             NativeResponse { success: true, error: String::new(), request_id: request_id.to_string(), response: Some(native_response::Response::SyncGamesResult(result)) }
         }
         Err(e) => {
-            // 例外チェーンのメッセージも含めて詳細を返す
-            let mut msgs = vec![e.to_string()];
-            let mut src = e.source();
-            while let Some(s) = src {
-                msgs.push(s.to_string());
-                src = s.source();
-            }
-            let err_msg = msgs.join(": ");
+            let err_msg = anyhow_chain_to_string(&e);
             log::error!("sync_dmm_games failed: {}", err_msg);
 
             let result = SyncBatchResult {
@@ -208,13 +243,7 @@ async fn handle_sync_dlsite_games(ctx: &AppCtx, request: &DlsiteSyncGamesRequest
             NativeResponse { success: true, error: String::new(), request_id: request_id.to_string(), response: Some(native_response::Response::SyncGamesResult(result)) }
         }
         Err(e) => {
-            let mut msgs = vec![e.to_string()];
-            let mut src = e.source();
-            while let Some(s) = src {
-                msgs.push(s.to_string());
-                src = s.source();
-            }
-            let err_msg = msgs.join(": ");
+            let err_msg = anyhow_chain_to_string(&e);
             log::error!("sync_dlsite_games failed: {}", err_msg);
 
             let result = SyncBatchResult {
@@ -253,25 +282,14 @@ fn handle_get_status(_request: &GetStatusRequest, request_id: &str) -> NativeRes
 }
 
 fn handle_set_config(config: &ExtensionConfig, request_id: &str) -> NativeResponse {
-    let domain_config = crate::domain::extension::ExtensionConfig {
-        auto_sync: config.auto_sync,
-        allowed_domains: config.allowed_domains.clone(),
-        sync_interval_minutes: config.sync_interval_minutes,
-        debug_mode: config.debug_mode,
-    };
+    let domain_config = convert_proto_config(config);
     match native_host::save_config(&domain_config) {
         Ok(_) => {
             let msg = "Config updated successfully".to_string();
             NativeResponse { success: true, error: String::new(), request_id: request_id.to_string(), response: Some(native_response::Response::ConfigResult(ConfigUpdateResult { message: msg })) }
         }
         Err(e) => {
-            let mut msgs = vec![e.to_string()];
-            let mut src = e.source();
-            while let Some(s) = src {
-                msgs.push(s.to_string());
-                src = s.source();
-            }
-            let err_msg = msgs.join(": ");
+            let err_msg = anyhow_chain_to_string(&e);
             let msg = format!("Failed to save config: {}", err_msg);
             NativeResponse { success: false, error: err_msg, request_id: request_id.to_string(), response: Some(native_response::Response::ConfigResult(ConfigUpdateResult { message: msg })) }
         }
@@ -292,7 +310,7 @@ fn handle_health_check(_request: &HealthCheckRequest, request_id: &str) -> Nativ
     }
 }
 
-fn parse_message(message_bytes: &[u8]) -> Result<(NativeMessage, RequestFormat), Box<dyn std::error::Error>> {
+fn parse_message(message_bytes: &[u8]) -> HostResult<(NativeMessage, RequestFormat)> {
     // まずProtoBufとして直接パースを試みる
     if let Ok(message) = NativeMessage::decode(message_bytes) {
         log::info!("Parsed as raw ProtoBuf message");
@@ -300,8 +318,7 @@ fn parse_message(message_bytes: &[u8]) -> Result<(NativeMessage, RequestFormat),
     }
 
     // JSONとしてパース
-    let json_str = std::str::from_utf8(message_bytes)
-        .map_err(|e| format!("Failed to parse message as UTF-8: {}", e))?;
+    let json_str = std::str::from_utf8(message_bytes)?;
 
     // 1) Prost互換JSON（oneofはフィールド名で表現）
     if let Ok(message) = serde_json::from_str::<NativeMessage>(json_str) {
@@ -309,59 +326,57 @@ fn parse_message(message_bytes: &[u8]) -> Result<(NativeMessage, RequestFormat),
         return Ok((message, RequestFormat::Json));
     }
 
-    // 2) buf.build互換(case/value) 形式
-    let v: serde_json::Value = serde_json::from_str(json_str)
-        .map_err(|e| format!("Failed to parse JSON(Value): {}", e))?;
-    let request_id = v.get("requestId").and_then(|x| x.as_str()).unwrap_or("").to_string();
-    let msg = v.get("message").and_then(|m| m.as_object()).ok_or("message not found")?;
-    let case = msg.get("case").and_then(|c| c.as_str()).unwrap_or("");
-    let value = msg.get("value").cloned().unwrap_or(serde_json::json!({}));
+    // 2) buf.build互換(case/value) 形式（構造体としてパース）
+    #[derive(Debug, Deserialize, Default)]
+    struct BufDmmGame { #[serde(default)] id: String, #[serde(default)] category: String, #[serde(default)] subcategory: String }
+    #[derive(Debug, Deserialize, Default)]
+    struct BufDlsiteGame { #[serde(default)] id: String, #[serde(default)] category: String }
+    #[derive(Debug, Deserialize, Default)]
+    struct BufExtensionConfig {
+        #[serde(default, rename = "autoSync")] auto_sync: bool,
+        #[serde(default, rename = "allowedDomains")] allowed_domains: Vec<String>,
+        #[serde(default, rename = "syncIntervalMinutes")] sync_interval_minutes: u32,
+        #[serde(default, rename = "debugMode")] debug_mode: bool,
+    }
+    #[derive(Debug, Deserialize)]
+    #[serde(tag = "case", content = "value")]
+    enum BufCase {
+        #[serde(rename = "syncDmmGames")] SyncDmmGames { #[serde(default)] games: Vec<BufDmmGame>, #[serde(default, rename = "extensionId")] extension_id: String },
+        #[serde(rename = "syncDlsiteGames")] SyncDlsiteGames { #[serde(default)] games: Vec<BufDlsiteGame>, #[serde(default, rename = "extensionId")] extension_id: String },
+        #[serde(rename = "getStatus")] GetStatus {},
+        #[serde(rename = "setConfig")] SetConfig(#[serde(default)] BufExtensionConfig),
+        #[serde(rename = "healthCheck")] HealthCheck {},
+    }
+    #[derive(Debug, Deserialize)]
+    struct BufEnvelope { #[serde(default, rename = "requestId")] request_id: String, message: BufCase }
+
+    let env: BufEnvelope = serde_json::from_str(json_str)?;
 
     let now = chrono::Utc::now().timestamp();
     let timestamp = Some(pbjson_types::Timestamp { seconds: now, nanos: 0 });
 
-    let nm = match case {
-        "syncDmmGames" => {
-            let games = value.get("games").and_then(|g| g.as_array()).cloned().unwrap_or_default();
-            let mut list = Vec::new();
-            for g in games.into_iter() {
-                let id = g.get("id").and_then(|s| s.as_str()).unwrap_or("").to_string();
-                let category = g.get("category").and_then(|s| s.as_str()).unwrap_or("").to_string();
-                let subcategory = g.get("subcategory").and_then(|s| s.as_str()).unwrap_or("").to_string();
-                list.push(DmmGame { id, category, subcategory });
-            }
-            let extension_id = value.get("extensionId").and_then(|s| s.as_str()).unwrap_or("").to_string();
-            NativeMessage { timestamp, request_id: request_id.clone(), message: Some(native_message::Message::SyncDmmGames(DmmSyncGamesRequest { games: list, extension_id })) }
+    let nm = match env.message {
+        BufCase::SyncDmmGames { games, extension_id } => {
+            let list = games.into_iter().map(|g| DmmGame { id: g.id, category: g.category, subcategory: g.subcategory }).collect();
+            NativeMessage { timestamp, request_id: env.request_id.clone(), message: Some(native_message::Message::SyncDmmGames(DmmSyncGamesRequest { games: list, extension_id })) }
         }
-        "syncDlsiteGames" => {
-            let games = value.get("games").and_then(|g| g.as_array()).cloned().unwrap_or_default();
-            let mut list = Vec::new();
-            for g in games.into_iter() {
-                let id = g.get("id").and_then(|s| s.as_str()).unwrap_or("").to_string();
-                let category = g.get("category").and_then(|s| s.as_str()).unwrap_or("").to_string();
-                list.push(DlsiteGame { id, category });
-            }
-            let extension_id = value.get("extensionId").and_then(|s| s.as_str()).unwrap_or("").to_string();
-            NativeMessage { timestamp, request_id: request_id.clone(), message: Some(native_message::Message::SyncDlsiteGames(DlsiteSyncGamesRequest { games: list, extension_id })) }
+        BufCase::SyncDlsiteGames { games, extension_id } => {
+            let list = games.into_iter().map(|g| DlsiteGame { id: g.id, category: g.category }).collect();
+            NativeMessage { timestamp, request_id: env.request_id.clone(), message: Some(native_message::Message::SyncDlsiteGames(DlsiteSyncGamesRequest { games: list, extension_id })) }
         }
-        "getStatus" => {
-            NativeMessage { timestamp, request_id: request_id.clone(), message: Some(native_message::Message::GetStatus(GetStatusRequest {})) }
+        BufCase::GetStatus {} => {
+            NativeMessage { timestamp, request_id: env.request_id.clone(), message: Some(native_message::Message::GetStatus(GetStatusRequest {})) }
         }
-        "setConfig" => {
-            let auto_sync = value.get("autoSync").and_then(|b| b.as_bool()).unwrap_or(false);
-            let debug_mode = value.get("debugMode").and_then(|b| b.as_bool()).unwrap_or(false);
-            let sync_interval_minutes = value.get("syncIntervalMinutes").and_then(|n| n.as_u64()).unwrap_or(0) as u32;
-            let allowed_domains = value.get("allowedDomains").and_then(|a| a.as_array()).map(|arr| arr.iter().filter_map(|s| s.as_str().map(|ss| ss.to_string())).collect()).unwrap_or_else(|| Vec::new());
-            let cfg = ExtensionConfig { auto_sync, allowed_domains, sync_interval_minutes, debug_mode };
-            NativeMessage { timestamp, request_id: request_id.clone(), message: Some(native_message::Message::SetConfig(cfg)) }
+        BufCase::SetConfig(cfg) => {
+            let cfg = ExtensionConfig { auto_sync: cfg.auto_sync, allowed_domains: cfg.allowed_domains, sync_interval_minutes: cfg.sync_interval_minutes, debug_mode: cfg.debug_mode };
+            NativeMessage { timestamp, request_id: env.request_id.clone(), message: Some(native_message::Message::SetConfig(cfg)) }
         }
-        "healthCheck" => {
-            NativeMessage { timestamp, request_id: request_id.clone(), message: Some(native_message::Message::HealthCheck(HealthCheckRequest {})) }
+        BufCase::HealthCheck {} => {
+            NativeMessage { timestamp, request_id: env.request_id.clone(), message: Some(native_message::Message::HealthCheck(HealthCheckRequest {})) }
         }
-        _ => return Err(format!("unsupported message case: {}", case).into()),
     };
 
-    log::info!("Parsed as JSON(buf case/value) message: {}", case);
+    log::info!("Parsed as JSON(buf case/value) message");
     Ok((nm, RequestFormat::JsonBuf))
 }
 
@@ -462,5 +477,3 @@ fn convert_proto_config(cfg: &ExtensionConfig) -> crate::domain::extension::Exte
         debug_mode: cfg.debug_mode,
     }
 }
-
-// 以降の低レベルSQL関数はUseCase/Repositoryに移譲したため存在しません
