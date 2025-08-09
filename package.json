@@ -13,7 +13,7 @@
     "tauri": "tauri",
     "precommit": "npm run check && npm run typecheck:extension && npm run format && npm run lint",
     "typecheck:extension": "pnpm -C browser-extension run typecheck",
-    "build:extension": "cd browser-extension && pnpm run build",
+    "build:extension": "cd browser-extension && pnpm run build && cd ../ && node scripts/build-native-host.js",
     "cargo-test-local:proctail": "cd src-tauri && cargo test infrastructure::windowsimpl::proctail_test::tests -- --nocapture --ignored --test-threads=1",
     "build:native-host": "node scripts/build-native-host.js",
     "build:native-host:debug": "node scripts/build-native-host.js --debug"
