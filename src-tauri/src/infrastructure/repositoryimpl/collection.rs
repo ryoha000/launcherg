@@ -5,7 +5,7 @@ use super::{
     models::collection::{
         CollectionElementInfoTable, CollectionElementInstallTable, CollectionElementLikeTable,
         CollectionElementPathsTable, CollectionElementPlayTable, CollectionElementTable,
-        CollectionElementThumbnailTable, CollectionElementDLStoreTable,
+        CollectionElementThumbnailTable,
     },
     repository::RepositoryImpl,
 };
@@ -13,10 +13,9 @@ use crate::domain::{
     collection::{
         CollectionElement, CollectionElementInfo, CollectionElementInstall, CollectionElementLike,
         CollectionElementPaths, CollectionElementPlay, CollectionElementThumbnail,
-        CollectionElementDLStore, NewCollectionElement, NewCollectionElementInfo, 
+        NewCollectionElement, NewCollectionElementInfo, 
         NewCollectionElementInstall, NewCollectionElementLike, NewCollectionElementPaths, 
-        NewCollectionElementPlay, NewCollectionElementThumbnail, NewCollectionElementDLStore,
-        DLStoreType,
+        NewCollectionElementPlay, NewCollectionElementThumbnail,
     },
     repository::collection::CollectionRepository,
     Id,
@@ -44,9 +43,6 @@ impl CollectionRepository for RepositoryImpl<CollectionElement> {
             element.thumbnail = self
                 .get_element_thumbnail_by_element_id(&element_id)
                 .await?;
-            element.dl_store = self
-                .get_element_dl_store_by_element_id(&element_id)
-                .await?;
             // EGS マッピング
             element.erogamescape = self.get_element_erogamescape_by_element_id(&element_id).await?;
 
@@ -70,7 +66,6 @@ impl CollectionRepository for RepositoryImpl<CollectionElement> {
                 cei_play.id as play_id, cei_play.last_play_at, cei_play.created_at as play_created_at, cei_play.updated_at as play_updated_at,
                 cei_like.id as like_id, cei_like.like_at, cei_like.created_at as like_created_at, cei_like.updated_at as like_updated_at,
                 cet.id as thumbnail_id, cet.thumbnail_width, cet.thumbnail_height, cet.created_at as thumbnail_created_at, cet.updated_at as thumbnail_updated_at,
-                ceds.id as dl_store_id, ceds.store_id as dl_store_store_id, ceds.store_type as dl_store_store_type, ceds.store_name as dl_store_store_name, ceds.purchase_url as dl_store_purchase_url, ceds.is_owned as dl_store_is_owned, ceds.purchase_date as dl_store_purchase_date, ceds.created_at as dl_store_created_at, ceds.updated_at as dl_store_updated_at,
                 cee.id as egs_id, cee.erogamescape_id as egs_erogamescape_id, cee.created_at as egs_created_at, cee.updated_at as egs_updated_at
             FROM collection_elements ce
             LEFT JOIN collection_element_info_by_erogamescape cei ON ce.id = cei.collection_element_id
@@ -79,7 +74,7 @@ impl CollectionRepository for RepositoryImpl<CollectionElement> {
             LEFT JOIN collection_element_plays cei_play ON ce.id = cei_play.collection_element_id
             LEFT JOIN collection_element_likes cei_like ON ce.id = cei_like.collection_element_id
             LEFT JOIN collection_element_thumbnails cet ON ce.id = cet.collection_element_id
-            LEFT JOIN collection_element_dl_stores ceds ON ce.id = ceds.collection_element_id
+            -- DLStore廃止
             LEFT JOIN collection_element_erogamescape_map cee ON ce.id = cee.collection_element_id
             WHERE ce.id = ?"
         )
@@ -210,34 +205,7 @@ impl CollectionRepository for RepositoryImpl<CollectionElement> {
             None
         };
 
-        // DL版情報（JOINで取得）
-        element.dl_store = if let Some(dl_store_id) = row.get::<Option<i32>, _>("dl_store_id") {
-            let store_type_str: Option<String> = row.get("dl_store_store_type");
-            let store_type = match store_type_str.as_deref() {
-                Some("DMM") => DLStoreType::DMM,
-                Some("DLSite") => DLStoreType::DLSite,
-                _ => DLStoreType::DMM,
-            };
-            Some(CollectionElementDLStore::new(
-                Id::new(dl_store_id),
-                id.clone(),
-                row.get("dl_store_store_id"),
-                store_type,
-                row.get("dl_store_store_name"),
-                row.get("dl_store_purchase_url"),
-                row.get::<i32, _>("dl_store_is_owned") != 0,
-                row.get::<Option<chrono::NaiveDateTime>, _>("dl_store_purchase_date")
-                    .map(|dt| dt.and_utc().with_timezone(&chrono::Local)),
-                row.get::<chrono::NaiveDateTime, _>("dl_store_created_at")
-                    .and_utc()
-                    .with_timezone(&chrono::Local),
-                row.get::<chrono::NaiveDateTime, _>("dl_store_updated_at")
-                    .and_utc()
-                    .with_timezone(&chrono::Local),
-            ))
-        } else {
-            None
-        };
+        // DLStore廃止
         // EGS マッピング（JOINで取得）
         element.erogamescape = if let Some(egs_row_id) = row.get::<Option<i32>, _>("egs_id") {
             Some(crate::domain::collection::CollectionElementErogamescape::new(
@@ -607,59 +575,6 @@ impl CollectionRepository for RepositoryImpl<CollectionElement> {
         Ok(ids.into_iter().map(|v| Id::new(v.0)).collect())
     }
 
-    // CollectionElementDLStore操作
-    async fn upsert_collection_element_dl_store(
-        &self,
-        dl_store: &NewCollectionElementDLStore,
-    ) -> anyhow::Result<()> {
-        let pool = self.pool.0.clone();
-        let store_type_str = match dl_store.store_type {
-            DLStoreType::DMM => "DMM",
-            DLStoreType::DLSite => "DLSite",
-        };
-        
-        query(
-            "INSERT INTO collection_element_dl_stores 
-             (collection_element_id, store_id, store_type, store_name, purchase_url, is_owned, purchase_date)
-             VALUES (?, ?, ?, ?, ?, ?, ?)
-             ON CONFLICT(collection_element_id, store_id, store_type) 
-             DO UPDATE SET 
-                store_name = excluded.store_name,
-                purchase_url = excluded.purchase_url,
-                is_owned = excluded.is_owned,
-                purchase_date = excluded.purchase_date,
-                updated_at = CURRENT_TIMESTAMP"
-        )
-        .bind(dl_store.collection_element_id.value)
-        .bind(&dl_store.store_id)
-        .bind(store_type_str)
-        .bind(&dl_store.store_name)
-        .bind(&dl_store.purchase_url)
-        .bind(dl_store.is_owned)
-        .bind(dl_store.purchase_date)
-        .execute(&*pool)
-        .await?;
-        Ok(())
-    }
-
-    async fn get_element_dl_store_by_element_id(
-        &self,
-        id: &Id<CollectionElement>,
-    ) -> anyhow::Result<Option<CollectionElementDLStore>> {
-        let pool = self.pool.0.clone();
-        let dl_store = query_as::<_, CollectionElementDLStoreTable>(
-            "SELECT * FROM collection_element_dl_stores WHERE collection_element_id = ?"
-        )
-        .bind(id.value)
-        .fetch_optional(&*pool)
-        .await?;
-
-        match dl_store {
-            Some(dl_store) => Ok(Some(dl_store.try_into()?)),
-            None => Ok(None),
-        }
-    }
-
     async fn get_element_erogamescape_by_element_id(
         &self,
         id: &Id<CollectionElement>,
@@ -674,98 +589,6 @@ impl CollectionRepository for RepositoryImpl<CollectionElement> {
         Ok(row.map(|t| t.try_into()).transpose()?)
     }
 
-    async fn get_element_dl_store_by_store_id(
-        &self,
-        store_id: &str,
-        store_type: &DLStoreType,
-    ) -> anyhow::Result<Option<CollectionElementDLStore>> {
-        let pool = self.pool.0.clone();
-        let store_type_str = match store_type {
-            DLStoreType::DMM => "DMM",
-            DLStoreType::DLSite => "DLSite",
-        };
-
-        let dl_store = query_as::<_, CollectionElementDLStoreTable>(
-            "SELECT * FROM collection_element_dl_stores WHERE store_id = ? AND store_type = ?"
-        )
-        .bind(store_id)
-        .bind(store_type_str)
-        .fetch_optional(&*pool)
-        .await?;
-
-        match dl_store {
-            Some(dl_store) => Ok(Some(dl_store.try_into()?)),
-            None => Ok(None),
-        }
-    }
-
-    async fn update_collection_element_dl_store(
-        &self,
-        dl_store: &CollectionElementDLStore,
-    ) -> anyhow::Result<()> {
-        let pool = self.pool.0.clone();
-
-        query(
-            "UPDATE collection_element_dl_stores 
-             SET store_name = ?, purchase_url = ?, is_owned = ?, purchase_date = ?, updated_at = CURRENT_TIMESTAMP
-             WHERE id = ?"
-        )
-        .bind(&dl_store.store_name)
-        .bind(&dl_store.purchase_url)
-        .bind(dl_store.is_owned)
-        .bind(dl_store.purchase_date)
-        .bind(dl_store.id.value)
-        .execute(&*pool)
-        .await?;
-        Ok(())
-    }
-
-    async fn delete_collection_element_dl_store(
-        &self,
-        id: &Id<CollectionElementDLStore>,
-    ) -> anyhow::Result<()> {
-        let pool = self.pool.0.clone();
-        query("DELETE FROM collection_element_dl_stores WHERE id = ?")
-            .bind(id.value)
-            .execute(&*pool)
-            .await?;
-        Ok(())
-    }
-
-    async fn get_uninstalled_owned_games(&self) -> anyhow::Result<Vec<CollectionElement>> {
-        let pool = self.pool.0.clone();
-        let elements = query_as::<_, CollectionElementTable>(
-            "SELECT ce.* FROM collection_elements ce
-             INNER JOIN collection_element_dl_stores ceds ON ce.id = ceds.collection_element_id
-             LEFT JOIN collection_element_paths cep ON ce.id = cep.collection_element_id
-             WHERE ceds.is_owned = 1 
-             AND (cep.exe_path IS NULL AND cep.lnk_path IS NULL)"
-        )
-        .fetch_all(&*pool)
-        .await?;
-
-        let mut result = Vec::new();
-        for element_table in elements {
-            let element_id = Id::new(element_table.id);
-            let mut element: CollectionElement = element_table.try_into()?;
-
-            // 関連データを取得して設定
-            element.info = self.get_element_info_by_element_id(&element_id).await?;
-            element.paths = self.get_element_paths_by_element_id(&element_id).await?;
-            element.install = self.get_element_install_by_element_id(&element_id).await?;
-            element.play = self.get_element_play_by_element_id(&element_id).await?;
-            element.like = self.get_element_like_by_element_id(&element_id).await?;
-            element.thumbnail = self
-                .get_element_thumbnail_by_element_id(&element_id)
-                .await?;
-            element.dl_store = self
-                .get_element_dl_store_by_element_id(&element_id)
-                .await?;
-
-            result.push(element);
-        }
-        Ok(result)
-    }
 
     // EGS ID マッピング操作
     async fn get_collection_id_by_erogamescape_id(

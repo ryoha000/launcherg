@@ -21,7 +21,7 @@ use crate::infrastructure::windowsimpl::proctail_manager::{
 };
 use crate::{
     domain::{
-        collection::{NewCollectionElement, ScannedGameElement, DLStoreType},
+        collection::{NewCollectionElement, ScannedGameElement},
         distance::get_comparable_distance,
         file::{get_file_created_at_sync, normalize},
         pubsub::{ProgressLivePayload, ProgressPayload, PubSubService},
@@ -725,30 +725,6 @@ pub async fn proctail_manager_is_running(
         .await?)
 }
 
-// DL版ゲーム管理機能のTauriコマンド
-
-#[tauri::command]
-pub async fn register_dl_store_game(
-    modules: State<'_, Arc<Modules>>,
-    store_type: String,
-    store_id: String,
-    erogamescape_id: Option<i32>,
-    purchase_url: String,
-) -> anyhow::Result<i32, CommandError> {
-    let store_type = match store_type.as_str() {
-        "DMM" => DLStoreType::DMM,
-        "DLSite" => DLStoreType::DLSite,
-        _ => return Err(anyhow::anyhow!("Invalid store type").into()),
-    };
-
-    let collection_element_id = modules
-        .collection_use_case()
-        .register_dl_store_game(store_type, store_id, erogamescape_id, purchase_url)
-        .await?;
-
-    Ok(collection_element_id.value)
-}
-
 #[tauri::command]
 pub async fn open_store_page(handle: AppHandle, purchase_url: String) -> anyhow::Result<(), CommandError> {
     #[allow(deprecated)]
@@ -772,32 +748,6 @@ pub async fn link_installed_game(
     Ok(())
 }
 
-#[tauri::command]
-pub async fn get_uninstalled_owned_games(
-    modules: State<'_, Arc<Modules>>,
-    handle: AppHandle,
-) -> anyhow::Result<Vec<CollectionElement>, CommandError> {
-    let games = modules
-        .collection_use_case()
-        .get_uninstalled_owned_games()
-        .await?;
-    
-    let handle = Arc::new(handle);
-    Ok(games.into_iter().map(|g| CollectionElement::from_domain(&handle, g)).collect())
-}
-
-#[tauri::command]
-pub async fn update_dl_store_ownership(
-    modules: State<'_, Arc<Modules>>,
-    dl_store_id: i32,
-    is_owned: bool,
-) -> anyhow::Result<(), CommandError> {
-    modules
-        .collection_use_case()
-        .update_dl_store_ownership(Id::new(dl_store_id), is_owned)
-        .await?;
-    Ok(())
-}
 
 // バッチ同期とステータス管理のコマンド
 

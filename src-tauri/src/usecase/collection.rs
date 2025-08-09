@@ -9,7 +9,6 @@ use crate::{
     domain::{
         collection::{
             CollectionElement, NewCollectionElement, ScannedGameElement, 
-            NewCollectionElementDLStore, CollectionElementDLStore, DLStoreType, 
             NewCollectionElementPaths
         },
         file::{get_icon_path, get_thumbnail_path, save_thumbnail},
@@ -338,67 +337,6 @@ impl<R: RepositoriesExt> CollectionUseCase<R> {
             .await
     }
 
-    // DL版ゲーム管理機能
-    pub async fn register_dl_store_game(
-        &self,
-        store_type: DLStoreType,
-        store_id: String,
-        erogamescape_id: Option<i32>,
-        purchase_url: String,
-    ) -> anyhow::Result<Id<CollectionElement>> {
-        // 既存のDL版ゲーム情報を検索
-        if let Some(_existing) = self
-            .repositories
-            .collection_repository()
-            .get_element_dl_store_by_store_id(&store_id, &store_type)
-            .await?
-        {
-            return Err(anyhow::anyhow!("このストアIDは既に登録されています"));
-        }
-
-        // collection_element_id を決定
-        let collection_element_id = {
-            let repo = self.repositories.collection_repository();
-            if let Some(egs_id) = erogamescape_id {
-                if let Ok(Some(mapped)) = repo.get_collection_id_by_erogamescape_id(egs_id).await
-                {
-                    mapped
-                } else {
-                    let new_id = repo.allocate_new_collection_element_id().await?;
-                    // ベース行は allocate 時に作成済み、map を作成
-                    repo.upsert_erogamescape_map(&new_id, egs_id).await?;
-                    new_id
-                }
-            } else {
-                // EGS未連携の新規エントリ
-                repo.allocate_new_collection_element_id().await?
-            }
-        };
-
-        // DL版情報を登録
-        let store_name = match store_type {
-            DLStoreType::DMM => "DMM Games",
-            DLStoreType::DLSite => "DLsite",
-        };
-
-        let dl_store = NewCollectionElementDLStore::new(
-            collection_element_id.clone(),
-            store_id,
-            store_type,
-            store_name.to_string(),
-            purchase_url,
-            true, // is_owned
-            None, // purchase_date (現在は手動登録のため不明)
-        );
-
-        self.repositories
-            .collection_repository()
-            .upsert_collection_element_dl_store(&dl_store)
-            .await?;
-
-        Ok(collection_element_id)
-    }
-
     pub async fn link_installed_game(
         &self,
         collection_element_id: Id<CollectionElement>,
@@ -413,34 +351,6 @@ impl<R: RepositoriesExt> CollectionUseCase<R> {
         self.repositories
             .collection_repository()
             .upsert_collection_element_paths(&paths)
-            .await?;
-
-        Ok(())
-    }
-
-    pub async fn get_uninstalled_owned_games(&self) -> anyhow::Result<Vec<CollectionElement>> {
-        self.repositories
-            .collection_repository()
-            .get_uninstalled_owned_games()
-            .await
-    }
-
-    pub async fn update_dl_store_ownership(
-        &self,
-        id: Id<CollectionElementDLStore>,
-        is_owned: bool,
-    ) -> anyhow::Result<()> {
-        let mut dl_store = self.repositories
-            .collection_repository()
-            .get_element_dl_store_by_element_id(&Id::new(id.value))
-            .await?
-            .ok_or(anyhow::anyhow!("DL store not found"))?;
-
-        dl_store.is_owned = is_owned;
-        
-        self.repositories
-            .collection_repository()
-            .update_collection_element_dl_store(&dl_store)
             .await?;
 
         Ok(())

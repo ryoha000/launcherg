@@ -6,7 +6,7 @@ use crate::domain::{
     collection::{
         CollectionElement, CollectionElementInfo, CollectionElementInstall, CollectionElementLike,
         CollectionElementPaths, CollectionElementPlay, CollectionElementThumbnail,
-        CollectionElementDLStore, DLStoreType, CollectionElementErogamescape,
+        CollectionElementErogamescape,
     },
     Id,
 };
@@ -116,7 +116,8 @@ impl TryFrom<CollectionElementTable> for CollectionElement {
             None, // play は別途取得
             None, // like は別途取得
             None, // thumbnail は別途取得
-            None, // dl_store は別途取得
+            None, // dmm は別途取得
+            None, // dlsite は別途取得
             None, // erogamescape は別途取得
         ))
     }
@@ -207,30 +208,7 @@ impl TryFrom<CollectionElementThumbnailTable> for CollectionElementThumbnail {
     }
 }
 
-impl TryFrom<CollectionElementDLStoreTable> for CollectionElementDLStore {
-    type Error = anyhow::Error;
-    fn try_from(st: CollectionElementDLStoreTable) -> Result<Self, Self::Error> {
-        let store_type = match st.store_type.as_str() {
-            "DMM" => DLStoreType::DMM,
-            "DLSite" => DLStoreType::DLSite,
-            _ => return Err(anyhow::anyhow!("Unknown store type: {}", st.store_type)),
-        };
-
-        Ok(CollectionElementDLStore::new(
-            Id::new(st.id),
-            Id::new(st.collection_element_id),
-            st.store_id,
-            store_type,
-            st.store_name,
-            st.purchase_url,
-            st.is_owned != 0,
-            st.purchase_date
-                .map(|dt| dt.and_utc().with_timezone(&Local)),
-            st.created_at.and_utc().with_timezone(&Local),
-            st.updated_at.and_utc().with_timezone(&Local),
-        ))
-    }
-}
+// DLStoreは廃止のため、ドメイン変換は提供しない
 
 impl TryFrom<CollectionElementErogamescapeTable> for CollectionElementErogamescape {
     type Error = anyhow::Error;

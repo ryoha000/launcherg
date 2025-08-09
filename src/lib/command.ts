@@ -212,21 +212,6 @@ export async function commandProcTailManagerIsRunning() {
   return await invoke<boolean>('proctail_manager_is_running')
 }
 
-// DL版ゲーム管理機能のコマンド
-export async function commandRegisterDLStoreGame(
-  storeType: 'DMM' | 'DLSite',
-  storeId: string,
-  erogamescapeId: number | null,
-  purchaseUrl: string,
-) {
-  return await invoke<number>('register_dl_store_game', {
-    storeType,
-    storeId,
-    erogamescapeId,
-    purchaseUrl,
-  })
-}
-
 export async function commandOpenStorePage(purchaseUrl: string) {
   return await invoke<void>('open_store_page', { purchaseUrl })
 }
@@ -241,19 +226,7 @@ export async function commandLinkInstalledGame(
   })
 }
 
-export async function commandGetUninstalledOwnedGames() {
-  return await invoke<CollectionElement[]>('get_uninstalled_owned_games')
-}
-
-export async function commandUpdateDLStoreOwnership(
-  dlStoreId: number,
-  isOwned: boolean,
-) {
-  return await invoke<void>('update_dl_store_ownership', {
-    dlStoreId,
-    isOwned,
-  })
-}
+// DLStore関連のコマンドは廃止
 
 // 拡張機能連携用の新しいコマンド
 

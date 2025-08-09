@@ -30,7 +30,8 @@ pub struct CollectionElement {
     pub registered_at: String,
     pub thumbnail_width: Option<i32>,
     pub thumbnail_height: Option<i32>,
-    pub dl_store: Option<DLStoreInfo>,
+    pub dmm: Option<DmmInfo>,
+    pub dlsite: Option<DlsiteInfo>,
     pub install_status: String,
     pub can_play: bool,
     pub can_install: bool,
@@ -38,17 +39,19 @@ pub struct CollectionElement {
 
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
-pub struct DLStoreInfo {
+pub struct DmmInfo {
     pub id: i32,
     pub collection_element_id: i32,
-    pub store_id: String,
-    pub store_type: String,
-    pub store_name: String,
-    pub purchase_url: String,
-    pub is_owned: bool,
-    pub purchase_date: Option<String>,
-    pub created_at: String,
-    pub updated_at: String,
+    pub category: String,
+    pub subcategory: String,
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DlsiteInfo {
+    pub id: i32,
+    pub collection_element_id: i32,
+    pub category: String,
 }
 
 impl CollectionElement {
@@ -99,20 +102,18 @@ impl CollectionElement {
         let can_play = st.can_play();
         let can_install = st.can_install();
 
-        let dl_store = st.dl_store.map(|dl_store| DLStoreInfo {
-            id: dl_store.id.value,
-            collection_element_id: dl_store.collection_element_id.value,
-            store_id: dl_store.store_id,
-            store_type: match dl_store.store_type {
-                crate::domain::collection::DLStoreType::DMM => "DMM".to_string(),
-                crate::domain::collection::DLStoreType::DLSite => "DLSite".to_string(),
-            },
-            store_name: dl_store.store_name,
-            purchase_url: dl_store.purchase_url,
-            is_owned: dl_store.is_owned,
-            purchase_date: dl_store.purchase_date.map(|dt| dt.to_rfc3339()),
-            created_at: dl_store.created_at.to_rfc3339(),
-            updated_at: dl_store.updated_at.to_rfc3339(),
+        // DLStore は廃止
+
+        let dmm = st.dmm.as_ref().map(|d| DmmInfo {
+            id: d.id.value,
+            collection_element_id: d.collection_element_id.value,
+            category: d.category.clone(),
+            subcategory: d.subcategory.clone(),
+        });
+        let dlsite = st.dlsite.as_ref().map(|d| DlsiteInfo {
+            id: d.id.value,
+            collection_element_id: d.collection_element_id.value,
+            category: d.category.clone(),
         });
 
         let erogamescape_id = st.erogamescape.as_ref().map(|m| m.erogamescape_id);
@@ -135,7 +136,8 @@ impl CollectionElement {
             st.updated_at.to_rfc3339(),
             thumbnail_width,
             thumbnail_height,
-            dl_store,
+            dmm,
+            dlsite,
             install_status.to_string(),
             can_play,
             can_install,
@@ -162,7 +164,9 @@ pub struct SerializableCollectionElement {
     pub play: Option<SerializableCollectionElementPlay>,
     pub like: Option<SerializableCollectionElementLike>,
     pub thumbnail: Option<SerializableCollectionElementThumbnail>,
-    pub dl_store: Option<SerializableCollectionElementDLStore>,
+    // pub dl_store: Option<SerializableCollectionElementDLStore>,
+    pub dmm: Option<SerializableCollectionElementDmm>,
+    pub dlsite: Option<SerializableCollectionElementDlsite>,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -232,19 +236,23 @@ pub struct SerializableCollectionElementThumbnail {
     pub updated_at: String,
 }
 
+// DLStore は廃止
+
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct SerializableCollectionElementDLStore {
+pub struct SerializableCollectionElementDmm {
     pub id: i32,
     pub collection_element_id: i32,
-    pub store_id: String,
-    pub store_type: String,
-    pub store_name: String,
-    pub purchase_url: String,
-    pub is_owned: bool,
-    pub purchase_date: Option<String>,
-    pub created_at: String,
-    pub updated_at: String,
+    pub category: String,
+    pub subcategory: String,
+}
+
+#[derive(Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SerializableCollectionElementDlsite {
+    pub id: i32,
+    pub collection_element_id: i32,
+    pub category: String,
 }
 
 // domainからinterfaceへの変換メソッド
@@ -260,7 +268,9 @@ impl SerializableCollectionElement {
             play: element.play.as_ref().map(SerializableCollectionElementPlay::from_domain),
             like: element.like.as_ref().map(SerializableCollectionElementLike::from_domain),
             thumbnail: element.thumbnail.as_ref().map(SerializableCollectionElementThumbnail::from_domain),
-            dl_store: element.dl_store.as_ref().map(SerializableCollectionElementDLStore::from_domain),
+            // dl_store: element.dl_store.as_ref().map(SerializableCollectionElementDLStore::from_domain),
+            dmm: element.dmm.as_ref().map(SerializableCollectionElementDmm::from_domain),
+            dlsite: element.dlsite.as_ref().map(SerializableCollectionElementDlsite::from_domain),
         }
     }
 }
@@ -344,22 +354,23 @@ impl SerializableCollectionElementThumbnail {
     }
 }
 
-impl SerializableCollectionElementDLStore {
-    pub fn from_domain(dl_store: &domain::collection::CollectionElementDLStore) -> Self {
+impl SerializableCollectionElementDmm {
+    pub fn from_domain(dmm: &domain::collection::CollectionElementDMM) -> Self {
         Self {
-            id: dl_store.id.value,
-            collection_element_id: dl_store.collection_element_id.value,
-            store_id: dl_store.store_id.clone(),
-            store_type: match dl_store.store_type {
-                domain::collection::DLStoreType::DMM => "DMM".to_string(),
-                domain::collection::DLStoreType::DLSite => "DLSite".to_string(),
-            },
-            store_name: dl_store.store_name.clone(),
-            purchase_url: dl_store.purchase_url.clone(),
-            is_owned: dl_store.is_owned,
-            purchase_date: dl_store.purchase_date.map(|dt| dt.to_rfc3339()),
-            created_at: dl_store.created_at.to_rfc3339(),
-            updated_at: dl_store.updated_at.to_rfc3339(),
+            id: dmm.id.value,
+            collection_element_id: dmm.collection_element_id.value,
+            category: dmm.category.clone(),
+            subcategory: dmm.subcategory.clone(),
+        }
+    }
+}
+
+impl SerializableCollectionElementDlsite {
+    pub fn from_domain(dlsite: &domain::collection::CollectionElementDLsite) -> Self {
+        Self {
+            id: dlsite.id.value,
+            collection_element_id: dlsite.collection_element_id.value,
+            category: dlsite.category.clone(),
         }
     }
 }

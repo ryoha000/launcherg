@@ -1,6 +1,5 @@
 <script lang='ts'>
   import type { AllGameCacheOne } from '@/lib/types'
-  import DLStoreManager from '@/components/DLStore/DLStoreManager.svelte'
   import ImportAutomatically from '@/components/Sidebar/ImportAutomatically.svelte'
   import ImportManually from '@/components/Sidebar/ImportManually.svelte'
   import ImportPopover from '@/components/Sidebar/ImportPopover.svelte'
@@ -14,7 +13,7 @@
 
   let isOpenImportAutomatically = $state(false)
   let isOpenImportManually = $state(false)
-  let isOpenDLStoreManager = $state(false)
+  // DLStore機能は廃止
 
   const importManually = async (
     exePath: string | null,
@@ -34,10 +33,7 @@
     登録したゲーム
   </div>
   <div class='flex items-center gap-2'>
-    <ButtonIcon
-      icon='i-material-symbols-download-rounded'
-      onclick={() => (isOpenDLStoreManager = true)}
-    />
+    <!-- DLStore機能は廃止 -->
     <APopover panelClass='right-0'>
       {#snippet button()}
         <Button
@@ -62,4 +58,4 @@
   onconfirm={importManually}
   oncancel={() => (isOpenImportManually = false)}
 />
-<DLStoreManager bind:isOpen={isOpenDLStoreManager} />
+<!-- DLStoreManager 削除 -->

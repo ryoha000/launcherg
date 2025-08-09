@@ -15,7 +15,8 @@ pub struct CollectionElement {
     pub play: Option<CollectionElementPlay>,
     pub like: Option<CollectionElementLike>,
     pub thumbnail: Option<CollectionElementThumbnail>,
-    pub dl_store: Option<CollectionElementDLStore>,
+    pub dmm: Option<CollectionElementDMM>,
+    pub dlsite: Option<CollectionElementDLsite>,
     pub erogamescape: Option<CollectionElementErogamescape>,
 }
 
@@ -153,36 +154,39 @@ pub struct NewCollectionElementThumbnail {
     pub thumbnail_height: Option<i32>,
 }
 
-// DL版ストア情報
+
+// DMM マッピング
 #[derive(new, Clone, Debug, PartialEq)]
-pub struct CollectionElementDLStore {
-    pub id: Id<CollectionElementDLStore>,
+pub struct CollectionElementDMM {
+    pub id: Id<CollectionElementDMM>,
     pub collection_element_id: Id<CollectionElement>,
-    pub store_id: String,
-    pub store_type: DLStoreType,
-    pub store_name: String,
-    pub purchase_url: String,
-    pub is_owned: bool,
-    pub purchase_date: Option<DateTime<Local>>,
+    pub category: String,
+    pub subcategory: String,
     pub created_at: DateTime<Local>,
     pub updated_at: DateTime<Local>,
 }
 
-#[derive(Debug, Clone, PartialEq)]
-pub enum DLStoreType {
-    DMM,
-    DLSite,
+// DLsite マッピング
+#[derive(new, Clone, Debug, PartialEq)]
+pub struct CollectionElementDLsite {
+    pub id: Id<CollectionElementDLsite>,
+    pub collection_element_id: Id<CollectionElement>,
+    pub category: String,
+    pub created_at: DateTime<Local>,
+    pub updated_at: DateTime<Local>,
 }
 
 #[derive(new, Clone, Debug)]
-pub struct NewCollectionElementDLStore {
+pub struct NewCollectionElementDMM {
     pub collection_element_id: Id<CollectionElement>,
-    pub store_id: String,
-    pub store_type: DLStoreType,
-    pub store_name: String,
-    pub purchase_url: String,
-    pub is_owned: bool,
-    pub purchase_date: Option<DateTime<Local>>,
+    pub category: String,
+    pub subcategory: String,
+}
+
+#[derive(new, Clone, Debug)]
+pub struct NewCollectionElementDLsite {
+    pub collection_element_id: Id<CollectionElement>,
+    pub category: String,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -194,15 +198,19 @@ pub enum GameInstallStatus {
 
 impl CollectionElement {
     pub fn install_status(&self) -> GameInstallStatus {
-        match (&self.paths, &self.dl_store) {
-            (Some(paths), _) if paths.exe_path.is_some() || paths.lnk_path.is_some() => {
-                GameInstallStatus::Installed
+        // インストール済み最優先
+        if let Some(paths) = &self.paths {
+            if paths.exe_path.is_some() || paths.lnk_path.is_some() {
+                return GameInstallStatus::Installed;
             }
-            (None, Some(dl_store)) if dl_store.is_owned => {
-                GameInstallStatus::OwnedNotInstalled
-            }
-            _ => GameInstallStatus::NotOwned,
         }
+
+        // 所有判定は DMM または DLsite マッピングの存在で判断
+        if self.dmm.is_some() || self.dlsite.is_some() {
+            return GameInstallStatus::OwnedNotInstalled;
+        }
+
+        GameInstallStatus::NotOwned
     }
 
     pub fn can_play(&self) -> bool {

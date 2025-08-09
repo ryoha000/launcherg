@@ -65,23 +65,27 @@ export interface CollectionElement {
   thumbnail: string
   thumbnailWidth: number | null
   thumbnailHeight: number | null
-  dlStore?: DLStoreInfo | null
+  // dlStore?: DLStoreInfo | null (廃止)
+  dmm?: DmmInfo | null
+  dlsite?: DlsiteInfo | null
   installStatus: GameInstallStatus
   canPlay: boolean
   canInstall: boolean
 }
 
-export interface DLStoreInfo {
+// DLStoreInfo 廃止
+
+export interface DmmInfo {
   id: number
   collectionElementId: number
-  storeId: string
-  storeType: 'DMM' | 'DLSite'
-  storeName: string
-  purchaseUrl: string
-  isOwned: boolean
-  purchaseDate: string | null
-  createdAt: string
-  updatedAt: string
+  category: string
+  subcategory: string
+}
+
+export interface DlsiteInfo {
+  id: number
+  collectionElementId: number
+  category: string
 }
 
 export type GameInstallStatus = 'installed' | 'owned-not-installed' | 'not-owned'

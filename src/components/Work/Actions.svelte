@@ -15,7 +15,6 @@
     commandDeleteCollectionElement,
     commandGetCollectionElement,
     commandOpenFolder,
-    commandOpenStorePage,
     commandPlayGame,
     commandUpdateElementLike,
     commandUpsertCollectionElement,
@@ -106,10 +105,8 @@
   let isOpenQrCode = $state(false)
 
   const handleInstall = async () => {
-    const element = await elementPromise
-    if (element.dlStore?.purchaseUrl) {
-      await commandOpenStorePage(element.dlStore.purchaseUrl)
-    }
+    // DLStore廃止のため、Installは無効
+    showErrorToast('ストア連携によるインストールは利用できません')
   }
 </script>
 
