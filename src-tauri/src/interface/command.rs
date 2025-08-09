@@ -431,6 +431,19 @@ pub async fn upsert_collection_element_details(
 }
 
 #[tauri::command]
+pub async fn get_erogamescape_id_by_collection_id(
+    modules: State<'_, Arc<Modules>>,
+    collection_element_id: i32,
+) -> anyhow::Result<Option<i32>, CommandError> {
+    Ok(
+        modules
+            .collection_use_case()
+            .get_erogamescape_id_by_collection_id(&Id::new(collection_element_id))
+            .await?,
+    )
+}
+
+#[tauri::command]
 pub async fn get_all_elements(
     handle: AppHandle,
     modules: State<'_, Arc<Modules>>,

@@ -74,6 +74,7 @@ fn main() {
             command::get_not_registered_detail_erogamescape_ids,
             command::get_collection_ids_by_erogamescape_ids,
             command::upsert_collection_element_details,
+            command::get_erogamescape_id_by_collection_id,
             command::get_all_elements,
             command::update_element_like,
             command::open_folder,

@@ -1,24 +1,36 @@
 <script lang='ts'>
-  import Work from '@/components/Work/Work.svelte'
+  import type { Work } from '@/lib/types'
+  import WorkErogameScape from '@/components/Work/WorkErogameScape.svelte'
+  import { commandGetCollectionElement } from '@/lib/command'
   import { works } from '@/store/works'
 
   let { route }: { route?: { result: { path: { params: { id?: string } } } } } = $props()
-  let id = $derived(route?.result?.path?.params?.id || '')
-  let workPromise = $derived(works.get(+id))
+  let idParam = $derived(route?.result?.path?.params?.id || '')
+
+  // ビューの責務: 表示ソース判定とデータ取得
+  let viewPromise = $derived((async () => {
+    const collectionElement = await commandGetCollectionElement(+idParam)
+    const erogameScapeId = collectionElement.erogamescapeId ?? null
+    let work: Work | null = null
+    if (erogameScapeId) {
+      work = (await works.get(erogameScapeId)) ?? null
+    }
+    return { collectionElement, work }
+  })())
 </script>
 
-{#await workPromise}
+{#await viewPromise}
   <div class='h-full w-full flex items-center justify-center'>
     <span class='text-gray-500'>Loading...</span>
   </div>
-{:then work}
-  {#if work}
+{:then data}
+  {#if data.work}
     <div class='h-full w-full'>
-      <Work {work} />
+      <WorkErogameScape work={data.work} />
     </div>
   {:else}
-    <div class='h-full w-full flex items-center justify-center'>
-      <span class='text-red-500'>作品が見つかりません</span>
+    <div class='h-full w-full p-4'>
+      <div>TODO: erogamescape id が紐づいていない。何らかの情報をソースに何かを書く {JSON.stringify(data.collectionElement)}</div>
     </div>
   {/if}
 {:catch error}

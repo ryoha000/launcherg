@@ -278,6 +278,13 @@ export async function commandGetDevExtensionInfo() {
   return await invoke<string | null>('get_dev_extension_info')
 }
 
+// 追加: collection_element_id から EGS ID を取得
+export async function commandGetErogamescapeIdByCollectionId(collectionElementId: number) {
+  return await invoke<number | null>('get_erogamescape_id_by_collection_id', {
+    collectionElementId,
+  })
+}
+
 export interface RegistryKeyInfo {
   browser: string
   key_path: string
