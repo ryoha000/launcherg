@@ -83,9 +83,23 @@ pub async fn create_elements_in_pc(
         )
         .await?;
 
+    // 先に要素を作成/更新して collection_element_id を確定させる
+    modules
+        .collection_use_case()
+        .upsert_collection_elements(&new_elements_with_data)
+        .await?;
+
+    // EGS ID -> Collection ID 解決
+    let egs_ids: Vec<i32> = new_elements_with_data.iter().map(|v| v.id.value).collect();
+    let resolved_ids = modules
+        .collection_use_case()
+        .get_collection_ids_by_erogamescape_ids(egs_ids.clone())
+        .await?;
+
+    // サムネイル用に EGSのキャッシュを取得
     let new_elements_game_caches = modules
         .all_game_cache_use_case()
-        .get_by_ids(new_elements_with_data.iter().map(|v| v.id.value).collect())
+        .get_by_ids(egs_ids)
         .await?;
 
     // ゲーム名を保存しておく（戻り値で使用）
@@ -94,29 +108,30 @@ pub async fn create_elements_in_pc(
         .map(|v| v.gamename.clone())
         .collect();
 
-    modules
-        .collection_use_case()
-        .concurency_save_thumbnails(
-            &handle,
-            new_elements_game_caches
-                .into_iter()
-                .map(|v| (Id::new(v.id), v.thumbnail_url))
-                .collect(),
-        )
-        .await?;
+    // new_elements_game_caches は EGS id の配列なので、その順に個別解決
+    let mut thumb_args: Vec<(Id<crate::domain::collection::CollectionElement>, String)> = Vec::new();
+    for gc in new_elements_game_caches.iter() {
+        // 各 EGS id に対して resolved id を都度取得
+        if let Some(rid) = modules
+            .collection_use_case()
+            .get_collection_ids_by_erogamescape_ids(vec![gc.id])
+            .await?
+            .into_iter()
+            .next()
+        {
+            thumb_args.push((rid, gc.thumbnail_url.clone()));
+        }
+    }
 
     modules
         .collection_use_case()
-        .upsert_collection_elements(&new_elements_with_data)
+        .concurency_save_thumbnails(&handle, thumb_args)
         .await?;
 
-    let new_element_ids = new_elements_with_data
-        .iter()
-        .map(|v| v.id.clone())
-        .collect::<Vec<Id<_>>>();
+    // サムネイルサイズ反映
     modules
         .collection_use_case()
-        .concurency_upsert_collection_element_thumbnail_size(&handle, new_element_ids)
+        .concurency_upsert_collection_element_thumbnail_size(&handle, resolved_ids)
         .await?;
 
     modules
@@ -717,7 +732,7 @@ pub async fn register_dl_store_game(
     modules: State<'_, Arc<Modules>>,
     store_type: String,
     store_id: String,
-    erogamescape_id: i32,
+    erogamescape_id: Option<i32>,
     purchase_url: String,
 ) -> anyhow::Result<i32, CommandError> {
     let store_type = match store_type.as_str() {

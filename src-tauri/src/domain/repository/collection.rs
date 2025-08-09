@@ -2,7 +2,7 @@ use crate::domain::{
     collection::{
         CollectionElement, CollectionElementInfo, CollectionElementInstall, CollectionElementLike,
         CollectionElementPaths, CollectionElementPlay, CollectionElementThumbnail,
-        CollectionElementDLStore, NewCollectionElement, NewCollectionElementInfo, 
+        CollectionElementDLStore, CollectionElementErogamescape, NewCollectionElement, NewCollectionElementInfo, 
         NewCollectionElementInstall, NewCollectionElementLike, NewCollectionElementPaths, 
         NewCollectionElementPlay, NewCollectionElementThumbnail, NewCollectionElementDLStore,
         DLStoreType,
@@ -105,6 +105,10 @@ pub trait CollectionRepository {
         &self,
         id: &Id<CollectionElement>,
     ) -> Result<Option<CollectionElementDLStore>>;
+    async fn get_element_erogamescape_by_element_id(
+        &self,
+        id: &Id<CollectionElement>,
+    ) -> Result<Option<CollectionElementErogamescape>>;
     async fn get_element_dl_store_by_store_id(
         &self,
         store_id: &str,
@@ -119,4 +123,23 @@ pub trait CollectionRepository {
         id: &Id<CollectionElementDLStore>,
     ) -> Result<()>;
     async fn get_uninstalled_owned_games(&self) -> Result<Vec<CollectionElement>>;
+
+    // EGS ID マッピング操作
+    async fn get_collection_id_by_erogamescape_id(
+        &self,
+        erogamescape_id: i32,
+    ) -> Result<Option<Id<CollectionElement>>>;
+    async fn upsert_erogamescape_map(
+        &self,
+        collection_element_id: &Id<CollectionElement>,
+        erogamescape_id: i32,
+    ) -> Result<()>;
+    // 正のIDを自前採番して即座に collection_elements に予約挿入する
+    async fn allocate_new_collection_element_id(&self) -> Result<Id<CollectionElement>>;
+
+    // 逆引き: collection_element_id -> erogamescape_id
+    async fn get_erogamescape_id_by_collection_id(
+        &self,
+        id: &Id<CollectionElement>,
+    ) -> Result<Option<i32>>;
 }

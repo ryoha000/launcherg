@@ -83,15 +83,19 @@
   }
 
   const registerNewGame = async () => {
-    if (!newGameForm.storeId || !newGameForm.erogamescapeId || !newGameForm.purchaseUrl) {
-      showErrorToast('すべての項目を入力してください')
+    if (!newGameForm.storeId || !newGameForm.purchaseUrl) {
+      showErrorToast('ストアIDと購入URLは必須です')
       return
     }
 
-    const erogamescapeId = Number.parseInt(newGameForm.erogamescapeId)
-    if (Number.isNaN(erogamescapeId)) {
-      showErrorToast('有効なErogameScape IDを選択してください')
-      return
+    let erogamescapeId: number | null = null
+    if (newGameForm.erogamescapeId && newGameForm.erogamescapeId.trim() !== '') {
+      const parsed = Number.parseInt(newGameForm.erogamescapeId)
+      if (Number.isNaN(parsed)) {
+        showErrorToast('ErogameScape IDが不正です')
+        return
+      }
+      erogamescapeId = parsed
     }
 
     try {

@@ -13,6 +13,7 @@ use crate::domain::{
 #[serde(rename_all = "camelCase")]
 pub struct CollectionElement {
     pub id: i32,
+    pub erogamescape_id: Option<i32>,
     pub gamename: String,
     pub gamename_ruby: String,
     pub brandname: String,
@@ -114,8 +115,10 @@ impl CollectionElement {
             updated_at: dl_store.updated_at.to_rfc3339(),
         });
 
+        let erogamescape_id = st.erogamescape.as_ref().map(|m| m.erogamescape_id);
         CollectionElement::new(
             st.id.value,
+            erogamescape_id,
             gamename,
             gamename_ruby,
             brandname,

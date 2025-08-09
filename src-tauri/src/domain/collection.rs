@@ -16,6 +16,7 @@ pub struct CollectionElement {
     pub like: Option<CollectionElementLike>,
     pub thumbnail: Option<CollectionElementThumbnail>,
     pub dl_store: Option<CollectionElementDLStore>,
+    pub erogamescape: Option<CollectionElementErogamescape>,
 }
 
 // スクレイピング情報（erogamescape由来）
@@ -81,6 +82,16 @@ pub struct CollectionElementThumbnail {
     pub collection_element_id: Id<CollectionElement>,
     pub thumbnail_width: Option<i32>,
     pub thumbnail_height: Option<i32>,
+    pub created_at: DateTime<Local>,
+    pub updated_at: DateTime<Local>,
+}
+
+// ErogameScape ID マッピング
+#[derive(new, Clone, Debug, PartialEq)]
+pub struct CollectionElementErogamescape {
+    pub id: Id<CollectionElementErogamescape>,
+    pub collection_element_id: Id<CollectionElement>,
+    pub erogamescape_id: i32,
     pub created_at: DateTime<Local>,
     pub updated_at: DateTime<Local>,
 }

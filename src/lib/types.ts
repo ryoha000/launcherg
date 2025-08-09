@@ -1,5 +1,6 @@
 export interface Work {
   id: number
+  erogamescapeId?: number | null
   name: string
   brandId: number
   brandName: string
@@ -46,7 +47,8 @@ export interface Collection {
 }
 
 export interface CollectionElement {
-  id: number // Work.id と同じ
+  id: number // 内部ID（CollectionElementの自前採番ID）
+  erogamescapeId?: number | null
   gamename: string
   gamenameRuby: string
   brandname: string

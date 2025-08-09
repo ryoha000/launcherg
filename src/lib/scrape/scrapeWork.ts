@@ -88,6 +88,7 @@ export async function getWorkByScrape(id: number) {
     ?.getElementsByTagName('td')
   const work: Work = {
     id,
+    erogamescapeId: id,
     name: convertSpecialCharacters(
       gameTitle?.getElementsByTagName('a')[0].innerHTML ?? '',
     ),

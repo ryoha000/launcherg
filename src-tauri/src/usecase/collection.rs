@@ -57,8 +57,34 @@ impl<R: RepositoriesExt> CollectionUseCase<R> {
             NewCollectionElement, NewCollectionElementInstall, NewCollectionElementPaths,
         };
 
-        // 1. 基本要素を作成
-        let new_element = NewCollectionElement::new(element.id.clone());
+        // 0. EGS ID から collection_element_id を解決（後方互換: 直接IDが存在する場合はそのまま）
+        let resolved_id = {
+            let repo = self.repositories.collection_repository();
+            // 直接ID存在チェック
+            match repo.get_element_by_element_id(&element.id).await {
+                Ok(Some(_)) => element.id.clone(),
+                _ => {
+                    // 旧フローでは element.id は EGS ID 相当
+                    // map から解決
+                    if let Ok(Some(mapped)) =
+                        repo.get_collection_id_by_erogamescape_id(element.id.value).await
+                    {
+                        mapped
+                    } else {
+                        // 未登録: 新規採番し、mapに登録
+                        let new_id = repo.allocate_new_collection_element_id().await?;
+                        // 新規作成された行に対して map を登録（EGSとして element.id.value を紐付け）
+                        let _ = repo
+                            .upsert_erogamescape_map(&new_id, element.id.value)
+                            .await;
+                        new_id
+                    }
+                }
+            }
+        };
+
+        // 1. 基本要素を作成（存在すればupdated_at更新）
+        let new_element = NewCollectionElement::new(resolved_id.clone());
         self.upsert_collection_element(&new_element).await?;
 
         // 2. スクレイピング情報は初期登録時には作成しない
@@ -67,7 +93,7 @@ impl<R: RepositoriesExt> CollectionUseCase<R> {
         // 3. パス情報を保存
         if element.exe_path.is_some() || element.lnk_path.is_some() {
             let new_paths = NewCollectionElementPaths::new(
-                element.id.clone(),
+                resolved_id.clone(),
                 element.exe_path.clone(),
                 element.lnk_path.clone(),
             );
@@ -79,7 +105,7 @@ impl<R: RepositoriesExt> CollectionUseCase<R> {
 
         // 4. インストール情報を保存
         if let Some(install_time) = element.install_at {
-            let new_install = NewCollectionElementInstall::new(element.id.clone(), install_time);
+            let new_install = NewCollectionElementInstall::new(resolved_id.clone(), install_time);
             self.repositories
                 .collection_repository()
                 .upsert_collection_element_install(&new_install)
@@ -317,35 +343,37 @@ impl<R: RepositoriesExt> CollectionUseCase<R> {
         &self,
         store_type: DLStoreType,
         store_id: String,
-        erogamescape_id: i32,
+        erogamescape_id: Option<i32>,
         purchase_url: String,
     ) -> anyhow::Result<Id<CollectionElement>> {
-        let collection_element_id = Id::new(erogamescape_id);
-
         // 既存のDL版ゲーム情報を検索
-        if let Some(_existing) = self.repositories
+        if let Some(_existing) = self
+            .repositories
             .collection_repository()
             .get_element_dl_store_by_store_id(&store_id, &store_type)
-            .await? 
+            .await?
         {
             return Err(anyhow::anyhow!("このストアIDは既に登録されています"));
         }
 
-        // collection_elementが存在するかチェック
-        let element_exists = self.repositories
-            .collection_repository()
-            .get_element_by_element_id(&collection_element_id)
-            .await
-            .is_ok();
-
-        if !element_exists {
-            // collection_elementを作成
-            let new_element = NewCollectionElement::new(collection_element_id.clone());
-            self.repositories
-                .collection_repository()
-                .upsert_collection_element(&new_element)
-                .await?;
-        }
+        // collection_element_id を決定
+        let collection_element_id = {
+            let repo = self.repositories.collection_repository();
+            if let Some(egs_id) = erogamescape_id {
+                if let Ok(Some(mapped)) = repo.get_collection_id_by_erogamescape_id(egs_id).await
+                {
+                    mapped
+                } else {
+                    let new_id = repo.allocate_new_collection_element_id().await?;
+                    // ベース行は allocate 時に作成済み、map を作成
+                    repo.upsert_erogamescape_map(&new_id, egs_id).await?;
+                    new_id
+                }
+            } else {
+                // EGS未連携の新規エントリ
+                repo.allocate_new_collection_element_id().await?
+            }
+        };
 
         // DL版情報を登録
         let store_name = match store_type {
@@ -418,4 +446,29 @@ impl<R: RepositoriesExt> CollectionUseCase<R> {
         Ok(())
     }
 
+    // EGS ID から collection_element_id 群を解決
+    pub async fn get_collection_ids_by_erogamescape_ids(
+        &self,
+        erogamescape_ids: Vec<i32>,
+    ) -> anyhow::Result<Vec<Id<CollectionElement>>> {
+        let repo = self.repositories.collection_repository();
+        let mut ids = Vec::with_capacity(erogamescape_ids.len());
+        for egs_id in erogamescape_ids {
+            if let Some(id) = repo.get_collection_id_by_erogamescape_id(egs_id).await? {
+                ids.push(id);
+            }
+        }
+        Ok(ids)
+    }
+
+    // collection_element_id -> erogamescape_id（単発）
+    pub async fn get_erogamescape_id_by_collection_id(
+        &self,
+        id: &Id<CollectionElement>,
+    ) -> anyhow::Result<Option<i32>> {
+        self.repositories
+            .collection_repository()
+            .get_erogamescape_id_by_collection_id(id)
+            .await
+    }
 }

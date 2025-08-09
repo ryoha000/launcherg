@@ -216,7 +216,7 @@ export async function commandProcTailManagerIsRunning() {
 export async function commandRegisterDLStoreGame(
   storeType: 'DMM' | 'DLSite',
   storeId: string,
-  erogamescapeId: number,
+  erogamescapeId: number | null,
   purchaseUrl: string,
 ) {
   return await invoke<number>('register_dl_store_game', {

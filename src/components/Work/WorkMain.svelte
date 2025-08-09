@@ -33,11 +33,15 @@
   {/await}
   <div class='flex items-center'>
     <LinkButton href={work.officialHomePage} text='Official' withIcon />
-    <LinkButton
-      href='https://erogamescape.dyndns.org/~ap2/ero/toukei_kaiseki/game.php?game={work.id}'
-      text='ErogameScape'
-      withIcon
-    />
+    {#if work.erogamescapeId}
+      <LinkButton
+        href='https://erogamescape.dyndns.org/~ap2/ero/toukei_kaiseki/game.php?game={work.erogamescapeId}'
+        text='ErogameScape'
+        withIcon
+      />
+    {:else}
+      <span class='text-gray-500'>EGS ID未連携</span>
+    {/if}
     {#await seiyaUrlPromise then url}
       <LinkButton href={url} text='誠也の部屋' withIcon />
     {/await}

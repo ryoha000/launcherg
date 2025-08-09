@@ -13,7 +13,11 @@
 
   let { isOpen = $bindable(), element }: Props = $props()
 
-  const gameCache = $derived(commandGetGameCacheById(element.id))
+  const gameCache = $derived(
+    element.erogamescapeId != null && element.erogamescapeId !== undefined
+      ? commandGetGameCacheById(element.erogamescapeId)
+      : Promise.resolve(null),
+  )
 </script>
 
 <Modal
@@ -25,7 +29,7 @@
   withFooter={false}
 >
   <div class='space-y-4'>
-    <OtherInfomationSection label='ErogameScape ID' value={element.id} />
+    <OtherInfomationSection label='ErogameScape ID' value={element.erogamescapeId ?? 'EGS ID未連携'} />
     <OtherInfomationSection label='Execute file path' value={element.exePath} />
     <OtherInfomationSection
       label='Shortcut file path'

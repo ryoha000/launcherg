@@ -6,7 +6,7 @@ use crate::domain::{
     collection::{
         CollectionElement, CollectionElementInfo, CollectionElementInstall, CollectionElementLike,
         CollectionElementPaths, CollectionElementPlay, CollectionElementThumbnail,
-        CollectionElementDLStore, DLStoreType,
+        CollectionElementDLStore, DLStoreType, CollectionElementErogamescape,
     },
     Id,
 };
@@ -93,6 +93,15 @@ pub struct CollectionElementDLStoreTable {
     pub updated_at: NaiveDateTime,
 }
 
+#[derive(FromRow)]
+pub struct CollectionElementErogamescapeTable {
+    pub id: i32,
+    pub collection_element_id: i32,
+    pub erogamescape_id: i32,
+    pub created_at: NaiveDateTime,
+    pub updated_at: NaiveDateTime,
+}
+
 // ドメインモデルへの変換実装
 impl TryFrom<CollectionElementTable> for CollectionElement {
     type Error = anyhow::Error;
@@ -108,6 +117,7 @@ impl TryFrom<CollectionElementTable> for CollectionElement {
             None, // like は別途取得
             None, // thumbnail は別途取得
             None, // dl_store は別途取得
+            None, // erogamescape は別途取得
         ))
     }
 }
@@ -216,6 +226,19 @@ impl TryFrom<CollectionElementDLStoreTable> for CollectionElementDLStore {
             st.is_owned != 0,
             st.purchase_date
                 .map(|dt| dt.and_utc().with_timezone(&Local)),
+            st.created_at.and_utc().with_timezone(&Local),
+            st.updated_at.and_utc().with_timezone(&Local),
+        ))
+    }
+}
+
+impl TryFrom<CollectionElementErogamescapeTable> for CollectionElementErogamescape {
+    type Error = anyhow::Error;
+    fn try_from(st: CollectionElementErogamescapeTable) -> Result<Self, Self::Error> {
+        Ok(CollectionElementErogamescape::new(
+            Id::new(st.id),
+            Id::new(st.collection_element_id),
+            st.erogamescape_id,
             st.created_at.and_utc().with_timezone(&Local),
             st.updated_at.and_utc().with_timezone(&Local),
         ))
