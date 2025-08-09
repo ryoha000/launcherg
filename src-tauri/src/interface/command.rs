@@ -364,20 +364,51 @@ pub async fn delete_collection_element(
 }
 
 #[tauri::command]
-pub async fn get_not_registered_detail_element_ids(
+pub async fn get_not_registered_detail_erogamescape_ids(
     modules: State<'_, Arc<Modules>>,
 ) -> anyhow::Result<Vec<i32>, CommandError> {
-    Ok(modules
+    // 詳細未登録の collection_element_id 群を取得し、EGS ID に変換して返す
+    let collection_ids = modules
         .collection_use_case()
         .get_not_registered_detail_element_ids()
-        .await?
-        .into_iter()
-        .map(|v| v.value)
-        .collect())
+        .await?;
+
+    let mut erogamescape_ids: Vec<i32> = Vec::with_capacity(collection_ids.len());
+    for cid in collection_ids.into_iter() {
+        if let Some(egs_id) = modules
+            .collection_use_case()
+            .get_erogamescape_id_by_collection_id(&cid)
+            .await?
+        {
+            erogamescape_ids.push(egs_id);
+        }
+    }
+    Ok(erogamescape_ids)
 }
 
 #[tauri::command]
-pub async fn create_element_details(
+pub async fn get_collection_ids_by_erogamescape_ids(
+    modules: State<'_, Arc<Modules>>,
+    erogamescape_ids: Vec<i32>,
+) -> anyhow::Result<Vec<(i32, i32)>, CommandError> {
+    // 入力された EGS ID ごとに対応する collection_element_id を対にして返す
+    let mut pairs: Vec<(i32, i32)> = Vec::new();
+    for egs_id in erogamescape_ids.into_iter() {
+        if let Some(cid) = modules
+            .collection_use_case()
+            .get_collection_ids_by_erogamescape_ids(vec![egs_id])
+            .await?
+            .into_iter()
+            .next()
+        {
+            pairs.push((egs_id, cid.value));
+        }
+    }
+    Ok(pairs)
+}
+
+#[tauri::command]
+pub async fn upsert_collection_element_details(
     modules: State<'_, Arc<Modules>>,
     details: Vec<CreateCollectionElementDetail>,
 ) -> anyhow::Result<(), CommandError> {

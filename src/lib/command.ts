@@ -80,14 +80,20 @@ export async function commandDeleteCollectionElement(collectionElementId: number
   })
 }
 
-export async function commandGetNotRegisterdDetailElementIds() {
-  return await invoke<number[]>('get_not_registered_detail_element_ids', {})
+// 詳細未登録の EGS ID 群を取得
+export async function commandGetNotRegisteredDetailErogamescapeIds() {
+  return await invoke<number[]>('get_not_registered_detail_erogamescape_ids', {})
 }
 
-export async function commandCreateElementDetails(details: CollectionElementDetail[]) {
-  return await invoke<void>('create_element_details', {
-    details,
+// EGS ID -> CollectionElement ID の対応を取得
+export async function commandGetCollectionIdsByErogamescapeIds(erogamescapeIds: number[]) {
+  return await invoke<[number, number][]>('get_collection_ids_by_erogamescape_ids', {
+    erogamescapeIds,
   })
+}
+
+export async function commandUpsertCollectionElementDetails(details: CollectionElementDetail[]) {
+  return await invoke<void>('upsert_collection_element_details', { details })
 }
 
 export async function commandGetAllElements() {
