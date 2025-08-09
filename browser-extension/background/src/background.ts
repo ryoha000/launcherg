@@ -176,7 +176,6 @@ class BackgroundService {
     sendResponse: (response?: any) => void,
   ): Promise<void> {
     log.info(`Syncing ${syncGamesRequest.games.length} DMM games`)
-    await this.recordSyncAggregation(syncGamesRequest.games.length || 0)
 
     try {
       const nativeSyncRequest = create(NativeDmmSyncGamesRequestSchema, {
@@ -209,20 +208,10 @@ class BackgroundService {
             errors: syncBatchResult.errors,
             syncedGames: syncBatchResult.syncedGames,
           })
-
-          // 成功件数の通知（0件は通知しない）
+          // 集計は成功件数のみ反映、0件は通知せずwarnのみ
           const success = Number(syncBatchResult.successCount || 0)
-          if (success > 0) {
-            const iconUrl = chrome.runtime.getURL('icons/icon32.png')
-            await chrome.notifications.create({
-              type: 'basic',
-              iconUrl,
-              title: 'DMM 同期',
-              message: `新規 ${success} 件を同期しました`,
-            })
-          }
-          else {
-            // 通知不要、警告ログのみ
+          await this.recordSyncAggregation(success)
+          if (success === 0) {
             console.warn('DMM: 同期成功 0 件（重複のみの可能性）')
           }
         }
@@ -272,7 +261,6 @@ class BackgroundService {
     sendResponse: (response?: any) => void,
   ): Promise<void> {
     log.info(`Syncing ${syncGamesRequest.games.length} DLsite games`)
-    await this.recordSyncAggregation(syncGamesRequest.games.length || 0)
 
     try {
       const nativeSyncRequest = create(NativeDlsiteSyncGamesRequestSchema, {
@@ -305,20 +293,10 @@ class BackgroundService {
             errors: syncBatchResult.errors,
             syncedGames: syncBatchResult.syncedGames,
           })
-
-          // 成功件数の通知（0件は通知しない）
+          // 集計は成功件数のみ反映、0件は通知せずwarnのみ
           const success = Number(syncBatchResult.successCount || 0)
-          if (success > 0) {
-            const iconUrl = chrome.runtime.getURL('icons/icon32.png')
-            await chrome.notifications.create({
-              type: 'basic',
-              iconUrl,
-              title: 'DLsite 同期',
-              message: `新規 ${success} 件を同期しました`,
-            })
-          }
-          else {
-            // 通知不要、警告ログのみ
+          await this.recordSyncAggregation(success)
+          if (success === 0) {
             console.warn('DLsite: 同期成功 0 件（重複のみの可能性）')
           }
         }
