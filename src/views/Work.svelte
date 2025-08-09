@@ -30,7 +30,7 @@
     </div>
   {:else}
     <div class='h-full w-full p-4'>
-      <div>TODO: erogamescape id が紐づいていない。何らかの情報をソースに何かを書く {JSON.stringify(data.collectionElement)}</div>
+      <div class='text-gray-500'>TODO: erogamescape id が紐づいていない。何らかの情報をソースに何かを書く {JSON.stringify(data.collectionElement)}</div>
     </div>
   {/if}
 {:catch error}

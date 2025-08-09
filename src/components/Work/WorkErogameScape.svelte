@@ -15,6 +15,4 @@
       <WorkLayout {work} />
     {/key}
   </div>
-  
 </div>
-
