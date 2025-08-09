@@ -9,7 +9,8 @@
     "activeTab",
     "storage",
     "notifications",
-    "alarms"
+    "alarms",
+    "scripting"
   ],
   "host_permissions": [
     "https://games.dmm.co.jp/*",

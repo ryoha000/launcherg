@@ -552,9 +552,46 @@ class BackgroundService {
     })
 
     for (const tab of tabs) {
-      if (tab.id) {
-        // タブにメッセージを送信して同期をトリガー
-        chrome.tabs.sendMessage(tab.id, { type: 'periodic_sync_check' })
+      if (!tab.id)
+        continue
+      await this.sendMessageToTabWithInjection(tab, { type: 'periodic_sync_check' })
+    }
+  }
+
+  private async sendMessageToTabWithInjection(
+    tab: chrome.tabs.Tab,
+    message: unknown,
+  ): Promise<void> {
+    if (!tab.id || !tab.url)
+      return
+    try {
+      await chrome.tabs.sendMessage(tab.id, message as any)
+    }
+    catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error)
+      if (!/Receiving end does not exist/i.test(errorMessage)) {
+        log.warn('sendMessage failed (non-receiver error):', errorMessage)
+        return
+      }
+      // 受信側がいない場合は対象サイトのコンテンツスクリプトを注入して再試行
+      const files: string[] = []
+      if (tab.url.includes('games.dmm.co.jp'))
+        files.push('content-scripts/dmm-extractor.js')
+      if (tab.url.includes('play.dlsite.com'))
+        files.push('content-scripts/dlsite-extractor.js')
+
+      if (files.length === 0)
+        return
+
+      try {
+        await chrome.scripting.executeScript({
+          target: { tabId: tab.id },
+          files,
+        })
+        await chrome.tabs.sendMessage(tab.id, message as any)
+      }
+      catch (injectErr) {
+        log.warn('Failed to inject/retry sendMessage:', injectErr)
       }
     }
   }

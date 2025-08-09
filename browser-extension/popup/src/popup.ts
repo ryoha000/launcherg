@@ -637,10 +637,35 @@ export class PopupController {
         throw new Error('DMM GamesまたはDLsiteのページで実行してください')
       }
 
-      // Content Scriptに同期要求を送信
-      const response = await chrome.tabs.sendMessage(currentTab.id, {
-        type: 'manual_sync_request',
-      })
+      // Content Scriptに同期要求を送信（受信側がいない場合は注入して再試行）
+      let response: any
+      try {
+        response = await chrome.tabs.sendMessage(currentTab.id, {
+          type: 'manual_sync_request',
+        })
+      }
+      catch (err) {
+        const msg = err instanceof Error ? err.message : String(err)
+        if (/Receiving end does not exist/i.test(msg)) {
+          const files: string[] = []
+          if (isDMMGames)
+            files.push('content-scripts/dmm-extractor.js')
+          if (isDLsite)
+            files.push('content-scripts/dlsite-extractor.js')
+          if (files.length > 0) {
+            await chrome.scripting.executeScript({
+              target: { tabId: currentTab.id },
+              files,
+            })
+            response = await chrome.tabs.sendMessage(currentTab.id, {
+              type: 'manual_sync_request',
+            })
+          }
+        }
+        else {
+          throw err
+        }
+      }
 
       if (response && response.success) {
         this.addLog('success', `手動同期が完了しました: ${response.message}`)

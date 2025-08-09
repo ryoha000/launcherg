@@ -159,3 +159,20 @@ if ((import.meta as any).env?.MODE === 'development') {
   setLogLevel('debug')
 }
 main()
+
+// バックグラウンド/ポップアップからのメッセージを受け取って同期を実行
+chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
+  if (
+    message?.type === 'manual_sync_request'
+    || message?.type === 'periodic_sync_check'
+  ) {
+    void extractAndSync()
+      .then(() => sendResponse({ success: true, message: 'DLsite: 同期を実行しました' }))
+      .catch((err: unknown) => {
+        const errorMessage = err instanceof Error ? err.message : String(err)
+        sendResponse({ success: false, error: errorMessage })
+      })
+    return true
+  }
+  return undefined
+})

@@ -387,3 +387,22 @@ observer.observe(document.body, {
 })
 
 log.info('Script loaded')
+
+// バックグラウンド/ポップアップからのメッセージを受け取って同期を実行
+chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
+  if (
+    message?.type === 'manual_sync_request'
+    || message?.type === 'periodic_sync_check'
+  ) {
+    if (dmmConfig) {
+      void extractAndSync(dmmConfig)
+        .then(() => sendResponse({ success: true, message: 'DMM: 同期を実行しました' }))
+        .catch((err: unknown) => {
+          const errorMessage = err instanceof Error ? err.message : String(err)
+          sendResponse({ success: false, error: errorMessage })
+        })
+      return true
+    }
+  }
+  return undefined
+})
