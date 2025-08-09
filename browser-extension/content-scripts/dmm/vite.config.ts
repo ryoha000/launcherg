@@ -6,7 +6,7 @@ export default defineConfig({
     emptyOutDir: false,
     outDir: '../../dist/content-scripts',
     lib: {
-      entry: resolve(__dirname, 'src/dmm-extractor.ts'),
+      entry: resolve(__dirname, 'src/main.ts'),
       name: 'dmm-extractor',
       fileName: 'dmm-extractor',
       formats: ['es'],

@@ -5,7 +5,6 @@
   import ImportPopover from '@/components/Sidebar/ImportPopover.svelte'
   import APopover from '@/components/UI/APopover.svelte'
   import Button from '@/components/UI/Button.svelte'
-  import ButtonIcon from '@/components/UI/ButtonIcon.svelte'
   import { commandUpsertCollectionElement } from '@/lib/command'
   import { registerCollectionElementDetails } from '@/lib/registerCollectionElementDetails'
   import { showInfoToast } from '@/lib/toast'
