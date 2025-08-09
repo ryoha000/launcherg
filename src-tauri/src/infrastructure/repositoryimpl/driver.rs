@@ -46,7 +46,7 @@ impl Db {
             .run(&mut conf)
             .unwrap();
 
-        println!("finish setup database. file: {:?}", db_filename);
+        log::info!("finish setup database. file: {:?}", db_filename);
 
         Db(Arc::new(pool))
     }
@@ -74,7 +74,7 @@ impl Db {
             .run(&mut conf)
             .unwrap();
 
-        println!("finish setup database. file: {:?}", db_filename);
+        log::info!("finish setup database. file: {:?}", db_filename);
 
         Db(Arc::new(pool))
     }

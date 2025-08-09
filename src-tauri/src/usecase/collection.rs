@@ -221,7 +221,7 @@ impl<R: RepositoriesExt> CollectionUseCase<R> {
                     .get(lnk_path.as_str())
                     .ok_or(anyhow::anyhow!("metadata cannot get"))?;
                 if metadata.icon.to_lowercase().ends_with("ico") {
-                    println!("icon is ico");
+                    log::info!("icon is ico");
                     metadata.icon.clone()
                 } else {
                     metadata.path.clone()

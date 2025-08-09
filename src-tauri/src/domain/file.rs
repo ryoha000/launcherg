@@ -430,7 +430,7 @@ pub fn start_process(
         ));
     }
 
-    println!("[INFO] [start processs] script: {}", script);
+    log::info!("[start processs] script: {}", script);
 
     // PowerShellでスクリプトを実行
     let output = std::process::Command::new("powershell")
