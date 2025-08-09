@@ -27,10 +27,10 @@ impl<R: RepositoriesExt> NativeHostSyncUseCase<R> {
         games: Vec<DmmSyncGameParam>,
     ) -> anyhow::Result<u32> {
         let mut success: u32 = 0;
-        for DmmSyncGameParam { store_id: _sid, category, subcategory } in games {
+        for DmmSyncGameParam { store_id, category, subcategory } in games {
             // EGS不明はそのまま保存（collection_element_erogamescape_mapは作らない）
             let id = self.repositories.collection_repository().allocate_new_collection_element_id().await?;
-            self.repositories.collection_repository().upsert_dmm_mapping(&id, &category, &subcategory).await?;
+            self.repositories.collection_repository().upsert_dmm_mapping(&id, &store_id, &category, &subcategory).await?;
             success += 1;
         }
         Ok(success)
@@ -41,9 +41,9 @@ impl<R: RepositoriesExt> NativeHostSyncUseCase<R> {
         games: Vec<DlsiteSyncGameParam>,
     ) -> anyhow::Result<u32> {
         let mut success: u32 = 0;
-        for DlsiteSyncGameParam { store_id: _sid, category } in games {
+        for DlsiteSyncGameParam { store_id, category } in games {
             let id = self.repositories.collection_repository().allocate_new_collection_element_id().await?;
-            self.repositories.collection_repository().upsert_dlsite_mapping(&id, &category).await?;
+            self.repositories.collection_repository().upsert_dlsite_mapping(&id, &store_id, &category).await?;
             success += 1;
         }
         Ok(success)

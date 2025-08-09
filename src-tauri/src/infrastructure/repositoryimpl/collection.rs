@@ -655,14 +655,16 @@ impl CollectionRepository for RepositoryImpl<CollectionElement> {
     async fn upsert_dmm_mapping(
         &self,
         collection_element_id: &Id<CollectionElement>,
+        store_id: &str,
         category: &str,
         subcategory: &str,
     ) -> anyhow::Result<()> {
         let pool = self.pool.0.clone();
         sqlx::query(
-            "INSERT INTO collection_element_dmm (collection_element_id, category, subcategory) VALUES (?, ?, ?)\n             ON CONFLICT(collection_element_id) DO UPDATE SET category = excluded.category, subcategory = excluded.subcategory, updated_at = CURRENT_TIMESTAMP",
+            "INSERT INTO collection_element_dmm (collection_element_id, store_id, category, subcategory) VALUES (?, ?, ?, ?)\n             ON CONFLICT(collection_element_id) DO UPDATE SET store_id = excluded.store_id, category = excluded.category, subcategory = excluded.subcategory, updated_at = CURRENT_TIMESTAMP",
         )
         .bind(collection_element_id.value)
+        .bind(store_id)
         .bind(category)
         .bind(subcategory)
         .execute(&*pool)
@@ -673,13 +675,15 @@ impl CollectionRepository for RepositoryImpl<CollectionElement> {
     async fn upsert_dlsite_mapping(
         &self,
         collection_element_id: &Id<CollectionElement>,
+        store_id: &str,
         category: &str,
     ) -> anyhow::Result<()> {
         let pool = self.pool.0.clone();
         sqlx::query(
-            "INSERT INTO collection_element_dlsite (collection_element_id, category) VALUES (?, ?)\n             ON CONFLICT(collection_element_id) DO UPDATE SET category = excluded.category, updated_at = CURRENT_TIMESTAMP",
+            "INSERT INTO collection_element_dlsite (collection_element_id, store_id, category) VALUES (?, ?, ?)\n             ON CONFLICT(collection_element_id) DO UPDATE SET store_id = excluded.store_id, category = excluded.category, updated_at = CURRENT_TIMESTAMP",
         )
         .bind(collection_element_id.value)
+        .bind(store_id)
         .bind(category)
         .execute(&*pool)
         .await?;

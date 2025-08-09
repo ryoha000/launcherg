@@ -123,6 +123,7 @@ pub trait CollectionRepository {
     async fn upsert_dmm_mapping(
         &self,
         collection_element_id: &Id<CollectionElement>,
+        store_id: &str,
         category: &str,
         subcategory: &str,
     ) -> Result<()>;
@@ -130,6 +131,7 @@ pub trait CollectionRepository {
     async fn upsert_dlsite_mapping(
         &self,
         collection_element_id: &Id<CollectionElement>,
+        store_id: &str,
         category: &str,
     ) -> Result<()>;
 }
