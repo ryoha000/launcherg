@@ -120,6 +120,13 @@ pub trait CollectionRepository {
     ) -> Result<Option<i32>>;
 
     // DMM / DLsite マッピング操作（Native Host用）
+    async fn get_collection_id_by_dmm_mapping(
+        &self,
+        store_id: &str,
+        category: &str,
+        subcategory: &str,
+    ) -> Result<Option<Id<CollectionElement>>>;
+
     async fn upsert_dmm_mapping(
         &self,
         collection_element_id: &Id<CollectionElement>,
@@ -127,6 +134,12 @@ pub trait CollectionRepository {
         category: &str,
         subcategory: &str,
     ) -> Result<()>;
+
+    async fn get_collection_id_by_dlsite_mapping(
+        &self,
+        store_id: &str,
+        category: &str,
+    ) -> Result<Option<Id<CollectionElement>>>;
 
     async fn upsert_dlsite_mapping(
         &self,

@@ -652,6 +652,24 @@ impl CollectionRepository for RepositoryImpl<CollectionElement> {
         Ok(row.map(|v| v.0))
     }
 
+    async fn get_collection_id_by_dmm_mapping(
+        &self,
+        store_id: &str,
+        category: &str,
+        subcategory: &str,
+    ) -> anyhow::Result<Option<Id<CollectionElement>>> {
+        let pool = self.pool.0.clone();
+        let row: Option<(i32,)> = sqlx::query_as(
+            "SELECT collection_element_id FROM collection_element_dmm WHERE store_id = ? AND category = ? AND subcategory = ?",
+        )
+        .bind(store_id)
+        .bind(category)
+        .bind(subcategory)
+        .fetch_optional(&*pool)
+        .await?;
+        Ok(row.map(|v| Id::new(v.0)))
+    }
+
     async fn upsert_dmm_mapping(
         &self,
         collection_element_id: &Id<CollectionElement>,
@@ -670,6 +688,22 @@ impl CollectionRepository for RepositoryImpl<CollectionElement> {
         .execute(&*pool)
         .await?;
         Ok(())
+    }
+
+    async fn get_collection_id_by_dlsite_mapping(
+        &self,
+        store_id: &str,
+        category: &str,
+    ) -> anyhow::Result<Option<Id<CollectionElement>>> {
+        let pool = self.pool.0.clone();
+        let row: Option<(i32,)> = sqlx::query_as(
+            "SELECT collection_element_id FROM collection_element_dlsite WHERE store_id = ? AND category = ?",
+        )
+        .bind(store_id)
+        .bind(category)
+        .fetch_optional(&*pool)
+        .await?;
+        Ok(row.map(|v| Id::new(v.0)))
     }
 
     async fn upsert_dlsite_mapping(
