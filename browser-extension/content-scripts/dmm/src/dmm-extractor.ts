@@ -1,17 +1,18 @@
 // Extension Internal protobuf types
 
-import type { ExtractedGameData } from '@launcherg/shared'
+import type { DmmExtractedGame } from './types'
 import { create, fromJson, toJson } from '@bufbuild/protobuf'
 import {
   addNotificationStyles,
   generateRequestId,
   logger,
-  sendSyncRequest,
   showNotification,
   waitForPageLoad,
 } from '@launcherg/shared'
 
 import {
+  DmmGameSchema,
+  DmmSyncGamesRequestSchema,
   ExtensionRequestSchema,
   ExtensionResponseSchema,
   GetConfigRequestSchema,
@@ -170,9 +171,9 @@ function extractField(container: HTMLElement, rule: ExtractionRule): string | nu
 }
 
 // 単一ゲーム抽出の純粋関数
-function extractSingleGame(container: HTMLElement, config: SiteConfig): ExtractedGameData | null {
+function extractSingleGame(container: HTMLElement, config: SiteConfig): DmmExtractedGame | null {
   const fields = config.gameExtractionRules.fields
-  const gameData: Partial<ExtractedGameData> = {
+  const gameData: Partial<DmmExtractedGame> = {
     additional_data: {},
   }
 
@@ -210,15 +211,15 @@ function extractSingleGame(container: HTMLElement, config: SiteConfig): Extracte
     return null
   }
 
-  return gameData as ExtractedGameData
+  return gameData as DmmExtractedGame
 }
 
 // ゲーム情報抽出の純粋関数
-function extractGames(config: SiteConfig): ExtractedGameData[] {
+function extractGames(config: SiteConfig): DmmExtractedGame[] {
   const containers = document.querySelectorAll(config.gameExtractionRules.container)
   log.debug(`Found ${containers.length} game containers`)
 
-  const games: ExtractedGameData[] = []
+  const games: DmmExtractedGame[] = []
 
   containers.forEach((container, index) => {
     try {
@@ -248,7 +249,7 @@ function shouldExtract(config: SiteConfig): boolean {
 }
 
 // DMM特有のゲーム処理
-function processDMMGame(game: ExtractedGameData): ExtractedGameData {
+function processDMMGame(game: DmmExtractedGame): DmmExtractedGame {
   // DMMのURLを正規化
   if (game.purchase_url && !game.purchase_url.startsWith('http')) {
     game.purchase_url = `https://games.dmm.co.jp${game.purchase_url}`
@@ -320,20 +321,37 @@ async function extractAndSync(config: SiteConfig): Promise<void> {
     // DMM特有の処理
     const processedGames = games.map(game => processDMMGame(game))
 
-    // 共通の同期機能を使用
-    sendSyncRequest(
-      'DMM',
-      processedGames,
-      'dmm-extractor',
-      (response) => {
-        log.info('Sync successful:', response)
-        showNotification(
-          `DMM: ${processedGames.length}個のゲームを同期しました`,
-        )
+    // DMM専用の同期リクエストを送信
+    const dmmGames = processedGames.map(g => create(DmmGameSchema, {
+      id: g.store_id || '',
+      category: g.additional_data?.category || '',
+      subcategory: g.additional_data?.subcategory || '',
+    }))
+
+    const request = create(ExtensionRequestSchema, {
+      requestId: generateRequestId(),
+      request: {
+        case: 'syncDmmGames',
+        value: create(DmmSyncGamesRequestSchema, {
+          games: dmmGames,
+          source: 'dmm-extractor',
+        }),
       },
-      (error) => {
-        log.error('Sync failed:', error)
-        showNotification('DMM: 同期に失敗しました', 'error')
+    })
+
+    chrome.runtime.sendMessage(
+      toJson(ExtensionRequestSchema, request),
+      (responseJson) => {
+        try {
+          log.info('Sync successful:', responseJson)
+          showNotification(
+            `DMM: ${processedGames.length}個のゲームを同期しました`,
+          )
+        }
+        catch (error) {
+          log.error('Sync failed:', error)
+          showNotification('DMM: 同期に失敗しました', 'error')
+        }
       },
     )
   }

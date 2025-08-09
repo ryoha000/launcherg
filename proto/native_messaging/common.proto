@@ -13,10 +13,11 @@ message NativeMessage {
   
   // oneofを使用してメッセージタイプとペイロードの整合性を保証
   oneof message {
-    sync.SyncGamesRequest sync_games = 10;
-    GetStatusRequest get_status = 11;
-    status.ExtensionConfig set_config = 12;
-    HealthCheckRequest health_check = 13;
+    sync.DmmSyncGamesRequest sync_dmm_games = 10;
+    sync.DlsiteSyncGamesRequest sync_dlsite_games = 11;
+    GetStatusRequest get_status = 12;
+    status.ExtensionConfig set_config = 13;
+    HealthCheckRequest health_check = 14;
   }
 }
 

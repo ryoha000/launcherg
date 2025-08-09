@@ -2,21 +2,29 @@ syntax = "proto3";
 
 package launcherg.sync;
 
-// ゲーム同期リクエスト
-message SyncGamesRequest {
-  string store = 1;  // "DMM" | "DLSite"
-  repeated ExtractedGameData games = 2;
-  string extension_id = 3;
+// DMM 向けゲーム同期リクエスト
+message DmmSyncGamesRequest {
+  repeated DmmGame games = 1;
+  string extension_id = 2;
 }
 
-// 抽出されたゲームデータ
-message ExtractedGameData {
-  string store_id = 1;
-  string title = 2;
-  string purchase_url = 3;
-  string purchase_date = 4;  // optional
-  string thumbnail_url = 5;  // optional
-  map<string, string> additional_data = 6;
+// DLsite 向けゲーム同期リクエスト
+message DlsiteSyncGamesRequest {
+  repeated DlsiteGame games = 1;
+  string extension_id = 2;
+}
+
+// DMM のゲームデータ
+message DmmGame {
+  string id = 1;
+  string category = 2;    // "mono" | "digital"
+  string subcategory = 3; // "doujin" | "pcgame"
+}
+
+// DLsite のゲームデータ
+message DlsiteGame {
+  string id = 1;
+  string category = 2; // "ai" | "maniax" | "bl" | "home" | "appx" | "girls" | "pro" | "girls-pro" | "soft"
 }
 
 // ゲーム同期結果のバッチレスポンス

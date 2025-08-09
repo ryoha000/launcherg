@@ -7,11 +7,12 @@ message ExtensionRequest {
   string request_id = 1;
   
   oneof request {
-    SyncGamesRequest sync_games = 10;
-    GetConfigRequest get_config = 11;
-    ShowNotificationRequest show_notification = 12;
-    GetStatusRequest get_status = 13;
-    DebugNativeMessageRequest debug_native_message = 14;
+    DmmSyncGamesRequest sync_dmm_games = 10;
+    DlsiteSyncGamesRequest sync_dlsite_games = 11;
+    GetConfigRequest get_config = 12;
+    ShowNotificationRequest show_notification = 13;
+    GetStatusRequest get_status = 14;
+    DebugNativeMessageRequest debug_native_message = 15;
   }
 }
 
@@ -30,21 +31,29 @@ message ExtensionResponse {
   }
 }
 
-// ゲーム同期リクエスト
-message SyncGamesRequest {
-  string store = 1;  // "DMM" | "DLSite"
-  repeated GameData games = 2;
-  string source = 3;
+// DMM向け ゲーム同期リクエスト（拡張内部）
+message DmmSyncGamesRequest {
+  repeated DmmGame games = 1;
+  string source = 2;
 }
 
-// ゲームデータ（Content Script内での表現）
-message GameData {
-  string store_id = 1;
-  string title = 2;
-  string purchase_url = 3;
-  string purchase_date = 4;
-  string thumbnail_url = 5;  
-  map<string, string> additional_data = 6;
+// DLsite向け ゲーム同期リクエスト（拡張内部）
+message DlsiteSyncGamesRequest {
+  repeated DlsiteGame games = 1;
+  string source = 2;
+}
+
+// DMM のゲームデータ（拡張内部）
+message DmmGame {
+  string id = 1;
+  string category = 2;    // "mono" | "digital"
+  string subcategory = 3; // "doujin" | "pcgame"
+}
+
+// DLsite のゲームデータ（拡張内部）
+message DlsiteGame {
+  string id = 1;
+  string category = 2; // "ai" | "maniax" | "bl" | "home" | "appx" | "girls" | "pro" | "girls-pro" | "soft"
 }
 
 // ゲーム同期レスポンス

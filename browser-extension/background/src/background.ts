@@ -4,9 +4,10 @@
 // Extension Internal and Native Messaging types
 import type {
   DebugNativeMessageRequest,
+  DlsiteSyncGamesRequest,
+  DmmSyncGamesRequest,
   GetStatusRequest,
   ShowNotificationRequest,
-  SyncGamesRequest,
 } from '@launcherg/shared/proto/extension_internal'
 
 import type {
@@ -30,12 +31,12 @@ import {
   SyncResultSchema,
 } from '@launcherg/shared/proto/extension_internal'
 import {
-  ExtractedGameDataSchema,
   HealthCheckRequestSchema,
+  DlsiteSyncGamesRequestSchema as NativeDlsiteSyncGamesRequestSchema,
+  DmmSyncGamesRequestSchema as NativeDmmSyncGamesRequestSchema,
   GetStatusRequestSchema as NativeGetStatusRequestSchema,
   NativeMessageSchema,
   NativeResponseSchema,
-  SyncGamesRequestSchema as NativeSyncGamesRequestSchema,
 } from '@launcherg/shared/proto/native_messaging'
 
 // 型定義はprotobufから取得するため、interfaceは削除
@@ -88,8 +89,16 @@ class BackgroundService {
 
       // リクエストタイプに応じて処理を分岐
       switch (extensionRequest.request.case) {
-        case 'syncGames': {
-          await this.handleProtobufSyncGames(
+        case 'syncDmmGames': {
+          await this.handleProtobufSyncDmmGames(
+            extensionRequest.requestId,
+            extensionRequest.request.value,
+            sendResponse,
+          )
+          break
+        }
+        case 'syncDlsiteGames': {
+          await this.handleProtobufSyncDlsiteGames(
             extensionRequest.requestId,
             extensionRequest.request.value,
             sendResponse,
@@ -161,30 +170,17 @@ class BackgroundService {
     }
   }
 
-  private async handleProtobufSyncGames(
+  private async handleProtobufSyncDmmGames(
     requestId: string,
-    syncGamesRequest: SyncGamesRequest,
+    syncGamesRequest: DmmSyncGamesRequest,
     sendResponse: (response?: any) => void,
   ): Promise<void> {
-    log.info(`Syncing ${syncGamesRequest.games.length} games from ${syncGamesRequest.store}`)
-    // 集計: フロントからの同期件数を蓄積し、30秒後にまとめて通知（alarms使用でSW休止対策）
+    log.info(`Syncing ${syncGamesRequest.games.length} DMM games`)
     await this.recordSyncAggregation(syncGamesRequest.games.length || 0)
 
     try {
-      const extractedGames = syncGamesRequest.games.map(game =>
-        create(ExtractedGameDataSchema, {
-          storeId: game.storeId || '',
-          title: game.title || '',
-          purchaseUrl: game.purchaseUrl || '',
-          purchaseDate: game.purchaseDate || '',
-          thumbnailUrl: game.thumbnailUrl || '',
-          additionalData: game.additionalData || {},
-        }),
-      )
-
-      const nativeSyncRequest = create(NativeSyncGamesRequestSchema, {
-        store: syncGamesRequest.store,
-        games: extractedGames,
+      const nativeSyncRequest = create(NativeDmmSyncGamesRequestSchema, {
+        games: syncGamesRequest.games.map(g => ({ id: g.id, category: g.category, subcategory: g.subcategory })),
         extensionId: chrome.runtime.id,
       })
 
@@ -194,7 +190,7 @@ class BackgroundService {
         }),
         requestId: this.generateRequestId(),
         message: {
-          case: 'syncGames',
+          case: 'syncDmmGames',
           value: nativeSyncRequest,
         },
       })
@@ -223,7 +219,7 @@ class BackgroundService {
             case: 'syncGamesResult',
             value: create(SyncGamesResponseSchema, {
               result: syncResult,
-              message: `${syncGamesRequest.store}から${syncGamesRequest.games.length}個のゲームを同期しました`,
+              message: `DMMから${syncGamesRequest.games.length}個のゲームを同期しました`,
             }),
           },
         })
@@ -246,7 +242,87 @@ class BackgroundService {
         response: {
           case: 'syncGamesResult',
           value: create(SyncGamesResponseSchema, {
-            message: `${syncGamesRequest.store}の同期に失敗しました`,
+            message: `DMMの同期に失敗しました`,
+          }),
+        },
+      })
+      sendResponse(toJson(ExtensionResponseSchema, errorResponse))
+    }
+  }
+
+  private async handleProtobufSyncDlsiteGames(
+    requestId: string,
+    syncGamesRequest: DlsiteSyncGamesRequest,
+    sendResponse: (response?: any) => void,
+  ): Promise<void> {
+    log.info(`Syncing ${syncGamesRequest.games.length} DLsite games`)
+    await this.recordSyncAggregation(syncGamesRequest.games.length || 0)
+
+    try {
+      const nativeSyncRequest = create(NativeDlsiteSyncGamesRequestSchema, {
+        games: syncGamesRequest.games.map(g => ({ id: g.id, category: g.category })),
+        extensionId: chrome.runtime.id,
+      })
+
+      const nativeMessage = create(NativeMessageSchema, {
+        timestamp: create(TimestampSchema, {
+          seconds: BigInt(Math.floor(Date.now() / 1000)),
+        }),
+        requestId: this.generateRequestId(),
+        message: {
+          case: 'syncDlsiteGames',
+          value: nativeSyncRequest,
+        },
+      })
+
+      const nativeResponse = await this.sendNativeProtobufMessage(
+        nativeMessage,
+      )
+
+      if (nativeResponse && nativeResponse.success) {
+        let syncResult
+        if (nativeResponse.response.case === 'syncGamesResult') {
+          const syncBatchResult = nativeResponse.response.value
+          syncResult = create(SyncResultSchema, {
+            successCount: Number(syncBatchResult.successCount),
+            errorCount: Number(syncBatchResult.errorCount),
+            errors: syncBatchResult.errors,
+            syncedGames: syncBatchResult.syncedGames,
+          })
+        }
+
+        const response = create(ExtensionResponseSchema, {
+          requestId,
+          success: true,
+          error: '',
+          response: {
+            case: 'syncGamesResult',
+            value: create(SyncGamesResponseSchema, {
+              result: syncResult,
+              message: `DLsiteから${syncGamesRequest.games.length}個のゲームを同期しました`,
+            }),
+          },
+        })
+
+        sendResponse(toJson(ExtensionResponseSchema, response))
+      }
+      else {
+        throw new Error(nativeResponse?.error || 'Native host returned error')
+      }
+    }
+    catch (error) {
+      log.error('Sync failed:', error)
+      const errorMessage
+        = error instanceof Error ? error.message : 'Unknown error'
+
+      const errorResponse = create(ExtensionResponseSchema, {
+        requestId,
+        success: false,
+        error: errorMessage,
+        response: {
+          case: 'syncGamesResult',
+          value: create(SyncGamesResponseSchema, {
+            message: `DLsiteの同期に失敗しました`,
           }),
         },
       })

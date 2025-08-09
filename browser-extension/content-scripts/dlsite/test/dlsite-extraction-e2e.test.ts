@@ -1,4 +1,4 @@
-import type { ExtractedGameData } from '@launcherg/shared'
+import type { DlsiteExtractedGame } from '../src/types'
 import { readFileSync } from 'node:fs'
 import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -57,7 +57,7 @@ describe('dLsite Play.html E2Eテスト（JSDOMバックエンド）', () => {
     // ゲーム情報を抽出
     const games = extractAllGames()
 
-    const expectedGames: ExtractedGameData[] = [{
+    const expectedGames: DlsiteExtractedGame[] = [{
       store_id: 'VJ01004076',
       title: '【通常版】神様ちゅ～ず！ センセー女の子似合ってるよっ！',
       purchase_url: 'https://play.dlsite.com/maniax/work/=/product_id/VJ01004076.html',

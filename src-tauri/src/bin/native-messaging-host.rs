@@ -67,7 +67,8 @@ fn handle_message() -> Result<bool, Box<dyn std::error::Error>> {
     let (message, format) = parse_message(&message_bytes)?;
     
     let message_type = match &message.message {
-        Some(native_message::Message::SyncGames(_)) => "sync_games",
+        Some(native_message::Message::SyncDmmGames(_)) => "sync_dmm_games",
+        Some(native_message::Message::SyncDlsiteGames(_)) => "sync_dlsite_games",
         Some(native_message::Message::GetStatus(_)) => "get_status",
         Some(native_message::Message::SetConfig(_)) => "set_config",
         Some(native_message::Message::HealthCheck(_)) => "health_check",
@@ -77,7 +78,8 @@ fn handle_message() -> Result<bool, Box<dyn std::error::Error>> {
     
     // メッセージタイプに応じて処理
     let response = match &message.message {
-        Some(native_message::Message::SyncGames(req)) => handle_sync_games(req, &message.request_id),
+        Some(native_message::Message::SyncDmmGames(req)) => handle_sync_dmm_games(req, &message.request_id),
+        Some(native_message::Message::SyncDlsiteGames(req)) => handle_sync_dlsite_games(req, &message.request_id),
         Some(native_message::Message::GetStatus(req)) => handle_get_status(req, &message.request_id),
         Some(native_message::Message::SetConfig(req)) => handle_set_config(req, &message.request_id),
         Some(native_message::Message::HealthCheck(req)) => handle_health_check(req, &message.request_id),
@@ -95,16 +97,34 @@ fn handle_message() -> Result<bool, Box<dyn std::error::Error>> {
     Ok(true)
 }
 
-fn handle_sync_games(request: &SyncGamesRequest, request_id: &str) -> NativeResponse {
-    log::info!("Syncing {} games from store: {}", request.games.len(), request.store);
-    
+fn handle_sync_dmm_games(request: &DmmSyncGamesRequest, request_id: &str) -> NativeResponse {
+    log::info!("Syncing {} DMM games", request.games.len());
+
     let result = SyncBatchResult {
         success_count: 3,
         error_count: 1,
         errors: vec!["Game 'Test Game 4' not found in ErogameScape database".to_string()],
         synced_games: vec!["Test Game 1".to_string(), "Test Game 2".to_string(), "Test Game 3".to_string()],
     };
-    
+
+    NativeResponse {
+        success: true,
+        error: String::new(),
+        request_id: request_id.to_string(),
+        response: Some(native_response::Response::SyncGamesResult(result)),
+    }
+}
+
+fn handle_sync_dlsite_games(request: &DlsiteSyncGamesRequest, request_id: &str) -> NativeResponse {
+    log::info!("Syncing {} DLsite games", request.games.len());
+
+    let result = SyncBatchResult {
+        success_count: 3,
+        error_count: 1,
+        errors: vec!["Game 'Test Game 4' not found in ErogameScape database".to_string()],
+        synced_games: vec!["Test Game 1".to_string(), "Test Game 2".to_string(), "Test Game 3".to_string()],
+    };
+
     NativeResponse {
         success: true,
         error: String::new(),

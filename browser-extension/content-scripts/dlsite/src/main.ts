@@ -1,13 +1,16 @@
 // DLsite用独立型抽出器のメインエントリーポイント
 
+import { create, toJson } from '@bufbuild/protobuf'
 import {
   addNotificationStyles,
   logger,
-  sendSyncRequest,
+  sendExtensionRequest,
   setLogLevel,
   showNotification,
   waitForPageLoad,
 } from '@launcherg/shared'
+import { DlsiteGameSchema, DlsiteSyncGamesRequestSchema, ExtensionRequestSchema } from '@launcherg/shared/proto/extension_internal'
+
 import { processGames } from './data-processor'
 import { extractAllGames, shouldExtract } from './dom-extractor'
 
@@ -47,18 +50,30 @@ async function extractAndSync(): Promise<void> {
     // DLsite特有の処理を適用
     const processedGames = processGames(games)
 
-    // 同期リクエストを送信
-    sendSyncRequest(
-      'DLSite',
-      processedGames,
-      'dlsite-extractor',
-      (response) => {
-        log.info('Sync successful:', response)
+    // 同期リクエストを送信（DLsite専用）
+    const dlsiteGames = processedGames.map(g => create(DlsiteGameSchema, {
+      id: g.store_id || '',
+      category: g.additional_data?.category || '',
+    }))
+
+    const request = create(ExtensionRequestSchema, {
+      requestId: Date.now().toString(36) + Math.random().toString(36).slice(2),
+      request: {
+        case: 'syncDlsiteGames',
+        value: create(DlsiteSyncGamesRequestSchema, {
+          games: dlsiteGames,
+          source: 'dlsite-extractor',
+        }),
       },
-      (error) => {
-        log.error('Sync failed:', error)
-      },
-    )
+    })
+
+    try {
+      const responseJson = await sendExtensionRequest(request, req => toJson(ExtensionRequestSchema, req))
+      log.info('Sync successful:', responseJson)
+    }
+    catch (error) {
+      log.error('Sync failed:', error)
+    }
   }
   catch (error) {
     log.error('Extraction failed:', error)

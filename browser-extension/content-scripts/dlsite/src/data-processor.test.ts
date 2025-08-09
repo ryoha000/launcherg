@@ -1,4 +1,4 @@
-import type { ExtractedGameData } from '@launcherg/shared'
+import type { DlsiteExtractedGame } from './types'
 import { describe, expect, it } from 'vitest'
 import {
   cleanDLsiteTitle,
@@ -127,7 +127,7 @@ describe('data-processor', () => {
   })
 
   describe('processDLsiteGame', () => {
-    const baseGame: ExtractedGameData = {
+    const baseGame: DlsiteExtractedGame = {
       store_id: '123456',
       title: '[サークル名] ゲーム（バージョン1.0）',
       purchase_url: '/work/RJ123456',
@@ -161,7 +161,7 @@ describe('data-processor', () => {
     })
 
     it('vJコードの作品を正しく処理する', () => {
-      const voiceGame: ExtractedGameData = {
+      const voiceGame: DlsiteExtractedGame = {
         ...baseGame,
         store_id: 'VJ987654',
       }
@@ -171,7 +171,7 @@ describe('data-processor', () => {
     })
 
     it('bJコードの作品を正しく処理する', () => {
-      const bookGame: ExtractedGameData = {
+      const bookGame: DlsiteExtractedGame = {
         ...baseGame,
         store_id: 'BJ111222',
       }
@@ -183,7 +183,7 @@ describe('data-processor', () => {
 
   describe('processGames', () => {
     it('複数のゲームを処理する', () => {
-      const games: ExtractedGameData[] = [
+      const games: DlsiteExtractedGame[] = [
         {
           store_id: '123456',
           title: '[サークル1] ゲーム1',

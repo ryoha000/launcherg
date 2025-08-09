@@ -1,6 +1,6 @@
 // データ処理関連の純粋関数
 
-import type { ExtractedGameData } from '@launcherg/shared'
+import type { DlsiteExtractedGame } from './types'
 
 // DLsiteの日付フォーマットを正規化する純粋関数
 export function normalizeDLsiteDate(dateStr: string): string {
@@ -97,9 +97,9 @@ export function determineWorkType(storeId: string): string {
 }
 
 // DLsiteのゲームデータを処理する純粋関数
-export function processDLsiteGame(game: ExtractedGameData): ExtractedGameData {
+export function processDLsiteGame(game: DlsiteExtractedGame): DlsiteExtractedGame {
   // 新しいオブジェクトを作成して不変性を保つ
-  const processedGame: ExtractedGameData = {
+  const processedGame: DlsiteExtractedGame = {
     ...game,
     additional_data: { ...game.additional_data },
   }
@@ -133,6 +133,6 @@ export function processDLsiteGame(game: ExtractedGameData): ExtractedGameData {
 }
 
 // ゲームデータのリストを処理する純粋関数
-export function processGames(games: ExtractedGameData[]): ExtractedGameData[] {
+export function processGames(games: DlsiteExtractedGame[]): DlsiteExtractedGame[] {
   return games.map(game => processDLsiteGame(game))
 }

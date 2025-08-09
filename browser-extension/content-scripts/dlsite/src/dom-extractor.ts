@@ -1,6 +1,6 @@
 // DOM操作関連の純粋関数
 
-import type { ExtractedGameData } from '@launcherg/shared'
+import type { DlsiteExtractedGame } from './types'
 import { logger } from '@launcherg/shared'
 import { extractStoreIdFromUrl } from './utils'
 
@@ -140,7 +140,7 @@ function extractDate(container: Element): string {
 export function extractGameDataFromContainer(
   container: Element,
   index: number,
-): ExtractedGameData | null {
+): DlsiteExtractedGame | null {
   try {
     // 画像要素からカードコンテキストを特定
     const card
@@ -172,7 +172,7 @@ export function extractGameDataFromContainer(
     // 購入URLを構築
     const purchaseUrl = `https://play.dlsite.com/maniax/work/=/product_id/${storeId}.html`
 
-    const gameData: ExtractedGameData = {
+    const gameData: DlsiteExtractedGame = {
       store_id: storeId,
       title,
       purchase_url: purchaseUrl,
@@ -194,11 +194,11 @@ export function extractGameDataFromContainer(
 }
 
 // すべてのゲームデータを抽出する純粋関数
-export function extractAllGames(): ExtractedGameData[] {
+export function extractAllGames(): DlsiteExtractedGame[] {
   const gameContainers = extractGameContainers()
   log.debug(`Found ${gameContainers.length} potential game containers`)
 
-  const games: ExtractedGameData[] = []
+  const games: DlsiteExtractedGame[] = []
   const seenStoreIds = new Set<string>()
 
   gameContainers.forEach((container, index) => {
