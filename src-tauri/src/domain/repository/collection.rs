@@ -118,4 +118,18 @@ pub trait CollectionRepository {
         &self,
         id: &Id<CollectionElement>,
     ) -> Result<Option<i32>>;
+
+    // DMM / DLsite マッピング操作（Native Host用）
+    async fn upsert_dmm_mapping(
+        &self,
+        collection_element_id: &Id<CollectionElement>,
+        category: &str,
+        subcategory: &str,
+    ) -> Result<()>;
+
+    async fn upsert_dlsite_mapping(
+        &self,
+        collection_element_id: &Id<CollectionElement>,
+        category: &str,
+    ) -> Result<()>;
 }

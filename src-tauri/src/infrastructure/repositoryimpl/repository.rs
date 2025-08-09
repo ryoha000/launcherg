@@ -63,4 +63,8 @@ impl Repositories {
             all_game_cache_repository,
         }
     }
+
+    pub fn pool(&self) -> &Db {
+        &self.collection_repository.pool
+    }
 }
