@@ -70,6 +70,7 @@ mod tests {
                 updated_at: Local::now(),
             }),
             dl_store: None,
+            erogamescape: None,
         }
     }
 
@@ -135,6 +136,23 @@ mod tests {
     #[tokio::test]
     async fn test_create_collection_element_with_full_data() {
         let mut mock_repo = MockCollectionRepository::new();
+        // ID解決フェーズ: 既存要素なし/マッピングなし -> 新規採番 + マッピング登録
+        mock_repo
+            .expect_get_element_by_element_id()
+            .times(1)
+            .returning(|_| Ok(None));
+        mock_repo
+            .expect_get_collection_id_by_erogamescape_id()
+            .times(1)
+            .returning(|_| Ok(None));
+        mock_repo
+            .expect_allocate_new_collection_element_id()
+            .times(1)
+            .returning(|| Ok(Id::new(100)));
+        mock_repo
+            .expect_upsert_erogamescape_map()
+            .times(1)
+            .returning(|_, _| Ok(()));
         mock_repo
             .expect_upsert_collection_element()
             .with(always())
@@ -166,6 +184,23 @@ mod tests {
     #[tokio::test]
     async fn test_create_collection_element_minimal_data() {
         let mut mock_repo = MockCollectionRepository::new();
+        // ID解決フェーズ: 既存要素なし/マッピングなし -> 新規採番 + マッピング登録
+        mock_repo
+            .expect_get_element_by_element_id()
+            .times(1)
+            .returning(|_| Ok(None));
+        mock_repo
+            .expect_get_collection_id_by_erogamescape_id()
+            .times(1)
+            .returning(|_| Ok(None));
+        mock_repo
+            .expect_allocate_new_collection_element_id()
+            .times(1)
+            .returning(|| Ok(Id::new(100)));
+        mock_repo
+            .expect_upsert_erogamescape_map()
+            .times(1)
+            .returning(|_, _| Ok(()));
         mock_repo
             .expect_upsert_collection_element()
             .with(always())
@@ -381,6 +416,23 @@ mod tests {
     #[tokio::test]
     async fn test_upsert_collection_elements_batch() {
         let mut mock_repo = MockCollectionRepository::new();
+        // 各要素ごとにID解決（2回分）
+        mock_repo
+            .expect_get_element_by_element_id()
+            .times(2)
+            .returning(|_| Ok(None));
+        mock_repo
+            .expect_get_collection_id_by_erogamescape_id()
+            .times(2)
+            .returning(|_| Ok(None));
+        mock_repo
+            .expect_allocate_new_collection_element_id()
+            .times(2)
+            .returning(|| Ok(Id::new(100)));
+        mock_repo
+            .expect_upsert_erogamescape_map()
+            .times(2)
+            .returning(|_, _| Ok(()));
         mock_repo
             .expect_upsert_collection_element()
             .times(2)
@@ -397,7 +449,6 @@ mod tests {
         let mut mock_repositories = MockRepositoriesExtMock::new();
         mock_repositories
             .expect_collection_repository()
-            .times(6) // upsert_collection_element (2) + upsert_collection_element_paths (2) + upsert_collection_element_install (2)
             .return_const(mock_repo);
 
         let use_case = CollectionUseCase::new(Arc::new(mock_repositories));

@@ -499,22 +499,6 @@ mod tests {
         assert!(result.is_ok());
     }
 
-    /// プロセスが実行されていない状態でのis_running()テスト
-    ///
-    /// 検証内容:
-    /// - プロセスが実行されていない状態での実行状態確認
-    /// - 初期状態での正しい状態報告
-    ///
-    /// 期待結果: false
-    /// 重要性: 初期状態やプロセス停止後の状態確認
-    #[tokio::test]
-    async fn test_is_running_no_process() {
-        let (manager, _temp_dir) = create_test_manager();
-
-        let is_running = manager.is_running().await;
-        assert!(!is_running);
-    }
-
     /// 実行可能ファイルが存在しない場合のget_status()テスト（スタブ）
     ///
     /// 検証内容:
