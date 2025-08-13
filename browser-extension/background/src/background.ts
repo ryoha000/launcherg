@@ -7,7 +7,6 @@ import type {
   DlsiteSyncGamesRequest,
   DmmSyncGamesRequest,
   GetStatusRequest,
-  ShowNotificationRequest,
 } from '@launcherg/shared/proto/extension_internal'
 
 import type {
@@ -25,7 +24,6 @@ import {
   ExtensionRequestSchema,
   ExtensionResponseSchema,
   GetStatusResponseSchema,
-  ShowNotificationResponseSchema,
   StatusDataSchema,
   SyncGamesResponseSchema,
   SyncResultSchema,
@@ -38,6 +36,8 @@ import {
   NativeMessageSchema,
   NativeResponseSchema,
 } from '@launcherg/shared/proto/native_messaging'
+
+import { resolveEgsForDlsite, resolveEgsForDmm } from './egs-resolver.ts'
 
 // 型定義はprotobufから取得するため、interfaceは削除
 const log = logger('background')
@@ -118,13 +118,7 @@ class BackgroundService {
           break
         }
 
-        case 'showNotification':
-          await this.handleProtobufShowNotification(
-            extensionRequest.requestId,
-            extensionRequest.request.value,
-            sendResponse,
-          )
-          break
+        // showNotification は廃止
 
         case 'getStatus':
           await this.handleProtobufGetStatus(
@@ -178,8 +172,26 @@ class BackgroundService {
     log.info(`Syncing ${syncGamesRequest.games.length} DMM games`)
 
     try {
+      // EGS 情報を解決（キャッシュ活用）
+      const resolvedGames = await Promise.all(
+        syncGamesRequest.games.map(async (g) => {
+          const egs = await resolveEgsForDmm(g.id, g.category, g.subcategory)
+          return egs
+            ? { id: g.id, category: g.category, subcategory: g.subcategory, egsInfo: {
+                erogamescapeId: egs.erogamescapeId,
+                gamename: egs.gamename,
+                gamenameRuby: egs.gamenameRuby,
+                brandname: egs.brandname,
+                brandnameRuby: egs.brandnameRuby,
+                sellday: egs.sellday,
+                isNukige: egs.isNukige,
+              } }
+            : { id: g.id, category: g.category, subcategory: g.subcategory }
+        }),
+      )
+
       const nativeSyncRequest = create(NativeDmmSyncGamesRequestSchema, {
-        games: syncGamesRequest.games.map(g => ({ id: g.id, category: g.category, subcategory: g.subcategory })),
+        games: resolvedGames,
         extensionId: chrome.runtime.id,
       })
 
@@ -263,8 +275,26 @@ class BackgroundService {
     log.info(`Syncing ${syncGamesRequest.games.length} DLsite games`)
 
     try {
+      // EGS 情報を解決（キャッシュ活用）
+      const resolvedGames = await Promise.all(
+        syncGamesRequest.games.map(async (g) => {
+          const egs = await resolveEgsForDlsite(g.id, g.category)
+          return egs
+            ? { id: g.id, category: g.category, egsInfo: {
+                erogamescapeId: egs.erogamescapeId,
+                gamename: egs.gamename,
+                gamenameRuby: egs.gamenameRuby,
+                brandname: egs.brandname,
+                brandnameRuby: egs.brandnameRuby,
+                sellday: egs.sellday,
+                isNukige: egs.isNukige,
+              } }
+            : { id: g.id, category: g.category }
+        }),
+      )
+
       const nativeSyncRequest = create(NativeDlsiteSyncGamesRequestSchema, {
-        games: syncGamesRequest.games.map(g => ({ id: g.id, category: g.category })),
+        games: resolvedGames,
         extensionId: chrome.runtime.id,
       })
 
@@ -340,49 +370,7 @@ class BackgroundService {
     }
   }
 
-  private async handleProtobufShowNotification(
-    requestId: string,
-    notificationRequest: ShowNotificationRequest,
-    sendResponse: (response?: any) => void,
-  ): Promise<void> {
-    try {
-      const iconPath
-        = notificationRequest.iconType === 'error'
-          ? 'icons/icon32_error.png'
-          : 'icons/icon32.png'
-      const iconUrl = chrome.runtime.getURL(iconPath)
-      await chrome.notifications.create({
-        type: 'basic',
-        iconUrl,
-        title: notificationRequest.title,
-        message: notificationRequest.message,
-      })
-
-      const response = create(ExtensionResponseSchema, {
-        requestId,
-        success: true,
-        error: '',
-        response: {
-          case: 'notificationResult',
-          value: create(ShowNotificationResponseSchema, {}),
-        },
-      })
-      sendResponse(toJson(ExtensionResponseSchema, response))
-    }
-    catch (error) {
-      log.error('Notification failed:', error)
-      const errorMessage
-        = error instanceof Error ? error.message : 'Unknown error'
-
-      const errorResponse = create(ExtensionResponseSchema, {
-        requestId,
-        success: false,
-        error: errorMessage,
-        response: { case: undefined },
-      })
-      sendResponse(toJson(ExtensionResponseSchema, errorResponse))
-    }
-  }
+  // showNotification ハンドラは削除済み
 
   private async recordSyncAggregation(count: number): Promise<void> {
     const current = await this.getAggregateCount()

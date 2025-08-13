@@ -1,11 +1,6 @@
 // 通知関連の関数
 
-import { create, toJson } from '@bufbuild/protobuf'
-import {
-  ExtensionRequestSchema,
-  ShowNotificationRequestSchema,
-} from './proto/extension_internal'
-import { generateRequestId } from './utils'
+// トースト通知のみを提供
 
 // ページ内通知を表示する関数（副作用あり）
 export function showInPageNotification(
@@ -58,36 +53,12 @@ export function addNotificationStyles(): void {
 }
 
 // 通知リクエストを作成する純粋関数
-export function createNotificationRequest(
-  message: string,
-  type: 'success' | 'error',
-): any {
-  return create(ExtensionRequestSchema, {
-    requestId: generateRequestId(),
-    request: {
-      case: 'showNotification',
-      value: create(ShowNotificationRequestSchema, {
-        title: 'Launcherg DL Store Sync',
-        message,
-        iconType: type,
-      }),
-    },
-  })
-}
+// OS通知は廃止
 
 // 通知を表示する関数（ブラウザ通知とページ内通知の両方）
 export function showNotification(
   message: string,
   type: 'success' | 'error' = 'success',
 ): void {
-  // プロトバフで通知メッセージを作成
-  const notificationRequest = createNotificationRequest(message, type)
-
-  // ブラウザ通知を表示
-  chrome.runtime.sendMessage(
-    toJson(ExtensionRequestSchema, notificationRequest),
-  )
-
-  // ページ内通知も表示
   showInPageNotification(message, type)
 }

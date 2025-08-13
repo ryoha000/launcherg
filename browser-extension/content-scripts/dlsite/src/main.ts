@@ -6,7 +6,7 @@ import {
   logger,
   sendExtensionRequest,
   setLogLevel,
-  showNotification,
+  showInPageNotification,
   waitForPageLoad,
 } from '@launcherg/shared'
 import { DlsiteGameSchema, DlsiteSyncGamesRequestSchema, ExtensionRequestSchema } from '@launcherg/shared/proto/extension_internal'
@@ -77,7 +77,7 @@ async function extractAndSync(): Promise<void> {
   }
   catch (error) {
     log.error('Extraction failed:', error)
-    showNotification('DLsite: 作品情報の抽出に失敗しました', 'error')
+    showInPageNotification('DLsite: 作品情報の抽出に失敗しました', 'error')
   }
   finally {
     isExtracting = false

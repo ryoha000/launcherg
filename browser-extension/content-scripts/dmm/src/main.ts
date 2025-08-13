@@ -4,7 +4,7 @@ import {
   logger,
   sendExtensionRequest,
   setLogLevel,
-  showNotification,
+  showInPageNotification,
   waitForPageLoad,
 } from '@launcherg/shared'
 import { DmmGameSchema, DmmSyncGamesRequestSchema, ExtensionRequestSchema } from '@launcherg/shared/proto/extension_internal'
@@ -69,7 +69,7 @@ async function extractAndSync(): Promise<void> {
   }
   catch (error) {
     log.error('Extraction failed:', error)
-    showNotification('DMM: ゲーム情報の抽出に失敗しました', 'error')
+    showInPageNotification('DMM: ゲーム情報の抽出に失敗しました', 'error')
   }
   finally {
     isExtracting = false

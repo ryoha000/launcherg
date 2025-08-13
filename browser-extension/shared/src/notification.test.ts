@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { addNotificationStyles, createNotificationRequest, showInPageNotification } from './notification'
+import { addNotificationStyles, showInPageNotification } from './notification'
 
 // Chromeランタイムのモック
 globalThis.chrome = {
@@ -86,34 +86,5 @@ describe('notification', () => {
     })
   })
 
-  describe('createNotificationRequest', () => {
-    it('成功通知のリクエストを正しく作成する', () => {
-      const request = createNotificationRequest('成功メッセージ', 'success')
-
-      expect(request.requestId).toBeTruthy()
-      expect(request.request.case).toBe('showNotification')
-      expect(request.request.value.title).toBe('Launcherg DL Store Sync')
-      expect(request.request.value.message).toBe('成功メッセージ')
-      expect(request.request.value.iconType).toBe('success')
-    })
-
-    it('エラー通知のリクエストを正しく作成する', () => {
-      const request = createNotificationRequest('エラーメッセージ', 'error')
-
-      expect(request.requestId).toBeTruthy()
-      expect(request.request.case).toBe('showNotification')
-      expect(request.request.value.title).toBe('Launcherg DL Store Sync')
-      expect(request.request.value.message).toBe('エラーメッセージ')
-      expect(request.request.value.iconType).toBe('error')
-    })
-
-    it('毎回異なるrequestIdを生成する', () => {
-      const request1 = createNotificationRequest('メッセージ1', 'success')
-      const request2 = createNotificationRequest('メッセージ2', 'success')
-
-      expect(request1.requestId).toBeTruthy()
-      expect(request2.requestId).toBeTruthy()
-      expect(request1.requestId).not.toBe(request2.requestId)
-    })
-  })
+  // OS通知（showNotification）および createNotificationRequest は廃止
 })
