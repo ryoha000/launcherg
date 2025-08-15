@@ -1,7 +1,7 @@
 import type { EgsInfo } from '@launcherg/shared/proto/extension_internal'
 import { create } from '@bufbuild/protobuf'
 import { EgsInfoSchema } from '@launcherg/shared/proto/extension_internal'
-import { createCache } from './kv-cache'
+import { createCache } from './kv-cache/index'
 
 interface DmmKey { storeId: string, category: string, subcategory: string }
 interface DlsiteKey { storeId: string, category: string }

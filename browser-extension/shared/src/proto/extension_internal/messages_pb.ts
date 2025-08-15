@@ -10,7 +10,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file extension_internal/messages.proto.
  */
 export const file_extension_internal_messages: GenFile = /*@__PURE__*/
-  fileDesc("CiFleHRlbnNpb25faW50ZXJuYWwvbWVzc2FnZXMucHJvdG8SHGxhdW5jaGVyZy5leHRlbnNpb25faW50ZXJuYWwimgEKB0Vnc0luZm8SFwoPZXJvZ2FtZXNjYXBlX2lkGAEgASgFEhAKCGdhbWVuYW1lGAIgASgJEhUKDWdhbWVuYW1lX3J1YnkYAyABKAkSEQoJYnJhbmRuYW1lGAQgASgJEhYKDmJyYW5kbmFtZV9ydWJ5GAUgASgJEg8KB3NlbGxkYXkYBiABKAkSEQoJaXNfbnVraWdlGAcgASgIIooEChBFeHRlbnNpb25SZXF1ZXN0EhIKCnJlcXVlc3RfaWQYASABKAkSSwoOc3luY19kbW1fZ2FtZXMYCiABKAsyMS5sYXVuY2hlcmcuZXh0ZW5zaW9uX2ludGVybmFsLkRtbVN5bmNHYW1lc1JlcXVlc3RIABJRChFzeW5jX2Rsc2l0ZV9nYW1lcxgLIAEoCzI0LmxhdW5jaGVyZy5leHRlbnNpb25faW50ZXJuYWwuRGxzaXRlU3luY0dhbWVzUmVxdWVzdEgAEkQKCmdldF9jb25maWcYDCABKAsyLi5sYXVuY2hlcmcuZXh0ZW5zaW9uX2ludGVybmFsLkdldENvbmZpZ1JlcXVlc3RIABJSChFzaG93X25vdGlmaWNhdGlvbhgNIAEoCzI1LmxhdW5jaGVyZy5leHRlbnNpb25faW50ZXJuYWwuU2hvd05vdGlmaWNhdGlvblJlcXVlc3RIABJECgpnZXRfc3RhdHVzGA4gASgLMi4ubGF1bmNoZXJnLmV4dGVuc2lvbl9pbnRlcm5hbC5HZXRTdGF0dXNSZXF1ZXN0SAASVwoUZGVidWdfbmF0aXZlX21lc3NhZ2UYDyABKAsyNy5sYXVuY2hlcmcuZXh0ZW5zaW9uX2ludGVybmFsLkRlYnVnTmF0aXZlTWVzc2FnZVJlcXVlc3RIAEIJCgdyZXF1ZXN0It4DChFFeHRlbnNpb25SZXNwb25zZRISCgpyZXF1ZXN0X2lkGAEgASgJEg8KB3N1Y2Nlc3MYAiABKAgSDQoFZXJyb3IYAyABKAkSTAoRc3luY19nYW1lc19yZXN1bHQYCiABKAsyLy5sYXVuY2hlcmcuZXh0ZW5zaW9uX2ludGVybmFsLlN5bmNHYW1lc1Jlc3BvbnNlSAASSAoNY29uZmlnX3Jlc3VsdBgLIAEoCzIvLmxhdW5jaGVyZy5leHRlbnNpb25faW50ZXJuYWwuR2V0Q29uZmlnUmVzcG9uc2VIABJVChNub3RpZmljYXRpb25fcmVzdWx0GAwgASgLMjYubGF1bmNoZXJnLmV4dGVuc2lvbl9pbnRlcm5hbC5TaG93Tm90aWZpY2F0aW9uUmVzcG9uc2VIABJICg1zdGF0dXNfcmVzdWx0GA0gASgLMi8ubGF1bmNoZXJnLmV4dGVuc2lvbl9pbnRlcm5hbC5HZXRTdGF0dXNSZXNwb25zZUgAElAKDGRlYnVnX3Jlc3VsdBgOIAEoCzI4LmxhdW5jaGVyZy5leHRlbnNpb25faW50ZXJuYWwuRGVidWdOYXRpdmVNZXNzYWdlUmVzcG9uc2VIAEIKCghyZXNwb25zZSJbChNEbW1TeW5jR2FtZXNSZXF1ZXN0EjQKBWdhbWVzGAEgAygLMiUubGF1bmNoZXJnLmV4dGVuc2lvbl9pbnRlcm5hbC5EbW1HYW1lEg4KBnNvdXJjZRgCIAEoCSJhChZEbHNpdGVTeW5jR2FtZXNSZXF1ZXN0EjcKBWdhbWVzGAEgAygLMigubGF1bmNoZXJnLmV4dGVuc2lvbl9pbnRlcm5hbC5EbHNpdGVHYW1lEg4KBnNvdXJjZRgCIAEoCSJ1CgdEbW1HYW1lEgoKAmlkGAEgASgJEhAKCGNhdGVnb3J5GAIgASgJEhMKC3N1YmNhdGVnb3J5GAMgASgJEjcKCGVnc19pbmZvGAQgASgLMiUubGF1bmNoZXJnLmV4dGVuc2lvbl9pbnRlcm5hbC5FZ3NJbmZvImMKCkRsc2l0ZUdhbWUSCgoCaWQYASABKAkSEAoIY2F0ZWdvcnkYAiABKAkSNwoIZWdzX2luZm8YAyABKAsyJS5sYXVuY2hlcmcuZXh0ZW5zaW9uX2ludGVybmFsLkVnc0luZm8iXgoRU3luY0dhbWVzUmVzcG9uc2USOAoGcmVzdWx0GAEgASgLMigubGF1bmNoZXJnLmV4dGVuc2lvbl9pbnRlcm5hbC5TeW5jUmVzdWx0Eg8KB21lc3NhZ2UYAiABKAkiXgoKU3luY1Jlc3VsdBIVCg1zdWNjZXNzX2NvdW50GAEgASgNEhMKC2Vycm9yX2NvdW50GAIgASgNEg4KBmVycm9ycxgDIAMoCRIUCgxzeW5jZWRfZ2FtZXMYBCADKAkiIAoQR2V0Q29uZmlnUmVxdWVzdBIMCgRzaXRlGAEgASgJIigKEUdldENvbmZpZ1Jlc3BvbnNlEhMKC2NvbmZpZ19qc29uGAEgASgJIkwKF1Nob3dOb3RpZmljYXRpb25SZXF1ZXN0Eg0KBXRpdGxlGAEgASgJEg8KB21lc3NhZ2UYAiABKAkSEQoJaWNvbl90eXBlGAMgASgJIhoKGFNob3dOb3RpZmljYXRpb25SZXNwb25zZSISChBHZXRTdGF0dXNSZXF1ZXN0Ik0KEUdldFN0YXR1c1Jlc3BvbnNlEjgKBnN0YXR1cxgBIAEoCzIoLmxhdW5jaGVyZy5leHRlbnNpb25faW50ZXJuYWwuU3RhdHVzRGF0YSKZAQoKU3RhdHVzRGF0YRIRCglsYXN0X3N5bmMYASABKAkSFAoMdG90YWxfc3luY2VkGAIgASgNEhwKFGNvbm5lY3RlZF9leHRlbnNpb25zGAMgAygJEhIKCmlzX3J1bm5pbmcYBCABKAgSGQoRY29ubmVjdGlvbl9zdGF0dXMYBSABKAkSFQoNZXJyb3JfbWVzc2FnZRgGIAEoCSIxChlEZWJ1Z05hdGl2ZU1lc3NhZ2VSZXF1ZXN0EhQKDHBheWxvYWRfanNvbhgBIAEoCSJNChpEZWJ1Z05hdGl2ZU1lc3NhZ2VSZXNwb25zZRIcChRuYXRpdmVfcmVzcG9uc2VfanNvbhgBIAEoCRIRCgl0aW1lc3RhbXAYAiABKAlCvgEKIGNvbS5sYXVuY2hlcmcuZXh0ZW5zaW9uX2ludGVybmFsQg1NZXNzYWdlc1Byb3RvUAGiAgNMRViqAhtMYXVuY2hlcmcuRXh0ZW5zaW9uSW50ZXJuYWzKAhtMYXVuY2hlcmdcRXh0ZW5zaW9uSW50ZXJuYWziAidMYXVuY2hlcmdcRXh0ZW5zaW9uSW50ZXJuYWxcR1BCTWV0YWRhdGHqAhxMYXVuY2hlcmc6OkV4dGVuc2lvbkludGVybmFsYgZwcm90bzM");
+  fileDesc("CiFleHRlbnNpb25faW50ZXJuYWwvbWVzc2FnZXMucHJvdG8SHGxhdW5jaGVyZy5leHRlbnNpb25faW50ZXJuYWwimgEKB0Vnc0luZm8SFwoPZXJvZ2FtZXNjYXBlX2lkGAEgASgFEhAKCGdhbWVuYW1lGAIgASgJEhUKDWdhbWVuYW1lX3J1YnkYAyABKAkSEQoJYnJhbmRuYW1lGAQgASgJEhYKDmJyYW5kbmFtZV9ydWJ5GAUgASgJEg8KB3NlbGxkYXkYBiABKAkSEQoJaXNfbnVraWdlGAcgASgIIvACChBFeHRlbnNpb25SZXF1ZXN0EhIKCnJlcXVlc3RfaWQYASABKAkSSwoOc3luY19kbW1fZ2FtZXMYCiABKAsyMS5sYXVuY2hlcmcuZXh0ZW5zaW9uX2ludGVybmFsLkRtbVN5bmNHYW1lc1JlcXVlc3RIABJRChFzeW5jX2Rsc2l0ZV9nYW1lcxgLIAEoCzI0LmxhdW5jaGVyZy5leHRlbnNpb25faW50ZXJuYWwuRGxzaXRlU3luY0dhbWVzUmVxdWVzdEgAEkQKCmdldF9zdGF0dXMYDCABKAsyLi5sYXVuY2hlcmcuZXh0ZW5zaW9uX2ludGVybmFsLkdldFN0YXR1c1JlcXVlc3RIABJXChRkZWJ1Z19uYXRpdmVfbWVzc2FnZRgNIAEoCzI3LmxhdW5jaGVyZy5leHRlbnNpb25faW50ZXJuYWwuRGVidWdOYXRpdmVNZXNzYWdlUmVxdWVzdEgAQgkKB3JlcXVlc3QivQIKEUV4dGVuc2lvblJlc3BvbnNlEhIKCnJlcXVlc3RfaWQYASABKAkSDwoHc3VjY2VzcxgCIAEoCBINCgVlcnJvchgDIAEoCRJMChFzeW5jX2dhbWVzX3Jlc3VsdBgKIAEoCzIvLmxhdW5jaGVyZy5leHRlbnNpb25faW50ZXJuYWwuU3luY0dhbWVzUmVzcG9uc2VIABJICg1zdGF0dXNfcmVzdWx0GAsgASgLMi8ubGF1bmNoZXJnLmV4dGVuc2lvbl9pbnRlcm5hbC5HZXRTdGF0dXNSZXNwb25zZUgAElAKDGRlYnVnX3Jlc3VsdBgMIAEoCzI4LmxhdW5jaGVyZy5leHRlbnNpb25faW50ZXJuYWwuRGVidWdOYXRpdmVNZXNzYWdlUmVzcG9uc2VIAEIKCghyZXNwb25zZSJbChNEbW1TeW5jR2FtZXNSZXF1ZXN0EjQKBWdhbWVzGAEgAygLMiUubGF1bmNoZXJnLmV4dGVuc2lvbl9pbnRlcm5hbC5EbW1HYW1lEg4KBnNvdXJjZRgCIAEoCSJhChZEbHNpdGVTeW5jR2FtZXNSZXF1ZXN0EjcKBWdhbWVzGAEgAygLMigubGF1bmNoZXJnLmV4dGVuc2lvbl9pbnRlcm5hbC5EbHNpdGVHYW1lEg4KBnNvdXJjZRgCIAEoCSJ1CgdEbW1HYW1lEgoKAmlkGAEgASgJEhAKCGNhdGVnb3J5GAIgASgJEhMKC3N1YmNhdGVnb3J5GAMgASgJEjcKCGVnc19pbmZvGAQgASgLMiUubGF1bmNoZXJnLmV4dGVuc2lvbl9pbnRlcm5hbC5FZ3NJbmZvImMKCkRsc2l0ZUdhbWUSCgoCaWQYASABKAkSEAoIY2F0ZWdvcnkYAiABKAkSNwoIZWdzX2luZm8YAyABKAsyJS5sYXVuY2hlcmcuZXh0ZW5zaW9uX2ludGVybmFsLkVnc0luZm8iXgoRU3luY0dhbWVzUmVzcG9uc2USOAoGcmVzdWx0GAEgASgLMigubGF1bmNoZXJnLmV4dGVuc2lvbl9pbnRlcm5hbC5TeW5jUmVzdWx0Eg8KB21lc3NhZ2UYAiABKAkiXgoKU3luY1Jlc3VsdBIVCg1zdWNjZXNzX2NvdW50GAEgASgNEhMKC2Vycm9yX2NvdW50GAIgASgNEg4KBmVycm9ycxgDIAMoCRIUCgxzeW5jZWRfZ2FtZXMYBCADKAkiEgoQR2V0U3RhdHVzUmVxdWVzdCJNChFHZXRTdGF0dXNSZXNwb25zZRI4CgZzdGF0dXMYASABKAsyKC5sYXVuY2hlcmcuZXh0ZW5zaW9uX2ludGVybmFsLlN0YXR1c0RhdGEimQEKClN0YXR1c0RhdGESEQoJbGFzdF9zeW5jGAEgASgJEhQKDHRvdGFsX3N5bmNlZBgCIAEoDRIcChRjb25uZWN0ZWRfZXh0ZW5zaW9ucxgDIAMoCRISCgppc19ydW5uaW5nGAQgASgIEhkKEWNvbm5lY3Rpb25fc3RhdHVzGAUgASgJEhUKDWVycm9yX21lc3NhZ2UYBiABKAkiMQoZRGVidWdOYXRpdmVNZXNzYWdlUmVxdWVzdBIUCgxwYXlsb2FkX2pzb24YASABKAkiTQoaRGVidWdOYXRpdmVNZXNzYWdlUmVzcG9uc2USHAoUbmF0aXZlX3Jlc3BvbnNlX2pzb24YASABKAkSEQoJdGltZXN0YW1wGAIgASgJQr4BCiBjb20ubGF1bmNoZXJnLmV4dGVuc2lvbl9pbnRlcm5hbEINTWVzc2FnZXNQcm90b1ABogIDTEVYqgIbTGF1bmNoZXJnLkV4dGVuc2lvbkludGVybmFsygIbTGF1bmNoZXJnXEV4dGVuc2lvbkludGVybmFs4gInTGF1bmNoZXJnXEV4dGVuc2lvbkludGVybmFsXEdQQk1ldGFkYXRh6gIcTGF1bmNoZXJnOjpFeHRlbnNpb25JbnRlcm5hbGIGcHJvdG8z");
 
 /**
  * EGS 解決済み情報（拡張内部）
@@ -89,25 +89,13 @@ export type ExtensionRequest = Message<"launcherg.extension_internal.ExtensionRe
     case: "syncDlsiteGames";
   } | {
     /**
-     * @generated from field: launcherg.extension_internal.GetConfigRequest get_config = 12;
-     */
-    value: GetConfigRequest;
-    case: "getConfig";
-  } | {
-    /**
-     * @generated from field: launcherg.extension_internal.ShowNotificationRequest show_notification = 13;
-     */
-    value: ShowNotificationRequest;
-    case: "showNotification";
-  } | {
-    /**
-     * @generated from field: launcherg.extension_internal.GetStatusRequest get_status = 14;
+     * @generated from field: launcherg.extension_internal.GetStatusRequest get_status = 12;
      */
     value: GetStatusRequest;
     case: "getStatus";
   } | {
     /**
-     * @generated from field: launcherg.extension_internal.DebugNativeMessageRequest debug_native_message = 15;
+     * @generated from field: launcherg.extension_internal.DebugNativeMessageRequest debug_native_message = 13;
      */
     value: DebugNativeMessageRequest;
     case: "debugNativeMessage";
@@ -153,25 +141,13 @@ export type ExtensionResponse = Message<"launcherg.extension_internal.ExtensionR
     case: "syncGamesResult";
   } | {
     /**
-     * @generated from field: launcherg.extension_internal.GetConfigResponse config_result = 11;
-     */
-    value: GetConfigResponse;
-    case: "configResult";
-  } | {
-    /**
-     * @generated from field: launcherg.extension_internal.ShowNotificationResponse notification_result = 12;
-     */
-    value: ShowNotificationResponse;
-    case: "notificationResult";
-  } | {
-    /**
-     * @generated from field: launcherg.extension_internal.GetStatusResponse status_result = 13;
+     * @generated from field: launcherg.extension_internal.GetStatusResponse status_result = 11;
      */
     value: GetStatusResponse;
     case: "statusResult";
   } | {
     /**
-     * @generated from field: launcherg.extension_internal.DebugNativeMessageResponse debug_result = 14;
+     * @generated from field: launcherg.extension_internal.DebugNativeMessageResponse debug_result = 12;
      */
     value: DebugNativeMessageResponse;
     case: "debugResult";
@@ -365,96 +341,6 @@ export const SyncResultSchema: GenMessage<SyncResult> = /*@__PURE__*/
   messageDesc(file_extension_internal_messages, 8);
 
 /**
- * 設定取得リクエスト
- *
- * @generated from message launcherg.extension_internal.GetConfigRequest
- */
-export type GetConfigRequest = Message<"launcherg.extension_internal.GetConfigRequest"> & {
-  /**
-   * "dmm" | "dlsite"
-   *
-   * @generated from field: string site = 1;
-   */
-  site: string;
-};
-
-/**
- * Describes the message launcherg.extension_internal.GetConfigRequest.
- * Use `create(GetConfigRequestSchema)` to create a new message.
- */
-export const GetConfigRequestSchema: GenMessage<GetConfigRequest> = /*@__PURE__*/
-  messageDesc(file_extension_internal_messages, 9);
-
-/**
- * 設定取得レスポンス
- *
- * @generated from message launcherg.extension_internal.GetConfigResponse
- */
-export type GetConfigResponse = Message<"launcherg.extension_internal.GetConfigResponse"> & {
-  /**
-   * JSON文字列として設定を格納
-   *
-   * @generated from field: string config_json = 1;
-   */
-  configJson: string;
-};
-
-/**
- * Describes the message launcherg.extension_internal.GetConfigResponse.
- * Use `create(GetConfigResponseSchema)` to create a new message.
- */
-export const GetConfigResponseSchema: GenMessage<GetConfigResponse> = /*@__PURE__*/
-  messageDesc(file_extension_internal_messages, 10);
-
-/**
- * 通知表示リクエスト
- *
- * @generated from message launcherg.extension_internal.ShowNotificationRequest
- */
-export type ShowNotificationRequest = Message<"launcherg.extension_internal.ShowNotificationRequest"> & {
-  /**
-   * @generated from field: string title = 1;
-   */
-  title: string;
-
-  /**
-   * @generated from field: string message = 2;
-   */
-  message: string;
-
-  /**
-   * "success" | "error" | ""
-   *
-   * @generated from field: string icon_type = 3;
-   */
-  iconType: string;
-};
-
-/**
- * Describes the message launcherg.extension_internal.ShowNotificationRequest.
- * Use `create(ShowNotificationRequestSchema)` to create a new message.
- */
-export const ShowNotificationRequestSchema: GenMessage<ShowNotificationRequest> = /*@__PURE__*/
-  messageDesc(file_extension_internal_messages, 11);
-
-/**
- * 通知表示レスポンス
- *
- * 空のメッセージ - 成功/失敗はExtensionResponseのsuccessで判定
- *
- * @generated from message launcherg.extension_internal.ShowNotificationResponse
- */
-export type ShowNotificationResponse = Message<"launcherg.extension_internal.ShowNotificationResponse"> & {
-};
-
-/**
- * Describes the message launcherg.extension_internal.ShowNotificationResponse.
- * Use `create(ShowNotificationResponseSchema)` to create a new message.
- */
-export const ShowNotificationResponseSchema: GenMessage<ShowNotificationResponse> = /*@__PURE__*/
-  messageDesc(file_extension_internal_messages, 12);
-
-/**
  * ステータス取得リクエスト
  *
  * 空のメッセージ
@@ -469,7 +355,7 @@ export type GetStatusRequest = Message<"launcherg.extension_internal.GetStatusRe
  * Use `create(GetStatusRequestSchema)` to create a new message.
  */
 export const GetStatusRequestSchema: GenMessage<GetStatusRequest> = /*@__PURE__*/
-  messageDesc(file_extension_internal_messages, 13);
+  messageDesc(file_extension_internal_messages, 9);
 
 /**
  * ステータス取得レスポンス
@@ -488,7 +374,7 @@ export type GetStatusResponse = Message<"launcherg.extension_internal.GetStatusR
  * Use `create(GetStatusResponseSchema)` to create a new message.
  */
 export const GetStatusResponseSchema: GenMessage<GetStatusResponse> = /*@__PURE__*/
-  messageDesc(file_extension_internal_messages, 14);
+  messageDesc(file_extension_internal_messages, 10);
 
 /**
  * ステータスデータ
@@ -536,7 +422,7 @@ export type StatusData = Message<"launcherg.extension_internal.StatusData"> & {
  * Use `create(StatusDataSchema)` to create a new message.
  */
 export const StatusDataSchema: GenMessage<StatusData> = /*@__PURE__*/
-  messageDesc(file_extension_internal_messages, 15);
+  messageDesc(file_extension_internal_messages, 11);
 
 /**
  * デバッグメッセージリクエスト
@@ -557,7 +443,7 @@ export type DebugNativeMessageRequest = Message<"launcherg.extension_internal.De
  * Use `create(DebugNativeMessageRequestSchema)` to create a new message.
  */
 export const DebugNativeMessageRequestSchema: GenMessage<DebugNativeMessageRequest> = /*@__PURE__*/
-  messageDesc(file_extension_internal_messages, 16);
+  messageDesc(file_extension_internal_messages, 12);
 
 /**
  * デバッグメッセージレスポンス
@@ -583,5 +469,5 @@ export type DebugNativeMessageResponse = Message<"launcherg.extension_internal.D
  * Use `create(DebugNativeMessageResponseSchema)` to create a new message.
  */
 export const DebugNativeMessageResponseSchema: GenMessage<DebugNativeMessageResponse> = /*@__PURE__*/
-  messageDesc(file_extension_internal_messages, 17);
+  messageDesc(file_extension_internal_messages, 13);
 

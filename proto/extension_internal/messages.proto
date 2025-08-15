@@ -20,10 +20,8 @@ message ExtensionRequest {
   oneof request {
     DmmSyncGamesRequest sync_dmm_games = 10;
     DlsiteSyncGamesRequest sync_dlsite_games = 11;
-    GetConfigRequest get_config = 12;
-    ShowNotificationRequest show_notification = 13;
-    GetStatusRequest get_status = 14;
-    DebugNativeMessageRequest debug_native_message = 15;
+    GetStatusRequest get_status = 12;
+    DebugNativeMessageRequest debug_native_message = 13;
   }
 }
 
@@ -35,10 +33,8 @@ message ExtensionResponse {
   
   oneof response {
     SyncGamesResponse sync_games_result = 10;
-    GetConfigResponse config_result = 11;
-    ShowNotificationResponse notification_result = 12;
-    GetStatusResponse status_result = 13;
-    DebugNativeMessageResponse debug_result = 14;
+    GetStatusResponse status_result = 11;
+    DebugNativeMessageResponse debug_result = 12;
   }
 }
 
@@ -81,28 +77,6 @@ message SyncResult {
   uint32 error_count = 2;
   repeated string errors = 3;
   repeated string synced_games = 4;
-}
-
-// 設定取得リクエスト
-message GetConfigRequest {
-  string site = 1;  // "dmm" | "dlsite"
-}
-
-// 設定取得レスポンス
-message GetConfigResponse {
-  string config_json = 1;  // JSON文字列として設定を格納
-}
-
-// 通知表示リクエスト
-message ShowNotificationRequest {
-  string title = 1;
-  string message = 2;
-  string icon_type = 3;  // "success" | "error" | ""
-}
-
-// 通知表示レスポンス
-message ShowNotificationResponse {
-  // 空のメッセージ - 成功/失敗はExtensionResponseのsuccessで判定
 }
 
 // ステータス取得リクエスト
