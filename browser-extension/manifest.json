@@ -14,7 +14,8 @@
   ],
   "host_permissions": [
     "https://dlsoft.dmm.co.jp/*",
-    "https://play.dlsite.com/*"
+    "https://play.dlsite.com/*",
+    "https://erogamescape.dyndns.org/*"
   ],
   "background": {
     "service_worker": "background/background.js",

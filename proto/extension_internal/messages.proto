@@ -2,6 +2,17 @@ syntax = "proto3";
 
 package launcherg.extension_internal;
 
+// EGS 解決済み情報（拡張内部）
+message EgsInfo {
+  int32 erogamescape_id = 1;
+  string gamename = 2;
+  string gamename_ruby = 3;
+  string brandname = 4;
+  string brandname_ruby = 5;
+  string sellday = 6;
+  bool is_nukige = 7;
+}
+
 // Content ScriptからBackground Scriptへのリクエスト
 message ExtensionRequest {
   string request_id = 1;
@@ -48,12 +59,14 @@ message DmmGame {
   string id = 1;
   string category = 2;    // "mono" | "digital"
   string subcategory = 3; // "doujin" | "pcgame"
+  EgsInfo egs_info = 4;   // 省略可
 }
 
 // DLsite のゲームデータ（拡張内部）
 message DlsiteGame {
   string id = 1;
   string category = 2; // "ai" | "maniax" | "bl" | "home" | "appx" | "girls" | "pro" | "girls-pro" | "soft"
+  EgsInfo egs_info = 3; // 省略可
 }
 
 // ゲーム同期レスポンス

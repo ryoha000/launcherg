@@ -10,7 +10,56 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file native_messaging/sync.proto.
  */
 export const file_native_messaging_sync: GenFile = /*@__PURE__*/
-  fileDesc("ChtuYXRpdmVfbWVzc2FnaW5nL3N5bmMucHJvdG8SDmxhdW5jaGVyZy5zeW5jIlMKE0RtbVN5bmNHYW1lc1JlcXVlc3QSJgoFZ2FtZXMYASADKAsyFy5sYXVuY2hlcmcuc3luYy5EbW1HYW1lEhQKDGV4dGVuc2lvbl9pZBgCIAEoCSJZChZEbHNpdGVTeW5jR2FtZXNSZXF1ZXN0EikKBWdhbWVzGAEgAygLMhoubGF1bmNoZXJnLnN5bmMuRGxzaXRlR2FtZRIUCgxleHRlbnNpb25faWQYAiABKAkiPAoHRG1tR2FtZRIKCgJpZBgBIAEoCRIQCghjYXRlZ29yeRgCIAEoCRITCgtzdWJjYXRlZ29yeRgDIAEoCSIqCgpEbHNpdGVHYW1lEgoKAmlkGAEgASgJEhAKCGNhdGVnb3J5GAIgASgJImMKD1N5bmNCYXRjaFJlc3VsdBIVCg1zdWNjZXNzX2NvdW50GAEgASgNEhMKC2Vycm9yX2NvdW50GAIgASgNEg4KBmVycm9ycxgDIAMoCRIUCgxzeW5jZWRfZ2FtZXMYBCADKAlCeAoSY29tLmxhdW5jaGVyZy5zeW5jQglTeW5jUHJvdG9QAaICA0xTWKoCDkxhdW5jaGVyZy5TeW5jygIOTGF1bmNoZXJnXFN5bmPiAhpMYXVuY2hlcmdcU3luY1xHUEJNZXRhZGF0YeoCD0xhdW5jaGVyZzo6U3luY2IGcHJvdG8z");
+  fileDesc("ChtuYXRpdmVfbWVzc2FnaW5nL3N5bmMucHJvdG8SDmxhdW5jaGVyZy5zeW5jIpoBCgdFZ3NJbmZvEhcKD2Vyb2dhbWVzY2FwZV9pZBgBIAEoBRIQCghnYW1lbmFtZRgCIAEoCRIVCg1nYW1lbmFtZV9ydWJ5GAMgASgJEhEKCWJyYW5kbmFtZRgEIAEoCRIWCg5icmFuZG5hbWVfcnVieRgFIAEoCRIPCgdzZWxsZGF5GAYgASgJEhEKCWlzX251a2lnZRgHIAEoCCJTChNEbW1TeW5jR2FtZXNSZXF1ZXN0EiYKBWdhbWVzGAEgAygLMhcubGF1bmNoZXJnLnN5bmMuRG1tR2FtZRIUCgxleHRlbnNpb25faWQYAiABKAkiWQoWRGxzaXRlU3luY0dhbWVzUmVxdWVzdBIpCgVnYW1lcxgBIAMoCzIaLmxhdW5jaGVyZy5zeW5jLkRsc2l0ZUdhbWUSFAoMZXh0ZW5zaW9uX2lkGAIgASgJImcKB0RtbUdhbWUSCgoCaWQYASABKAkSEAoIY2F0ZWdvcnkYAiABKAkSEwoLc3ViY2F0ZWdvcnkYAyABKAkSKQoIZWdzX2luZm8YBCABKAsyFy5sYXVuY2hlcmcuc3luYy5FZ3NJbmZvIlUKCkRsc2l0ZUdhbWUSCgoCaWQYASABKAkSEAoIY2F0ZWdvcnkYAiABKAkSKQoIZWdzX2luZm8YAyABKAsyFy5sYXVuY2hlcmcuc3luYy5FZ3NJbmZvImMKD1N5bmNCYXRjaFJlc3VsdBIVCg1zdWNjZXNzX2NvdW50GAEgASgNEhMKC2Vycm9yX2NvdW50GAIgASgNEg4KBmVycm9ycxgDIAMoCRIUCgxzeW5jZWRfZ2FtZXMYBCADKAlCeAoSY29tLmxhdW5jaGVyZy5zeW5jQglTeW5jUHJvdG9QAaICA0xTWKoCDkxhdW5jaGVyZy5TeW5jygIOTGF1bmNoZXJnXFN5bmPiAhpMYXVuY2hlcmdcU3luY1xHUEJNZXRhZGF0YeoCD0xhdW5jaGVyZzo6U3luY2IGcHJvdG8z");
+
+/**
+ * EGS 解決済み情報
+ *
+ * @generated from message launcherg.sync.EgsInfo
+ */
+export type EgsInfo = Message<"launcherg.sync.EgsInfo"> & {
+  /**
+   * @generated from field: int32 erogamescape_id = 1;
+   */
+  erogamescapeId: number;
+
+  /**
+   * @generated from field: string gamename = 2;
+   */
+  gamename: string;
+
+  /**
+   * @generated from field: string gamename_ruby = 3;
+   */
+  gamenameRuby: string;
+
+  /**
+   * @generated from field: string brandname = 4;
+   */
+  brandname: string;
+
+  /**
+   * @generated from field: string brandname_ruby = 5;
+   */
+  brandnameRuby: string;
+
+  /**
+   * @generated from field: string sellday = 6;
+   */
+  sellday: string;
+
+  /**
+   * @generated from field: bool is_nukige = 7;
+   */
+  isNukige: boolean;
+};
+
+/**
+ * Describes the message launcherg.sync.EgsInfo.
+ * Use `create(EgsInfoSchema)` to create a new message.
+ */
+export const EgsInfoSchema: GenMessage<EgsInfo> = /*@__PURE__*/
+  messageDesc(file_native_messaging_sync, 0);
 
 /**
  * DMM 向けゲーム同期リクエスト
@@ -34,7 +83,7 @@ export type DmmSyncGamesRequest = Message<"launcherg.sync.DmmSyncGamesRequest"> 
  * Use `create(DmmSyncGamesRequestSchema)` to create a new message.
  */
 export const DmmSyncGamesRequestSchema: GenMessage<DmmSyncGamesRequest> = /*@__PURE__*/
-  messageDesc(file_native_messaging_sync, 0);
+  messageDesc(file_native_messaging_sync, 1);
 
 /**
  * DLsite 向けゲーム同期リクエスト
@@ -58,7 +107,7 @@ export type DlsiteSyncGamesRequest = Message<"launcherg.sync.DlsiteSyncGamesRequ
  * Use `create(DlsiteSyncGamesRequestSchema)` to create a new message.
  */
 export const DlsiteSyncGamesRequestSchema: GenMessage<DlsiteSyncGamesRequest> = /*@__PURE__*/
-  messageDesc(file_native_messaging_sync, 1);
+  messageDesc(file_native_messaging_sync, 2);
 
 /**
  * DMM のゲームデータ
@@ -84,6 +133,13 @@ export type DmmGame = Message<"launcherg.sync.DmmGame"> & {
    * @generated from field: string subcategory = 3;
    */
   subcategory: string;
+
+  /**
+   * 省略可。解決できた場合のみ付与
+   *
+   * @generated from field: launcherg.sync.EgsInfo egs_info = 4;
+   */
+  egsInfo?: EgsInfo;
 };
 
 /**
@@ -91,7 +147,7 @@ export type DmmGame = Message<"launcherg.sync.DmmGame"> & {
  * Use `create(DmmGameSchema)` to create a new message.
  */
 export const DmmGameSchema: GenMessage<DmmGame> = /*@__PURE__*/
-  messageDesc(file_native_messaging_sync, 2);
+  messageDesc(file_native_messaging_sync, 3);
 
 /**
  * DLsite のゲームデータ
@@ -110,6 +166,13 @@ export type DlsiteGame = Message<"launcherg.sync.DlsiteGame"> & {
    * @generated from field: string category = 2;
    */
   category: string;
+
+  /**
+   * 省略可。解決できた場合のみ付与
+   *
+   * @generated from field: launcherg.sync.EgsInfo egs_info = 3;
+   */
+  egsInfo?: EgsInfo;
 };
 
 /**
@@ -117,7 +180,7 @@ export type DlsiteGame = Message<"launcherg.sync.DlsiteGame"> & {
  * Use `create(DlsiteGameSchema)` to create a new message.
  */
 export const DlsiteGameSchema: GenMessage<DlsiteGame> = /*@__PURE__*/
-  messageDesc(file_native_messaging_sync, 3);
+  messageDesc(file_native_messaging_sync, 4);
 
 /**
  * ゲーム同期結果のバッチレスポンス
@@ -153,5 +216,5 @@ export type SyncBatchResult = Message<"launcherg.sync.SyncBatchResult"> & {
  * Use `create(SyncBatchResultSchema)` to create a new message.
  */
 export const SyncBatchResultSchema: GenMessage<SyncBatchResult> = /*@__PURE__*/
-  messageDesc(file_native_messaging_sync, 4);
+  messageDesc(file_native_messaging_sync, 5);
 
