@@ -4,13 +4,14 @@
   "version": "1.0.0",
   "description": "DMM content script for Launcherg browser extension",
   "scripts": {
-    "build": "vite build",
+    "prebuild": "pnpm -C ../.. run format && pnpm run typecheck && pnpm -C ../.. run lint",
+    "build": "pnpm run prebuild && vite build",
     "dev": "vite build --watch",
     "clean": "rimraf dist",
     "test": "vitest run",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "format": "cd ../ && npm run format",
-    "lint": "cd ../ && npm run lint"
+    "format": "pnpm -C ../.. run format",
+    "lint": "pnpm -C ../.. run lint"
   },
   "dependencies": {
     "@bufbuild/protobuf": "^2.0.0",

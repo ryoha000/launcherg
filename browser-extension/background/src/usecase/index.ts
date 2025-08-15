@@ -1,5 +1,4 @@
 export * from './debugNativeMessage'
 export * from './getStatus'
-export * from './handler'
 export * from './syncDlsiteGames'
 export * from './syncDmmGames'

@@ -1,6 +1,6 @@
 // string キー専用の KV キャッシュ
 // - V: 保管する値の型
-export function createCache<V>(namespace: string) {
+export function createKvCache<V>(namespace: string) {
   const KEY_PREFIX = `launcherg:${namespace}:`
   return {
     async get(key: string): Promise<V | null> {
@@ -20,3 +20,7 @@ export function createCache<V>(namespace: string) {
     },
   }
 }
+
+export type KvCache<V> = ReturnType<typeof createKvCache<V>>
+
+export {}

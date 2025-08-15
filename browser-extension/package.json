@@ -5,7 +5,8 @@
   "packageManager": "pnpm@8.0.0",
   "description": "Browser extension for syncing DL store games to Launcherg",
   "scripts": {
-    "build": "pnpm run protobuf:generate && pnpm run copy-assets && pnpm run build:workspaces",
+    "prebuild": "pnpm run format && pnpm run typecheck && pnpm run lint",
+    "build": "pnpm run prebuild && pnpm run protobuf:generate && pnpm run copy-assets && pnpm run build:workspaces",
     "build:workspaces": "pnpm run --filter @launcherg/shared build && pnpm run --filter !@launcherg/shared build",
     "dev": "pnpm run protobuf:generate && pnpm run copy-assets && pnpm run -r dev",
     "clean": "rimraf dist && pnpm run -r clean",
@@ -21,6 +22,8 @@
     "test:popup": "pnpm run --filter @launcherg/popup test",
     "test:shared": "pnpm run --filter @launcherg/shared test",
     "typecheck": "pnpm -r run typecheck",
+    "format": "pnpm -C .. exec eslint --fix browser-extension",
+    "lint": "pnpm -C .. exec eslint browser-extension",
     "coverage": "vitest --coverage",
     "precommit": "cd ../ && npm run precommit"
   },

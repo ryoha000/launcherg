@@ -1,31 +1,14 @@
 import type { JsonValue } from '@bufbuild/protobuf'
-import type { EgsInfo } from '@launcherg/shared/proto/extension_internal'
-
+import type { HandlerContext } from '../shared/types'
 import { create, fromJson, toJson } from '@bufbuild/protobuf'
 import { logger } from '@launcherg/shared'
-import {
-  ExtensionRequestSchema,
-  ExtensionResponseSchema,
-} from '@launcherg/shared/proto/extension_internal'
-import { handleDebugNativeMessage } from './debugNativeMessage.ts'
-import { handleGetStatus } from './getStatus.ts'
-import { handleSyncDlsiteGames } from './syncDlsiteGames.ts'
-import { handleSyncDmmGames } from './syncDmmGames.ts'
+import { ExtensionRequestSchema, ExtensionResponseSchema } from '@launcherg/shared/proto/extension_internal'
+import { handleDebugNativeMessage, handleGetStatus, handleSyncDlsiteGames, handleSyncDmmGames } from '../usecase'
 
-const log = logger('background:handler')
+const log = logger('background:dispatcher')
 
-export interface HandlerContext {
-  nativeHostName: string
-  extensionId: string
-  sendNativeProtobufMessage: (nativeHostName: string, message: any) => Promise<any | null>
-  generateRequestId: () => string
-  resolveEgsForDmm: (storeId: string, category: string, subcategory: string) => Promise<EgsInfo | null>
-  resolveEgsForDlsite: (storeId: string, category: string) => Promise<EgsInfo | null>
-  recordSyncAggregation: (count: number) => Promise<void>
-}
-
-export function createMessageHandler(context: HandlerContext) {
-  return async function handle(message: unknown): Promise<any> {
+export function createMessageDispatcher(context: HandlerContext) {
+  return async function dispatch(message: unknown): Promise<any> {
     try {
       const extensionRequest = fromJson(ExtensionRequestSchema, message as JsonValue)
 
@@ -39,7 +22,6 @@ export function createMessageHandler(context: HandlerContext) {
               extensionRequest.request.value,
             ),
           )
-
         case 'syncDlsiteGames':
           return toJson(
             ExtensionResponseSchema,
@@ -49,7 +31,6 @@ export function createMessageHandler(context: HandlerContext) {
               extensionRequest.request.value,
             ),
           )
-
         case 'getStatus':
           return toJson(
             ExtensionResponseSchema,
@@ -59,7 +40,6 @@ export function createMessageHandler(context: HandlerContext) {
               extensionRequest.request.value,
             ),
           )
-
         case 'debugNativeMessage':
           return toJson(
             ExtensionResponseSchema,
@@ -69,7 +49,6 @@ export function createMessageHandler(context: HandlerContext) {
               extensionRequest.request.value,
             ),
           )
-
         default: {
           log.warn('Unknown request type:', extensionRequest.request.case)
           return toJson(
@@ -99,3 +78,5 @@ export function createMessageHandler(context: HandlerContext) {
     }
   }
 }
+
+export { createMessageDispatcher as createMessageHandler }

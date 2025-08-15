@@ -22,7 +22,8 @@
     }
   },
   "scripts": {
-    "build": "tsc",
+    "prebuild": "pnpm -C .. run format && pnpm run typecheck && pnpm -C .. run lint",
+    "build": "pnpm run prebuild && tsc",
     "dev": "tsc --watch",
     "clean": "rimraf dist",
     "test": "vitest run",

@@ -1,17 +1,15 @@
 import type { GetStatusRequest } from '@launcherg/shared/proto/extension_internal'
 import type { NativeMessage } from '@launcherg/shared/proto/native_messaging'
-import type { HandlerContext } from './handler'
+import type { HandlerContext } from '../shared/types'
 import { create } from '@bufbuild/protobuf'
 import { TimestampSchema } from '@bufbuild/protobuf/wkt'
 import {
   ExtensionResponseSchema,
-
   GetStatusResponseSchema,
   StatusDataSchema,
 } from '@launcherg/shared/proto/extension_internal'
 import {
   GetStatusRequestSchema as NativeGetStatusRequestSchema,
-
   NativeMessageSchema,
 } from '@launcherg/shared/proto/native_messaging'
 
@@ -24,17 +22,14 @@ export async function handleGetStatus(
     timestamp: create(TimestampSchema, {
       seconds: BigInt(Math.floor(Date.now() / 1000)),
     }),
-    requestId: context.generateRequestId(),
+    requestId: context.idGenerator.generate(),
     message: {
       case: 'getStatus',
       value: create(NativeGetStatusRequestSchema, {}),
     },
   }) as NativeMessage
 
-  const nativeResponse = await context.sendNativeProtobufMessage(
-    context.nativeHostName,
-    nativeMessage,
-  )
+  const nativeResponse = await context.nativeMessenger.send(nativeMessage)
 
   let statusData
   if (nativeResponse && nativeResponse.response.case === 'statusResult') {

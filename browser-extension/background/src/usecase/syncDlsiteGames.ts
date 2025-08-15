@@ -1,17 +1,15 @@
 import type { DlsiteSyncGamesRequest } from '@launcherg/shared/proto/extension_internal'
 import type { NativeMessage } from '@launcherg/shared/proto/native_messaging'
-import type { HandlerContext } from './handler'
+import type { HandlerContext } from '../shared/types'
 import { create } from '@bufbuild/protobuf'
 import { TimestampSchema } from '@bufbuild/protobuf/wkt'
 import {
-
   ExtensionResponseSchema,
   SyncGamesResponseSchema,
   SyncResultSchema,
 } from '@launcherg/shared/proto/extension_internal'
 import {
   DlsiteSyncGamesRequestSchema as NativeDlsiteSyncGamesRequestSchema,
-
   NativeMessageSchema,
 } from '@launcherg/shared/proto/native_messaging'
 
@@ -22,7 +20,7 @@ export async function handleSyncDlsiteGames(
 ) {
   const resolvedGames = await Promise.all(
     syncGamesRequest.games.map(async (g) => {
-      const egs = await context.resolveEgsForDlsite(g.id, g.category)
+      const egs = await context.egsResolver.resolveForDlsite(g.id, g.category)
       return egs
         ? { id: g.id, category: g.category, egsInfo: {
             erogamescapeId: egs.erogamescapeId,
@@ -46,17 +44,14 @@ export async function handleSyncDlsiteGames(
     timestamp: create(TimestampSchema, {
       seconds: BigInt(Math.floor(Date.now() / 1000)),
     }),
-    requestId: context.generateRequestId(),
+    requestId: context.idGenerator.generate(),
     message: {
       case: 'syncDlsiteGames',
       value: nativeSyncRequest,
     },
   }) as NativeMessage
 
-  const nativeResponse = await context.sendNativeProtobufMessage(
-    context.nativeHostName,
-    nativeMessage,
-  )
+  const nativeResponse = await context.nativeMessenger.send(nativeMessage)
 
   if (nativeResponse && nativeResponse.success) {
     let syncResult
@@ -69,7 +64,7 @@ export async function handleSyncDlsiteGames(
         syncedGames: syncBatchResult.syncedGames,
       })
       const success = Number(syncBatchResult.successCount || 0)
-      await context.recordSyncAggregation(success)
+      await context.aggregation.record(success)
     }
 
     return create(ExtensionResponseSchema, {

@@ -1,10 +1,9 @@
-// ブラウザ拡張機能のバックグラウンドスクリプト（薄い初期化）
 import { logger } from '@launcherg/shared'
-import { AGGREGATE_ALARM, fireAggregateNotification, recordSyncAggregation } from './aggregation'
-import { resolveEgsForDlsite, resolveEgsForDmm } from './egs-resolver'
-import { createMessageHandler } from './handler/handler'
-import { sendNativeProtobufMessage } from './native/send'
-import { performPeriodicSync } from './periodic'
+import { createEgsResolver } from './adapter/egs/resolver'
+import { createNativeMessenger } from './adapter/native/send'
+import { createMessageDispatcher } from './inbound/dispatcher'
+import { AGGREGATE_ALARM, fireAggregateNotification, recordSyncAggregation } from './usecase/aggregation'
+import { performPeriodicSync } from './usecase/periodic'
 
 const log = logger('background')
 
@@ -14,14 +13,16 @@ function generateRequestId(): string {
   return Date.now().toString(36) + Math.random().toString(36).substr(2)
 }
 
-const handle = createMessageHandler({
-  nativeHostName,
+const nativeMessenger = createNativeMessenger(nativeHostName)
+const egsResolver = createEgsResolver()
+
+const handle = createMessageDispatcher({
   extensionId: chrome.runtime.id,
-  sendNativeProtobufMessage,
-  generateRequestId,
-  resolveEgsForDmm,
-  resolveEgsForDlsite,
-  recordSyncAggregation,
+  nativeHostName,
+  nativeMessenger,
+  egsResolver,
+  aggregation: { record: recordSyncAggregation },
+  idGenerator: { generate: generateRequestId },
 })
 
 chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
