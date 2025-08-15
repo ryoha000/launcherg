@@ -200,7 +200,20 @@ async fn handle_sync_dmm_games(ctx: &AppCtx, request: &DmmSyncGamesRequest, requ
     let params: Vec<DmmSyncGameParam> = request
         .games
         .iter()
-        .map(|g| DmmSyncGameParam { store_id: g.id.clone(), category: g.category.clone(), subcategory: g.subcategory.clone() })
+        .map(|g| DmmSyncGameParam {
+            store_id: g.id.clone(),
+            category: g.category.clone(),
+            subcategory: g.subcategory.clone(),
+            egs: g.egs_info.as_ref().map(|e| usecase::native_host_sync::EgsInfo {
+                erogamescape_id: e.erogamescape_id,
+                gamename: e.gamename.clone(),
+                gamename_ruby: e.gamename_ruby.clone(),
+                brandname: e.brandname.clone(),
+                brandname_ruby: e.brandname_ruby.clone(),
+                sellday: e.sellday.clone(),
+                is_nukige: e.is_nukige,
+            }),
+        })
         .collect();
     match ctx.sync_usecase.sync_dmm_games(params).await {
         Ok(success_count) => {
@@ -234,7 +247,19 @@ async fn handle_sync_dlsite_games(ctx: &AppCtx, request: &DlsiteSyncGamesRequest
     let params: Vec<DlsiteSyncGameParam> = request
         .games
         .iter()
-        .map(|g| DlsiteSyncGameParam { store_id: g.id.clone(), category: g.category.clone() })
+        .map(|g| DlsiteSyncGameParam {
+            store_id: g.id.clone(),
+            category: g.category.clone(),
+            egs: g.egs_info.as_ref().map(|e| usecase::native_host_sync::EgsInfo {
+                erogamescape_id: e.erogamescape_id,
+                gamename: e.gamename.clone(),
+                gamename_ruby: e.gamename_ruby.clone(),
+                brandname: e.brandname.clone(),
+                brandname_ruby: e.brandname_ruby.clone(),
+                sellday: e.sellday.clone(),
+                is_nukige: e.is_nukige,
+            }),
+        })
         .collect();
     match ctx.sync_usecase.sync_dlsite_games(params).await {
         Ok(success_count) => {
@@ -357,11 +382,11 @@ fn parse_message(message_bytes: &[u8]) -> HostResult<(NativeMessage, RequestForm
 
     let nm = match env.message {
         BufCase::SyncDmmGames { games, extension_id } => {
-            let list = games.into_iter().map(|g| DmmGame { id: g.id, category: g.category, subcategory: g.subcategory }).collect();
+            let list = games.into_iter().map(|g| DmmGame { id: g.id, category: g.category, subcategory: g.subcategory, egs_info: None }).collect();
             NativeMessage { timestamp, request_id: env.request_id.clone(), message: Some(native_message::Message::SyncDmmGames(DmmSyncGamesRequest { games: list, extension_id })) }
         }
         BufCase::SyncDlsiteGames { games, extension_id } => {
-            let list = games.into_iter().map(|g| DlsiteGame { id: g.id, category: g.category }).collect();
+            let list = games.into_iter().map(|g| DlsiteGame { id: g.id, category: g.category, egs_info: None }).collect();
             NativeMessage { timestamp, request_id: env.request_id.clone(), message: Some(native_message::Message::SyncDlsiteGames(DlsiteSyncGamesRequest { games: list, extension_id })) }
         }
         BufCase::GetStatus {} => {
