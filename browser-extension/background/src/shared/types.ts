@@ -1,7 +1,8 @@
 import type { EgsInfo } from '@launcherg/shared/proto/extension_internal'
+import type { NativeMessage, NativeResponse } from '@launcherg/shared/proto/native_messaging'
 
 export interface NativeMessenger {
-  send: (message: any) => Promise<any | null>
+  send: (message: NativeMessage) => Promise<NativeResponse | null>
 }
 
 export interface EgsResolver {

@@ -1,5 +1,6 @@
 import { create } from '@bufbuild/protobuf'
 import { EgsInfoSchema } from '@launcherg/shared/proto/extension_internal'
+import { NativeResponseSchema, SyncBatchResultSchema } from '@launcherg/shared/proto/native_messaging'
 import { describe, expect, it, vi } from 'vitest'
 import { buildTestContext } from '../../test/helpers/context'
 import { handleSyncDlsiteGames } from './syncDlsiteGames'
@@ -15,18 +16,20 @@ describe('dLsite 同期（syncDlsiteGames）ユースケース', () => {
       sellday: '2024-02-02',
       isNukige: false,
     })
-    const nativeResponse = {
+    const nativeResponse = create(NativeResponseSchema, {
       success: true,
+      error: '',
+      requestId: 'req-2',
       response: {
         case: 'syncGamesResult',
-        value: {
+        value: create(SyncBatchResultSchema, {
           successCount: 2,
           errorCount: 0,
           errors: [],
           syncedGames: ['DL-1', 'DL-2'],
-        },
+        }),
       },
-    }
+    })
     const record = vi.fn(async () => {})
     const send = vi.fn(async () => nativeResponse)
     const resolveForDlsite = vi.fn(async () => egsInfo)
@@ -56,7 +59,7 @@ describe('dLsite 同期（syncDlsiteGames）ユースケース', () => {
   })
 
   it('失敗時は success=false とエラーメッセージを返す', async () => {
-    const send = vi.fn(async () => ({ success: false, error: 'fail' }))
+    const send = vi.fn(async () => create(NativeResponseSchema, { success: false, error: 'fail', requestId: 'x', response: { case: undefined } }))
     const context = buildTestContext({ nativeMessenger: { send } })
     const req = { games: [{ id: 'DL-X', category: 'gc' }] } as any
     const res = await handleSyncDlsiteGames(context, 'rest-4', req)

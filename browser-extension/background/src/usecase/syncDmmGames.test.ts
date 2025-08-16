@@ -1,5 +1,6 @@
 import { create } from '@bufbuild/protobuf'
 import { EgsInfoSchema } from '@launcherg/shared/proto/extension_internal'
+import { NativeResponseSchema, SyncBatchResultSchema } from '@launcherg/shared/proto/native_messaging'
 import { describe, expect, it, vi } from 'vitest'
 import { buildTestContext } from '../../test/helpers/context'
 import { handleSyncDmmGames } from './syncDmmGames'
@@ -15,18 +16,20 @@ describe('dMM 同期（syncDmmGames）ユースケース', () => {
       sellday: '2024-01-01',
       isNukige: false,
     })
-    const nativeResponse = {
+    const nativeResponse = create(NativeResponseSchema, {
       success: true,
+      error: '',
+      requestId: 'req-1',
       response: {
         case: 'syncGamesResult',
-        value: {
+        value: create(SyncBatchResultSchema, {
           successCount: 1,
           errorCount: 0,
           errors: [],
           syncedGames: ['ABC123'],
-        },
+        }),
       },
-    }
+    })
     const record = vi.fn(async () => {})
     const send = vi.fn(async () => nativeResponse)
     const resolveForDmm = vi.fn(async () => egsInfo)
@@ -53,7 +56,7 @@ describe('dMM 同期（syncDmmGames）ユースケース', () => {
   })
 
   it('失敗時は success=false とエラーメッセージを返す', async () => {
-    const send = vi.fn(async () => ({ success: false, error: 'boom' }))
+    const send = vi.fn(async () => create(NativeResponseSchema, { success: false, error: 'boom', requestId: 'x', response: { case: undefined } }))
     const context = buildTestContext({ nativeMessenger: { send } })
     const req = { games: [{ id: 'X', category: 'c', subcategory: 's' }] } as any
     const res = await handleSyncDmmGames(context, 'rest-2', req)
