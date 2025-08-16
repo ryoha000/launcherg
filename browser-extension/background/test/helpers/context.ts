@@ -17,6 +17,22 @@ export function buildTestContext(overrides: Partial<HandlerContext> = {}): Handl
     idGenerator: {
       generate: () => 'test-request-id',
     },
+    browser: {
+      alarms: { create: async () => {} },
+      notifications: { create: async () => {} },
+      runtime: { getURL: (p: string) => `chrome-extension://test/${p}` },
+      storage: {
+        get: async () => ({}),
+        set: async () => {},
+      },
+      tabs: {
+        query: async () => [],
+        sendMessage: async () => {},
+      },
+      scripting: {
+        executeScript: async () => {},
+      },
+    },
   }
   return { ...base, ...overrides }
 }

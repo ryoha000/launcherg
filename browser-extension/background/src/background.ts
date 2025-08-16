@@ -1,4 +1,6 @@
+import type { Browser } from './shared/types'
 import { logger } from '@launcherg/shared'
+import { createBrowser } from './adapter/browser'
 import { createEgsResolver } from './adapter/egs/resolver'
 import { createNativeMessenger } from './adapter/native/send'
 import { createMessageDispatcher } from './inbound/dispatcher'
@@ -15,14 +17,16 @@ function generateRequestId(): string {
 
 const nativeMessenger = createNativeMessenger(nativeHostName)
 const egsResolver = createEgsResolver()
+const browser: Browser = createBrowser()
 
 const handle = createMessageDispatcher({
   extensionId: chrome.runtime.id,
   nativeHostName,
   nativeMessenger,
   egsResolver,
-  aggregation: { record: recordSyncAggregation },
+  aggregation: { record: count => recordSyncAggregation(browser, count) },
   idGenerator: { generate: generateRequestId },
+  browser,
 })
 
 chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
@@ -40,11 +44,11 @@ chrome.alarms.create('periodic_sync', {
 
 chrome.alarms.onAlarm.addListener((alarm) => {
   if (alarm.name === 'periodic_sync') {
-    void performPeriodicSync()
+    void performPeriodicSync(browser)
     return
   }
   if (alarm.name === AGGREGATE_ALARM) {
-    void fireAggregateNotification()
+    void fireAggregateNotification(browser)
   }
 })
 

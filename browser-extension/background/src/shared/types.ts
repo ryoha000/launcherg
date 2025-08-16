@@ -20,6 +20,34 @@ export interface IdGenerator {
   generate: () => string
 }
 
+export interface BrowserTab {
+  id?: number
+  url?: string
+}
+
+export interface Browser {
+  alarms: {
+    create: (name: string, options: { when?: number, delayInMinutes?: number, periodInMinutes?: number }) => Promise<void> | void
+  }
+  notifications: {
+    create: (options: { type: 'basic', iconUrl: string, title: string, message: string }) => Promise<void>
+  }
+  runtime: {
+    getURL: (path: string) => string
+  }
+  storage: {
+    get: (keys: string[]) => Promise<Record<string, any>>
+    set: (items: Record<string, any>) => Promise<void>
+  }
+  tabs: {
+    query: (queryInfo: chrome.tabs.QueryInfo) => Promise<BrowserTab[]>
+    sendMessage: (tabId: number, message: unknown) => Promise<void>
+  }
+  scripting: {
+    executeScript: (tabId: number, files: string[]) => Promise<void>
+  }
+}
+
 export interface HandlerContext {
   extensionId: string
   nativeHostName: string
@@ -27,6 +55,7 @@ export interface HandlerContext {
   egsResolver: EgsResolver
   aggregation: Aggregation
   idGenerator: IdGenerator
+  browser: Browser
 }
 
 export {}

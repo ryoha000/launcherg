@@ -1,29 +1,31 @@
 import { logger } from '@launcherg/shared'
+import type { Browser, BrowserTab } from '../shared/types'
 
 const log = logger('background:periodic')
 
-export async function performPeriodicSync(): Promise<void> {
+export async function performPeriodicSync(browser: Browser): Promise<void> {
   log.info('Performing periodic sync check')
 
-  const tabs = await chrome.tabs.query({
+  const tabs = await browser.tabs.query({
     url: ['https://dlsoft.dmm.co.jp/*', 'https://play.dlsite.com/*'],
   })
 
   for (const tab of tabs) {
     if (!tab.id)
       continue
-    await sendMessageToTabWithInjection(tab, { type: 'periodic_sync_check' })
+    await sendMessageToTabWithInjection(browser, tab, { type: 'periodic_sync_check' })
   }
 }
 
 async function sendMessageToTabWithInjection(
-  tab: chrome.tabs.Tab,
+  browser: Browser,
+  tab: BrowserTab,
   message: unknown,
 ): Promise<void> {
   if (!tab.id || !tab.url)
     return
   try {
-    await chrome.tabs.sendMessage(tab.id, message as any)
+    await browser.tabs.sendMessage(tab.id, message as any)
   }
   catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error)
@@ -41,11 +43,8 @@ async function sendMessageToTabWithInjection(
       return
 
     try {
-      await chrome.scripting.executeScript({
-        target: { tabId: tab.id },
-        files,
-      })
-      await chrome.tabs.sendMessage(tab.id, message as any)
+      await browser.scripting.executeScript(tab.id, files)
+      await browser.tabs.sendMessage(tab.id, message as any)
     }
     catch (injectErr) {
       log.warn('Failed to inject/retry sendMessage:', injectErr)
