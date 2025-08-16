@@ -11,6 +11,7 @@ function htmlTable(rows: string[][]): string {
 
 afterEach(() => {
   vi.restoreAllMocks()
+  vi.useRealTimers()
 })
 
 describe('eGS リゾルバ（モック）', () => {
@@ -172,6 +173,93 @@ describe('eGS リゾルバ（モック）', () => {
     // 2 回目はキャッシュから返ってくるので fetch は呼ばれない
     const second = await resolver.resolveForDmm(key.storeId, key.category, key.subcategory)
     expect(second).toEqual(first)
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+  })
+
+  it('dMM: 未ヒットはネガティブキャッシュされ1週間以内は再フェッチしない', async () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date('2024-01-01T00:00:00Z'))
+    const fetchMock = vi.spyOn(globalThis, 'fetch').mockResolvedValue({
+      text: async () => htmlTable([]),
+    } as unknown as Response)
+
+    const resolver = createEgsResolver()
+    const key = { storeId: 'not_found', category: 'digital', subcategory: 'pcgame' }
+    const first = await resolver.resolveForDmm(key.storeId, key.category, key.subcategory)
+    expect(first).toBeNull()
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+
+    // 6日後（1週間未満）
+    vi.setSystemTime(new Date('2024-01-07T00:00:00Z'))
+    const second = await resolver.resolveForDmm(key.storeId, key.category, key.subcategory)
+    expect(second).toBeNull()
+    // ネガティブキャッシュから返るため fetch は増えない
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+  })
+
+  it('dMM: 未ヒットでも1週間後は再フェッチする', async () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date('2024-02-01T00:00:00Z'))
+    // 1回目はヒットなし
+    const fetchMock = vi.spyOn(globalThis, 'fetch').mockResolvedValue({
+      text: async () => htmlTable([]),
+    } as unknown as Response)
+    const resolver = createEgsResolver()
+    const key = { storeId: 'not_found_2', category: 'digital', subcategory: 'pcgame' }
+    const first = await resolver.resolveForDmm(key.storeId, key.category, key.subcategory)
+    expect(first).toBeNull()
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+
+    // 8日後、今度はヒットするように差し替え
+    vi.setSystemTime(new Date('2024-02-09T00:00:00Z'))
+    fetchMock.mockResolvedValueOnce({
+      text: async () => htmlTable([[
+        '21641',
+        '妹のセイイキ',
+        'イモウトノセイイキ',
+        '2015-08-28',
+        't',
+        'feng',
+        'フォン',
+      ]]),
+    } as unknown as Response)
+
+    const second = await resolver.resolveForDmm(key.storeId, key.category, key.subcategory)
+    expect(second).not.toBeNull()
+    expect(fetchMock).toHaveBeenCalledTimes(2)
+  })
+
+  it('dMM: Bulk の未返却キーはネガティブキャッシュされ2回目は fetch を呼ばない', async () => {
+    const rows = [[
+      '21641',
+      '妹のセイイキ',
+      'イモウトノセイイキ',
+      '2015-08-28',
+      't',
+      'feng',
+      'フォン',
+      'feng_0004',
+      'digital',
+      'pcgame',
+    ]]
+    const fetchMock = vi.spyOn(globalThis, 'fetch').mockResolvedValue({
+      text: async () => htmlTable(rows),
+    } as unknown as Response)
+
+    const resolver = createEgsResolver()
+    const items = [
+      { storeId: 'feng_0004', category: 'digital', subcategory: 'pcgame' },
+      { storeId: 'missing', category: 'digital', subcategory: 'pcgame' },
+    ]
+    const results1 = await resolver.resolveForDmmBulk!(items)
+    expect(results1[0]).not.toBeNull()
+    expect(results1[1]).toBeNull()
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+
+    // 2回目。同じ入力で fetch は呼ばれない（ヒットはポジティブキャッシュ、未ヒットはネガティブキャッシュ）
+    const results2 = await resolver.resolveForDmmBulk!(items)
+    expect(results2[0]).not.toBeNull()
+    expect(results2[1]).toBeNull()
     expect(fetchMock).toHaveBeenCalledTimes(1)
   })
 })
