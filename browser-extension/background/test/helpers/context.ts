@@ -10,6 +10,8 @@ export function buildTestContext(overrides: Partial<HandlerContext> = {}): Handl
     egsResolver: {
       resolveForDmm: async () => null,
       resolveForDlsite: async () => null,
+      resolveForDmmBulk: async (items: Array<{ storeId: string, category: string, subcategory: string }>) => items.map(() => null),
+      resolveForDlsiteBulk: async (items: Array<{ storeId: string, category: string }>) => items.map(() => null),
     },
     aggregation: {
       record: async () => {},

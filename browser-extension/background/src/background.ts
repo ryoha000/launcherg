@@ -1,4 +1,4 @@
-import type { Browser } from './shared/types'
+import type { Browser, HandlerContext } from './shared/types'
 import { logger } from '@launcherg/shared'
 import { createBrowser } from './adapter/browser'
 import { createEgsResolver } from './adapter/egs/resolver'
@@ -7,6 +7,7 @@ import { createSyncPool } from './adapter/pool'
 import { createMessageDispatcher } from './inbound/dispatcher'
 import { AGGREGATE_ALARM, fireAggregateNotification, recordSyncAggregation } from './usecase/aggregation'
 import { performPeriodicSync } from './usecase/periodic'
+import { SYNC_GAME_ALARM, syncGame } from './usecase/syncGameScheduler'
 
 const log = logger('background')
 
@@ -20,7 +21,7 @@ const nativeMessenger = createNativeMessenger(nativeHostName)
 const egsResolver = createEgsResolver()
 const browser: Browser = createBrowser()
 
-const handle = createMessageDispatcher({
+const context: HandlerContext = {
   extensionId: chrome.runtime.id,
   nativeHostName,
   nativeMessenger,
@@ -29,7 +30,9 @@ const handle = createMessageDispatcher({
   idGenerator: { generate: generateRequestId },
   browser,
   syncPool: createSyncPool(),
-})
+}
+
+const handle = createMessageDispatcher(context)
 
 chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   void (async () => {
@@ -44,6 +47,10 @@ chrome.alarms.create('periodic_sync', {
   periodInMinutes: 30,
 })
 
+chrome.alarms.create(SYNC_GAME_ALARM, {
+  periodInMinutes: 1,
+})
+
 chrome.alarms.onAlarm.addListener((alarm) => {
   if (alarm.name === 'periodic_sync') {
     void performPeriodicSync(browser)
@@ -51,6 +58,9 @@ chrome.alarms.onAlarm.addListener((alarm) => {
   }
   if (alarm.name === AGGREGATE_ALARM) {
     void fireAggregateNotification(browser)
+  }
+  if (alarm.name === SYNC_GAME_ALARM) {
+    void syncGame(context)
   }
 })
 

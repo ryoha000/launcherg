@@ -29,6 +29,8 @@ describe('メッセージディスパッチャ', () => {
       egsResolver: {
         resolveForDmm: vi.fn(async () => null),
         resolveForDlsite: vi.fn(async () => null),
+        resolveForDmmBulk: vi.fn(async (items: Array<{ storeId: string, category: string, subcategory: string }>) => items.map(() => null)),
+        resolveForDlsiteBulk: vi.fn(async (items: Array<{ storeId: string, category: string }>) => items.map(() => null)),
       },
       idGenerator: { generate: () => 'rid-1' },
     })

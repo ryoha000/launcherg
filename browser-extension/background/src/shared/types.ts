@@ -8,8 +8,8 @@ export interface NativeMessenger {
 export interface EgsResolver {
   resolveForDmm: (storeId: string, category: string, subcategory: string) => Promise<EgsInfo | null>
   resolveForDlsite: (storeId: string, category: string) => Promise<EgsInfo | null>
-  resolveForDmmBulk?: (items: Array<{ storeId: string, category: string, subcategory: string }>) => Promise<Array<EgsInfo | null>>
-  resolveForDlsiteBulk?: (items: Array<{ storeId: string, category: string }>) => Promise<Array<EgsInfo | null>>
+  resolveForDmmBulk: (items: Array<{ storeId: string, category: string, subcategory: string }>) => Promise<Array<EgsInfo | null>>
+  resolveForDlsiteBulk: (items: Array<{ storeId: string, category: string }>) => Promise<Array<EgsInfo | null>>
 }
 
 export interface Aggregation {

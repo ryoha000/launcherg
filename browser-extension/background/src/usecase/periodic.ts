@@ -1,5 +1,5 @@
-import { logger } from '@launcherg/shared'
 import type { Browser, BrowserTab } from '../shared/types'
+import { logger } from '@launcherg/shared'
 
 const log = logger('background:periodic')
 
