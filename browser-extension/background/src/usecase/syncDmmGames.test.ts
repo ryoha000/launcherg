@@ -1,45 +1,12 @@
-import { create } from '@bufbuild/protobuf'
-import { EgsInfoSchema } from '@launcherg/shared/proto/extension_internal'
-import { NativeResponseSchema, SyncBatchResultSchema } from '@launcherg/shared/proto/native_messaging'
 import { describe, expect, it, vi } from 'vitest'
 import { buildTestContext } from '../../test/helpers/context'
 import { handleSyncDmmGames } from './syncDmmGames'
 
 describe('dMM 同期（syncDmmGames）ユースケース', () => {
-  it('eGS 解決込みでネイティブに送信し、成功時は集計を記録して結果を返す', async () => {
-    const egsInfo = create(EgsInfoSchema, {
-      erogamescapeId: 123,
-      gamename: 'Game A',
-      gamenameRuby: 'げーむA',
-      brandname: 'Brand',
-      brandnameRuby: 'ぶらんど',
-      sellday: '2024-01-01',
-      isNukige: false,
-    })
-    const nativeResponse = create(NativeResponseSchema, {
-      success: true,
-      error: '',
-      requestId: 'req-1',
-      response: {
-        case: 'syncGamesResult',
-        value: create(SyncBatchResultSchema, {
-          successCount: 1,
-          errorCount: 0,
-          errors: [],
-          syncedGames: ['ABC123'],
-        }),
-      },
-    })
-    const record = vi.fn(async () => {})
-    const send = vi.fn(async () => nativeResponse)
-    const resolveForDmm = vi.fn(async () => egsInfo)
-
+  it('同期リクエストをプールに追加し、即時に成功レスポンスを返す', async () => {
+    const add = vi.fn(() => {})
     const context = buildTestContext({
-      aggregation: { record },
-      nativeMessenger: { send },
-      egsResolver: { resolveForDmm, resolveForDlsite: async () => null },
-      idGenerator: { generate: () => 'req-1' },
-      extensionId: 'ext-id',
+      syncPool: { add, sync: async () => {} },
     })
 
     const req = {
@@ -47,20 +14,10 @@ describe('dMM 同期（syncDmmGames）ユースケース', () => {
     } as any
 
     const res = await handleSyncDmmGames(context, 'rest-1', req)
-    expect(send).toHaveBeenCalled()
-    expect(resolveForDmm).toHaveBeenCalledWith('ABC123', 'cat', 'sub')
-    expect(record).toHaveBeenCalledWith(1)
+
+    expect(add).toHaveBeenCalledWith({ type: 'dmm', games: req.games })
     expect(res.success).toBe(true)
     expect(res.response?.case).toBe('syncGamesResult')
-    expect((res.response as any).value.message).toContain('1個')
-  })
-
-  it('失敗時は success=false とエラーメッセージを返す', async () => {
-    const send = vi.fn(async () => create(NativeResponseSchema, { success: false, error: 'boom', requestId: 'x', response: { case: undefined } }))
-    const context = buildTestContext({ nativeMessenger: { send } })
-    const req = { games: [{ id: 'X', category: 'c', subcategory: 's' }] } as any
-    const res = await handleSyncDmmGames(context, 'rest-2', req)
-    expect(res.success).toBe(false)
-    expect(res.error).toBe('boom')
+    expect((res.response as any).value.message).toContain('プールに追加しました')
   })
 })

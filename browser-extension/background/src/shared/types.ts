@@ -1,4 +1,4 @@
-import type { EgsInfo } from '@launcherg/shared/proto/extension_internal'
+import type { DlsiteGame, DmmGame, EgsInfo } from '@launcherg/shared/proto/extension_internal'
 import type { NativeMessage, NativeResponse } from '@launcherg/shared/proto/native_messaging'
 
 export interface NativeMessenger {
@@ -48,6 +48,11 @@ export interface Browser {
   }
 }
 
+export interface SyncPool<T> {
+  add: (items: T) => void
+  sync: (callback: (items: T[]) => Promise<void>) => Promise<void>
+}
+
 export interface HandlerContext {
   extensionId: string
   nativeHostName: string
@@ -56,6 +61,7 @@ export interface HandlerContext {
   aggregation: Aggregation
   idGenerator: IdGenerator
   browser: Browser
+  syncPool: SyncPool<{ type: 'dmm', games: DmmGame[] } | { type: 'dlsite', games: DlsiteGame[] }>
 }
 
 export {}

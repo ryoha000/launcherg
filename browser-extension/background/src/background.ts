@@ -3,6 +3,7 @@ import { logger } from '@launcherg/shared'
 import { createBrowser } from './adapter/browser'
 import { createEgsResolver } from './adapter/egs/resolver'
 import { createNativeMessenger } from './adapter/native/send'
+import { createSyncPool } from './adapter/pool'
 import { createMessageDispatcher } from './inbound/dispatcher'
 import { AGGREGATE_ALARM, fireAggregateNotification, recordSyncAggregation } from './usecase/aggregation'
 import { performPeriodicSync } from './usecase/periodic'
@@ -27,6 +28,7 @@ const handle = createMessageDispatcher({
   aggregation: { record: count => recordSyncAggregation(browser, count) },
   idGenerator: { generate: generateRequestId },
   browser,
+  syncPool: createSyncPool(),
 })
 
 chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {

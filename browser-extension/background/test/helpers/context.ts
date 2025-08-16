@@ -33,6 +33,10 @@ export function buildTestContext(overrides: Partial<HandlerContext> = {}): Handl
         executeScript: async () => {},
       },
     },
+    syncPool: {
+      add: () => {},
+      sync: async () => {},
+    },
   }
   return { ...base, ...overrides }
 }
