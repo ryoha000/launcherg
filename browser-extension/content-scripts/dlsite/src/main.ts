@@ -54,6 +54,8 @@ async function extractAndSync(): Promise<void> {
     const dlsiteGames = processedGames.map(g => create(DlsiteGameSchema, {
       id: g.store_id || '',
       category: g.additional_data?.category || '',
+      title: g.title || '',
+      thumbnailUrl: g.thumbnail_url || '',
     }))
 
     const request = create(ExtensionRequestSchema, {

@@ -52,6 +52,8 @@ export function syncGame(context: HandlerContext): Promise<void> {
       category: g.category,
       subcategory: g.subcategory,
       egsInfo: toNativeEgsInfo(resolved[i]),
+      title: (g as any).title ?? '',
+      thumbnailUrl: (g as any).thumbnailUrl ?? '',
     }))
     const msg = buildNativeMessage({
       case: 'syncDmmGames',
@@ -73,6 +75,8 @@ export function syncGame(context: HandlerContext): Promise<void> {
       id: g.id,
       category: g.category,
       egsInfo: toNativeEgsInfo(resolved[i]),
+      title: (g as any).title ?? '',
+      thumbnailUrl: (g as any).thumbnailUrl ?? '',
     }))
     const msg = buildNativeMessage({
       case: 'syncDlsiteGames',

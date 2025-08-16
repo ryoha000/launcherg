@@ -10,7 +10,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file native_messaging/sync.proto.
  */
 export const file_native_messaging_sync: GenFile = /*@__PURE__*/
-  fileDesc("ChtuYXRpdmVfbWVzc2FnaW5nL3N5bmMucHJvdG8SDmxhdW5jaGVyZy5zeW5jIpoBCgdFZ3NJbmZvEhcKD2Vyb2dhbWVzY2FwZV9pZBgBIAEoBRIQCghnYW1lbmFtZRgCIAEoCRIVCg1nYW1lbmFtZV9ydWJ5GAMgASgJEhEKCWJyYW5kbmFtZRgEIAEoCRIWCg5icmFuZG5hbWVfcnVieRgFIAEoCRIPCgdzZWxsZGF5GAYgASgJEhEKCWlzX251a2lnZRgHIAEoCCJTChNEbW1TeW5jR2FtZXNSZXF1ZXN0EiYKBWdhbWVzGAEgAygLMhcubGF1bmNoZXJnLnN5bmMuRG1tR2FtZRIUCgxleHRlbnNpb25faWQYAiABKAkiWQoWRGxzaXRlU3luY0dhbWVzUmVxdWVzdBIpCgVnYW1lcxgBIAMoCzIaLmxhdW5jaGVyZy5zeW5jLkRsc2l0ZUdhbWUSFAoMZXh0ZW5zaW9uX2lkGAIgASgJImcKB0RtbUdhbWUSCgoCaWQYASABKAkSEAoIY2F0ZWdvcnkYAiABKAkSEwoLc3ViY2F0ZWdvcnkYAyABKAkSKQoIZWdzX2luZm8YBCABKAsyFy5sYXVuY2hlcmcuc3luYy5FZ3NJbmZvIlUKCkRsc2l0ZUdhbWUSCgoCaWQYASABKAkSEAoIY2F0ZWdvcnkYAiABKAkSKQoIZWdzX2luZm8YAyABKAsyFy5sYXVuY2hlcmcuc3luYy5FZ3NJbmZvImMKD1N5bmNCYXRjaFJlc3VsdBIVCg1zdWNjZXNzX2NvdW50GAEgASgNEhMKC2Vycm9yX2NvdW50GAIgASgNEg4KBmVycm9ycxgDIAMoCRIUCgxzeW5jZWRfZ2FtZXMYBCADKAlCeAoSY29tLmxhdW5jaGVyZy5zeW5jQglTeW5jUHJvdG9QAaICA0xTWKoCDkxhdW5jaGVyZy5TeW5jygIOTGF1bmNoZXJnXFN5bmPiAhpMYXVuY2hlcmdcU3luY1xHUEJNZXRhZGF0YeoCD0xhdW5jaGVyZzo6U3luY2IGcHJvdG8z");
+  fileDesc("ChtuYXRpdmVfbWVzc2FnaW5nL3N5bmMucHJvdG8SDmxhdW5jaGVyZy5zeW5jIpoBCgdFZ3NJbmZvEhcKD2Vyb2dhbWVzY2FwZV9pZBgBIAEoBRIQCghnYW1lbmFtZRgCIAEoCRIVCg1nYW1lbmFtZV9ydWJ5GAMgASgJEhEKCWJyYW5kbmFtZRgEIAEoCRIWCg5icmFuZG5hbWVfcnVieRgFIAEoCRIPCgdzZWxsZGF5GAYgASgJEhEKCWlzX251a2lnZRgHIAEoCCJTChNEbW1TeW5jR2FtZXNSZXF1ZXN0EiYKBWdhbWVzGAEgAygLMhcubGF1bmNoZXJnLnN5bmMuRG1tR2FtZRIUCgxleHRlbnNpb25faWQYAiABKAkiWQoWRGxzaXRlU3luY0dhbWVzUmVxdWVzdBIpCgVnYW1lcxgBIAMoCzIaLmxhdW5jaGVyZy5zeW5jLkRsc2l0ZUdhbWUSFAoMZXh0ZW5zaW9uX2lkGAIgASgJIo0BCgdEbW1HYW1lEgoKAmlkGAEgASgJEhAKCGNhdGVnb3J5GAIgASgJEhMKC3N1YmNhdGVnb3J5GAMgASgJEikKCGVnc19pbmZvGAQgASgLMhcubGF1bmNoZXJnLnN5bmMuRWdzSW5mbxINCgV0aXRsZRgFIAEoCRIVCg10aHVtYm5haWxfdXJsGAYgASgJInsKCkRsc2l0ZUdhbWUSCgoCaWQYASABKAkSEAoIY2F0ZWdvcnkYAiABKAkSKQoIZWdzX2luZm8YAyABKAsyFy5sYXVuY2hlcmcuc3luYy5FZ3NJbmZvEg0KBXRpdGxlGAQgASgJEhUKDXRodW1ibmFpbF91cmwYBSABKAkiYwoPU3luY0JhdGNoUmVzdWx0EhUKDXN1Y2Nlc3NfY291bnQYASABKA0SEwoLZXJyb3JfY291bnQYAiABKA0SDgoGZXJyb3JzGAMgAygJEhQKDHN5bmNlZF9nYW1lcxgEIAMoCUJ4ChJjb20ubGF1bmNoZXJnLnN5bmNCCVN5bmNQcm90b1ABogIDTFNYqgIOTGF1bmNoZXJnLlN5bmPKAg5MYXVuY2hlcmdcU3luY+ICGkxhdW5jaGVyZ1xTeW5jXEdQQk1ldGFkYXRh6gIPTGF1bmNoZXJnOjpTeW5jYgZwcm90bzM");
 
 /**
  * EGS 解決済み情報
@@ -140,6 +140,20 @@ export type DmmGame = Message<"launcherg.sync.DmmGame"> & {
    * @generated from field: launcherg.sync.EgsInfo egs_info = 4;
    */
   egsInfo?: EgsInfo;
+
+  /**
+   * ゲーム名（抽出元の名称）
+   *
+   * @generated from field: string title = 5;
+   */
+  title: string;
+
+  /**
+   * サムネイル画像URL
+   *
+   * @generated from field: string thumbnail_url = 6;
+   */
+  thumbnailUrl: string;
 };
 
 /**
@@ -173,6 +187,20 @@ export type DlsiteGame = Message<"launcherg.sync.DlsiteGame"> & {
    * @generated from field: launcherg.sync.EgsInfo egs_info = 3;
    */
   egsInfo?: EgsInfo;
+
+  /**
+   * ゲーム名（抽出元の名称）
+   *
+   * @generated from field: string title = 4;
+   */
+  title: string;
+
+  /**
+   * サムネイル画像URL
+   *
+   * @generated from field: string thumbnail_url = 5;
+   */
+  thumbnailUrl: string;
 };
 
 /**

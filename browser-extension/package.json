@@ -6,7 +6,7 @@
   "description": "Browser extension for syncing DL store games to Launcherg",
   "scripts": {
     "prebuild": "pnpm run format && pnpm run typecheck && pnpm run lint",
-    "build": "pnpm run prebuild && pnpm run protobuf:generate && pnpm run copy-assets && pnpm run build:workspaces",
+    "build": "pnpm run protobuf:generate && pnpm run prebuild && pnpm run copy-assets && pnpm run build:workspaces",
     "build:workspaces": "pnpm run --filter @launcherg/shared build && pnpm run --filter !@launcherg/shared build",
     "dev": "pnpm run protobuf:generate && pnpm run copy-assets && pnpm run -r dev",
     "clean": "rimraf dist && pnpm run -r clean",

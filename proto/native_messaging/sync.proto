@@ -31,6 +31,8 @@ message DmmGame {
   string category = 2;    // "mono" | "digital"
   string subcategory = 3; // "doujin" | "pcgame"
   EgsInfo egs_info = 4;   // 省略可。解決できた場合のみ付与
+  string title = 5;        // ゲーム名（抽出元の名称）
+  string thumbnail_url = 6; // サムネイル画像URL
 }
 
 // DLsite のゲームデータ
@@ -38,6 +40,8 @@ message DlsiteGame {
   string id = 1;
   string category = 2; // "ai" | "maniax" | "bl" | "home" | "appx" | "girls" | "pro" | "girls-pro" | "soft"
   EgsInfo egs_info = 3; // 省略可。解決できた場合のみ付与
+  string title = 4;        // ゲーム名（抽出元の名称）
+  string thumbnail_url = 5; // サムネイル画像URL
 }
 
 // ゲーム同期結果のバッチレスポンス
