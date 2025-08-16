@@ -1,5 +1,4 @@
 import type { GetStatusRequest } from '@launcherg/shared/proto/extension_internal'
-import type { NativeMessage } from '@launcherg/shared/proto/native_messaging'
 import type { HandlerContext } from '../shared/types'
 import { create } from '@bufbuild/protobuf'
 import { TimestampSchema } from '@bufbuild/protobuf/wkt'
@@ -27,7 +26,7 @@ export async function handleGetStatus(
       case: 'getStatus',
       value: create(NativeGetStatusRequestSchema, {}),
     },
-  }) as NativeMessage
+  })
 
   const nativeResponse = await context.nativeMessenger.send(nativeMessage)
 
