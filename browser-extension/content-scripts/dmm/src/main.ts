@@ -54,7 +54,6 @@ async function extractAndSync(): Promise<void> {
         case: 'syncDmmGames',
         value: create(DmmSyncGamesRequestSchema, {
           games: dmmGames,
-          source: 'dmm-extractor',
         }),
       },
     })

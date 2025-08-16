@@ -62,7 +62,6 @@ async function extractAndSync(): Promise<void> {
         case: 'syncDlsiteGames',
         value: create(DlsiteSyncGamesRequestSchema, {
           games: dlsiteGames,
-          source: 'dlsite-extractor',
         }),
       },
     })

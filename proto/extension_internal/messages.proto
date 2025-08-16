@@ -41,13 +41,11 @@ message ExtensionResponse {
 // DMM向け ゲーム同期リクエスト（拡張内部）
 message DmmSyncGamesRequest {
   repeated DmmGame games = 1;
-  string source = 2;
 }
 
 // DLsite向け ゲーム同期リクエスト（拡張内部）
 message DlsiteSyncGamesRequest {
   repeated DlsiteGame games = 1;
-  string source = 2;
 }
 
 // DMM のゲームデータ（拡張内部）
