@@ -204,6 +204,7 @@ async fn handle_sync_dmm_games(ctx: &AppCtx, request: &DmmSyncGamesRequest, requ
             store_id: g.id.clone(),
             category: g.category.clone(),
             subcategory: g.subcategory.clone(),
+            gamename: g.title.clone(),
             egs: g.egs_info.as_ref().map(|e| usecase::native_host_sync::EgsInfo {
                 erogamescape_id: e.erogamescape_id,
                 gamename: e.gamename.clone(),
@@ -250,6 +251,7 @@ async fn handle_sync_dlsite_games(ctx: &AppCtx, request: &DlsiteSyncGamesRequest
         .map(|g| DlsiteSyncGameParam {
             store_id: g.id.clone(),
             category: g.category.clone(),
+            gamename: g.title.clone(),
             egs: g.egs_info.as_ref().map(|e| usecase::native_host_sync::EgsInfo {
                 erogamescape_id: e.erogamescape_id,
                 gamename: e.gamename.clone(),
