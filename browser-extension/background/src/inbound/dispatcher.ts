@@ -8,9 +8,9 @@ import { handleDebugNativeMessage, handleGetStatus, handleSyncDlsiteGames, handl
 const log = logger('background:dispatcher')
 
 export function createMessageDispatcher(context: HandlerContext) {
-  return async function dispatch(message: unknown): Promise<any> {
+  return async function dispatch(message: JsonValue): Promise<JsonValue> {
     try {
-      const extensionRequest = fromJson(ExtensionRequestSchema, message as JsonValue)
+      const extensionRequest = fromJson(ExtensionRequestSchema, message)
 
       switch (extensionRequest.request.case) {
         case 'syncDmmGames':
@@ -69,7 +69,9 @@ export function createMessageDispatcher(context: HandlerContext) {
       return toJson(
         ExtensionResponseSchema,
         create(ExtensionResponseSchema, {
-          requestId: (message as any)?.requestId || 'unknown',
+          requestId: (typeof message === 'object' && message !== null && 'requestId' in message && typeof (message as any).requestId === 'string')
+            ? (message as any).requestId
+            : 'unknown',
           success: false,
           error: errorMessage,
           response: { case: undefined },
