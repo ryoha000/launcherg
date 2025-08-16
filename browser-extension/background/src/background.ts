@@ -5,7 +5,6 @@ import { createEgsResolver } from './adapter/egs/resolver'
 import { createNativeMessenger } from './adapter/native/send'
 import { createSyncPool } from './adapter/pool'
 import { createMessageDispatcher } from './inbound/dispatcher'
-import { AGGREGATE_ALARM, fireAggregateNotification, recordSyncAggregation } from './usecase/aggregation'
 import { performPeriodicSync } from './usecase/periodic'
 import { SYNC_GAME_ALARM, syncGame } from './usecase/syncGameScheduler'
 
@@ -26,7 +25,6 @@ const context: HandlerContext = {
   nativeHostName,
   nativeMessenger,
   egsResolver,
-  aggregation: { record: count => recordSyncAggregation(browser, count) },
   idGenerator: { generate: generateRequestId },
   browser,
   syncPool: createSyncPool(),
@@ -55,9 +53,6 @@ chrome.alarms.onAlarm.addListener((alarm) => {
   if (alarm.name === 'periodic_sync') {
     void performPeriodicSync(browser)
     return
-  }
-  if (alarm.name === AGGREGATE_ALARM) {
-    void fireAggregateNotification(browser)
   }
   if (alarm.name === SYNC_GAME_ALARM) {
     void syncGame(context)

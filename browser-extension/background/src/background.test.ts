@@ -1,12 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
 
-// The module registers listeners at import-time. We mock dependencies first.
-vi.mock('./usecase/aggregation', () => ({
-  AGGREGATE_ALARM: 'notify_aggregate',
-  fireAggregateNotification: vi.fn(),
-  recordSyncAggregation: vi.fn(),
-}))
-
 vi.mock('./usecase/periodic', () => ({
   performPeriodicSync: vi.fn(),
 }))

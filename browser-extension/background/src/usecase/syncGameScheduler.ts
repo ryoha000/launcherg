@@ -37,10 +37,8 @@ export function syncGame(context: HandlerContext): Promise<void> {
     message,
   })
 
-  const sendAndRecord = async (nativeMessage: NativeMessage) => {
-    const res = await context.nativeMessenger.send(nativeMessage)
-    if (res && res.response.case === 'syncGamesResult')
-      await context.aggregation.record(Number(res.response.value.successCount))
+  const sendNative = async (nativeMessage: NativeMessage) => {
+    await context.nativeMessenger.send(nativeMessage)
   }
 
   const processDmmBatch = async (games: ExtDmmGame[]) => {
@@ -62,7 +60,7 @@ export function syncGame(context: HandlerContext): Promise<void> {
         extensionId: context.extensionId,
       }),
     })
-    await sendAndRecord(msg)
+    await sendNative(msg)
   }
 
   const processDlsiteBatch = async (games: ExtDlsiteGame[]) => {
@@ -83,7 +81,7 @@ export function syncGame(context: HandlerContext): Promise<void> {
         extensionId: context.extensionId,
       }),
     })
-    await sendAndRecord(msg)
+    await sendNative(msg)
   }
 
   return context.syncPool.sync(async (items) => {

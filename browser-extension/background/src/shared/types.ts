@@ -12,10 +12,6 @@ export interface EgsResolver {
   resolveForDlsiteBulk: (items: Array<{ storeId: string, category: string }>) => Promise<Array<EgsInfo | null>>
 }
 
-export interface Aggregation {
-  record: (count: number) => Promise<void>
-}
-
 export interface IdGenerator {
   generate: () => string
 }
@@ -58,7 +54,6 @@ export interface HandlerContext {
   nativeHostName: string
   nativeMessenger: NativeMessenger
   egsResolver: EgsResolver
-  aggregation: Aggregation
   idGenerator: IdGenerator
   browser: Browser
   syncPool: SyncPool<{ type: 'dmm', games: DmmGame[] } | { type: 'dlsite', games: DlsiteGame[] }>

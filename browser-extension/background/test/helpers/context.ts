@@ -13,9 +13,6 @@ export function buildTestContext(overrides: Partial<HandlerContext> = {}): Handl
       resolveForDmmBulk: async (items: Array<{ storeId: string, category: string, subcategory: string }>) => items.map(() => null),
       resolveForDlsiteBulk: async (items: Array<{ storeId: string, category: string }>) => items.map(() => null),
     },
-    aggregation: {
-      record: async () => {},
-    },
     idGenerator: {
       generate: () => 'test-request-id',
     },

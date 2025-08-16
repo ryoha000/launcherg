@@ -6,7 +6,7 @@ import { buildTestContext } from '../../test/helpers/context'
 import { syncGame } from './syncGameScheduler'
 
 describe('ゲーム同期スケジューラ（syncGameScheduler）', () => {
-  it('dMM と DLsite をそれぞれバルク解決し、Native へ送信し、集計を記録する', async () => {
+  it('dMM と DLsite をそれぞれバルク解決し、Native へ送信する', async () => {
     const items = [
       { type: 'dmm' as const, games: [
         { id: 'D1', category: 'mono', subcategory: 'pcgame' },
@@ -51,8 +51,6 @@ describe('ゲーム同期スケジューラ（syncGameScheduler）', () => {
       })
     })
 
-    const record = vi.fn(async (_n: number) => {})
-
     const context = buildTestContext({
       syncPool: {
         add: () => {},
@@ -65,7 +63,6 @@ describe('ゲーム同期スケジューラ（syncGameScheduler）', () => {
         resolveForDlsiteBulk,
       },
       nativeMessenger: { send },
-      aggregation: { record },
     })
 
     await syncGame(context)
@@ -73,9 +70,6 @@ describe('ゲーム同期スケジューラ（syncGameScheduler）', () => {
     expect(resolveForDmmBulk).toHaveBeenCalledTimes(1)
     expect(resolveForDlsiteBulk).toHaveBeenCalledTimes(1)
     expect(send).toHaveBeenCalledTimes(2)
-    expect(record).toHaveBeenCalledTimes(2)
-    expect(record).toHaveBeenNthCalledWith(1, 2)
-    expect(record).toHaveBeenNthCalledWith(2, 2)
   })
 
   it('1件でもバルク解決を呼び出す', async () => {
@@ -110,8 +104,6 @@ describe('ゲーム同期スケジューラ（syncGameScheduler）', () => {
       response: { case: 'syncGamesResult', value: create(SyncBatchResultSchema, { successCount: 1, errorCount: 0, errors: [], syncedGames: [] }) },
     }))
 
-    const record = vi.fn(async (_n: number) => {})
-
     const context = buildTestContext({
       syncPool: {
         add: () => {},
@@ -119,7 +111,6 @@ describe('ゲーム同期スケジューラ（syncGameScheduler）', () => {
       },
       egsResolver: { resolveForDmm: async () => null, resolveForDlsite: async () => null, resolveForDmmBulk, resolveForDlsiteBulk },
       nativeMessenger: { send },
-      aggregation: { record },
     })
 
     await syncGame(context)
@@ -127,6 +118,5 @@ describe('ゲーム同期スケジューラ（syncGameScheduler）', () => {
     expect(resolveForDmmBulk).toHaveBeenCalledTimes(1)
     expect(resolveForDlsiteBulk).toHaveBeenCalledTimes(1)
     expect(send).toHaveBeenCalledTimes(2)
-    expect(record).toHaveBeenCalledTimes(2)
   })
 })
