@@ -8,8 +8,7 @@ use super::error::UseCaseError;
 use crate::{
     domain::{
         collection::{
-            CollectionElement, NewCollectionElement, ScannedGameElement, 
-            NewCollectionElementPaths
+            CollectionElement, NewCollectionElement, NewCollectionElementPaths, ScannedGameElement,
         },
         file::{get_icon_path, get_thumbnail_path, save_thumbnail},
         repository::collection::CollectionRepository,
@@ -51,40 +50,31 @@ impl<R: RepositoriesExt> CollectionUseCase<R> {
     pub async fn create_collection_element(
         &self,
         element: &ScannedGameElement,
-    ) -> anyhow::Result<()> {
+    ) -> anyhow::Result<Id<CollectionElement>> {
         use crate::domain::collection::{
             NewCollectionElement, NewCollectionElementInstall, NewCollectionElementPaths,
         };
 
-        // 0. EGS ID から collection_element_id を解決（後方互換: 直接IDが存在する場合はそのまま）
+        // 1. erogamescape_id から collection_element_id を解決/作成
         let resolved_id = {
             let repo = self.repositories.collection_repository();
-            // 直接ID存在チェック
-            match repo.get_element_by_element_id(&element.id).await {
-                Ok(Some(_)) => element.id.clone(),
-                _ => {
-                    // 旧フローでは element.id は EGS ID 相当
-                    // map から解決
-                    if let Ok(Some(mapped)) =
-                        repo.get_collection_id_by_erogamescape_id(element.id.value).await
-                    {
-                        mapped
-                    } else {
-                        // 未登録: 新規採番し、mapに登録
-                        let new_id = repo.allocate_new_collection_element_id().await?;
-                        // 新規作成された行に対して map を登録（EGSとして element.id.value を紐付け）
-                        let _ = repo
-                            .upsert_erogamescape_map(&new_id, element.id.value)
-                            .await;
-                        new_id
-                    }
-                }
+            // 1-1. マッピング解決
+            if let Some(mapped) = repo
+                .get_collection_id_by_erogamescape_id(element.erogamescape_id)
+                .await?
+            {
+                let new_element = NewCollectionElement::new(mapped.clone(), element.gamename.clone());
+                self.upsert_collection_element(&new_element).await?;
+                mapped
+            } else {
+                // 1-2. 未登録: 新規採番し、マップ登録
+                let id = repo.allocate_new_collection_element_id(element.gamename.as_str()).await?;
+                let _ = repo
+                    .upsert_erogamescape_map(&id, element.erogamescape_id)
+                    .await;
+                id
             }
         };
-
-        // 1. 基本要素を作成（存在すればupdated_at更新）
-        let new_element = NewCollectionElement::new(resolved_id.clone());
-        self.upsert_collection_element(&new_element).await?;
 
         // 2. スクレイピング情報は初期登録時には作成しない
         // （後でregisterCollectionElementDetailsから取得される）
@@ -111,7 +101,7 @@ impl<R: RepositoriesExt> CollectionUseCase<R> {
                 .await?;
         }
 
-        Ok(())
+        Ok(resolved_id)
     }
     pub async fn upsert_collection_element_thumbnail_size(
         &self,
@@ -202,10 +192,8 @@ impl<R: RepositoriesExt> CollectionUseCase<R> {
     pub async fn save_element_icon(
         &self,
         handle: &Arc<AppHandle>,
-        element: &NewCollectionElement,
+        id: &Id<CollectionElement>,
     ) -> anyhow::Result<()> {
-        let id = &element.id;
-
         let paths = self
             .repositories
             .collection_repository()

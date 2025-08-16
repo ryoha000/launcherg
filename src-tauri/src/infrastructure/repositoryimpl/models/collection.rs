@@ -14,6 +14,7 @@ use crate::domain::{
 #[derive(FromRow)]
 pub struct CollectionElementTable {
     pub id: i32,
+    pub gamename: String,
     pub created_at: NaiveDateTime,
     pub updated_at: NaiveDateTime,
 }
@@ -22,7 +23,6 @@ pub struct CollectionElementTable {
 pub struct CollectionElementInfoTable {
     pub id: i32,
     pub collection_element_id: i32,
-    pub gamename: String,
     pub gamename_ruby: String,
     pub brandname: String,
     pub brandname_ruby: String,
@@ -108,6 +108,7 @@ impl TryFrom<CollectionElementTable> for CollectionElement {
     fn try_from(st: CollectionElementTable) -> Result<Self, Self::Error> {
         Ok(CollectionElement::new(
             Id::new(st.id),
+            st.gamename,
             st.created_at.and_utc().with_timezone(&Local),
             st.updated_at.and_utc().with_timezone(&Local),
             None, // info は別途取得
@@ -129,7 +130,6 @@ impl TryFrom<CollectionElementInfoTable> for CollectionElementInfo {
         Ok(CollectionElementInfo::new(
             Id::new(st.id),
             Id::new(st.collection_element_id),
-            st.gamename,
             st.gamename_ruby,
             st.brandname,
             st.brandname_ruby,

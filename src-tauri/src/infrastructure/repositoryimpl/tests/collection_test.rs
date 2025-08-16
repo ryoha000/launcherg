@@ -18,7 +18,7 @@ mod tests {
     }
 
     fn create_test_new_collection_element(id: i32) -> NewCollectionElement {
-        NewCollectionElement::new(create_test_collection_element_id(id))
+        NewCollectionElement::new(create_test_collection_element_id(id), format!("Game {}", id))
     }
 
     fn create_test_new_collection_element_info(
@@ -27,7 +27,6 @@ mod tests {
     ) -> NewCollectionElementInfo {
         NewCollectionElementInfo::new(
             create_test_collection_element_id(element_id),
-            gamename.to_string(),
             format!("{}_ruby", gamename),
             "Test Brand".to_string(),
             "Test Brand Ruby".to_string(),
@@ -156,7 +155,7 @@ mod tests {
 
         assert!(info.is_some());
         let info = info.unwrap();
-        assert_eq!(info.gamename, "Test Game");
+        // gamename は CollectionElement 側に移行済み
         assert_eq!(info.gamename_ruby, "Test Game_ruby");
         assert_eq!(info.brandname, "Test Brand");
         assert!(!info.is_nukige);
@@ -192,7 +191,7 @@ mod tests {
 
         assert!(info.is_some());
         let info = info.unwrap();
-        assert_eq!(info.gamename, "Updated Game");
+        // gamename は CollectionElement 側に移行済み
         assert_eq!(info.gamename_ruby, "Updated Game_ruby");
     }
 
@@ -279,10 +278,14 @@ mod tests {
             let expected_id = (i + 1) as i32;
             assert_eq!(element.id.value, expected_id);
 
-            // 情報が設定されていることを確認
+            // 情報が設定されていることを確認（gamename は CollectionElement 側）
             assert!(element.info.is_some());
             let info = element.info.as_ref().unwrap();
-            assert_eq!(info.gamename, format!("Game {}", expected_id));
+            assert_eq!(info.gamename_ruby, format!("Game {}_ruby", expected_id));
+            assert_eq!(info.brandname, "Test Brand");
+            assert_eq!(info.brandname_ruby, "Test Brand Ruby");
+            assert_eq!(info.sellday, "2024-01-01");
+            assert!(!info.is_nukige);
 
             // パス情報が設定されていることを確認
             assert!(element.paths.is_some());
@@ -331,10 +334,14 @@ mod tests {
         // メイン要素の確認
         assert_eq!(element.id.value, 1);
 
-        // JOINされた情報の確認
+        // JOINされた情報の確認（gamename は CollectionElement 側）
         assert!(element.info.is_some());
         let info = element.info.as_ref().unwrap();
-        assert_eq!(info.gamename, "Complete Game");
+        assert_eq!(info.gamename_ruby, "Complete Game_ruby");
+        assert_eq!(info.brandname, "Test Brand");
+        assert_eq!(info.brandname_ruby, "Test Brand Ruby");
+        assert_eq!(info.sellday, "2024-01-01");
+        assert!(!info.is_nukige);
 
         assert!(element.paths.is_some());
         let paths = element.paths.as_ref().unwrap();

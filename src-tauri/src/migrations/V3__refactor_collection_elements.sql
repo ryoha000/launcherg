@@ -5,9 +5,10 @@
 -- まず、collection_elementsテーブルを一時的にリネーム
 ALTER TABLE collection_elements RENAME TO collection_elements_old;
 
--- 新しいスキーマでcollection_elementsテーブルを作成（id, created_at, updated_atのみ）
+-- 新しいスキーマでcollection_elementsテーブルを作成（id, gamename, created_at, updated_at のみ）
 CREATE TABLE collection_elements (
     id INTEGER PRIMARY KEY,
+    gamename TEXT NOT NULL DEFAULT '',
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
@@ -17,11 +18,10 @@ INSERT INTO collection_elements (id, created_at, updated_at)
 SELECT id, created_at, updated_at FROM collection_elements_old;
 
 -- スクレイピングデータ（erogamescape由来）
--- gamename + 既存のcollection_element_detailsの内容を統合
+-- 既存のcollection_element_detailsの内容を統合
 CREATE TABLE IF NOT EXISTS collection_element_info_by_erogamescape (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     collection_element_id INTEGER NOT NULL,
-    gamename TEXT NOT NULL,
     gamename_ruby TEXT NOT NULL,
     sellday TEXT NOT NULL,
     is_nukige INTEGER NOT NULL,

@@ -192,6 +192,7 @@ impl<R: ExplorersExt> FileUseCase<R> {
         pubsub: Arc<P>,
     ) -> anyhow::Result<Vec<ScannedGameElement>> {
         let start = Instant::now();
+        let all_game_cache_hashmap = all_game_cache.clone().into_iter().map(|pair| (pair.id, pair)).collect::<HashMap<_, _>>();
 
         let normalized_all_games = Arc::new(
             all_game_cache
@@ -235,18 +236,20 @@ impl<R: ExplorersExt> FileUseCase<R> {
 
             // new collection element
             let install_at = get_file_created_at_sync(&exe_path);
+            let gamename = all_game_cache_hashmap.get(&id).map(|v| v.gamename.clone()).ok_or(anyhow::anyhow!("failed to get gamename {}", id))?;
             collection_elements.push(ScannedGameElement::new(
-                Id::new(id),
+                id,
+                gamename,
                 Some(exe_path),
                 None,
                 install_at,
             ));
         }
-        for (id, lnk_path) in lnk_id_path_vec.iter() {
-            let id = Id::new(*id);
+        for (erogamescape_id, lnk_path) in lnk_id_path_vec.iter() {
             let _install_at;
             // icon
             if let Some(metadata) = lnk_metadatas.get(lnk_path.as_str()) {
+                let id = Id::new(*erogamescape_id);
                 let task;
                 if metadata.icon.to_lowercase().ends_with("ico") {
                     task = save_icon_to_png(handle, &metadata.icon, &id)?;
@@ -260,8 +263,10 @@ impl<R: ExplorersExt> FileUseCase<R> {
                 _install_at = None;
             }
 
+            let gamename = all_game_cache_hashmap.get(erogamescape_id).map(|v| v.gamename.clone()).ok_or(anyhow::anyhow!("failed to get gamename {}", erogamescape_id))?;
             collection_elements.push(ScannedGameElement::new(
-                id,
+                *erogamescape_id,
+                gamename,
                 None,
                 Some(lnk_path.clone()),
                 _install_at,

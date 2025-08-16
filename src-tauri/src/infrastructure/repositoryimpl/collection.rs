@@ -59,8 +59,8 @@ impl CollectionRepository for RepositoryImpl<CollectionElement> {
 
         let row = query(
             "SELECT 
-                ce.id, ce.created_at, ce.updated_at,
-                cei.id as info_id, cei.gamename, cei.gamename_ruby, cei.sellday, cei.is_nukige, cei.brandname, cei.brandname_ruby, cei.created_at as info_created_at, cei.updated_at as info_updated_at,
+                ce.id, ce.gamename, ce.created_at, ce.updated_at,
+                cei.id as info_id, cei.gamename_ruby, cei.sellday, cei.is_nukige, cei.brandname, cei.brandname_ruby, cei.created_at as info_created_at, cei.updated_at as info_updated_at,
                 cep.id as paths_id, cep.exe_path, cep.lnk_path, cep.created_at as paths_created_at, cep.updated_at as paths_updated_at,
                 cei_install.id as install_id, cei_install.install_at, cei_install.created_at as install_created_at, cei_install.updated_at as install_updated_at,
                 cei_play.id as play_id, cei_play.last_play_at, cei_play.created_at as play_created_at, cei_play.updated_at as play_updated_at,
@@ -90,6 +90,7 @@ impl CollectionRepository for RepositoryImpl<CollectionElement> {
         // CollectionElementを構築
         let element_table = CollectionElementTable {
             id: row.get("id"),
+            gamename: row.get("gamename"),
             created_at: row.get("created_at"),
             updated_at: row.get("updated_at"),
         };
@@ -100,7 +101,6 @@ impl CollectionRepository for RepositoryImpl<CollectionElement> {
             Some(CollectionElementInfo::new(
                 Id::new(info_id),
                 id.clone(),
-                row.get("gamename"),
                 row.get("gamename_ruby"),
                 row.get("brandname"),
                 row.get("brandname_ruby"),
@@ -232,10 +232,11 @@ impl CollectionRepository for RepositoryImpl<CollectionElement> {
     ) -> anyhow::Result<()> {
         let pool = self.pool.0.clone();
         query(
-            "INSERT INTO collection_elements (id) VALUES (?) 
-             ON CONFLICT(id) DO UPDATE SET updated_at = CURRENT_TIMESTAMP",
+            "INSERT INTO collection_elements (id, gamename) VALUES (?, ?) 
+             ON CONFLICT(id) DO UPDATE SET gamename = excluded.gamename, updated_at = CURRENT_TIMESTAMP",
         )
         .bind(new_element.id.value)
+        .bind(&new_element.gamename)
         .execute(&*pool)
         .await?;
         Ok(())
@@ -261,20 +262,18 @@ impl CollectionRepository for RepositoryImpl<CollectionElement> {
         let pool = self.pool.0.clone();
         query(
             "INSERT INTO collection_element_info_by_erogamescape 
-             (collection_element_id, gamename, gamename_ruby, sellday, is_nukige, brandname, brandname_ruby) 
-             VALUES (?, ?, ?, ?, ?, ?, ?)
+             (collection_element_id, gamename_ruby, sellday, is_nukige, brandname, brandname_ruby) 
+             VALUES (?, ?, ?, ?, ?, ?)
              ON CONFLICT(collection_element_id) DO UPDATE SET 
-             gamename = ?, gamename_ruby = ?, sellday = ?, is_nukige = ?, 
+             gamename_ruby = ?, sellday = ?, is_nukige = ?, 
              brandname = ?, brandname_ruby = ?, updated_at = CURRENT_TIMESTAMP",
         )
         .bind(info.collection_element_id.value)
-        .bind(&info.gamename)
         .bind(&info.gamename_ruby)
         .bind(&info.sellday)
         .bind(if info.is_nukige { 1 } else { 0 })
         .bind(&info.brandname)
         .bind(&info.brandname_ruby)
-        .bind(&info.gamename)
         .bind(&info.gamename_ruby)
         .bind(&info.sellday)
         .bind(if info.is_nukige { 1 } else { 0 })
@@ -621,7 +620,7 @@ impl CollectionRepository for RepositoryImpl<CollectionElement> {
         Ok(())
     }
 
-    async fn allocate_new_collection_element_id(&self) -> anyhow::Result<Id<CollectionElement>> {
+    async fn allocate_new_collection_element_id(&self, gamename: &str) -> anyhow::Result<Id<CollectionElement>> {
         let pool = self.pool.0.clone();
         let mut tx = pool.begin().await?;
         // MAX(id) + 1 で採番
@@ -630,8 +629,9 @@ impl CollectionRepository for RepositoryImpl<CollectionElement> {
             .await?;
         let next_id = max_id.map(|v| v.0).unwrap_or(0) + 1;
         // 予約挿入（重複があればエラー）
-        query("INSERT INTO collection_elements (id) VALUES (?)")
+        query("INSERT INTO collection_elements (id, gamename) VALUES (?, ?)")
             .bind(next_id)
+            .bind(gamename)
             .execute(&mut *tx)
             .await?;
         tx.commit().await?;

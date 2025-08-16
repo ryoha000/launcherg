@@ -6,6 +6,7 @@ use super::Id;
 #[derive(new, Clone, Debug, PartialEq)]
 pub struct CollectionElement {
     pub id: Id<CollectionElement>,
+    pub gamename: String,
     pub created_at: DateTime<Local>,
     pub updated_at: DateTime<Local>,
     // 関連データ
@@ -25,7 +26,6 @@ pub struct CollectionElement {
 pub struct CollectionElementInfo {
     pub id: Id<CollectionElementInfo>,
     pub collection_element_id: Id<CollectionElement>,
-    pub gamename: String,
     pub gamename_ruby: String,
     pub brandname: String,
     pub brandname_ruby: String,
@@ -100,12 +100,14 @@ pub struct CollectionElementErogamescape {
 #[derive(new, Clone, Debug)]
 pub struct NewCollectionElement {
     pub id: Id<CollectionElement>,
+    pub gamename: String,
 }
 
 // ファイルスキャン用の関連データ付きコレクション要素
 #[derive(new, Clone, Debug)]
 pub struct ScannedGameElement {
-    pub id: Id<CollectionElement>,
+    pub erogamescape_id: i32,
+    pub gamename: String,
     pub exe_path: Option<String>,
     pub lnk_path: Option<String>,
     pub install_at: Option<DateTime<Local>>,
@@ -114,7 +116,6 @@ pub struct ScannedGameElement {
 #[derive(new, Clone, Debug)]
 pub struct NewCollectionElementInfo {
     pub collection_element_id: Id<CollectionElement>,
-    pub gamename: String,
     pub gamename_ruby: String,
     pub brandname: String,
     pub brandname_ruby: String,

@@ -24,18 +24,18 @@ mod tests {
     }
 
     fn create_test_new_element(id: i32) -> NewCollectionElement {
-        NewCollectionElement::new(create_test_element_id(id))
+        NewCollectionElement::new(create_test_element_id(id), format!("Game {}", id))
     }
 
     fn create_test_collection_element(id: i32) -> CollectionElement {
         CollectionElement {
             id: create_test_element_id(id),
+            gamename: format!("Game {}", id),
             created_at: Local::now(),
             updated_at: Local::now(),
             info: Some(CollectionElementInfo {
                 id: Id::new(1),
                 collection_element_id: create_test_element_id(id),
-                gamename: "Test Game".to_string(),
                 gamename_ruby: "Test Game Ruby".to_string(),
                 brandname: "Test Brand".to_string(),
                 brandname_ruby: "Test Brand Ruby".to_string(),
@@ -77,7 +77,8 @@ mod tests {
 
     fn create_test_scanned_game_element(id: i32) -> ScannedGameElement {
         ScannedGameElement {
-            id: create_test_element_id(id),
+            erogamescape_id: id,
+            gamename: format!("Game {}", id),
             exe_path: Some("/path/to/game.exe".to_string()),
             lnk_path: Some("/path/to/game.lnk".to_string()),
             install_at: Some(Local::now()),
@@ -122,7 +123,6 @@ mod tests {
         let use_case = CollectionUseCase::new(Arc::new(mock_repositories));
         let info = NewCollectionElementInfo::new(
             create_test_element_id(1),
-            "Test Game".to_string(),
             "Test Game Ruby".to_string(),
             "Test Brand".to_string(),
             "Test Brand Ruby".to_string(),
@@ -149,7 +149,7 @@ mod tests {
         mock_repo
             .expect_allocate_new_collection_element_id()
             .times(1)
-            .returning(|| Ok(Id::new(100)));
+            .returning(|_| Ok(Id::new(100)));
         mock_repo
             .expect_upsert_erogamescape_map()
             .times(1)
@@ -197,7 +197,7 @@ mod tests {
         mock_repo
             .expect_allocate_new_collection_element_id()
             .times(1)
-            .returning(|| Ok(Id::new(100)));
+            .returning(|_| Ok(Id::new(100)));
         mock_repo
             .expect_upsert_erogamescape_map()
             .times(1)
@@ -215,7 +215,8 @@ mod tests {
 
         let use_case = CollectionUseCase::new(Arc::new(mock_repositories));
         let element = ScannedGameElement {
-            id: create_test_element_id(1),
+            erogamescape_id: 1,
+            gamename: "Game 1".to_string(),
             exe_path: None,
             lnk_path: None,
             install_at: None,
@@ -429,7 +430,7 @@ mod tests {
         mock_repo
             .expect_allocate_new_collection_element_id()
             .times(2)
-            .returning(|| Ok(Id::new(100)));
+            .returning(|_| Ok(Id::new(100)));
         mock_repo
             .expect_upsert_erogamescape_map()
             .times(2)

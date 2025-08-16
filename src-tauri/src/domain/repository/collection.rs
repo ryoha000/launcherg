@@ -110,8 +110,8 @@ pub trait CollectionRepository {
         collection_element_id: &Id<CollectionElement>,
         erogamescape_id: i32,
     ) -> Result<()>;
-    // 正のIDを自前採番して即座に collection_elements に予約挿入する
-    async fn allocate_new_collection_element_id(&self) -> Result<Id<CollectionElement>>;
+    // collection_elements に (id, gamename) を挿入する
+    async fn allocate_new_collection_element_id(&self, gamename: &str) -> Result<Id<CollectionElement>>;
 
     // 逆引き: collection_element_id -> erogamescape_id
     async fn get_erogamescape_id_by_collection_id(

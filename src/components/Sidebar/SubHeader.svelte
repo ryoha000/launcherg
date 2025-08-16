@@ -12,7 +12,6 @@
 
   let isOpenImportAutomatically = $state(false)
   let isOpenImportManually = $state(false)
-  // DLStore機能は廃止
 
   const importManually = async (
     exePath: string | null,

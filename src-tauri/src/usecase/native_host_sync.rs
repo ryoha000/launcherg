@@ -59,6 +59,12 @@ impl<R: RepositoriesExt> NativeHostSyncUseCase<R> {
                         .collection_repository()
                         .get_collection_id_by_erogamescape_id(egs.erogamescape_id)
                         .await? {
+                        // gamename を CollectionElement に反映
+                        self.repositories
+                            .collection_repository()
+                            .upsert_collection_element(&crate::domain::collection::NewCollectionElement { id: cid.clone(), gamename: egs.gamename.clone() })
+                            .await?;
+
                         self.repositories
                             .collection_repository()
                             .upsert_dmm_mapping(&cid, &store_id, &category, &subcategory)
@@ -66,7 +72,6 @@ impl<R: RepositoriesExt> NativeHostSyncUseCase<R> {
                         // 詳細 upsert
                         let info = crate::domain::collection::NewCollectionElementInfo::new(
                             cid.clone(),
-                            egs.gamename.clone(),
                             egs.gamename_ruby.clone(),
                             egs.brandname.clone(),
                             egs.brandname_ruby.clone(),
@@ -79,8 +84,14 @@ impl<R: RepositoriesExt> NativeHostSyncUseCase<R> {
                         let cid = self
                             .repositories
                             .collection_repository()
-                            .allocate_new_collection_element_id()
+                            .allocate_new_collection_element_id(&egs.gamename)
                             .await?;
+                        // gamename を CollectionElement に反映
+                        self.repositories
+                            .collection_repository()
+                            .upsert_collection_element(&crate::domain::collection::NewCollectionElement { id: cid.clone(), gamename: egs.gamename.clone() })
+                            .await?;
+
                         self.repositories
                             .collection_repository()
                             .upsert_dmm_mapping(&cid, &store_id, &category, &subcategory)
@@ -91,7 +102,6 @@ impl<R: RepositoriesExt> NativeHostSyncUseCase<R> {
                             .await?;
                         let info = crate::domain::collection::NewCollectionElementInfo::new(
                             cid.clone(),
-                            egs.gamename.clone(),
                             egs.gamename_ruby.clone(),
                             egs.brandname.clone(),
                             egs.brandname_ruby.clone(),
@@ -107,7 +117,7 @@ impl<R: RepositoriesExt> NativeHostSyncUseCase<R> {
                     let cid = self
                         .repositories
                         .collection_repository()
-                        .allocate_new_collection_element_id()
+                        .allocate_new_collection_element_id("")
                         .await?;
                     self.repositories
                         .collection_repository()
@@ -147,9 +157,14 @@ impl<R: RepositoriesExt> NativeHostSyncUseCase<R> {
                             .collection_repository()
                             .upsert_dlsite_mapping(&cid, &store_id, &category)
                             .await?;
+                        // gamename を CollectionElement に反映
+                        self.repositories
+                            .collection_repository()
+                            .upsert_collection_element(&crate::domain::collection::NewCollectionElement { id: cid.clone(), gamename: egs.gamename.clone() })
+                            .await?;
+
                         let info = crate::domain::collection::NewCollectionElementInfo::new(
                             cid.clone(),
-                            egs.gamename.clone(),
                             egs.gamename_ruby.clone(),
                             egs.brandname.clone(),
                             egs.brandname_ruby.clone(),
@@ -162,7 +177,7 @@ impl<R: RepositoriesExt> NativeHostSyncUseCase<R> {
                         let cid = self
                             .repositories
                             .collection_repository()
-                            .allocate_new_collection_element_id()
+                            .allocate_new_collection_element_id(&egs.gamename)
                             .await?;
                         self.repositories
                             .collection_repository()
@@ -172,9 +187,14 @@ impl<R: RepositoriesExt> NativeHostSyncUseCase<R> {
                             .collection_repository()
                             .upsert_erogamescape_map(&cid, egs.erogamescape_id)
                             .await?;
+                        // gamename は CollectionElement に保存
+                        self.repositories
+                            .collection_repository()
+                            .upsert_collection_element(&crate::domain::collection::NewCollectionElement { id: cid.clone(), gamename: egs.gamename.clone() })
+                            .await?;
+
                         let info = crate::domain::collection::NewCollectionElementInfo::new(
                             cid.clone(),
-                            egs.gamename.clone(),
                             egs.gamename_ruby.clone(),
                             egs.brandname.clone(),
                             egs.brandname_ruby.clone(),
@@ -189,7 +209,7 @@ impl<R: RepositoriesExt> NativeHostSyncUseCase<R> {
                     let cid = self
                         .repositories
                         .collection_repository()
-                        .allocate_new_collection_element_id()
+                        .allocate_new_collection_element_id("")
                         .await?;
                     self.repositories
                         .collection_repository()

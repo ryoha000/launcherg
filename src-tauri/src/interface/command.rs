@@ -21,7 +21,7 @@ use crate::infrastructure::windowsimpl::proctail_manager::{
 };
 use crate::{
     domain::{
-        collection::{NewCollectionElement, ScannedGameElement},
+        collection::{ScannedGameElement},
         distance::get_comparable_distance,
         file::{get_file_created_at_sync, normalize},
         pubsub::{ProgressLivePayload, ProgressPayload, PubSubService},
@@ -90,7 +90,10 @@ pub async fn create_elements_in_pc(
         .await?;
 
     // EGS ID -> Collection ID 解決
-    let egs_ids: Vec<i32> = new_elements_with_data.iter().map(|v| v.id.value).collect();
+    let egs_ids: Vec<i32> = new_elements_with_data
+        .iter()
+        .map(|v| v.erogamescape_id)
+        .collect();
     let resolved_ids = modules
         .collection_use_case()
         .get_collection_ids_by_erogamescape_ids(egs_ids.clone())
@@ -214,36 +217,39 @@ pub async fn upsert_collection_element(
     } else {
         _install_at = None;
     }
-    let element_id = Id::new(game_cache.id);
+    // 入力の game_cache.id は EGS の ID。
+    // create_collection_element で EGS -> collection_element_id の解決と作成/更新を行い、
+    // 以降の処理は必ず解決済みの collection_element_id を使用する。
+    let egs_id = game_cache.id;
     let handle = Arc::new(handle);
 
-    // ScannedGameElementを作成
+    // ScannedGameElementを作成（初期IDは EGS ID）
     let scanned_element = ScannedGameElement::new(
-        element_id.clone(),
+        egs_id,
+        game_cache.gamename.clone(),
         exe_path,
         lnk_path,
         _install_at,
     );
 
     // 関連データを含むコレクション要素を作成
-    modules
+    let new_element_id = modules
         .collection_use_case()
         .create_collection_element(&scanned_element)
         .await?;
 
     // アイコンを保存
-    let new_element = NewCollectionElement::new(element_id.clone());
     modules
         .collection_use_case()
-        .save_element_icon(&handle, &new_element)
+        .save_element_icon(&handle, &new_element_id)
         .await?;
     modules
         .collection_use_case()
-        .save_element_thumbnail(&handle, &new_element.id, game_cache.thumbnail_url)
+        .save_element_thumbnail(&handle, &new_element_id, game_cache.thumbnail_url)
         .await?;
     Ok(modules
         .collection_use_case()
-        .upsert_collection_element_thumbnail_size(&handle, &new_element.id)
+        .upsert_collection_element_thumbnail_size(&handle, &new_element_id)
         .await?)
 }
 
@@ -415,7 +421,6 @@ pub async fn upsert_collection_element_details(
     for detail in details {
         let info = crate::domain::collection::NewCollectionElementInfo::new(
             Id::new(detail.collection_element_id),
-            detail.gamename,
             detail.gamename_ruby,
             detail.brandname,
             detail.brandname_ruby,

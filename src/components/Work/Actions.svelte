@@ -14,6 +14,7 @@
   import {
     commandDeleteCollectionElement,
     commandGetCollectionElement,
+    commandGetErogamescapeIdByCollectionId,
     commandOpenFolder,
     commandPlayGame,
     commandUpdateElementLike,
@@ -87,14 +88,16 @@
     lnkPath: string | null,
     gameCache: AllGameCacheOne,
   ) => {
-    const isChangedGameId = id !== gameCache.id
-    if (isChangedGameId) {
+    // 既存要素の EGS ID と新しい候補の EGS ID を比較して差し替え判定
+    const currentEgsId = await commandGetErogamescapeIdByCollectionId(id)
+    const isChangedGame = currentEgsId == null || currentEgsId !== gameCache.id
+    if (isChangedGame) {
       await commandDeleteCollectionElement(id)
     }
     await commandUpsertCollectionElement({ exePath, lnkPath, gameCache })
     await registerCollectionElementDetails()
     await sidebarCollectionElements.refetch()
-    if (isChangedGameId) {
+    if (isChangedGame) {
       deleteTab($tabs[$selected].id)
     }
     isOpenImportManually = false
