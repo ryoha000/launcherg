@@ -6,6 +6,16 @@ import { extractStoreIdFromUrl } from './utils'
 
 const log = logger('dlsite-extractor')
 
+// カテゴリラベルの厳密一致 → 種別マッピング（共有定義）
+const STRICT_LABEL_TO_KIND: Readonly<Record<string, 'game' | 'manga_cg' | 'video' | 'audio' | 'book'>> = {
+  ゲーム: 'game',
+  マンガ・CG: 'manga_cg',
+  動画: 'video',
+  音声: 'audio',
+  書籍: 'book',
+  コミック: 'book',
+}
+
 // ページが抽出対象かどうかを判定する純粋関数
 export function shouldExtract(hostname: string, rootElement: HTMLElement | null): boolean {
   // ページURL確認
@@ -62,7 +72,7 @@ function isDateLike(text: string): boolean {
 }
 
 function isCategoryWord(text: string): boolean {
-  return text === 'ゲーム' || text === '音声' || text === '書籍'
+  return text in STRICT_LABEL_TO_KIND
 }
 
 function collectLeafTexts(container: Element): Array<{ el: Element, text: string }> {
@@ -93,6 +103,29 @@ function extractTitle(container: Element): string {
   return ''
 }
 
+// カード内のラベルから作品種別を推定（ゲーム・マンガ/CG・動画・音声・書籍）。見つからなければnull
+function detectWorkLabelInCard(card: Element): 'game' | 'manga_cg' | 'video' | 'audio' | 'book' | null {
+  const leafs = collectLeafTexts(card)
+  // 厳密一致を優先（共有定義）
+  for (const { text } of leafs) {
+    if (text in STRICT_LABEL_TO_KIND)
+      return STRICT_LABEL_TO_KIND[text as keyof typeof STRICT_LABEL_TO_KIND]
+  }
+  // バリエーション（例えば「マンガ」「CG」が分割されている等）を緩く検出
+  const joinedTexts = leafs.map(l => l.text).join(' ')
+  if (/ゲーム/.test(joinedTexts))
+    return 'game'
+  if (/(?:マンガ|漫画).*CG|CG.*(?:マンガ|漫画)/.test(joinedTexts))
+    return 'manga_cg'
+  if (/動画/.test(joinedTexts))
+    return 'video'
+  if (/音声/.test(joinedTexts))
+    return 'audio'
+  if (/書籍|コミック|電子書籍/.test(joinedTexts))
+    return 'book'
+  return null
+}
+
 // コンテナー要素からゲームデータを抽出する純粋関数
 export function extractGameDataFromContainer(
   container: Element,
@@ -114,6 +147,13 @@ export function extractGameDataFromContainer(
     const storeId = extractStoreIdFromUrl(thumbnailUrl)
     log.debug(`Extracted storeId "${storeId}" from URL: ${thumbnailUrl}`)
     if (!storeId) {
+      return null
+    }
+
+    // カード内の種別ラベルを確認し、ゲーム以外（マンガ・CG/動画/音声/書籍）は弾く
+    const detectedLabel = detectWorkLabelInCard(card)
+    if (detectedLabel && detectedLabel !== 'game') {
+      log.debug(`Skip non-game item (label=${detectedLabel}) for storeId=${storeId}`)
       return null
     }
 

@@ -63,11 +63,6 @@ describe('dLsite Play.html E2Eテスト（JSDOMバックエンド）', () => {
       title: '【通常版】神様ちゅ～ず！ センセー女の子似合ってるよっ！',
       thumbnailUrl: 'https://img.dlsite.jp/resize/images2/work/professional/VJ01005000/VJ01004076_img_main_300x300.jpg',
     }, {
-      storeId: 'VJ01000588',
-      category: 'pro',
-      title: 'DLsite限定セット特典 『ハルカナソラ キャラクターソング＆特典ドラマデジタル音源集』',
-      thumbnailUrl: 'https://img.dlsite.jp/resize/images2/work/professional/VJ01001000/VJ01000588_img_main_300x300.jpg',
-    }, {
       storeId: 'VJ01000576',
       category: 'pro',
       title: 'ハルカナソラ',
