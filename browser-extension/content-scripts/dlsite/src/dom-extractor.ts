@@ -7,14 +7,20 @@ import { extractStoreIdFromUrl } from './utils'
 const log = logger('dlsite-extractor')
 
 // カテゴリラベルの厳密一致 → 種別マッピング（共有定義）
-const STRICT_LABEL_TO_KIND: Readonly<Record<string, 'game' | 'manga_cg' | 'video' | 'audio' | 'book'>> = {
-  ゲーム: 'game',
-  マンガ・CG: 'manga_cg',
-  動画: 'video',
-  音声: 'audio',
-  書籍: 'book',
-  コミック: 'book',
-}
+const STRICT_LABEL_TO_KIND_ENTRIES: ReadonlyArray<readonly [
+  string,
+  'game' | 'manga_cg' | 'video' | 'audio' | 'book',
+]> = [
+  ['ゲーム', 'game'],
+  ['マンガ・CG', 'manga_cg'],
+  ['動画', 'video'],
+  ['音声', 'audio'],
+  ['書籍', 'book'],
+  ['コミック', 'book'],
+] as const
+const STRICT_LABEL_TO_KIND = new Map<string, 'game' | 'manga_cg' | 'video' | 'audio' | 'book'>(
+  STRICT_LABEL_TO_KIND_ENTRIES,
+)
 
 // ページが抽出対象かどうかを判定する純粋関数
 export function shouldExtract(hostname: string, rootElement: HTMLElement | null): boolean {
@@ -72,7 +78,7 @@ function isDateLike(text: string): boolean {
 }
 
 function isCategoryWord(text: string): boolean {
-  return text in STRICT_LABEL_TO_KIND
+  return STRICT_LABEL_TO_KIND.has(text)
 }
 
 function collectLeafTexts(container: Element): Array<{ el: Element, text: string }> {
@@ -108,8 +114,9 @@ function detectWorkLabelInCard(card: Element): 'game' | 'manga_cg' | 'video' | '
   const leafs = collectLeafTexts(card)
   // 厳密一致を優先（共有定義）
   for (const { text } of leafs) {
-    if (text in STRICT_LABEL_TO_KIND)
-      return STRICT_LABEL_TO_KIND[text as keyof typeof STRICT_LABEL_TO_KIND]
+    const mapped = STRICT_LABEL_TO_KIND.get(text)
+    if (mapped)
+      return mapped
   }
   // バリエーション（例えば「マンガ」「CG」が分割されている等）を緩く検出
   const joinedTexts = leafs.map(l => l.text).join(' ')
