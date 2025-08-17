@@ -6,7 +6,7 @@ use std::sync::Arc;
 use derive_new::new;
 use crate::domain::repository::collection::CollectionRepository;
 use crate::infrastructure::repositoryimpl::repository::RepositoriesExt;
-use crate::domain::thumbnail::ThumbnailService;
+use crate::domain::{thumbnail::ThumbnailService, icon::IconService};
 
 #[derive(Clone, Debug)]
 /// DMM 由来のゲーム同期パラメータ。キーは `(store_id, category, subcategory)`。
@@ -48,12 +48,13 @@ pub struct EgsInfo {
 #[derive(new)]
 /// ストア情報をコレクションへ同期するユースケース。
 /// 内部で `CollectionRepository` を用いてマッピング作成・EGS 情報反映を行う。
-pub struct NativeHostSyncUseCase<R: RepositoriesExt, S: ThumbnailService> {
+pub struct NativeHostSyncUseCase<R: RepositoriesExt, TS: ThumbnailService, IS: IconService> {
     repositories: Arc<R>,
-    thumbnails: Arc<S>,
+    thumbnails: Arc<TS>,
+    icons: Arc<IS>,
 }
 
-impl<R: RepositoriesExt, S: ThumbnailService> NativeHostSyncUseCase<R, S> {
+impl<R: RepositoriesExt, TS: ThumbnailService, IS: IconService> NativeHostSyncUseCase<R, TS, IS> {
     /// 指定 EGS に対応するコレクション要素を確実に用意する。
     /// - 既存があれば名称・詳細を上書き更新
     /// - なければ新規採番し、EGS マップ・名称・詳細を作成

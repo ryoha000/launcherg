@@ -21,11 +21,12 @@ use proto::generated::launcherg::{common::*, sync::*, status::*};
 use infrastructure::{
     repositoryimpl::{driver::Db as RepoDb, repository::Repositories},
     thumbnail::ThumbnailServiceImpl,
+    icon::IconServiceImpl,
 };
 use usecase::{native_host_sync::{NativeHostSyncUseCase, DmmSyncGameParam, DlsiteSyncGameParam}, native_host};
 
 struct AppCtx {
-    sync_usecase: NativeHostSyncUseCase<Repositories, ThumbnailServiceImpl>,
+    sync_usecase: NativeHostSyncUseCase<Repositories, ThumbnailServiceImpl, IconServiceImpl>,
 }
 
 #[derive(Debug)]
@@ -114,8 +115,10 @@ async fn main() {
     let db_path = native_host::db_file_path();
     let repo_db = RepoDb::from_path(&db_path).await;
     let repositories = Repositories::new(repo_db);
-    let thumbs = ThumbnailServiceImpl::new(crate::usecase::native_host::host_root_dir());
-    let sync_usecase = NativeHostSyncUseCase::new(Arc::new(repositories), Arc::new(thumbs));
+    let host_root = crate::usecase::native_host::host_root_dir();
+    let thumbs = ThumbnailServiceImpl::new(host_root.clone());
+    let icons = IconServiceImpl::new_from_root_path(host_root);
+    let sync_usecase = NativeHostSyncUseCase::new(Arc::new(repositories), Arc::new(thumbs), Arc::new(icons));
     let ctx = AppCtx { sync_usecase };
 
     log::info!("Native Messaging Host started");

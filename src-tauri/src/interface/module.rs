@@ -13,6 +13,7 @@ use crate::{
         },
         windowsimpl::windows::{Windows, WindowsExt},
         thumbnail::ThumbnailServiceImpl,
+        icon::IconServiceImpl as TauriIconServiceImpl,
     },
     usecase::{
         all_game_cache::AllGameCacheUseCase, collection::CollectionUseCase,
@@ -28,7 +29,7 @@ pub struct Modules {
     file_use_case: FileUseCase<Explorers>,
     all_game_cache_use_case: AllGameCacheUseCase<Repositories>,
     process_use_case: ProcessUseCase<Windows>,
-    image_use_case: ImageUseCase<ThumbnailServiceImpl>,
+    image_use_case: ImageUseCase<ThumbnailServiceImpl, TauriIconServiceImpl>,
     pubsub: PubSub,
 }
 pub trait ModulesExt {
@@ -43,7 +44,7 @@ pub trait ModulesExt {
     fn all_game_cache_use_case(&self) -> &AllGameCacheUseCase<Self::Repositories>;
     fn file_use_case(&self) -> &FileUseCase<Self::Explorers>;
     fn process_use_case(&self) -> &ProcessUseCase<Self::Windows>;
-    fn image_use_case(&self) -> &ImageUseCase<ThumbnailServiceImpl>;
+    fn image_use_case(&self) -> &ImageUseCase<ThumbnailServiceImpl, TauriIconServiceImpl>;
     fn pubsub(&self) -> &Self::PubSub;
 }
 
@@ -71,7 +72,7 @@ impl ModulesExt for Modules {
     fn process_use_case(&self) -> &ProcessUseCase<Self::Windows> {
         &self.process_use_case
     }
-    fn image_use_case(&self) -> &ImageUseCase<ThumbnailServiceImpl> {
+    fn image_use_case(&self) -> &ImageUseCase<ThumbnailServiceImpl, TauriIconServiceImpl> {
         &self.image_use_case
     }
     fn pubsub(&self) -> &Self::PubSub {
@@ -99,7 +100,8 @@ impl Modules {
         let process_use_case: ProcessUseCase<Windows> = ProcessUseCase::new(windows.clone());
 
         let thumbs = ThumbnailServiceImpl::new(get_image_root_dir(handle));
-        let image_use_case: ImageUseCase<ThumbnailServiceImpl> = ImageUseCase::new(Arc::new(thumbs));
+        let icons = TauriIconServiceImpl::new_from_app_handle(Arc::new(handle.clone()));
+        let image_use_case: ImageUseCase<ThumbnailServiceImpl, TauriIconServiceImpl> = ImageUseCase::new(Arc::new(thumbs), Arc::new(icons));
 
         Self {
             collection_use_case,

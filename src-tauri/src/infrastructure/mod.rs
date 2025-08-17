@@ -5,6 +5,7 @@ pub mod repositoryimpl;
 pub mod util;
 pub mod windowsimpl;
 pub mod thumbnail;
+pub mod icon;
 
 #[cfg(test)]
 pub mod explorermock;

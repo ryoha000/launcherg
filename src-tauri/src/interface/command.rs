@@ -238,10 +238,15 @@ pub async fn upsert_collection_element(
         .create_collection_element(&scanned_element)
         .await?;
 
-    // アイコンを保存
+    // アイコン保存
     modules
-        .collection_use_case()
-        .save_element_icon(&handle, &new_element_id)
+        .image_use_case()
+        .save_icon_by_paths(
+            &handle,
+            &new_element_id,
+            &scanned_element.exe_path,
+            &scanned_element.lnk_path,
+        )
         .await?;
     modules
         .image_use_case()
@@ -290,8 +295,8 @@ pub async fn update_collection_element_icon(
     path: String,
 ) -> anyhow::Result<(), CommandError> {
     Ok(modules
-        .collection_use_case()
-        .update_collection_element_icon(&Arc::new(handle), &Id::new(id), path)
+        .image_use_case()
+        .overwrite_icon_png(&Arc::new(handle), &Id::new(id), &path)
         .await?)
 }
 

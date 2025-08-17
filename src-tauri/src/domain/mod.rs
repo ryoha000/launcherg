@@ -14,6 +14,7 @@ pub mod network;
 pub mod process;
 pub mod pubsub;
 pub mod thumbnail;
+pub mod icon;
 
 pub mod explorer;
 pub mod repository;
