@@ -98,37 +98,11 @@ export function determineWorkType(storeId: string): string {
 
 // DLsiteのゲームデータを処理する純粋関数
 export function processDLsiteGame(game: DlsiteExtractedGame): DlsiteExtractedGame {
-  // 新しいオブジェクトを作成して不変性を保つ
   const processedGame: DlsiteExtractedGame = {
     ...game,
-    additional_data: { ...game.additional_data },
+    title: game.title ? cleanDLsiteTitle(game.title) : '',
+    thumbnailUrl: normalizeUrl(game.thumbnailUrl, 'thumbnail'),
   }
-
-  // URLの正規化
-  processedGame.purchase_url = normalizeUrl(processedGame.purchase_url, 'purchase')
-  if (processedGame.thumbnail_url) {
-    processedGame.thumbnail_url = normalizeUrl(processedGame.thumbnail_url, 'thumbnail')
-  }
-
-  // store_idの正規化
-  processedGame.store_id = normalizeStoreId(processedGame.store_id, processedGame.purchase_url)
-
-  // 購入日の正規化
-  if (processedGame.purchase_date) {
-    processedGame.purchase_date = normalizeDLsiteDate(processedGame.purchase_date)
-  }
-
-  // タイトルのクリーンアップ
-  if (processedGame.title) {
-    processedGame.title = cleanDLsiteTitle(processedGame.title)
-  }
-
-  // DLsite特有の追加情報
-  processedGame.additional_data.store_name = 'DLsite'
-  processedGame.additional_data.extraction_source = 'dlsite-extractor'
-  processedGame.additional_data.extraction_timestamp = new Date().toISOString()
-  processedGame.additional_data.work_type = determineWorkType(processedGame.store_id)
-
   return processedGame
 }
 

@@ -1,8 +1,7 @@
 export interface DmmExtractedGame {
-  store_id: string
+  storeId: string
+  category: string
+  subcategory: string
   title: string
-  purchase_url: string
-  purchase_date?: string
-  thumbnail_url?: string
-  additional_data: Record<string, string>
+  thumbnailUrl: string
 }

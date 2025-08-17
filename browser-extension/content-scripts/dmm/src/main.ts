@@ -9,7 +9,6 @@ import {
 } from '@launcherg/shared'
 import { DmmGameSchema, DmmSyncGamesRequestSchema, ExtensionRequestSchema } from '@launcherg/shared/proto/extension_internal'
 
-import { processGames } from './data-processor'
 import { extractAllGames, shouldExtract } from './dom-extractor'
 
 let isExtracting = false
@@ -40,14 +39,12 @@ async function extractAndSync(): Promise<void> {
 
     log.info(`Found ${games.length} games`)
 
-    const processedGames = processGames(games)
-
-    const dmmGames = processedGames.map(g => create(DmmGameSchema, {
-      id: g.store_id || '',
-      category: g.additional_data?.category || '',
-      subcategory: g.additional_data?.subcategory || '',
-      title: g.title || '',
-      thumbnailUrl: g.thumbnail_url || '',
+    const dmmGames = games.map(g => create(DmmGameSchema, {
+      id: g.storeId,
+      category: g.category,
+      subcategory: g.subcategory,
+      title: g.title,
+      thumbnailUrl: g.thumbnailUrl,
     }))
 
     const request = create(ExtensionRequestSchema, {

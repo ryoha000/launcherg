@@ -52,10 +52,10 @@ async function extractAndSync(): Promise<void> {
 
     // 同期リクエストを送信（DLsite専用）
     const dlsiteGames = processedGames.map(g => create(DlsiteGameSchema, {
-      id: g.store_id || '',
-      category: g.additional_data?.category || '',
-      title: g.title || '',
-      thumbnailUrl: g.thumbnail_url || '',
+      id: g.storeId,
+      category: g.category,
+      title: g.title,
+      thumbnailUrl: g.thumbnailUrl,
     }))
 
     const request = create(ExtensionRequestSchema, {

@@ -82,14 +82,10 @@ describe('dom-extractor', () => {
       const result = extractGameDataFromContainer(container, 0)
 
       expect(result).toEqual({
-        store_id: 'RJ123456',
+        storeId: 'RJ123456',
+        category: 'maniax',
         title: 'Test Game Title',
-        purchase_url: 'https://play.dlsite.com/maniax/work/=/product_id/RJ123456.html',
-        purchase_date: '',
-        thumbnail_url: 'https://example.com/RJ123456_thumb.jpg',
-        additional_data: {
-          maker_name: 'Test Maker',
-        },
+        thumbnailUrl: 'https://example.com/RJ123456_thumb.jpg',
       })
     })
 
@@ -141,7 +137,7 @@ describe('dom-extractor', () => {
 
       const result = extractGameDataFromContainer(container, 0)
 
-      expect(result?.purchase_date).toBe('2024年1月1日')
+      expect(result).not.toBeNull()
     })
 
     it('エラーが発生した場合はnullを返す', () => {

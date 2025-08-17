@@ -93,49 +93,6 @@ function extractTitle(container: Element): string {
   return ''
 }
 
-function extractMaker(container: Element): string {
-  const leafs = collectLeafTexts(container)
-  const title = extractTitle(container)
-  let seenTitle = false
-  for (const { text } of leafs) {
-    if (!seenTitle) {
-      if (text === title)
-        seenTitle = true
-      continue
-    }
-    if (/購入/.test(text))
-      continue
-    if (isDateLike(text))
-      continue
-    if (isCategoryWord(text))
-      continue
-    if (text === title)
-      continue
-    if (title.includes(text))
-      continue
-    // 記号のみは除外
-    if (/^[\p{P}\p{S}\s]+$/u.test(text))
-      continue
-    return text
-  }
-  return ''
-}
-
-function extractDate(container: Element): string {
-  const text = container.textContent || ''
-  // 「購入YYYY年MM月DD日」のパターンを優先
-  const purchaseMatch = text.match(/購入(\d{4}年\d{1,2}月\d{1,2}日)/)
-  if (purchaseMatch)
-    return purchaseMatch[1]
-  // 日本語表記を優先的にそのまま返す
-  let m = text.match(/\d{4}年\d{1,2}月\d{1,2}日/)
-  if (m)
-    return m[0]
-  // スラッシュやハイフン区切りも許容（そのまま返す）
-  m = text.match(/\d{4}[-/]\d{1,2}[-/]\d{1,2}/)
-  return m ? m[0] : ''
-}
-
 // コンテナー要素からゲームデータを抽出する純粋関数
 export function extractGameDataFromContainer(
   container: Element,
@@ -153,9 +110,9 @@ export function extractGameDataFromContainer(
     if (!thumbnailUrl)
       return null
 
-    // URLからstore_idを抽出
+    // URLからstoreIdを抽出
     const storeId = extractStoreIdFromUrl(thumbnailUrl)
-    log.debug(`Extracted store_id "${storeId}" from URL: ${thumbnailUrl}`)
+    log.debug(`Extracted storeId "${storeId}" from URL: ${thumbnailUrl}`)
     if (!storeId) {
       return null
     }
@@ -163,24 +120,17 @@ export function extractGameDataFromContainer(
     // タイトルを抽出
     let title = extractTitle(card)
 
-    // メーカー名を抽出
-    const makerName = extractMaker(card)
-
-    // 購入日を抽出
-    const purchaseDate = extractDate(card)
-
-    // 購入URLを構築
-    const purchaseUrl = `https://play.dlsite.com/maniax/work/=/product_id/${storeId}.html`
+    // カテゴリーをサムネイルURLから推定
+    // .../images2/work/(professional|doujin)/...
+    const categoryPathMatch = thumbnailUrl.match(/\/images\d\/work\/(professional|doujin)\//)
+    const rawCategory = categoryPathMatch ? categoryPathMatch[1] : 'doujin'
+    const category = rawCategory === 'professional' ? 'pro' : 'maniax'
 
     const gameData: DlsiteExtractedGame = {
-      store_id: storeId,
+      storeId,
+      category,
       title,
-      purchase_url: purchaseUrl,
-      purchase_date: purchaseDate,
-      thumbnail_url: thumbnailUrl,
-      additional_data: {
-        maker_name: makerName,
-      },
+      thumbnailUrl,
     }
 
     log.debug(`Extracted game ${index + 1}:`, gameData)
@@ -206,8 +156,8 @@ export function extractAllGames(): DlsiteExtractedGame[] {
 
     if (gameData) {
       // 重複チェック
-      if (!seenStoreIds.has(gameData.store_id)) {
-        seenStoreIds.add(gameData.store_id)
+      if (!seenStoreIds.has(gameData.storeId)) {
+        seenStoreIds.add(gameData.storeId)
         games.push(gameData)
       }
     }

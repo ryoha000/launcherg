@@ -1,5 +1,5 @@
-import { beforeEach, describe, expect, it } from 'vitest'
-import { extractAllGames, extractGameDataFromContainer, shouldExtract } from '../src/dom-extractor'
+import { describe, expect, it } from 'vitest'
+import { extractAllGames, shouldExtract } from '../src/dom-extractor'
 
 describe('dmm dom-extractor', () => {
   describe('shouldExtract', () => {
@@ -23,57 +23,45 @@ describe('dmm dom-extractor', () => {
     })
   })
 
-  describe('extractGameDataFromContainer', () => {
-    let container: HTMLElement
-    beforeEach(() => {
-      container = document.createElement('li')
-      container.innerHTML = `
-        <p class="tmb">
-          <span class="img"><img src="https://pics.dmm.co.jp/digital/pcgame/abc_0001/abc_0001ps.jpg" alt="ゲームタイトル"></span>
-          <span class="txt"><span class="red">【割引】</span> ゲームタイトル</span>
-        </p>
-        <div class="mylibraryReviewButton"><a href="https://review.dmm.co.jp/create?cid=abc_0001&floor=digital_pcgame"></a></div>
-      `
-    })
-
-    it('カードから必要項目を抽出できる', () => {
-      const g = extractGameDataFromContainer(container, 0)
-      expect(g).toEqual({
-        store_id: 'abc_0001',
-        title: 'ゲームタイトル',
-        purchase_url: 'https://dlsoft.dmm.co.jp/mylibrary/?cid=abc_0001',
-        purchase_date: '',
-        thumbnail_url: 'https://pics.dmm.co.jp/digital/pcgame/abc_0001/abc_0001ps.jpg',
-        additional_data: {},
-      })
-    })
-
-    it('cid は画像から推定するためリンクに依存しない', () => {
-      container.querySelector('.mylibraryReviewButton a')!.setAttribute('href', 'https://review.dmm.co.jp/create')
-      const g = extractGameDataFromContainer(container, 0)
-      expect(g?.store_id).toBe('abc_0001')
-    })
-  })
-
-  it('extractAllGames で重複除外して配列を返す', () => {
-    const ul = document.createElement('div')
-    ul.id = 'mylibrary'
-    ul.innerHTML = `
+  // 重複除外は要件外のためテストしない
+  it('extractAllGames で画像要素からゲーム情報を抽出できる', () => {
+    const root = document.createElement('div')
+    root.id = 'mylibrary'
+    root.innerHTML = `
       <ul>
         <li>
-          <p class="tmb"><span class="img"><img src="https://pics.dmm.co.jp/digital/pcgame/x_1/x_1ps.jpg" alt="A"></span></p>
-          <div class="mylibraryReviewButton"><a href="?any"></a></div>
+          <img src="https://pics.dmm.co.jp/digital/pcgame/x_1/x_1ps.jpg" alt="タイトルA" />
         </li>
         <li>
-          <p class="tmb"><span class="img"><img src="https://pics.dmm.co.jp/digital/pcgame/x_1/x_1ps.jpg" alt="B"></span></p>
-          <div class="mylibraryReviewButton"><a href="?any"></a></div>
+          <img src="https://pics.dmm.co.jp/digital/pcgame/y_2/y_2ps.jpg" alt="タイトルB" />
+        </li>
+        <li>
+          <img src="https://example.com/not-target.jpg" alt="無視される" />
+        </li>
+        <li>
+          <img src="https://pics.dmm.co.jp/digital/pcgame/z_3/z_3ps.jpg" />
         </li>
       </ul>
     `
-    document.body.appendChild(ul)
+    document.body.appendChild(root)
+
     const games = extractAllGames()
-    expect(games.length).toBe(1)
-    expect(games[0].store_id).toBe('x_1')
+    expect(games.length).toBe(2)
+    expect(games[0]).toEqual({
+      storeId: 'x_1',
+      category: 'digital',
+      subcategory: 'pcgame',
+      title: 'タイトルA',
+      thumbnailUrl: 'https://pics.dmm.co.jp/digital/pcgame/x_1/x_1ps.jpg',
+    })
+    expect(games[1]).toEqual({
+      storeId: 'y_2',
+      category: 'digital',
+      subcategory: 'pcgame',
+      title: 'タイトルB',
+      thumbnailUrl: 'https://pics.dmm.co.jp/digital/pcgame/y_2/y_2ps.jpg',
+    })
+
     document.body.innerHTML = ''
   })
 })

@@ -1,8 +1,6 @@
 export interface DlsiteExtractedGame {
-  store_id: string
+  storeId: string
+  category: string
   title: string
-  purchase_url: string
-  purchase_date?: string
-  thumbnail_url?: string
-  additional_data: Record<string, string>
+  thumbnailUrl: string
 }

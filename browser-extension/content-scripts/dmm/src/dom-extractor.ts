@@ -29,63 +29,29 @@ function extractFromImageSrc(src: string | null): { storeId: string, category: s
   return { storeId, category, subcategory }
 }
 
-function findPreferredImage(container: Element): HTMLImageElement | null {
-  if (container instanceof HTMLImageElement)
-    return extractFromImageSrc(container.getAttribute('src')) ? container : null
-  const nodeList = container.querySelectorAll('img') as NodeListOf<HTMLImageElement>
-  if (!nodeList || nodeList.length === 0)
-    return null
-  // srcが対応フォーマットのものを候補に限定
-  const candidates: HTMLImageElement[] = []
-  nodeList.forEach((img) => {
-    if (extractFromImageSrc(img.getAttribute('src')))
-      candidates.push(img)
-  })
-  if (candidates.length === 0)
-    return null
-  // alt が非空のものを優先し、なければ最初の候補
-  const withAlt = candidates.find(img => typeof img.alt === 'string' && img.alt.trim().length > 0)
-  return withAlt || candidates[0]
-}
-
-function extractThumbnailUrl(container: Element): string | null {
-  const img = findPreferredImage(container)
-  return img?.getAttribute('src') || null
-}
-
-function extractTitle(container: Element): string {
-  const img = findPreferredImage(container)
-  if (img && typeof img.alt === 'string')
-    return img.alt.trim()
-  return ''
-}
-
-// deriveStoreIdFromImageSrc は extractFromImageSrc に置き換え
-
-export function extractGameDataFromContainer(container: Element, index: number): DmmExtractedGame | null {
+function extractGameDataFromImage(img: HTMLImageElement): DmmExtractedGame | null {
   try {
-    const thumbnailUrl = extractThumbnailUrl(container) || undefined
-    const parsed = extractFromImageSrc(thumbnailUrl || null)
-    const cid = parsed?.storeId || undefined
-    const title = extractTitle(container)
-
-    if (!thumbnailUrl || !cid)
+    const src = img.getAttribute('src')
+    if (!src)
+      return null
+    const parsed = extractFromImageSrc(src)
+    if (!parsed)
+      return null
+    const title = typeof img.alt === 'string' ? img.alt.trim() : ''
+    if (!title)
       return null
 
     const game: DmmExtractedGame = {
-      store_id: cid,
+      storeId: parsed.storeId,
+      category: parsed.category,
+      subcategory: parsed.subcategory,
       title,
-      purchase_url: `https://dlsoft.dmm.co.jp/mylibrary/?cid=${cid}`,
-      purchase_date: '',
-      thumbnail_url: thumbnailUrl,
-      additional_data: {},
+      thumbnailUrl: src,
     }
-
-    log.debug(`Extracted game ${index + 1}:`, game)
     return game
   }
   catch (e) {
-    log.debug('extractGameDataFromContainer error:', e)
+    log.debug('extractGameDataFromImage error:', e)
     return null
   }
 }
@@ -94,18 +60,10 @@ export function extractAllGames(): DmmExtractedGame[] {
   const scope = document.querySelector('#mylibrary') || document
   const images = Array.from(scope.querySelectorAll('img'))
   const games: DmmExtractedGame[] = []
-  const seen = new Set<string>()
   images.forEach((img, idx) => {
-    if (!extractFromImageSrc(img.getAttribute('src')))
-      return
-    const li = (img as Element).closest('li') as Element | null
-    const container = li || (img.parentElement as Element | null)
-    const hasReviewButton = container?.querySelector('.mylibraryReviewButton a')
-    if (!hasReviewButton)
-      return
-    const g = extractGameDataFromContainer(container || img, idx)
-    if (g && !seen.has(g.store_id)) {
-      seen.add(g.store_id)
+    const g = extractGameDataFromImage(img)
+    if (g) {
+      log.debug(`Extracted game ${idx + 1}:`, g)
       games.push(g)
     }
   })

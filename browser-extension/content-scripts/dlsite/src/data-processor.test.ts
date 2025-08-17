@@ -86,7 +86,7 @@ describe('data-processor', () => {
       expect(normalizeStoreId('wrong', 'https://example.com/BJ111222')).toBe('BJ111222')
     })
 
-    it('正しい形式のstore_idはそのまま返す', () => {
+    it('正しい形式のstoreIdはそのまま返す', () => {
       expect(normalizeStoreId('RJ123456', 'https://example.com')).toBe('RJ123456')
       expect(normalizeStoreId('VJ987654', 'https://example.com')).toBe('VJ987654')
       expect(normalizeStoreId('BJ111222', 'https://example.com')).toBe('BJ111222')
@@ -97,7 +97,7 @@ describe('data-processor', () => {
       expect(normalizeStoreId('987654', 'https://example.com')).toBe('RJ987654')
     })
 
-    it('空のstore_idの場合はそのまま返す', () => {
+    it('空のstoreIdの場合はそのまま返す', () => {
       expect(normalizeStoreId('', 'https://example.com')).toBe('')
     })
 
@@ -128,56 +128,45 @@ describe('data-processor', () => {
 
   describe('processDLsiteGame', () => {
     const baseGame: DlsiteExtractedGame = {
-      store_id: '123456',
+      storeId: 'RJ123456',
+      category: 'maniax',
       title: '[サークル名] ゲーム（バージョン1.0）',
-      purchase_url: '/work/RJ123456',
-      purchase_date: '2024年1月15日',
-      thumbnail_url: '//example.com/thumb.jpg',
-      additional_data: {
-        maker_name: 'Test Maker',
-      },
+      thumbnailUrl: '//example.com/thumb.jpg',
     }
 
     it('ゲームデータを正しく処理する', () => {
       const result = processDLsiteGame(baseGame)
 
-      expect(result.store_id).toBe('RJ123456')
+      expect(result.storeId).toBe('RJ123456')
       expect(result.title).toBe('ゲーム')
-      expect(result.purchase_url).toBe('https://play.dlsite.com/work/RJ123456')
-      expect(result.purchase_date).toBe('2024-01-15')
-      expect(result.thumbnail_url).toBe('https://example.com/thumb.jpg')
-      expect(result.additional_data.store_name).toBe('DLsite')
-      expect(result.additional_data.extraction_source).toBe('dlsite-extractor')
-      expect(result.additional_data.work_type).toBe('doujin')
-      expect(result.additional_data.maker_name).toBe('Test Maker')
+      expect(result.thumbnailUrl).toBe('https://example.com/thumb.jpg')
     })
 
     it('元のオブジェクトを変更しない（不変性）', () => {
-      const originalData = { ...baseGame.additional_data }
+      const originalData = { ...baseGame }
       processDLsiteGame(baseGame)
 
-      expect(baseGame.additional_data).toEqual(originalData)
-      expect(baseGame.store_id).toBe('123456')
+      expect(baseGame).toEqual(originalData)
     })
 
     it('vJコードの作品を正しく処理する', () => {
       const voiceGame: DlsiteExtractedGame = {
         ...baseGame,
-        store_id: 'VJ987654',
+        storeId: 'VJ987654',
       }
 
       const result = processDLsiteGame(voiceGame)
-      expect(result.additional_data.work_type).toBe('voice')
+      expect(result.storeId).toBe('VJ987654')
     })
 
     it('bJコードの作品を正しく処理する', () => {
       const bookGame: DlsiteExtractedGame = {
         ...baseGame,
-        store_id: 'BJ111222',
+        storeId: 'BJ111222',
       }
 
       const result = processDLsiteGame(bookGame)
-      expect(result.additional_data.work_type).toBe('book')
+      expect(result.storeId).toBe('BJ111222')
     })
   })
 
@@ -185,28 +174,26 @@ describe('data-processor', () => {
     it('複数のゲームを処理する', () => {
       const games: DlsiteExtractedGame[] = [
         {
-          store_id: '123456',
+          storeId: 'RJ123456',
+          category: 'maniax',
           title: '[サークル1] ゲーム1',
-          purchase_url: '/work/RJ123456',
-          additional_data: {},
+          thumbnailUrl: 'https://example.com/a.jpg',
         },
         {
-          store_id: 'VJ987654',
+          storeId: 'VJ987654',
+          category: 'pro',
           title: '[サークル2] ゲーム2',
-          purchase_url: '/work/VJ987654',
-          additional_data: {},
+          thumbnailUrl: 'https://example.com/b.jpg',
         },
       ]
 
       const results = processGames(games)
 
       expect(results).toHaveLength(2)
-      expect(results[0].store_id).toBe('RJ123456')
+      expect(results[0].storeId).toBe('RJ123456')
       expect(results[0].title).toBe('ゲーム1')
-      expect(results[0].additional_data.work_type).toBe('doujin')
-      expect(results[1].store_id).toBe('VJ987654')
+      expect(results[1].storeId).toBe('VJ987654')
       expect(results[1].title).toBe('ゲーム2')
-      expect(results[1].additional_data.work_type).toBe('voice')
     })
 
     it('空の配列を処理する', () => {
