@@ -22,28 +22,76 @@ export function createBrowser(): Browser {
           title: options.title,
           message: options.message,
         }
-        await new Promise<void>(resolve => chrome.notifications.create(chromeOptions, () => resolve()))
+        await new Promise<void>((resolve, reject) => {
+          chrome.notifications.create(chromeOptions, () => {
+            const err = chrome.runtime?.lastError
+            if (err) {
+              reject(new Error(err.message))
+              return
+            }
+            resolve()
+          })
+        })
       },
     },
     runtime: {
       getURL: path => chrome.runtime.getURL(path),
     },
     storage: {
-      get: keys => new Promise(resolve => chrome.storage.local.get(keys, resolve)),
-      set: items => new Promise(resolve => chrome.storage.local.set(items, () => resolve())),
+      get: keys => new Promise((resolve, reject) => {
+        chrome.storage.local.get(keys, (items) => {
+          const err = chrome.runtime?.lastError
+          if (err) {
+            reject(new Error(err.message))
+            return
+          }
+          resolve(items)
+        })
+      }),
+      set: items => new Promise((resolve, reject) => {
+        chrome.storage.local.set(items, () => {
+          const err = chrome.runtime?.lastError
+          if (err) {
+            reject(new Error(err.message))
+            return
+          }
+          resolve()
+        })
+      }),
     },
     tabs: {
-      query: queryInfo => new Promise(resolve => chrome.tabs.query(queryInfo, (tabs) => {
-        resolve(tabs.map(t => ({ id: t.id, url: t.url })))
-      })),
-      sendMessage: (tabId, message) => new Promise<void>((resolve) => {
-        chrome.tabs.sendMessage(tabId, message, () => resolve())
+      query: queryInfo => new Promise((resolve, reject) => {
+        chrome.tabs.query(queryInfo, (tabs) => {
+          const err = chrome.runtime?.lastError
+          if (err) {
+            reject(new Error(err.message))
+            return
+          }
+          resolve(tabs.map(t => ({ id: t.id, url: t.url })))
+        })
+      }),
+      sendMessage: (tabId, message) => new Promise<void>((resolve, reject) => {
+        chrome.tabs.sendMessage(tabId, message, () => {
+          const err = chrome.runtime?.lastError
+          if (err) {
+            reject(new Error(err.message))
+            return
+          }
+          resolve()
+        })
       }),
     },
     scripting: {
       executeScript: async (tabId, files) => {
-        await new Promise<void>((resolve) => {
-          chrome.scripting.executeScript({ target: { tabId }, files }, () => resolve())
+        await new Promise<void>((resolve, reject) => {
+          chrome.scripting.executeScript({ target: { tabId }, files }, () => {
+            const err = chrome.runtime?.lastError
+            if (err) {
+              reject(new Error(err.message))
+              return
+            }
+            resolve()
+          })
         })
       },
     },

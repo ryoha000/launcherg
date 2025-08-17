@@ -13,8 +13,37 @@ function isObjectRecord(value: unknown): value is object {
   return typeof value === 'object' && value !== null
 }
 
+function normalizeBufJsonNativeResponse(payload: unknown): unknown {
+  if (!isObjectRecord(payload))
+    return payload
+
+  // 対応: { response: { case: string, value: any }, ... } → { [case]: value, ... }
+  const maybeResponse = (payload as any).response
+  if (isObjectRecord(maybeResponse) && 'case' in maybeResponse) {
+    const caseName = (maybeResponse as any).case
+    const caseValue = (maybeResponse as any).value
+    if (typeof caseName === 'string') {
+      const { response: _omit, ...rest } = payload as Record<string, unknown>
+      return { ...rest, [caseName]: caseValue }
+    }
+  }
+
+  // 対応: { response: { statusResult: {...} } } のような prost/serde 既定の oneof 表現
+  if (isObjectRecord(maybeResponse)) {
+    const keys = Object.keys(maybeResponse)
+    if (keys.length === 1) {
+      const onlyKey = keys[0]
+      const { response: _omit, ...rest } = payload as Record<string, unknown>
+      return { ...rest, [onlyKey]: (maybeResponse as any)[onlyKey] }
+    }
+  }
+
+  return payload
+}
+
 function decodeNativeResponse(payload: unknown): NativeResponse {
-  return fromJson(NativeResponseSchema, payload as any)
+  const normalized = normalizeBufJsonNativeResponse(payload)
+  return fromJson(NativeResponseSchema, normalized as any)
 }
 
 function createOnceSettled<T, E>(resolve: (value: T) => void, reject: (reason: E) => void) {
@@ -42,7 +71,9 @@ function createOnceSettled<T, E>(resolve: (value: T) => void, reject: (reason: E
 
 function recieve(requestId: string, response: unknown, resolve: (value: NativeResponse | null) => void, reject: (reason?: any) => void): void {
   if (chrome.runtime.lastError) {
+    log.error('Native messaging lastError', { requestId, message: chrome.runtime.lastError.message })
     reject(new Error(chrome.runtime.lastError.message))
+    return
   }
 
   if (response == null) {
