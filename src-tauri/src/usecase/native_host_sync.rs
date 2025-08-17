@@ -6,6 +6,7 @@ use std::sync::Arc;
 use derive_new::new;
 use crate::domain::repository::collection::CollectionRepository;
 use crate::infrastructure::repositoryimpl::repository::RepositoriesExt;
+use crate::domain::thumbnail::ThumbnailService;
 
 #[derive(Clone, Debug)]
 /// DMM 由来のゲーム同期パラメータ。キーは `(store_id, category, subcategory)`。
@@ -17,6 +18,7 @@ pub struct DmmSyncGameParam {
     pub subcategory: String,
     pub gamename: String,
     pub egs: Option<EgsInfo>,
+    pub thumbnail_url: String,
 }
 
 #[derive(Clone, Debug)]
@@ -27,6 +29,7 @@ pub struct DlsiteSyncGameParam {
     pub category: String,
     pub gamename: String,
     pub egs: Option<EgsInfo>,
+    pub thumbnail_url: String,
 }
 
 #[derive(Clone, Debug)]
@@ -45,11 +48,12 @@ pub struct EgsInfo {
 #[derive(new)]
 /// ストア情報をコレクションへ同期するユースケース。
 /// 内部で `CollectionRepository` を用いてマッピング作成・EGS 情報反映を行う。
-pub struct NativeHostSyncUseCase<R: RepositoriesExt> {
+pub struct NativeHostSyncUseCase<R: RepositoriesExt, S: ThumbnailService> {
     repositories: Arc<R>,
+    thumbnails: Arc<S>,
 }
 
-impl<R: RepositoriesExt> NativeHostSyncUseCase<R> {
+impl<R: RepositoriesExt, S: ThumbnailService> NativeHostSyncUseCase<R, S> {
     /// 指定 EGS に対応するコレクション要素を確実に用意する。
     /// - 既存があれば名称・詳細を上書き更新
     /// - なければ新規採番し、EGS マップ・名称・詳細を作成
@@ -123,31 +127,35 @@ impl<R: RepositoriesExt> NativeHostSyncUseCase<R> {
         games: Vec<DmmSyncGameParam>,
     ) -> anyhow::Result<u32> {
         let mut success: u32 = 0;
-        for DmmSyncGameParam { store_id, category, subcategory, gamename, egs } in games {
+        for DmmSyncGameParam { store_id, category, subcategory, gamename, egs, thumbnail_url } in games {
             // 既存 (store_id, category, subcategory) がある場合はスキップ
             let exists = self
                 .repositories
                 .collection_repository()
                 .get_collection_id_by_dmm_mapping(&store_id, &category, &subcategory)
                 .await?;
-            if exists.is_some() {
+            if let Some(_) = exists {
                 continue;
             }
+            let collection_element_id;
             match egs.as_ref() {
                 Some(egs) => {
-                    let cid = self.ensure_collection_for_egs(egs).await?;
+                    collection_element_id = self.ensure_collection_for_egs(egs).await?;
                     self.repositories
                         .collection_repository()
-                        .upsert_dmm_mapping(&cid, &store_id, &category, &subcategory)
+                        .upsert_dmm_mapping(&collection_element_id, &store_id, &category, &subcategory)
                         .await?;
                 }
                 None => {
-                    let cid = self.create_collection_without_egs(&gamename).await?;
+                    collection_element_id = self.create_collection_without_egs(&gamename).await?;
                     self.repositories
                         .collection_repository()
-                        .upsert_dmm_mapping(&cid, &store_id, &category, &subcategory)
+                        .upsert_dmm_mapping(&collection_element_id, &store_id, &category, &subcategory)
                         .await?;
                 }
+            }
+            if !thumbnail_url.is_empty() {
+                let _ = self.thumbnails.save_thumbnail(&collection_element_id, &thumbnail_url).await;
             }
             success += 1;
         }
@@ -165,36 +173,38 @@ impl<R: RepositoriesExt> NativeHostSyncUseCase<R> {
         games: Vec<DlsiteSyncGameParam>,
     ) -> anyhow::Result<u32> {
         let mut success: u32 = 0;
-        for DlsiteSyncGameParam { store_id, category, gamename, egs } in games {
+        for DlsiteSyncGameParam { store_id, category, gamename, egs, thumbnail_url } in games {
             // 既存 (store_id, category) がある場合はスキップ
             let exists = self
                 .repositories
                 .collection_repository()
                 .get_collection_id_by_dlsite_mapping(&store_id, &category)
                 .await?;
-            if exists.is_some() {
+            if let Some(existing_cid) = exists {
                 continue;
             }
+            let collection_element_id;
             match egs.as_ref() {
                 Some(egs) => {
-                    let cid = self.ensure_collection_for_egs(egs).await?;
+                    collection_element_id = self.ensure_collection_for_egs(egs).await?;
                     self.repositories
                         .collection_repository()
-                        .upsert_dlsite_mapping(&cid, &store_id, &category)
+                        .upsert_dlsite_mapping(&collection_element_id, &store_id, &category)
                         .await?;
                 }
                 None => {
-                    let cid = self.create_collection_without_egs(&gamename).await?;
+                    collection_element_id = self.create_collection_without_egs(&gamename).await?;
                     self.repositories
                         .collection_repository()
-                        .upsert_dlsite_mapping(&cid, &store_id, &category)
+                        .upsert_dlsite_mapping(&collection_element_id, &store_id, &category)
                         .await?;
                 }
+            }
+            if !thumbnail_url.is_empty() {
+                let _ = self.thumbnails.save_thumbnail(&collection_element_id, &thumbnail_url).await;
             }
             success += 1;
         }
         Ok(success)
     }
 }
-
-

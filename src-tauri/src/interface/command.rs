@@ -244,8 +244,8 @@ pub async fn upsert_collection_element(
         .save_element_icon(&handle, &new_element_id)
         .await?;
     modules
-        .collection_use_case()
-        .save_element_thumbnail(&handle, &new_element_id, game_cache.thumbnail_url)
+        .image_use_case()
+        .save_thumbnail(&new_element_id, &game_cache.thumbnail_url)
         .await?;
     Ok(modules
         .collection_use_case()
@@ -265,9 +265,8 @@ pub async fn update_collection_element_thumbnails(
         .await?;
     let handle = Arc::new(handle);
     modules
-        .collection_use_case()
+        .image_use_case()
         .concurency_save_thumbnails(
-            &handle,
             all_game_cache
                 .into_iter()
                 .map(|v| (Id::new(v.id), v.thumbnail_url))

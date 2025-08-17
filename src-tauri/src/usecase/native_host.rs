@@ -9,7 +9,7 @@ struct HostStatusStore {
     recent_extension_ids: Vec<String>,
 }
 
-fn host_root_dir() -> String {
+pub fn host_root_dir() -> String {
     // %APPDATA%\ryoha.moe\launcherg
     let base = dirs::config_dir().unwrap_or(std::env::current_dir().unwrap());
     let path = base.join("ryoha.moe").join("launcherg");
@@ -62,5 +62,3 @@ pub fn bump_sync_counters(success_add: u32) {
     s.total_synced = s.total_synced.saturating_add(success_add);
     save_status_store(s);
 }
-
-

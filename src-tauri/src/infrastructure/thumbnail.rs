@@ -1,0 +1,90 @@
+use std::{fs, io::{BufWriter, Write}, num::NonZeroU32, path::Path};
+
+use anyhow::Context as _;
+use fast_image_resize as fr;
+use image::{io::Reader as ImageReader, ColorType, ImageEncoder};
+
+use async_trait::async_trait;
+use crate::domain::{collection::CollectionElement, Id, thumbnail::ThumbnailService};
+
+const THUMBNAILS_ROOT_DIR: &str = "thumbnails";
+
+pub fn build_thumbnail_paths(root_dir: &str, id: &Id<CollectionElement>, src_url: &str) -> anyhow::Result<(String, String)> {
+    let dir = Path::new(root_dir).join(THUMBNAILS_ROOT_DIR);
+    fs::create_dir_all(&dir).ok();
+    let url = url::Url::parse(src_url).context("invalid thumbnail url")?;
+    let filename = url
+        .path_segments()
+        .and_then(|segments| segments.last())
+        .ok_or_else(|| anyhow::anyhow!("failed to extract filename from url"))?;
+    let orig = dir.join(format!("{}-{}", id.value, filename));
+    let resized = dir.join(format!("{}.png", id.value));
+    Ok((orig.to_string_lossy().to_string(), resized.to_string_lossy().to_string()))
+}
+
+pub async fn download_to_file(url: &str, path: &str) -> anyhow::Result<()> {
+    let client = reqwest::Client::new();
+    let res = client.get(url).send().await.context("download failed")?;
+    let bytes = res.bytes().await.context("read body failed")?;
+    let mut file = std::fs::File::create(path).context("create file failed")?;
+    file.write_all(&bytes).context("write file failed")?;
+    Ok(())
+}
+
+pub fn resize_image(src: &str, dst: &str, dst_width_px: u32) -> anyhow::Result<()> {
+    let img = ImageReader::open(src).context("open image failed")?.decode().context("decode image failed")?;
+    let width = NonZeroU32::new(img.width()).ok_or_else(|| anyhow::anyhow!("invalid width"))?;
+    let height = NonZeroU32::new(img.height()).ok_or_else(|| anyhow::anyhow!("invalid height"))?;
+    let mut src_image = fr::Image::from_vec_u8(width, height, img.to_rgba8().into_raw(), fr::PixelType::U8x4)?;
+
+    let alpha_mul_div = fr::MulDiv::default();
+    alpha_mul_div.multiply_alpha_inplace(&mut src_image.view_mut())?;
+
+    let dst_width = NonZeroU32::new(dst_width_px).ok_or_else(|| anyhow::anyhow!("invalid dst width"))?;
+    let dst_height = NonZeroU32::new((height.get() as f32 / width.get() as f32 * dst_width_px as f32) as u32)
+        .ok_or_else(|| anyhow::anyhow!("invalid dst height"))?;
+    let mut dst_image = fr::Image::new(dst_width, dst_height, src_image.pixel_type());
+    let mut dst_view = dst_image.view_mut();
+    let mut resizer = fr::Resizer::new(fr::ResizeAlg::Convolution(fr::FilterType::Box));
+    resizer.resize(&src_image.view(), &mut dst_view)?;
+    alpha_mul_div.divide_alpha_inplace(&mut dst_view)?;
+
+    let mut result_buf = BufWriter::new(fs::File::create(&dst)?);
+    image::codecs::png::PngEncoder::new(&mut result_buf).write_image(
+        dst_image.buffer(),
+        dst_width.get(),
+        dst_height.get(),
+        ColorType::Rgba8,
+    )?;
+
+    Ok(())
+}
+
+pub async fn save_thumbnail_with_root(root_dir: &str, id: &Id<CollectionElement>, url: &str, width: u32) -> anyhow::Result<()> {
+    if url.is_empty() {
+        return Ok(());
+    }
+    let (_orig, resized) = build_thumbnail_paths(root_dir, id, url)?;
+    if Path::new(&resized).exists() {
+        return Ok(());
+    }
+    let (orig, resized) = build_thumbnail_paths(root_dir, id, url)?;
+    download_to_file(url, &orig).await?;
+    resize_image(&orig, &resized, width)?;
+    Ok(())
+}
+
+pub struct ThumbnailServiceImpl {
+    root_dir: String,
+}
+
+impl ThumbnailServiceImpl {
+    pub fn new(root_dir: String) -> Self { Self { root_dir } }
+}
+
+#[async_trait]
+impl ThumbnailService for ThumbnailServiceImpl {
+    async fn save_thumbnail(&self, id: &Id<CollectionElement>, url: &str) -> anyhow::Result<()> {
+        save_thumbnail_with_root(&self.root_dir, id, url, 400).await
+    }
+}

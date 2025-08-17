@@ -8,6 +8,7 @@ mod explored_cache_test;
 pub mod extension_installer;
 pub mod extension_manager;
 mod extension_manager_test;
+pub mod image;
 pub mod file;
 mod file_test;
 pub mod game_identifier;

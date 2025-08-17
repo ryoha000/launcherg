@@ -12,11 +12,12 @@ use crate::{
             repository::{Repositories, RepositoriesExt},
         },
         windowsimpl::windows::{Windows, WindowsExt},
+        thumbnail::ThumbnailServiceImpl,
     },
     usecase::{
         all_game_cache::AllGameCacheUseCase, collection::CollectionUseCase,
         explored_cache::ExploredCacheUseCase, extension_manager::ExtensionManagerUseCase,
-        file::FileUseCase, process::ProcessUseCase,
+        file::FileUseCase, image::{ImageUseCase, get_image_root_dir}, process::ProcessUseCase,
     },
 };
 
@@ -27,6 +28,7 @@ pub struct Modules {
     file_use_case: FileUseCase<Explorers>,
     all_game_cache_use_case: AllGameCacheUseCase<Repositories>,
     process_use_case: ProcessUseCase<Windows>,
+    image_use_case: ImageUseCase<ThumbnailServiceImpl>,
     pubsub: PubSub,
 }
 pub trait ModulesExt {
@@ -41,6 +43,7 @@ pub trait ModulesExt {
     fn all_game_cache_use_case(&self) -> &AllGameCacheUseCase<Self::Repositories>;
     fn file_use_case(&self) -> &FileUseCase<Self::Explorers>;
     fn process_use_case(&self) -> &ProcessUseCase<Self::Windows>;
+    fn image_use_case(&self) -> &ImageUseCase<ThumbnailServiceImpl>;
     fn pubsub(&self) -> &Self::PubSub;
 }
 
@@ -68,6 +71,9 @@ impl ModulesExt for Modules {
     fn process_use_case(&self) -> &ProcessUseCase<Self::Windows> {
         &self.process_use_case
     }
+    fn image_use_case(&self) -> &ImageUseCase<ThumbnailServiceImpl> {
+        &self.image_use_case
+    }
     fn pubsub(&self) -> &Self::PubSub {
         &self.pubsub
     }
@@ -92,6 +98,9 @@ impl Modules {
 
         let process_use_case: ProcessUseCase<Windows> = ProcessUseCase::new(windows.clone());
 
+        let thumbs = ThumbnailServiceImpl::new(get_image_root_dir(handle));
+        let image_use_case: ImageUseCase<ThumbnailServiceImpl> = ImageUseCase::new(Arc::new(thumbs));
+
         Self {
             collection_use_case,
             explored_cache_use_case,
@@ -99,6 +108,7 @@ impl Modules {
             all_game_cache_use_case,
             file_use_case,
             process_use_case,
+            image_use_case,
             pubsub,
         }
     }

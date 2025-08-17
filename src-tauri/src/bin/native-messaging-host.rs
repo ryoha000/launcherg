@@ -18,11 +18,14 @@ use thiserror::Error;
 
 // プロトタイプを使用
 use proto::generated::launcherg::{common::*, sync::*, status::*};
-use infrastructure::repositoryimpl::{driver::Db as RepoDb, repository::Repositories};
+use infrastructure::{
+    repositoryimpl::{driver::Db as RepoDb, repository::Repositories},
+    thumbnail::ThumbnailServiceImpl,
+};
 use usecase::{native_host_sync::{NativeHostSyncUseCase, DmmSyncGameParam, DlsiteSyncGameParam}, native_host};
 
 struct AppCtx {
-    sync_usecase: NativeHostSyncUseCase<Repositories>,
+    sync_usecase: NativeHostSyncUseCase<Repositories, ThumbnailServiceImpl>,
 }
 
 #[derive(Debug)]
@@ -111,7 +114,8 @@ async fn main() {
     let db_path = native_host::db_file_path();
     let repo_db = RepoDb::from_path(&db_path).await;
     let repositories = Repositories::new(repo_db);
-    let sync_usecase = NativeHostSyncUseCase::new(Arc::new(repositories));
+    let thumbs = ThumbnailServiceImpl::new(crate::usecase::native_host::host_root_dir());
+    let sync_usecase = NativeHostSyncUseCase::new(Arc::new(repositories), Arc::new(thumbs));
     let ctx = AppCtx { sync_usecase };
 
     log::info!("Native Messaging Host started");
@@ -205,6 +209,7 @@ async fn handle_sync_dmm_games(ctx: &AppCtx, request: &DmmSyncGamesRequest, requ
             category: g.category.clone(),
             subcategory: g.subcategory.clone(),
             gamename: g.title.clone(),
+            thumbnail_url: g.thumbnail_url.clone(),
             egs: g.egs_info.as_ref().map(|e| usecase::native_host_sync::EgsInfo {
                 erogamescape_id: e.erogamescape_id,
                 gamename: e.gamename.clone(),
@@ -252,6 +257,7 @@ async fn handle_sync_dlsite_games(ctx: &AppCtx, request: &DlsiteSyncGamesRequest
             store_id: g.id.clone(),
             category: g.category.clone(),
             gamename: g.title.clone(),
+            thumbnail_url: g.thumbnail_url.clone(),
             egs: g.egs_info.as_ref().map(|e| usecase::native_host_sync::EgsInfo {
                 erogamescape_id: e.erogamescape_id,
                 gamename: e.gamename.clone(),
