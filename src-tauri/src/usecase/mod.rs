@@ -15,4 +15,3 @@ pub mod game_identifier;
 pub mod models;
 pub mod process;
 pub mod native_host_sync;
-pub mod native_host;

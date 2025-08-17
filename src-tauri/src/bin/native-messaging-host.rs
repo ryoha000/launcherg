@@ -23,7 +23,7 @@ use infrastructure::{
     thumbnail::ThumbnailServiceImpl,
     icon::IconServiceImpl,
 };
-use usecase::{native_host_sync::{NativeHostSyncUseCase, DmmSyncGameParam, DlsiteSyncGameParam}, native_host};
+use usecase::native_host_sync::{NativeHostSyncUseCase, DmmSyncGameParam, DlsiteSyncGameParam};
 
 struct AppCtx {
     sync_usecase: NativeHostSyncUseCase<Repositories, ThumbnailServiceImpl, IconServiceImpl>,
@@ -112,10 +112,10 @@ async fn main() {
         .init();
 
     // UseCase/Repository を初期化
-    let db_path = native_host::db_file_path();
+    let db_path = usecase::native_host_sync::db_file_path();
     let repo_db = RepoDb::from_path(&db_path).await;
     let repositories = Repositories::new(repo_db);
-    let host_root = crate::usecase::native_host::host_root_dir();
+    let host_root = crate::usecase::native_host_sync::host_root_dir();
     let thumbs = ThumbnailServiceImpl::new(host_root.clone());
     let icons = IconServiceImpl::new_from_root_path(host_root);
     let sync_usecase = NativeHostSyncUseCase::new(Arc::new(repositories), Arc::new(thumbs), Arc::new(icons));
@@ -226,7 +226,7 @@ async fn handle_sync_dmm_games(ctx: &AppCtx, request: &DmmSyncGamesRequest, requ
         .collect();
     match ctx.sync_usecase.sync_dmm_games(params).await {
         Ok(success_count) => {
-            native_host::bump_sync_counters(success_count);
+            usecase::native_host_sync::bump_sync_counters(success_count);
             let result = SyncBatchResult { success_count, error_count: 0, errors: vec![], synced_games: input_ids };
             NativeResponse { success: true, error: String::new(), request_id: request_id.to_string(), response: Some(native_response::Response::SyncGamesResult(result)) }
         }
@@ -274,7 +274,7 @@ async fn handle_sync_dlsite_games(ctx: &AppCtx, request: &DlsiteSyncGamesRequest
         .collect();
     match ctx.sync_usecase.sync_dlsite_games(params).await {
         Ok(success_count) => {
-            native_host::bump_sync_counters(success_count);
+            usecase::native_host_sync::bump_sync_counters(success_count);
             let result = SyncBatchResult { success_count, error_count: 0, errors: vec![], synced_games: input_ids };
             NativeResponse { success: true, error: String::new(), request_id: request_id.to_string(), response: Some(native_response::Response::SyncGamesResult(result)) }
         }
@@ -299,7 +299,7 @@ async fn handle_sync_dlsite_games(ctx: &AppCtx, request: &DlsiteSyncGamesRequest
 }
 
 fn handle_get_status(_request: &GetStatusRequest, request_id: &str) -> NativeResponse {
-    let data = native_host::get_status_data();
+    let data = usecase::native_host_sync::get_status_data();
     let status = SyncStatus {
         last_sync: data.last_sync_seconds.map(|sec| pbjson_types::Timestamp { seconds: sec, nanos: 0 }),
         total_synced: data.total_synced,
@@ -319,7 +319,7 @@ fn handle_get_status(_request: &GetStatusRequest, request_id: &str) -> NativeRes
 
 fn handle_set_config(config: &ExtensionConfig, request_id: &str) -> NativeResponse {
     let domain_config = convert_proto_config(config);
-    match native_host::save_config(&domain_config) {
+    match usecase::native_host_sync::save_config(&domain_config) {
         Ok(_) => {
             let msg = "Config updated successfully".to_string();
             NativeResponse { success: true, error: String::new(), request_id: request_id.to_string(), response: Some(native_response::Response::ConfigResult(ConfigUpdateResult { message: msg })) }
