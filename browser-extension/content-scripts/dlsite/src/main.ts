@@ -55,7 +55,7 @@ async function extractAndSync(): Promise<void> {
       id: g.storeId,
       category: g.category,
       title: g.title,
-      thumbnailUrl: g.thumbnailUrl,
+      imageUrl: g.imageUrl,
     }))
 
     const request = create(ExtensionRequestSchema, {

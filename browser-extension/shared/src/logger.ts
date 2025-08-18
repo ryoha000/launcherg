@@ -8,7 +8,7 @@ const levelOrder = { silent: 0, error: 1, warn: 2, info: 3, debug: 4 } as const
 let currentLevel: LogLevel
   = (typeof localStorage !== 'undefined'
     ? (localStorage.getItem('launcherg:log-level') as LogLevel)
-    : undefined) || 'info'
+    : undefined) || 'debug'
 
 function shouldLog(target: keyof typeof levelOrder): boolean {
   return levelOrder[target] <= levelOrder[currentLevel]

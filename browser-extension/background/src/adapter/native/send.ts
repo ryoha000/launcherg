@@ -17,6 +17,8 @@ function normalizeBufJsonNativeResponse(payload: unknown): unknown {
   if (!isObjectRecord(payload))
     return payload
 
+  log.info('normalizeBufJsonNativeResponse', { payload })
+
   // 対応: { response: { case: string, value: any }, ... } → { [case]: value, ... }
   const maybeResponse = (payload as any).response
   if (isObjectRecord(maybeResponse) && 'case' in maybeResponse) {

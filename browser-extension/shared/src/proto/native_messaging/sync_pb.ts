@@ -10,7 +10,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file native_messaging/sync.proto.
  */
 export const file_native_messaging_sync: GenFile = /*@__PURE__*/
-  fileDesc("ChtuYXRpdmVfbWVzc2FnaW5nL3N5bmMucHJvdG8SDmxhdW5jaGVyZy5zeW5jIpoBCgdFZ3NJbmZvEhcKD2Vyb2dhbWVzY2FwZV9pZBgBIAEoBRIQCghnYW1lbmFtZRgCIAEoCRIVCg1nYW1lbmFtZV9ydWJ5GAMgASgJEhEKCWJyYW5kbmFtZRgEIAEoCRIWCg5icmFuZG5hbWVfcnVieRgFIAEoCRIPCgdzZWxsZGF5GAYgASgJEhEKCWlzX251a2lnZRgHIAEoCCJTChNEbW1TeW5jR2FtZXNSZXF1ZXN0EiYKBWdhbWVzGAEgAygLMhcubGF1bmNoZXJnLnN5bmMuRG1tR2FtZRIUCgxleHRlbnNpb25faWQYAiABKAkiWQoWRGxzaXRlU3luY0dhbWVzUmVxdWVzdBIpCgVnYW1lcxgBIAMoCzIaLmxhdW5jaGVyZy5zeW5jLkRsc2l0ZUdhbWUSFAoMZXh0ZW5zaW9uX2lkGAIgASgJIo0BCgdEbW1HYW1lEgoKAmlkGAEgASgJEhAKCGNhdGVnb3J5GAIgASgJEhMKC3N1YmNhdGVnb3J5GAMgASgJEikKCGVnc19pbmZvGAQgASgLMhcubGF1bmNoZXJnLnN5bmMuRWdzSW5mbxINCgV0aXRsZRgFIAEoCRIVCg10aHVtYm5haWxfdXJsGAYgASgJInsKCkRsc2l0ZUdhbWUSCgoCaWQYASABKAkSEAoIY2F0ZWdvcnkYAiABKAkSKQoIZWdzX2luZm8YAyABKAsyFy5sYXVuY2hlcmcuc3luYy5FZ3NJbmZvEg0KBXRpdGxlGAQgASgJEhUKDXRodW1ibmFpbF91cmwYBSABKAkiYwoPU3luY0JhdGNoUmVzdWx0EhUKDXN1Y2Nlc3NfY291bnQYASABKA0SEwoLZXJyb3JfY291bnQYAiABKA0SDgoGZXJyb3JzGAMgAygJEhQKDHN5bmNlZF9nYW1lcxgEIAMoCUJ4ChJjb20ubGF1bmNoZXJnLnN5bmNCCVN5bmNQcm90b1ABogIDTFNYqgIOTGF1bmNoZXJnLlN5bmPKAg5MYXVuY2hlcmdcU3luY+ICGkxhdW5jaGVyZ1xTeW5jXEdQQk1ldGFkYXRh6gIPTGF1bmNoZXJnOjpTeW5jYgZwcm90bzM");
+  fileDesc("ChtuYXRpdmVfbWVzc2FnaW5nL3N5bmMucHJvdG8SDmxhdW5jaGVyZy5zeW5jIpoBCgdFZ3NJbmZvEhcKD2Vyb2dhbWVzY2FwZV9pZBgBIAEoBRIQCghnYW1lbmFtZRgCIAEoCRIVCg1nYW1lbmFtZV9ydWJ5GAMgASgJEhEKCWJyYW5kbmFtZRgEIAEoCRIWCg5icmFuZG5hbWVfcnVieRgFIAEoCRIPCgdzZWxsZGF5GAYgASgJEhEKCWlzX251a2lnZRgHIAEoCCJTChNEbW1TeW5jR2FtZXNSZXF1ZXN0EiYKBWdhbWVzGAEgAygLMhcubGF1bmNoZXJnLnN5bmMuRG1tR2FtZRIUCgxleHRlbnNpb25faWQYAiABKAkiWQoWRGxzaXRlU3luY0dhbWVzUmVxdWVzdBIpCgVnYW1lcxgBIAMoCzIaLmxhdW5jaGVyZy5zeW5jLkRsc2l0ZUdhbWUSFAoMZXh0ZW5zaW9uX2lkGAIgASgJIokBCgdEbW1HYW1lEgoKAmlkGAEgASgJEhAKCGNhdGVnb3J5GAIgASgJEhMKC3N1YmNhdGVnb3J5GAMgASgJEikKCGVnc19pbmZvGAQgASgLMhcubGF1bmNoZXJnLnN5bmMuRWdzSW5mbxINCgV0aXRsZRgFIAEoCRIRCglpbWFnZV91cmwYBiABKAkidwoKRGxzaXRlR2FtZRIKCgJpZBgBIAEoCRIQCghjYXRlZ29yeRgCIAEoCRIpCghlZ3NfaW5mbxgDIAEoCzIXLmxhdW5jaGVyZy5zeW5jLkVnc0luZm8SDQoFdGl0bGUYBCABKAkSEQoJaW1hZ2VfdXJsGAUgASgJImMKD1N5bmNCYXRjaFJlc3VsdBIVCg1zdWNjZXNzX2NvdW50GAEgASgNEhMKC2Vycm9yX2NvdW50GAIgASgNEg4KBmVycm9ycxgDIAMoCRIUCgxzeW5jZWRfZ2FtZXMYBCADKAlCeAoSY29tLmxhdW5jaGVyZy5zeW5jQglTeW5jUHJvdG9QAaICA0xTWKoCDkxhdW5jaGVyZy5TeW5jygIOTGF1bmNoZXJnXFN5bmPiAhpMYXVuY2hlcmdcU3luY1xHUEJNZXRhZGF0YeoCD0xhdW5jaGVyZzo6U3luY2IGcHJvdG8z");
 
 /**
  * EGS 解決済み情報
@@ -149,11 +149,11 @@ export type DmmGame = Message<"launcherg.sync.DmmGame"> & {
   title: string;
 
   /**
-   * サムネイル画像URL
+   * 画像URL（アイコン生成用）
    *
-   * @generated from field: string thumbnail_url = 6;
+   * @generated from field: string image_url = 6;
    */
-  thumbnailUrl: string;
+  imageUrl: string;
 };
 
 /**
@@ -196,11 +196,11 @@ export type DlsiteGame = Message<"launcherg.sync.DlsiteGame"> & {
   title: string;
 
   /**
-   * サムネイル画像URL
+   * 画像URL（アイコン生成用）
    *
-   * @generated from field: string thumbnail_url = 5;
+   * @generated from field: string image_url = 5;
    */
-  thumbnailUrl: string;
+  imageUrl: string;
 };
 
 /**

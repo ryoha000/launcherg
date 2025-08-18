@@ -45,7 +45,7 @@ export function cleanDLsiteTitle(title: string): string {
 }
 
 // URLを正規化する純粋関数
-export function normalizeUrl(url: string, _urlType: 'purchase' | 'thumbnail'): string {
+export function normalizeUrl(url: string, _urlType: 'purchase' | 'image'): string {
   if (!url)
     return url
 
@@ -101,7 +101,7 @@ export function processDLsiteGame(game: DlsiteExtractedGame): DlsiteExtractedGam
   const processedGame: DlsiteExtractedGame = {
     ...game,
     title: game.title ? cleanDLsiteTitle(game.title) : '',
-    thumbnailUrl: normalizeUrl(game.thumbnailUrl, 'thumbnail'),
+    imageUrl: normalizeUrl(game.imageUrl, 'image'),
   }
   return processedGame
 }

@@ -23,7 +23,7 @@ use infrastructure::{
     thumbnail::ThumbnailServiceImpl,
     icon::IconServiceImpl,
 };
-use usecase::native_host_sync::{NativeHostSyncUseCase, DmmSyncGameParam, DlsiteSyncGameParam};
+use usecase::native_host_sync::{NativeHostSyncUseCase, DmmSyncGameParam, DlsiteSyncGameParam, EgsInfo};
 
 struct AppCtx {
     sync_usecase: NativeHostSyncUseCase<Repositories, ThumbnailServiceImpl, IconServiceImpl>,
@@ -212,8 +212,8 @@ async fn handle_sync_dmm_games(ctx: &AppCtx, request: &DmmSyncGamesRequest, requ
             category: g.category.clone(),
             subcategory: g.subcategory.clone(),
             gamename: g.title.clone(),
-            thumbnail_url: g.thumbnail_url.clone(),
-            egs: g.egs_info.as_ref().map(|e| usecase::native_host_sync::EgsInfo {
+            image_url: g.image_url.clone(),
+            egs: g.egs_info.as_ref().map(|e| EgsInfo {
                 erogamescape_id: e.erogamescape_id,
                 gamename: e.gamename.clone(),
                 gamename_ruby: e.gamename_ruby.clone(),
@@ -260,8 +260,8 @@ async fn handle_sync_dlsite_games(ctx: &AppCtx, request: &DlsiteSyncGamesRequest
             store_id: g.id.clone(),
             category: g.category.clone(),
             gamename: g.title.clone(),
-            thumbnail_url: g.thumbnail_url.clone(),
-            egs: g.egs_info.as_ref().map(|e| usecase::native_host_sync::EgsInfo {
+            image_url: g.image_url.clone(),
+            egs: g.egs_info.as_ref().map(|e| EgsInfo {
                 erogamescape_id: e.erogamescape_id,
                 gamename: e.gamename.clone(),
                 gamename_ruby: e.gamename_ruby.clone(),
@@ -364,9 +364,22 @@ fn parse_message(message_bytes: &[u8]) -> HostResult<(NativeMessage, RequestForm
 
     // 2) buf.build互換(case/value) 形式（構造体としてパース）
     #[derive(Debug, Deserialize, Default)]
-    struct BufDmmGame { #[serde(default)] id: String, #[serde(default)] category: String, #[serde(default)] subcategory: String, #[serde(default)] title: String, #[serde(default, rename = "thumbnailUrl")] thumbnail_url: String }
+    struct BufDmmGame {
+        #[serde(default)] id: String,
+        #[serde(default)] category: String,
+        #[serde(default)] subcategory: String,
+        #[serde(default)] title: String,
+        #[serde(default, rename = "thumbnailUrl")] thumbnail_url: String,
+        #[serde(default, rename = "imageUrl")] image_url: String,
+    }
     #[derive(Debug, Deserialize, Default)]
-    struct BufDlsiteGame { #[serde(default)] id: String, #[serde(default)] category: String, #[serde(default)] title: String, #[serde(default, rename = "thumbnailUrl")] thumbnail_url: String }
+    struct BufDlsiteGame {
+        #[serde(default)] id: String,
+        #[serde(default)] category: String,
+        #[serde(default)] title: String,
+        #[serde(default, rename = "thumbnailUrl")] thumbnail_url: String,
+        #[serde(default, rename = "imageUrl")] image_url: String,
+    }
     #[derive(Debug, Deserialize, Default)]
     struct BufExtensionConfig {
         #[serde(default, rename = "autoSync")] auto_sync: bool,
@@ -393,11 +406,17 @@ fn parse_message(message_bytes: &[u8]) -> HostResult<(NativeMessage, RequestForm
 
     let nm = match env.message {
         BufCase::SyncDmmGames { games, extension_id } => {
-            let list = games.into_iter().map(|g| DmmGame { id: g.id, category: g.category, subcategory: g.subcategory, egs_info: None, title: g.title, thumbnail_url: g.thumbnail_url }).collect();
+            let list = games.into_iter().map(|g| {
+                let url = if !g.image_url.is_empty() { g.image_url } else { g.thumbnail_url };
+                DmmGame { id: g.id, category: g.category, subcategory: g.subcategory, egs_info: None, title: g.title, image_url: url }
+            }).collect();
             NativeMessage { timestamp, request_id: env.request_id.clone(), message: Some(native_message::Message::SyncDmmGames(DmmSyncGamesRequest { games: list, extension_id })) }
         }
         BufCase::SyncDlsiteGames { games, extension_id } => {
-            let list = games.into_iter().map(|g| DlsiteGame { id: g.id, category: g.category, egs_info: None, title: g.title, thumbnail_url: g.thumbnail_url }).collect();
+            let list = games.into_iter().map(|g| {
+                let url = if !g.image_url.is_empty() { g.image_url } else { g.thumbnail_url };
+                DlsiteGame { id: g.id, category: g.category, egs_info: None, title: g.title, image_url: url }
+            }).collect();
             NativeMessage { timestamp, request_id: env.request_id.clone(), message: Some(native_message::Message::SyncDlsiteGames(DlsiteSyncGamesRequest { games: list, extension_id })) }
         }
         BufCase::GetStatus {} => {

@@ -46,7 +46,7 @@ export function extractGameContainers(): NodeListOf<Element> {
   return document.querySelectorAll('img, [style*="img.dlsite.jp"], [style*="background-image"]')
 }
 
-function findThumbnailUrlInContainer(container: Element): string | null {
+function findImageUrlInContainer(container: Element): string | null {
   // 優先: <img src> / srcset
   const imgSelf = (container as HTMLImageElement).src !== undefined ? (container as HTMLImageElement) : null
   const img = imgSelf || (container.querySelector('img') as HTMLImageElement | null)
@@ -145,14 +145,14 @@ export function extractGameDataFromContainer(
         || container.parentElement
         || container
 
-    // サムネイルURL検出: img/srcset or 背景画像（カード全体から）
-    const thumbnailUrl: string | null = findThumbnailUrlInContainer(card)
-    if (!thumbnailUrl)
+    // 画像URL検出: img/srcset or 背景画像（カード全体から）
+    const imageUrl: string | null = findImageUrlInContainer(card)
+    if (!imageUrl)
       return null
 
     // URLからstoreIdを抽出
-    const storeId = extractStoreIdFromUrl(thumbnailUrl)
-    log.debug(`Extracted storeId "${storeId}" from URL: ${thumbnailUrl}`)
+    const storeId = extractStoreIdFromUrl(imageUrl)
+    log.debug(`Extracted storeId "${storeId}" from URL: ${imageUrl}`)
     if (!storeId) {
       return null
     }
@@ -167,9 +167,9 @@ export function extractGameDataFromContainer(
     // タイトルを抽出
     let title = extractTitle(card)
 
-    // カテゴリーをサムネイルURLから推定
+    // カテゴリーを画像URLから推定
     // .../images2/work/(professional|doujin)/...
-    const categoryPathMatch = thumbnailUrl.match(/\/images\d\/work\/(professional|doujin)\//)
+    const categoryPathMatch = imageUrl.match(/\/images\d\/work\/(professional|doujin)\//)
     const rawCategory = categoryPathMatch ? categoryPathMatch[1] : 'doujin'
     const category = rawCategory === 'professional' ? 'pro' : 'maniax'
 
@@ -177,7 +177,7 @@ export function extractGameDataFromContainer(
       storeId,
       category,
       title,
-      thumbnailUrl,
+      imageUrl,
     }
 
     log.debug(`Extracted game ${index + 1}:`, gameData)

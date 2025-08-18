@@ -111,7 +111,7 @@ cargo build --release --bin native-messaging-host
         "title": "Game Title",
         "purchase_url": "https://...",
         "purchase_date": "2025-01-30",
-        "thumbnail_url": "https://...",
+        "image_url": "https://...",
         "additional_data": {
           "erogamescape_id": "12345"
         }

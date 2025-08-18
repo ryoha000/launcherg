@@ -65,13 +65,13 @@ describe('data-processor', () => {
 
   describe('normalizeUrl', () => {
     it('プロトコルなしのURLにhttpsを追加する', () => {
-      expect(normalizeUrl('//example.com/image.jpg', 'thumbnail')).toBe('https://example.com/image.jpg')
+      expect(normalizeUrl('//example.com/image.jpg', 'image')).toBe('https://example.com/image.jpg')
       expect(normalizeUrl('/path/to/image.jpg', 'purchase')).toBe('https://play.dlsite.com/path/to/image.jpg')
     })
 
     it('既にhttpプロトコルがある場合はそのまま返す', () => {
       expect(normalizeUrl('http://example.com/page', 'purchase')).toBe('http://example.com/page')
-      expect(normalizeUrl('https://example.com/page', 'thumbnail')).toBe('https://example.com/page')
+      expect(normalizeUrl('https://example.com/page', 'image')).toBe('https://example.com/page')
     })
 
     it('空のURLの場合はそのまま返す', () => {
@@ -131,7 +131,7 @@ describe('data-processor', () => {
       storeId: 'RJ123456',
       category: 'maniax',
       title: '[サークル名] ゲーム（バージョン1.0）',
-      thumbnailUrl: '//example.com/thumb.jpg',
+      imageUrl: '//example.com/thumb.jpg',
     }
 
     it('ゲームデータを正しく処理する', () => {
@@ -139,7 +139,7 @@ describe('data-processor', () => {
 
       expect(result.storeId).toBe('RJ123456')
       expect(result.title).toBe('ゲーム')
-      expect(result.thumbnailUrl).toBe('https://example.com/thumb.jpg')
+      expect(result.imageUrl).toBe('https://example.com/thumb.jpg')
     })
 
     it('元のオブジェクトを変更しない（不変性）', () => {
@@ -177,13 +177,13 @@ describe('data-processor', () => {
           storeId: 'RJ123456',
           category: 'maniax',
           title: '[サークル1] ゲーム1',
-          thumbnailUrl: 'https://example.com/a.jpg',
+          imageUrl: 'https://example.com/a.jpg',
         },
         {
           storeId: 'VJ987654',
           category: 'pro',
           title: '[サークル2] ゲーム2',
-          thumbnailUrl: 'https://example.com/b.jpg',
+          imageUrl: 'https://example.com/b.jpg',
         },
       ]
 

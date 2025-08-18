@@ -46,7 +46,7 @@ function extractGameDataFromImage(img: HTMLImageElement): DmmExtractedGame | nul
       category: parsed.category,
       subcategory: parsed.subcategory,
       title,
-      thumbnailUrl: src,
+      imageUrl: src,
     }
     return game
   }

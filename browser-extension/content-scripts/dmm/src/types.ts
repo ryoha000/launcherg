@@ -3,5 +3,5 @@ export interface DmmExtractedGame {
   category: string
   subcategory: string
   title: string
-  thumbnailUrl: string
+  imageUrl: string
 }
