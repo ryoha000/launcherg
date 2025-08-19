@@ -8,7 +8,8 @@ use tauri::AppHandle;
 use std::sync::Arc;
 
 use crate::domain::{collection::CollectionElement, Id, icon::IconService};
-use crate::domain::file::{save_icon_to_png as domain_save_icon_to_png, get_icon_path as domain_get_icon_path};
+use crate::domain::file::{save_icon_to_png as domain_save_icon_to_png};
+use crate::domain::service::save_path_resolver::{SavePathResolver, DirsSavePathResolver};
 use crate::infrastructure::thumbnail as thumb;
 use anyhow::Context as _;
 use image::{io::Reader as ImageReader, ColorType, ImageEncoder};
@@ -68,7 +69,7 @@ pub fn process_square_icon(src: &str, dst: &str, target_short_px: u32) -> anyhow
 
 enum Backend {
 	Tauri(Arc<AppHandle>),
-	Host { root_dir: String },
+	Host { resolver: Arc<dyn SavePathResolver> },
 }
 
 pub struct IconServiceImpl {
@@ -77,12 +78,10 @@ pub struct IconServiceImpl {
 
 impl IconServiceImpl {
 	pub fn new_from_app_handle(handle: Arc<AppHandle>) -> Self { Self { backend: Backend::Tauri(handle) } }
-	pub fn new_from_root_path(root_dir: String) -> Self { Self { backend: Backend::Host { root_dir } } }
+	pub fn new_from_root_path(_root_dir: String) -> Self { Self { backend: Backend::Host { resolver: Arc::new(DirsSavePathResolver::default()) } } }
 
-	pub(crate) fn build_icon_path_host(root_dir: &str, id: &Id<CollectionElement>) -> anyhow::Result<String> {
-		let dir = Path::new(root_dir).join("game-icons");
-		fs::create_dir_all(&dir).ok();
-		Ok(dir.join(format!("{}.png", id.value)).to_string_lossy().to_string())
+	pub(crate) fn build_icon_path_host(resolver: &dyn SavePathResolver, id: &Id<CollectionElement>) -> anyhow::Result<String> {
+		Ok(resolver.icon_png_path(id.value))
 	}
 
 	pub(crate) fn write_default_icon(save_path: &str) -> anyhow::Result<()> {
@@ -104,8 +103,8 @@ impl IconService for IconServiceImpl {
 				let _ = domain_save_icon_to_png(handle, source_path, id)?.await??;
 				Ok(())
 			}
-			Backend::Host { root_dir } => {
-				let save_path = Self::build_icon_path_host(root_dir, id)?;
+			Backend::Host { resolver } => {
+				let save_path = Self::build_icon_path_host(&**resolver, id)?;
 				// Host では PNG のみ受け付け、それ以外はフォールバック
 				if source_path.to_lowercase().ends_with("png") {
 					match std::fs::copy(source_path, &save_path) {
@@ -128,8 +127,9 @@ impl IconService for IconServiceImpl {
 			return Ok(());
 		}
 		match &self.backend {
-			Backend::Tauri(handle) => {
-				let save_path = domain_get_icon_path(handle, id);
+			Backend::Tauri(_handle) => {
+				let resolver = DirsSavePathResolver::default();
+				let save_path = resolver.icon_png_path(id.value);
 				// 既に存在すればスキップ
 				if Path::new(&save_path).exists() { return Ok(()); }
 				let dir = Path::new(&save_path).parent().map(|p| p.to_path_buf()).unwrap_or_else(|| Path::new(".").to_path_buf());
@@ -148,16 +148,14 @@ impl IconService for IconServiceImpl {
 					}
 				}
 			}
-			Backend::Host { root_dir } => {
-				let save_path = Self::build_icon_path_host(root_dir, id)?;
+			Backend::Host { resolver } => {
+				let save_path = Self::build_icon_path_host(&**resolver, id)?;
 				if Path::new(&save_path).exists() { return Ok(()); }
-				let dir = Path::new(root_dir).join("game-icons");
-				fs::create_dir_all(&dir).ok();
 				let filename = url::Url::parse(url)
 					.ok()
 					.and_then(|u| u.path_segments().and_then(|s| s.last()).map(|s| s.to_string()))
 					.unwrap_or_else(|| "icon".to_string());
-				let orig = dir.join(format!("{}-{}", id.value, filename));
+				let orig = std::env::temp_dir().join("launcherg-images").join(format!("{}-{}", id.value, filename));
 				thumb::download_to_file(url, &orig.to_string_lossy()).await?;
 				match process_square_icon(&orig.to_string_lossy(), &save_path, Self::ICON_TARGET_SHORT_PX) {
 					Ok(_) => Ok(()),
@@ -172,12 +170,13 @@ impl IconService for IconServiceImpl {
 
 	async fn save_default_icon(&self, id: &Id<CollectionElement>) -> anyhow::Result<()> {
 		match &self.backend {
-			Backend::Tauri(handle) => {
-				let save_path = domain_get_icon_path(handle, id);
+			Backend::Tauri(_handle) => {
+				let resolver = DirsSavePathResolver::default();
+				let save_path = resolver.icon_png_path(id.value);
 				Self::write_default_icon(&save_path)
 			}
-			Backend::Host { root_dir } => {
-				let save_path = Self::build_icon_path_host(root_dir, id)?;
+			Backend::Host { resolver } => {
+				let save_path = Self::build_icon_path_host(&**resolver, id)?;
 				Self::write_default_icon(&save_path)
 			}
 		}

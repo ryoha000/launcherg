@@ -130,13 +130,13 @@ pub async fn create_elements_in_pc(
 
     modules
         .collection_use_case()
-        .concurency_save_thumbnails(&handle, thumb_args)
+        .concurency_save_thumbnails(thumb_args)
         .await?;
 
     // サムネイルサイズ反映
     modules
         .collection_use_case()
-        .concurency_upsert_collection_element_thumbnail_size(&handle, resolved_ids)
+        .concurency_upsert_collection_element_thumbnail_size(resolved_ids)
         .await?;
 
     modules
@@ -244,7 +244,6 @@ pub async fn upsert_collection_element(
     modules
         .image_use_case()
         .save_icon_by_paths(
-            &handle,
             &new_element_id,
             &scanned_element.exe_path,
             &scanned_element.lnk_path,
@@ -256,7 +255,7 @@ pub async fn upsert_collection_element(
         .await?;
     Ok(modules
         .collection_use_case()
-        .upsert_collection_element_thumbnail_size(&handle, &new_element_id)
+        .upsert_collection_element_thumbnail_size(&new_element_id)
         .await?)
 }
 
@@ -283,7 +282,6 @@ pub async fn update_collection_element_thumbnails(
     Ok(modules
         .collection_use_case()
         .concurency_upsert_collection_element_thumbnail_size(
-            &handle,
             ids.into_iter().map(|v| Id::new(v)).collect(),
         )
         .await?)
@@ -298,7 +296,7 @@ pub async fn update_collection_element_icon(
 ) -> anyhow::Result<(), CommandError> {
     Ok(modules
         .image_use_case()
-        .overwrite_icon_png(&Arc::new(handle), &Id::new(id), &path)
+        .overwrite_icon_png(&Id::new(id), &path)
         .await?)
 }
 
@@ -456,13 +454,13 @@ pub async fn get_erogamescape_id_by_collection_id(
 
 #[tauri::command]
 pub async fn get_all_elements(
-    handle: AppHandle,
+    _handle: AppHandle,
     modules: State<'_, Arc<Modules>>,
 ) -> anyhow::Result<Vec<CollectionElement>, CommandError> {
-    let handle = &Arc::new(handle);
+    let handle = &Arc::new(_handle);
     Ok(modules
         .collection_use_case()
-        .get_all_elements(&handle)
+        .get_all_elements()
         .await?
         .into_iter()
         .map(|v| CollectionElement::from_domain(&handle, v))

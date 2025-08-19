@@ -4,6 +4,7 @@ use tauri::AppHandle;
 
 use crate::{
     domain::pubsub::PubSubService,
+    domain::service::save_path_resolver::{DirsSavePathResolver},
     infrastructure::{
         explorerimpl::explorer::{Explorers, ExplorersExt},
         pubsubimpl::pubsub::{PubSub, PubSubExt},
@@ -18,7 +19,7 @@ use crate::{
     usecase::{
         all_game_cache::AllGameCacheUseCase, collection::CollectionUseCase,
         explored_cache::ExploredCacheUseCase, extension_manager::ExtensionManagerUseCase,
-        file::FileUseCase, image::{ImageUseCase, get_image_root_dir}, process::ProcessUseCase,
+        file::FileUseCase, image::ImageUseCase, process::ProcessUseCase,
     },
 };
 
@@ -94,7 +95,7 @@ impl Modules {
         let windows = Arc::new(Windows::new(Arc::new(handle.clone())));
         let pubsub = PubSub::new(Arc::new(handle.clone()));
 
-        let collection_use_case = CollectionUseCase::new(repositories.clone());
+        let collection_use_case = CollectionUseCase::new(repositories.clone(), Arc::new(DirsSavePathResolver::default()));
         let explored_cache_use_case = ExploredCacheUseCase::new(repositories.clone());
         let extension_manager_use_case = ExtensionManagerUseCase::new(repositories.clone(), pubsub.clone());
         let all_game_cache_use_case: AllGameCacheUseCase<Repositories> =
@@ -104,9 +105,9 @@ impl Modules {
 
         let process_use_case: ProcessUseCase<Windows> = ProcessUseCase::new(windows.clone());
 
-        let thumbs = ThumbnailServiceImpl::new(get_image_root_dir(handle));
+        let thumbs = ThumbnailServiceImpl::new(Arc::new(DirsSavePathResolver::default()));
         let icons = TauriIconServiceImpl::new_from_app_handle(Arc::new(handle.clone()));
-        let image_use_case: ImageUseCase<ThumbnailServiceImpl, TauriIconServiceImpl> = ImageUseCase::new(Arc::new(thumbs), Arc::new(icons));
+        let image_use_case: ImageUseCase<ThumbnailServiceImpl, TauriIconServiceImpl> = ImageUseCase::new(Arc::new(thumbs), Arc::new(icons), Arc::new(DirsSavePathResolver::default()));
 
         Self {
             repositories: repositories.clone(),

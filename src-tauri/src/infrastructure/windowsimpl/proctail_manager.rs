@@ -8,7 +8,7 @@ use sysinfo::{ProcessExt, System, SystemExt};
 use tauri::AppHandle;
 use tokio::sync::Mutex;
 
-use crate::infrastructure::util::get_save_root_abs_dir_with_ptr_handle;
+use crate::domain::service::save_path_resolver::{SavePathResolver, DirsSavePathResolver};
 
 // AppHandleの依存を抽象化するtrait
 pub trait AppConfigProvider {
@@ -18,7 +18,7 @@ pub trait AppConfigProvider {
 // AppHandleの実装
 impl AppConfigProvider for AppHandle {
     fn get_app_config_dir(&self) -> String {
-        get_save_root_abs_dir_with_ptr_handle(self)
+        DirsSavePathResolver::default().root_dir()
     }
 }
 

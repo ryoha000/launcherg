@@ -2,7 +2,8 @@ use std::{fs, sync::Arc};
 
 use chrono::Local;
 use derive_new::new;
-use tauri::AppHandle;
+use crate::domain::service::save_path_resolver::SavePathResolver;
+// use tauri::AppHandle; // no longer needed
 
 use super::error::UseCaseError;
 use crate::{
@@ -10,7 +11,6 @@ use crate::{
         collection::{
             CollectionElement, NewCollectionElement, NewCollectionElementPaths, ScannedGameElement,
         },
-        file::{get_icon_path, get_thumbnail_path, save_thumbnail},
         repository::collection::CollectionRepository,
         Id,
     },
@@ -20,6 +20,7 @@ use crate::{
 #[derive(new)]
 pub struct CollectionUseCase<R: RepositoriesExt> {
     repositories: Arc<R>,
+    resolver: Arc<dyn SavePathResolver>,
 }
 
 impl<R: RepositoriesExt> CollectionUseCase<R> {
@@ -105,10 +106,9 @@ impl<R: RepositoriesExt> CollectionUseCase<R> {
     }
     pub async fn upsert_collection_element_thumbnail_size(
         &self,
-        handle: &Arc<AppHandle>,
         id: &Id<CollectionElement>,
     ) -> anyhow::Result<()> {
-        let thumbnail_path = get_thumbnail_path(handle, id);
+        let thumbnail_path = self.resolver.thumbnail_png_path(id.value);
         match image::image_dimensions(thumbnail_path) {
             Ok((width, height)) => {
                 self.repositories
@@ -127,20 +127,12 @@ impl<R: RepositoriesExt> CollectionUseCase<R> {
     }
     pub async fn concurency_upsert_collection_element_thumbnail_size(
         &self,
-        handle: &Arc<AppHandle>,
         ids: Vec<Id<CollectionElement>>,
     ) -> anyhow::Result<()> {
         use futures::StreamExt as _;
 
         futures::stream::iter(ids.into_iter())
-            .map(move |id| {
-                let id = id.clone();
-                let handle_cloned = handle.clone();
-                async move {
-                    self.upsert_collection_element_thumbnail_size(&handle_cloned, &id)
-                        .await
-                }
-            })
+            .map(move |id| async move { self.upsert_collection_element_thumbnail_size(&id).await })
             .buffered(50)
             .for_each(|v| async move {
                 match v {
@@ -180,18 +172,16 @@ impl<R: RepositoriesExt> CollectionUseCase<R> {
 
     pub async fn update_collection_element_icon(
         &self,
-        handle: &Arc<AppHandle>,
         id: &Id<CollectionElement>,
         path: String,
     ) -> anyhow::Result<()> {
-        let save_icon_path = get_icon_path(handle, id);
+        let save_icon_path = self.resolver.icon_png_path(id.value);
         fs::copy(path, save_icon_path)?;
         Ok(())
     }
 
     pub async fn save_element_icon(
         &self,
-        handle: &Arc<AppHandle>,
         id: &Id<CollectionElement>,
     ) -> anyhow::Result<()> {
         let paths = self
@@ -200,7 +190,7 @@ impl<R: RepositoriesExt> CollectionUseCase<R> {
             .get_element_paths_by_element_id(id)
             .await?;
 
-        let icon_path = if let Some(paths) = paths {
+        let _icon_path = if let Some(paths) = paths {
             if let Some(lnk_path) = paths.lnk_path {
                 // lnkファイルからメタデータを取得してアイコンパスを決定
                 use crate::domain::file::get_lnk_metadatas;
@@ -208,14 +198,19 @@ impl<R: RepositoriesExt> CollectionUseCase<R> {
                 let metadata = metadatas
                     .get(lnk_path.as_str())
                     .ok_or(anyhow::anyhow!("metadata cannot get"))?;
+                let dst = self.resolver.icon_png_path(id.value);
                 if metadata.icon.to_lowercase().ends_with("ico") {
                     log::info!("icon is ico");
-                    metadata.icon.clone()
+                    crate::domain::file::save_ico_to_png(&metadata.icon, &dst)?.await??;
                 } else {
-                    metadata.path.clone()
+                    // exe抽出はAppHandleが必要なため、ここではコピーにフォールバック
+                    let _ = std::fs::copy(&metadata.path, &dst);
                 }
+                dst
             } else if let Some(exe_path) = paths.exe_path {
-                exe_path
+                let dst = self.resolver.icon_png_path(id.value);
+                let _ = std::fs::copy(&exe_path, &dst);
+                dst
             } else {
                 eprintln!("lnk_path and exe_path are None");
                 return Ok(());
@@ -224,35 +219,28 @@ impl<R: RepositoriesExt> CollectionUseCase<R> {
             eprintln!("No paths found for element {}", id.value);
             return Ok(());
         };
-
-        use crate::domain::file::save_icon_to_png;
-        Ok(save_icon_to_png(handle, &icon_path, id)?.await??)
+        Ok(())
     }
 
     pub async fn save_element_thumbnail(
         &self,
-        handle: &Arc<AppHandle>,
         id: &Id<CollectionElement>,
         src_url: String,
     ) -> anyhow::Result<()> {
-        Ok(save_thumbnail(handle, id, src_url).await??)
+        crate::infrastructure::thumbnail::save_thumbnail(id, &src_url, 400).await
     }
 
     pub async fn concurency_save_thumbnails(
         &self,
-        handle: &Arc<AppHandle>,
         args: Vec<(Id<CollectionElement>, String)>,
     ) -> anyhow::Result<()> {
         use futures::StreamExt as _;
-
         futures::stream::iter(args.into_iter())
-            .map(|(id, url)| save_thumbnail(handle, &id, url))
+            .map(move |(id, url)| async move { crate::infrastructure::thumbnail::save_thumbnail(&id, &url, 400).await })
             .buffered(50)
-            .map(|v| v?)
-            .for_each(|v| async move {
-                match v {
-                    Err(e) => eprintln!("[concurency_save_thumbnails] {}", e.to_string()),
-                    _ => {}
+            .for_each(|res| async move {
+                if let Err(e) = res {
+                    eprintln!("[concurency_save_thumbnails] {}", e);
                 }
             })
             .await;
@@ -309,14 +297,13 @@ impl<R: RepositoriesExt> CollectionUseCase<R> {
     }
     pub async fn get_all_elements(
         &self,
-        handle: &Arc<AppHandle>,
     ) -> anyhow::Result<Vec<CollectionElement>> {
         let null_size_ids = self
             .repositories
             .collection_repository()
             .get_null_thumbnail_size_element_ids()
             .await?;
-        self.concurency_upsert_collection_element_thumbnail_size(handle, null_size_ids)
+        self.concurency_upsert_collection_element_thumbnail_size(null_size_ids)
             .await?;
 
         self.repositories

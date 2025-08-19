@@ -8,7 +8,7 @@ mod usecase;
 
 use std::sync::Arc;
 
-use infrastructure::util::get_save_root_abs_dir_with_ptr_handle;
+use domain::service::save_path_resolver::{SavePathResolver, DirsSavePathResolver};
 use interface::{command, module::Modules};
 use tauri::{async_runtime::block_on, Manager};
 use tauri_plugin_log::{Target, TargetKind};
@@ -24,7 +24,7 @@ fn main() {
             // folder の中身を移動して folder を削除する
             // C:\Users\ryoha\AppData\Roaming\launcherg -> C:\Users\ryoha\AppData\Roaming\ryoha.moe\launcherg
 
-            let dst_dir = get_save_root_abs_dir_with_ptr_handle(app.handle());
+            let dst_dir = DirsSavePathResolver::default().root_dir();
             let src_dir = std::path::Path::new(&dst_dir)
                 .parent()
                 .unwrap()

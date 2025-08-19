@@ -74,11 +74,13 @@ fn new_usecase_with(
         .return_const(hostlog);
 
     let icons = TestIconService::default();
+    use crate::domain::service::save_path_resolver::DirsSavePathResolver;
     (
         NativeHostSyncUseCase::new(
             Arc::new(mock_repositories),
             Arc::new(thumbs),
             Arc::new(icons.clone()),
+            Arc::new(DirsSavePathResolver::default()),
         ),
         icons,
     )

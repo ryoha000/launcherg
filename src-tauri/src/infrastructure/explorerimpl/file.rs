@@ -6,10 +6,8 @@ use base64::{engine::general_purpose, Engine as _};
 use tauri::AppHandle;
 use uuid::Uuid;
 
-use crate::{
-    domain::{explorer::file::FileExplorer, file::File},
-    infrastructure::util::get_save_root_abs_dir,
-};
+use crate::domain::{explorer::file::FileExplorer, file::File};
+use crate::domain::service::save_path_resolver::{SavePathResolver, DirsSavePathResolver};
 
 use super::explorer::ExplorerImpl;
 
@@ -24,10 +22,9 @@ impl FileExplorer for ExplorerImpl<File> {
         file.write_all(&decoded_data)?;
         Ok(())
     }
-    fn get_save_image_path(&self, handle: &Arc<AppHandle>, id: i32) -> anyhow::Result<String> {
-        let dir = Path::new(&get_save_root_abs_dir(handle))
-            .join(MEMOS_ROOT_DIR)
-            .join(id.to_string());
+    fn get_save_image_path(&self, _handle: &Arc<AppHandle>, id: i32) -> anyhow::Result<String> {
+        let resolver = DirsSavePathResolver::default();
+        let dir = Path::new(&resolver.memos_dir()).join(id.to_string());
         fs::create_dir_all(&dir).unwrap();
         Ok(Path::new(&dir)
             .join(format!("{}.png", Uuid::new_v4().to_string()))
@@ -36,10 +33,11 @@ impl FileExplorer for ExplorerImpl<File> {
     }
     fn get_save_screenshot_path_by_name(
         &self,
-        handle: &Arc<AppHandle>,
+        _handle: &Arc<AppHandle>,
         name: &str,
     ) -> anyhow::Result<String> {
-        let dir = Path::new(&get_save_root_abs_dir(handle)).join(SCREENSHOTS_ROOT_DIR);
+        let resolver = DirsSavePathResolver::default();
+        let dir = Path::new(&resolver.screenshots_dir()).to_path_buf();
         fs::create_dir_all(&dir).unwrap();
         let timestamp = chrono::Local::now().format("%Y-%m-%d-%H-%M-%S");
         Ok(Path::new(&dir)
@@ -47,10 +45,9 @@ impl FileExplorer for ExplorerImpl<File> {
             .to_string_lossy()
             .to_string())
     }
-    fn get_md_path(&self, handle: &Arc<AppHandle>, id: i32) -> anyhow::Result<String> {
-        let dir = Path::new(&get_save_root_abs_dir(handle))
-            .join(MEMOS_ROOT_DIR)
-            .join(id.to_string());
+    fn get_md_path(&self, _handle: &Arc<AppHandle>, id: i32) -> anyhow::Result<String> {
+        let resolver = DirsSavePathResolver::default();
+        let dir = Path::new(&resolver.memos_dir()).join(id.to_string());
         fs::create_dir_all(&dir).unwrap();
         Ok(Path::new(&dir)
             .join("untitled.md")

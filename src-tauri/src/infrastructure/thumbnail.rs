@@ -6,20 +6,15 @@ use image::{io::Reader as ImageReader, ColorType, ImageEncoder};
 
 use async_trait::async_trait;
 use crate::domain::{collection::CollectionElement, Id, thumbnail::ThumbnailService};
+use crate::domain::service::save_path_resolver::{SavePathResolver, DirsSavePathResolver};
 
-const THUMBNAILS_ROOT_DIR: &str = "thumbnails";
-
-pub fn build_thumbnail_paths(root_dir: &str, id: &Id<CollectionElement>, src_url: &str) -> anyhow::Result<(String, String)> {
-    let dir = Path::new(root_dir).join(THUMBNAILS_ROOT_DIR);
-    fs::create_dir_all(&dir).ok();
-    let url = url::Url::parse(src_url).context("invalid thumbnail url")?;
-    let filename = url
-        .path_segments()
-        .and_then(|segments| segments.last())
-        .ok_or_else(|| anyhow::anyhow!("failed to extract filename from url"))?;
-    let orig = dir.join(format!("{}-{}", id.value, filename));
-    let resized = dir.join(format!("{}.png", id.value));
-    Ok((orig.to_string_lossy().to_string(), resized.to_string_lossy().to_string()))
+pub fn build_thumbnail_paths(id: &Id<CollectionElement>, src_url: &str) -> anyhow::Result<(String, String)> {
+    // 互換: 既存の呼び出し用（今後は SavePathResolver へ移行）
+    let resolver = DirsSavePathResolver::default();
+    let resized = resolver.thumbnail_png_path(id.value);
+    let filename = resolver.filename_from_url(src_url);
+    let orig = std::env::temp_dir().join("launcherg-images").join(format!("{}-{}", id.value, filename));
+    Ok((orig.to_string_lossy().to_string(), resized))
 }
 
 pub async fn download_to_file(url: &str, path: &str) -> anyhow::Result<()> {
@@ -60,41 +55,40 @@ pub fn resize_image(src: &str, dst: &str, dst_width_px: u32) -> anyhow::Result<(
     Ok(())
 }
 
-pub async fn save_thumbnail_with_root(root_dir: &str, id: &Id<CollectionElement>, url: &str, width: u32) -> anyhow::Result<()> {
+pub async fn save_thumbnail(id: &Id<CollectionElement>, url: &str, width: u32) -> anyhow::Result<()> {
     if url.is_empty() {
         return Ok(());
     }
-    let (_orig, resized) = build_thumbnail_paths(root_dir, id, url)?;
+    let (_orig, resized) = build_thumbnail_paths(id, url)?;
     if Path::new(&resized).exists() {
         return Ok(());
     }
-    let (orig, resized) = build_thumbnail_paths(root_dir, id, url)?;
+    let (orig, resized) = build_thumbnail_paths(id, url)?;
     download_to_file(url, &orig).await?;
     resize_image(&orig, &resized, width)?;
     Ok(())
 }
 
 pub struct ThumbnailServiceImpl {
-    root_dir: String,
+    resolver: std::sync::Arc<dyn SavePathResolver>,
 }
 
 impl ThumbnailServiceImpl {
-    pub fn new(root_dir: String) -> Self { Self { root_dir } }
+    pub fn new(resolver: std::sync::Arc<dyn SavePathResolver>) -> Self { Self { resolver } }
 }
 
 #[async_trait]
 impl ThumbnailService for ThumbnailServiceImpl {
     async fn save_thumbnail(&self, id: &Id<CollectionElement>, url: &str) -> anyhow::Result<()> {
-        save_thumbnail_with_root(&self.root_dir, id, url, 400).await
+        save_thumbnail(id, url, 400).await
     }
 
     async fn get_thumbnail_size(&self, id: &Id<CollectionElement>) -> anyhow::Result<Option<(u32, u32)>> {
-        let dir = Path::new(&self.root_dir).join(THUMBNAILS_ROOT_DIR);
-        let resized = dir.join(format!("{}.png", id.value));
-        if !resized.exists() {
+        let resized = DirsSavePathResolver::default().thumbnail_png_path(id.value);
+        if !Path::new(&resized).exists() {
             return Ok(None);
         }
-        match image::image_dimensions(&resized) {
+        match image::image_dimensions(resized) {
             Ok((w, h)) => Ok(Some((w, h))),
             Err(_) => Ok(None),
         }

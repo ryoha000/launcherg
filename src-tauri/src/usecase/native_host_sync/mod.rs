@@ -9,7 +9,7 @@ use crate::infrastructure::repositoryimpl::repository::RepositoriesExt;
 use crate::domain::{thumbnail::ThumbnailService, icon::IconService};
 use crate::domain::save_image_queue::{ImageSrcType, ImagePreprocess};
 use crate::domain::repository::save_image_queue::ImageSaveQueueRepository;
-use std::path::Path;
+use crate::domain::service::save_path_resolver::{SavePathResolver, DirsSavePathResolver};
 
 /// 拡張から渡された image_url/thumbnail_url を保存に適したサムネイルURLへ正規化する
 /// - DLsite: /resize/images2/.../_img_main_300x300.jpg → /modpub/images2/.../_img_main.jpg
@@ -33,15 +33,7 @@ fn normalize_thumbnail_url(src_url: &str) -> String {
 	url
 }
 
-fn build_icon_dst_path(root_dir: &str, id: &crate::domain::Id<crate::domain::collection::CollectionElement>) -> String {
-	let p = Path::new(root_dir).join("game-icons").join(format!("{}.png", id.value));
-	p.to_string_lossy().to_string()
-}
-
-fn build_thumbnail_resized_dst_path(root_dir: &str, id: &crate::domain::Id<crate::domain::collection::CollectionElement>) -> String {
-	let p = Path::new(root_dir).join("thumbnails").join(format!("{}.png", id.value));
-	p.to_string_lossy().to_string()
-}
+// 旧 build_icon_dst_path / build_thumbnail_resized_dst_path は SavePathResolver に移管
 
 #[derive(Clone, Debug)]
 /// DMM 由来のゲーム同期パラメータ。キーは `(store_id, category, subcategory)`。
@@ -87,6 +79,7 @@ pub struct NativeHostSyncUseCase<R: RepositoriesExt, TS: ThumbnailService, IS: I
 	repositories: Arc<R>,
 	thumbnails: Arc<TS>,
 	icons: Arc<IS>,
+	resolver: Arc<dyn SavePathResolver>,
 }
 
 impl<R: RepositoriesExt, TS: ThumbnailService, IS: IconService> NativeHostSyncUseCase<R, TS, IS> {
@@ -191,12 +184,12 @@ impl<R: RepositoriesExt, TS: ThumbnailService, IS: IconService> NativeHostSyncUs
 				}
 			}
 			if !image_url.is_empty() {
-				let icon_dst = build_icon_dst_path(&host_root_dir(), &collection_element_id);
+				let icon_dst = self.resolver.icon_png_path(collection_element_id.value);
 				let _ = self.repositories.image_queue_repository()
 					.enqueue(&image_url, ImageSrcType::Url, &icon_dst, ImagePreprocess::ResizeAndCropSquare256)
 					.await;
 				let normalized = normalize_thumbnail_url(&image_url);
-				let thumb_dst = build_thumbnail_resized_dst_path(&host_root_dir(), &collection_element_id);
+				let thumb_dst = self.resolver.thumbnail_png_path(collection_element_id.value);
 				let _ = self.repositories.image_queue_repository()
 					.enqueue(&normalized, ImageSrcType::Url, &thumb_dst, ImagePreprocess::ResizeForWidth400)
 					.await;
@@ -245,12 +238,12 @@ impl<R: RepositoriesExt, TS: ThumbnailService, IS: IconService> NativeHostSyncUs
 				}
 			}
 			if !image_url.is_empty() {
-				let icon_dst = build_icon_dst_path(&host_root_dir(), &collection_element_id);
+				let icon_dst = self.resolver.icon_png_path(collection_element_id.value);
 				let _ = self.repositories.image_queue_repository()
 					.enqueue(&image_url, ImageSrcType::Url, &icon_dst, ImagePreprocess::ResizeAndCropSquare256)
 					.await;
 				let normalized = normalize_thumbnail_url(&image_url);
-				let thumb_dst = build_thumbnail_resized_dst_path(&host_root_dir(), &collection_element_id);
+				let thumb_dst = self.resolver.thumbnail_png_path(collection_element_id.value);
 				let _ = self.repositories.image_queue_repository()
 					.enqueue(&normalized, ImageSrcType::Url, &thumb_dst, ImagePreprocess::ResizeForWidth400)
 					.await;
@@ -272,29 +265,13 @@ struct HostStatusStore {
 
 /// ネイティブホスト用のルートディレクトリ
 pub fn host_root_dir() -> String {
-	// %APPDATA%\ryoha.moe\launcherg
-	let base = dirs::config_dir().unwrap_or(std::env::current_dir().unwrap());
-	let path = base.join("ryoha.moe").join("launcherg");
-	std::fs::create_dir_all(&path).ok();
-	path.to_string_lossy().to_string()
+	// SavePathResolver へ統一
+	DirsSavePathResolver::default().root_dir()
 }
 
 fn status_file_path() -> String { format!("{}/native_host_status.json", host_root_dir()) }
 fn config_file_path() -> String { format!("{}/native_host_config.json", host_root_dir()) }
-pub fn db_file_path() -> String { format!("{}/launcherg_sqlite.db3", host_root_dir()) }
-
-fn load_status_store() -> HostStatusStore {
-	let p = status_file_path();
-	match std::fs::read_to_string(&p) {
-		Ok(s) => serde_json::from_str(&s).unwrap_or_default(),
-		Err(_) => HostStatusStore::default(),
-	}
-}
-
-fn save_status_store(store: HostStatusStore) {
-	let p = status_file_path();
-	let _ = std::fs::write(p, serde_json::to_string_pretty(&store).unwrap_or("{}".to_string()));
-}
+pub fn db_file_path() -> String { DirsSavePathResolver::default().db_file_path() }
 
 /// 拡張機能の設定を保存
 pub fn save_config(config: &crate::domain::extension::ExtensionConfig) -> anyhow::Result<()> {
@@ -308,24 +285,6 @@ pub struct HostStatusData {
 	pub last_sync_seconds: Option<i64>,
 	pub total_synced: u32,
 	pub connected_extensions: Vec<String>,
-}
-
-/// 現在の同期ステータスを取得
-pub fn get_status_data() -> HostStatusData {
-	let s = load_status_store();
-	HostStatusData {
-		last_sync_seconds: s.last_sync_seconds,
-		total_synced: s.total_synced,
-		connected_extensions: s.recent_extension_ids,
-	}
-}
-
-/// 同期カウンタを更新
-pub fn bump_sync_counters(success_add: u32) {
-	let mut s = load_status_store();
-	s.last_sync_seconds = Some(chrono::Utc::now().timestamp());
-	s.total_synced = s.total_synced.saturating_add(success_add);
-	save_status_store(s);
 }
 
 #[cfg(test)]

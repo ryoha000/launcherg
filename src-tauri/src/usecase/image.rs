@@ -4,12 +4,13 @@ use derive_new::new;
 
 use crate::domain::{collection::CollectionElement, thumbnail::ThumbnailService, icon::IconService, Id};
 use tauri::AppHandle;
-use crate::infrastructure::util::get_save_root_abs_dir_with_ptr_handle;
+use crate::domain::service::save_path_resolver::{SavePathResolver, DirsSavePathResolver};
 
 #[derive(new)]
 pub struct ImageUseCase<TS: ThumbnailService, IS: IconService> {
     thumbnail_service: Arc<TS>,
     icon_service: Arc<IS>,
+    resolver: Arc<dyn SavePathResolver>,
 }
 
 impl<TS: ThumbnailService, IS: IconService> ImageUseCase<TS, IS> {
@@ -46,7 +47,6 @@ impl<TS: ThumbnailService, IS: IconService> ImageUseCase<TS, IS> {
     // exe/lnk の情報からアイコン保存元を決定し保存する
     pub async fn save_icon_by_paths(
         &self,
-        _handle: &Arc<AppHandle>,
         id: &Id<CollectionElement>,
         exe_path: &Option<String>,
         lnk_path: &Option<String>,
@@ -73,14 +73,14 @@ impl<TS: ThumbnailService, IS: IconService> ImageUseCase<TS, IS> {
     }
 
     // 既存PNGを上書き（ユーザー指定PNG用）
-    pub async fn overwrite_icon_png(&self, handle: &Arc<AppHandle>, id: &Id<CollectionElement>, png_path: &str) -> anyhow::Result<()> {
-        let dst = crate::domain::file::get_icon_path(handle, id);
+    pub async fn overwrite_icon_png(&self, id: &Id<CollectionElement>, png_path: &str) -> anyhow::Result<()> {
+        let dst = self.resolver.icon_png_path(id.value);
         std::fs::copy(png_path, dst)?;
         Ok(())
     }
 }
 
 // App側で画像保存に用いるルートディレクトリを返す
-pub fn get_image_root_dir(handle: &AppHandle) -> String {
-    get_save_root_abs_dir_with_ptr_handle(handle)
+pub fn get_image_root_dir(_handle: &AppHandle) -> String {
+    DirsSavePathResolver::default().root_dir()
 }

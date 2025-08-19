@@ -4,10 +4,8 @@ use derive_new::new;
 use serde::{Deserialize, Serialize};
 use tauri::AppHandle;
 
-use crate::domain::{
-    self,
-    file::{get_icon_path, get_thumbnail_path},
-};
+use crate::domain;
+use crate::domain::service::save_path_resolver::{SavePathResolver, DirsSavePathResolver};
 
 #[derive(new, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -55,7 +53,7 @@ pub struct DlsiteInfo {
 }
 
 impl CollectionElement {
-    pub fn from_domain(handle: &Arc<AppHandle>, st: domain::collection::CollectionElement) -> Self {
+    pub fn from_domain(_handle: &Arc<AppHandle>, st: domain::collection::CollectionElement) -> Self {
         let (gamename_ruby, brandname, brandname_ruby, sellday, is_nukige) =
             if let Some(info) = &st.info {
                 (
@@ -112,6 +110,7 @@ impl CollectionElement {
         });
 
         let erogamescape_id = st.erogamescape.as_ref().map(|m| m.erogamescape_id);
+        let resolver = DirsSavePathResolver::default();
         CollectionElement::new(
             st.id.value,
             erogamescape_id,
@@ -123,8 +122,8 @@ impl CollectionElement {
             is_nukige,
             exe_path,
             lnk_path,
-            get_thumbnail_path(handle, &st.id),
-            get_icon_path(handle, &st.id),
+            resolver.thumbnail_png_path(st.id.value),
+            resolver.icon_png_path(st.id.value),
             install_at,
             last_play_at,
             like_at,

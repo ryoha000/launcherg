@@ -1,4 +1,4 @@
-use std::path::{Path, PathBuf};
+use std::path::Path;
 
 use crate::domain::{save_image_queue::{ImageSrcType, ImagePreprocess}};
 use crate::infrastructure::icon::process_square_icon;
@@ -7,24 +7,18 @@ use crate::infrastructure::repositoryimpl::repository::RepositoriesExt;
 use crate::domain::native_host_log::{HostLogLevel, HostLogType};
 use crate::domain::repository::native_host_log::NativeHostLogRepository;
 use crate::domain::repository::save_image_queue::ImageSaveQueueRepository;
+use crate::domain::service::save_path_resolver::SavePathResolver;
 
 pub struct ImageQueueWorker<R: RepositoriesExt> {
 	repositories: std::sync::Arc<R>,
+	resolver: std::sync::Arc<dyn SavePathResolver>,
 }
 
 impl<R: RepositoriesExt> ImageQueueWorker<R> {
-	pub fn new(repositories: std::sync::Arc<R>, _root_dir: String) -> Self { Self { repositories } }
+	pub fn new(repositories: std::sync::Arc<R>, resolver: std::sync::Arc<dyn SavePathResolver>) -> Self { Self { repositories, resolver } }
 
-	fn ensure_tmp_file(&self, queue_id: i32, src_url: &str) -> anyhow::Result<PathBuf> {
-		let mut dir = std::env::temp_dir();
-		dir.push("launcherg-image-queue");
-		std::fs::create_dir_all(&dir).ok();
-		let filename = url::Url::parse(src_url)
-			.ok()
-			.and_then(|u| u.path_segments().and_then(|s| s.last()).map(|s| s.to_string()))
-			.unwrap_or_else(|| "image".to_string());
-		let path = dir.join(format!("{}-{}", queue_id, filename));
-		Ok(path)
+	fn ensure_tmp_file(&self, queue_id: i32, src_url: &str) -> anyhow::Result<String> {
+		Ok(self.resolver.tmp_download_path_for_queue(queue_id, src_url))
 	}
 
 	pub async fn drain_until_empty(&self) -> anyhow::Result<()> {
@@ -43,32 +37,32 @@ impl<R: RepositoriesExt> ImageQueueWorker<R> {
 					if Path::new(&item.dst_path).exists() { return Ok(()); }
 
 					// 1) src_type=urlなら一時ファイルへ保存、pathならそのまま使う
-					let local_src_path: PathBuf = match item.src_type {
+					let local_src_path: String = match item.src_type {
 						ImageSrcType::Url => {
 							let tmp = self.ensure_tmp_file(item.id.value, &item.src)?;
-							thumb_infra::download_to_file(&item.src, &tmp.to_string_lossy()).await?;
+							thumb_infra::download_to_file(&item.src, &tmp).await?;
 							tmp
 						}
-						ImageSrcType::Path => PathBuf::from(&item.src),
+						ImageSrcType::Path => item.src.clone(),
 					};
 
 					// 2) ローカルパスに対して preprocess 実行
 					match item.preprocess {
 						ImagePreprocess::ResizeAndCropSquare256 => {
-							process_square_icon(&local_src_path.to_string_lossy(), &item.dst_path, 256)?;
+							process_square_icon(&local_src_path, &item.dst_path, 256)?;
 						}
 						ImagePreprocess::ResizeForWidth400 => {
-							thumb_infra::resize_image(&local_src_path.to_string_lossy(), &item.dst_path, 400)?;
+							thumb_infra::resize_image(&local_src_path, &item.dst_path, 400)?;
 						}
 						ImagePreprocess::None => {
 							// そのままコピー
-							std::fs::copy(&local_src_path, &item.dst_path).map_err(|e| anyhow::anyhow!(e))?;
+							std::fs::copy(Path::new(&local_src_path), Path::new(&item.dst_path)).map_err(|e| anyhow::anyhow!(e))?;
 						}
 					}
 
 					// URL由来の一時ファイルは削除
 					if matches!(item.src_type, ImageSrcType::Url) {
-						let _ = std::fs::remove_file(&local_src_path);
+						let _ = std::fs::remove_file(Path::new(&local_src_path));
 					}
 					Ok(())
 				}.await;

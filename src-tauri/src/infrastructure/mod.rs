@@ -2,7 +2,6 @@ pub mod explorerimpl;
 pub mod native_messaging;
 pub mod pubsubimpl;
 pub mod repositoryimpl;
-pub mod util;
 pub mod windowsimpl;
 pub mod thumbnail;
 pub mod icon;

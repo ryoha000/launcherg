@@ -25,6 +25,7 @@ use infrastructure::{
     image_queue_worker::ImageQueueWorker,
 };
 use usecase::native_host_sync::{NativeHostSyncUseCase, DmmSyncGameParam, DlsiteSyncGameParam, EgsInfo};
+use domain::service::save_path_resolver::{SavePathResolver, DirsSavePathResolver};
 use domain::repository::native_host_log::NativeHostLogRepository;
 use infrastructure::repositoryimpl::repository::RepositoriesExt;
 use domain::native_host_log::{HostLogLevel, HostLogType};
@@ -33,6 +34,7 @@ struct AppCtx {
     repositories: Arc<Repositories>,
     host_root: String,
     sync_usecase: NativeHostSyncUseCase<Repositories, ThumbnailServiceImpl, IconServiceImpl>,
+    resolver: Arc<dyn SavePathResolver>,
 }
 
 #[derive(Debug)]
@@ -121,11 +123,12 @@ async fn main() {
     let db_path = usecase::native_host_sync::db_file_path();
     let repo_db = RepoDb::from_path(&db_path).await;
     let repositories = Arc::new(Repositories::new(repo_db));
-    let host_root = crate::usecase::native_host_sync::host_root_dir();
-    let thumbs = ThumbnailServiceImpl::new(host_root.clone());
+    let resolver = Arc::new(DirsSavePathResolver::default());
+    let host_root = resolver.root_dir();
+    let thumbs = ThumbnailServiceImpl::new(resolver.clone());
     let icons = IconServiceImpl::new_from_root_path(host_root.clone());
-    let sync_usecase = NativeHostSyncUseCase::new(repositories.clone(), Arc::new(thumbs), Arc::new(icons));
-    let ctx = AppCtx { repositories, host_root, sync_usecase };
+    let sync_usecase = NativeHostSyncUseCase::new(repositories.clone(), Arc::new(thumbs), Arc::new(icons), resolver.clone());
+    let ctx = AppCtx { repositories, host_root, sync_usecase, resolver };
 
     log::info!("Native Messaging Host started");
 
@@ -203,7 +206,12 @@ async fn handle_message(ctx: &AppCtx) -> Result<bool, Box<dyn std::error::Error>
     let response = match &message.message {
         Some(native_message::Message::SyncDmmGames(req)) => handle_sync_dmm_games(ctx, req, &message.request_id).await,
         Some(native_message::Message::SyncDlsiteGames(req)) => handle_sync_dlsite_games(ctx, req, &message.request_id).await,
-        Some(native_message::Message::GetStatus(req)) => handle_get_status(req, &message.request_id),
+        Some(native_message::Message::GetStatus(_)) => NativeResponse {
+            success: false,
+            error: "GetStatus is not supported".to_string(),
+            request_id: message.request_id.clone(),
+            response: None,
+        },
         Some(native_message::Message::SetConfig(req)) => handle_set_config(req, &message.request_id),
         Some(native_message::Message::HealthCheck(req)) => handle_health_check(req, &message.request_id),
         None => NativeResponse {
@@ -220,7 +228,7 @@ async fn handle_message(ctx: &AppCtx) -> Result<bool, Box<dyn std::error::Error>
     // 非同期画像保存ワーカー: sync系メッセージの後でのみドレイン実行
     match &message.message {
         Some(native_message::Message::SyncDmmGames(_)) | Some(native_message::Message::SyncDlsiteGames(_)) => {
-            let worker = ImageQueueWorker::new(ctx.repositories.clone(), ctx.host_root.clone());
+            let worker = ImageQueueWorker::new(ctx.repositories.clone(), ctx.resolver.clone());
             let _ = worker.drain_until_empty().await;
             return Ok(false); // 処理完了後はプロセス終了
         }
@@ -255,7 +263,6 @@ async fn handle_sync_dmm_games(ctx: &AppCtx, request: &DmmSyncGamesRequest, requ
         .collect();
     match ctx.sync_usecase.sync_dmm_games(params).await {
         Ok(success_count) => {
-            usecase::native_host_sync::bump_sync_counters(success_count);
             let result = SyncBatchResult { success_count, error_count: 0, errors: vec![], synced_games: input_ids };
             NativeResponse { success: true, error: String::new(), request_id: request_id.to_string(), response: Some(native_response::Response::SyncGamesResult(result)) }
         }
@@ -303,7 +310,6 @@ async fn handle_sync_dlsite_games(ctx: &AppCtx, request: &DlsiteSyncGamesRequest
         .collect();
     match ctx.sync_usecase.sync_dlsite_games(params).await {
         Ok(success_count) => {
-            usecase::native_host_sync::bump_sync_counters(success_count);
             let result = SyncBatchResult { success_count, error_count: 0, errors: vec![], synced_games: input_ids };
             NativeResponse { success: true, error: String::new(), request_id: request_id.to_string(), response: Some(native_response::Response::SyncGamesResult(result)) }
         }
@@ -324,25 +330,6 @@ async fn handle_sync_dlsite_games(ctx: &AppCtx, request: &DlsiteSyncGamesRequest
                 response: Some(native_response::Response::SyncGamesResult(result)),
             }
         }
-    }
-}
-
-fn handle_get_status(_request: &GetStatusRequest, request_id: &str) -> NativeResponse {
-    let data = usecase::native_host_sync::get_status_data();
-    let status = SyncStatus {
-        last_sync: data.last_sync_seconds.map(|sec| pbjson_types::Timestamp { seconds: sec, nanos: 0 }),
-        total_synced: data.total_synced,
-        connected_extensions: data.connected_extensions,
-        is_running: true,
-        connection_status: ExtensionConnectionStatus::Connected as i32,
-        error_message: String::new(),
-    };
-    
-    NativeResponse {
-        success: true,
-        error: String::new(),
-        request_id: request_id.to_string(),
-        response: Some(native_response::Response::StatusResult(status)),
     }
 }
 

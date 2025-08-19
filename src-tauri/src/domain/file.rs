@@ -8,7 +8,6 @@ use std::{
     collections::HashMap,
     fs,
     io::Write,
-    path::Path,
     sync::Arc,
 };
 
@@ -28,7 +27,7 @@ use windows::{
     },
 };
 
-use crate::infrastructure::util::get_save_root_abs_dir;
+use crate::domain::service::save_path_resolver::{SavePathResolver, DirsSavePathResolver};
 
 use super::{
     all_game_cache::{AllGameCache, AllGameCacheOne},
@@ -37,7 +36,7 @@ use super::{
 };
 
 // moved to infrastructure::thumbnail
-use crate::infrastructure::thumbnail as thumb;
+// use crate::infrastructure::thumbnail as thumb; // removed: thumbnail ops moved to infrastructure/usecase
 
 trait WString {
     #[allow(dead_code)]
@@ -198,24 +197,13 @@ mod tests {
     }
 }
 
-const ICONS_ROOT_DIR: &str = "game-icons";
-pub fn get_icon_path(
-    handle: &Arc<AppHandle>,
-    collection_element_id: &Id<CollectionElement>,
-) -> String {
-    let dir = Path::new(&get_save_root_abs_dir(handle)).join(ICONS_ROOT_DIR);
-    fs::create_dir_all(&dir).unwrap();
-    Path::new(&dir)
-        .join(format!("{}.png", collection_element_id.value))
-        .to_string_lossy()
-        .to_string()
-}
+// (icons dir constant is no longer used; path resolution is centralized in SavePathResolver)
 pub fn save_icon_to_png(
     handle: &Arc<AppHandle>,
     file_path: &str,
     collection_element_id: &Id<CollectionElement>,
 ) -> anyhow::Result<JoinHandle<anyhow::Result<()>>> {
-    let save_png_path = get_icon_path(handle, collection_element_id);
+    let save_png_path = DirsSavePathResolver::default().icon_png_path(collection_element_id.value);
 
     let is_ico = file_path.to_lowercase().ends_with("ico");
     let is_exe = file_path.to_lowercase().ends_with("exe");
@@ -325,15 +313,11 @@ pub fn save_exe_file_png(
 
 const PLAY_HISTORIES_ROOT_DIR: &str = "play-histories";
 pub fn get_play_history_path(
-    handle: &Arc<AppHandle>,
+    _handle: &Arc<AppHandle>,
     collection_element_id: &Id<CollectionElement>,
 ) -> String {
-    let dir = Path::new(&get_save_root_abs_dir(handle)).join(PLAY_HISTORIES_ROOT_DIR);
-    fs::create_dir_all(dir).unwrap();
-    Path::new(&get_save_root_abs_dir(handle))
-        .join(format!("{}.jsonl", collection_element_id.value))
-        .to_string_lossy()
-        .to_string()
+    let resolver = DirsSavePathResolver::default();
+    resolver.play_history_jsonl_path(collection_element_id.value)
 }
 
 // const TEMP_SCRIPTS_ROOT_DIR: &str = "temp-scripts";
@@ -457,30 +441,4 @@ pub fn get_file_created_at_sync(path: &str) -> Option<DateTime<Local>> {
     })
 }
 
-const THUMBNAILS_ROOT_DIR: &str = "thumbnails";
-pub fn get_thumbnail_path(
-    handle: &Arc<AppHandle>,
-    collection_element_id: &Id<CollectionElement>,
-) -> String {
-    let dir = Path::new(&get_save_root_abs_dir(handle)).join(THUMBNAILS_ROOT_DIR);
-    fs::create_dir_all(&dir).unwrap();
-    Path::new(&dir)
-        .join(format!("{}.png", collection_element_id.value))
-        .to_string_lossy()
-        .to_string()
-}
-pub fn save_thumbnail(
-    handle: &Arc<AppHandle>,
-    collection_element_id: &Id<CollectionElement>,
-    src_url: String,
-) -> JoinHandle<anyhow::Result<()>> {
-    let collection_element_id = collection_element_id.clone();
-    let handle_cloned = handle.clone();
-    tauri::async_runtime::spawn(async move {
-        let root = get_save_root_abs_dir(&handle_cloned);
-        if !src_url.is_empty() {
-            thumb::save_thumbnail_with_root(&root, &collection_element_id, &src_url, 400).await?;
-        }
-        Ok(())
-    })
-}
+// (thumbnails dir constant is no longer used; path resolution is centralized in SavePathResolver)
