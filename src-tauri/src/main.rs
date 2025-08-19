@@ -112,6 +112,7 @@ fn main() {
             command::get_dev_extension_info,
             command::check_registry_keys,
             command::remove_registry_keys,
+            command::get_native_host_logs,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

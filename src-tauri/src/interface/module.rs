@@ -23,6 +23,7 @@ use crate::{
 };
 
 pub struct Modules {
+    repositories: Arc<Repositories>,
     collection_use_case: CollectionUseCase<Repositories>,
     explored_cache_use_case: ExploredCacheUseCase<Repositories>,
     extension_manager_use_case: ExtensionManagerUseCase<Repositories, PubSub>,
@@ -38,6 +39,7 @@ pub trait ModulesExt {
     type Windows: WindowsExt;
     type PubSub: PubSubExt + PubSubService;
 
+    fn repositories(&self) -> &Self::Repositories;
     fn collection_use_case(&self) -> &CollectionUseCase<Self::Repositories>;
     fn explored_cache_use_case(&self) -> &ExploredCacheUseCase<Self::Repositories>;
     fn extension_manager_use_case(&self) -> &ExtensionManagerUseCase<Self::Repositories, Self::PubSub>;
@@ -54,6 +56,9 @@ impl ModulesExt for Modules {
     type Windows = Windows;
     type PubSub = PubSub;
 
+    fn repositories(&self) -> &Self::Repositories {
+        &*self.repositories
+    }
     fn collection_use_case(&self) -> &CollectionUseCase<Self::Repositories> {
         &self.collection_use_case
     }
@@ -104,6 +109,7 @@ impl Modules {
         let image_use_case: ImageUseCase<ThumbnailServiceImpl, TauriIconServiceImpl> = ImageUseCase::new(Arc::new(thumbs), Arc::new(icons));
 
         Self {
+            repositories: repositories.clone(),
             collection_use_case,
             explored_cache_use_case,
             extension_manager_use_case,

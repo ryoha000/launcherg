@@ -1,5 +1,5 @@
-use async_trait::async_trait;
 use crate::domain::Id;
+use chrono::{DateTime, Local};
 
 #[derive(Debug, Clone, Copy)]
 pub enum HostLogLevel { Info = 1, Warn = 2, Error = 3 }
@@ -22,6 +22,7 @@ pub struct NativeHostLogRow {
     pub level: HostLogLevel,
     pub r#type: HostLogType,
     pub message: String,
+    pub created_at: DateTime<Local>,
 }
 
 

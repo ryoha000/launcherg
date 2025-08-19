@@ -29,6 +29,8 @@ use crate::{
     },
     usecase::models::collection::CreateCollectionElementDetail,
 };
+use crate::domain::{native_host_log::{HostLogLevel, HostLogType}, repository::native_host_log::NativeHostLogRepository};
+use crate::infrastructure::repositoryimpl::repository::RepositoriesExt;
 
 #[tauri::command]
 pub async fn create_elements_in_pc(
@@ -813,6 +815,75 @@ pub async fn get_sync_status(
         .map_err(|e| anyhow::anyhow!("拡張機能の接続確認に失敗: {}", e))?;
     
     Ok(status)
+}
+
+// ========== Native Messaging Host Logs ==========
+
+#[derive(serde::Deserialize)]
+pub struct GetHostLogsRequest {
+    pub limit: Option<i32>,
+    pub offset: Option<i32>,
+    pub level: Option<i32>,
+    pub typ: Option<i32>,
+}
+
+#[derive(serde::Serialize)]
+pub struct HostLogDto {
+    pub id: i32,
+    pub level: i32,
+    pub typ: i32,
+    pub message: String,
+    pub created_at: String,
+}
+
+#[derive(serde::Serialize)]
+pub struct HostLogsResponse {
+    pub items: Vec<HostLogDto>,
+    pub total: i64,
+}
+
+#[tauri::command]
+pub async fn get_native_host_logs(
+    modules: State<'_, Arc<Modules>>,
+    request: GetHostLogsRequest,
+) -> anyhow::Result<HostLogsResponse, CommandError> {
+    let limit = request.limit.unwrap_or(50) as i64;
+    let offset = request.offset.unwrap_or(0) as i64;
+    let level = match request.level {
+        Some(1) => Some(HostLogLevel::Info),
+        Some(2) => Some(HostLogLevel::Warn),
+        Some(3) => Some(HostLogLevel::Error),
+        _ => None,
+    };
+    let typ = match request.typ {
+        Some(0) => Some(HostLogType::Unknown),
+        Some(1) => Some(HostLogType::ReceiveDmmSyncGamesRequest),
+        Some(2) => Some(HostLogType::ReceiveDlsiteSyncGamesRequest),
+        Some(10) => Some(HostLogType::ImageQueueWorkerStarted),
+        Some(11) => Some(HostLogType::ImageQueueWorkerFinished),
+        Some(20) => Some(HostLogType::ImageQueueItemStarted),
+        Some(21) => Some(HostLogType::ImageQueueItemSucceeded),
+        Some(22) => Some(HostLogType::ImageQueueItemFailed),
+        _ => None,
+    };
+
+    let repo = modules.repositories().host_log_repository();
+    let items = repo.list_logs(limit, offset, level, typ).await?;
+    let total = repo.count_logs(level, typ).await?;
+
+    Ok(HostLogsResponse {
+        items: items
+            .into_iter()
+            .map(|row| HostLogDto {
+                id: row.id.value,
+                level: row.level as i32,
+                typ: row.r#type as i32,
+                message: row.message,
+                created_at: row.created_at.to_rfc3339(),
+            })
+            .collect(),
+        total,
+    })
 }
 
 #[tauri::command]

@@ -32,6 +32,10 @@
   function navigateToExtensionManager() {
     goto('/debug/extensionmanager')
   }
+
+  function navigateToExtensionLog() {
+    goto('/debug/extensionlog')
+  }
 </script>
 
 <div class='mx-auto h-full max-w-2xl overflow-y-auto p-6'>
@@ -76,6 +80,14 @@
         <div>
           <Input bind:value={settings.maxRecentGames} placeholder='10' />
         </div>
+      </div>
+    </div>
+
+    <!-- 拡張機能のログ -->
+    <div>
+      <h2 class='mb-3 text-(lg text-primary) font-semibold'>拡張機能のログ</h2>
+      <div class='space-y-3'>
+        <Button variant='normal' onclick={navigateToExtensionLog} text='拡張機能のログを表示' />
       </div>
     </div>
 

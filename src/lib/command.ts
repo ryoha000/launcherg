@@ -285,6 +285,22 @@ export async function commandGetErogamescapeIdByCollectionId(collectionElementId
   })
 }
 
+// Native Messaging Host Logs
+export interface HostLogItem {
+  id: number
+  level: number
+  typ: number
+  message: string
+  created_at: string
+}
+export interface HostLogsResponse {
+  items: HostLogItem[]
+  total: number
+}
+export async function commandGetNativeHostLogs(req: { limit?: number; offset?: number; level?: number; typ?: number }) {
+  return await invoke<HostLogsResponse>('get_native_host_logs', { request: req })
+}
+
 export interface RegistryKeyInfo {
   browser: string
   key_path: string
