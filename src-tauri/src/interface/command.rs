@@ -184,20 +184,20 @@ pub async fn get_nearest_key_and_distance(
 
 #[tauri::command]
 pub async fn upload_image(
-    handle: AppHandle,
+    _handle: AppHandle,
     modules: State<'_, Arc<Modules>>,
     id: i32,
     base64_image: String,
 ) -> anyhow::Result<String, CommandError> {
     Ok(modules
         .file_use_case()
-        .upload_image(&Arc::new(handle), id, base64_image)
+        .upload_image(id, base64_image)
         .await?)
 }
 
 #[tauri::command]
 pub async fn upsert_collection_element(
-    handle: AppHandle,
+    _handle: AppHandle,
     modules: State<'_, Arc<Modules>>,
     exe_path: Option<String>,
     lnk_path: Option<String>,
@@ -223,7 +223,7 @@ pub async fn upsert_collection_element(
     // create_collection_element で EGS -> collection_element_id の解決と作成/更新を行い、
     // 以降の処理は必ず解決済みの collection_element_id を使用する。
     let egs_id = game_cache.id;
-    let handle = Arc::new(handle);
+    // no handle needed
 
     // ScannedGameElementを作成（初期IDは EGS ID）
     let scanned_element = ScannedGameElement::new(
@@ -261,7 +261,7 @@ pub async fn upsert_collection_element(
 
 #[tauri::command]
 pub async fn update_collection_element_thumbnails(
-    handle: AppHandle,
+    _handle: AppHandle,
     modules: State<'_, Arc<Modules>>,
     ids: Vec<i32>,
 ) -> anyhow::Result<(), CommandError> {
@@ -269,7 +269,7 @@ pub async fn update_collection_element_thumbnails(
         .all_game_cache_use_case()
         .get_by_ids(ids.clone())
         .await?;
-    let handle = Arc::new(handle);
+    // no handle needed
     modules
         .image_use_case()
         .concurency_save_thumbnails(
@@ -289,7 +289,7 @@ pub async fn update_collection_element_thumbnails(
 
 #[tauri::command]
 pub async fn update_collection_element_icon(
-    handle: AppHandle,
+    _handle: AppHandle,
     modules: State<'_, Arc<Modules>>,
     id: i32,
     path: String,
@@ -594,14 +594,14 @@ pub async fn get_game_cache_by_id(
 
 #[tauri::command]
 pub async fn save_screenshot_by_pid(
-    handle: AppHandle,
+    _handle: AppHandle,
     modules: State<'_, Arc<Modules>>,
     work_id: i32,
     process_id: u32,
 ) -> anyhow::Result<String, CommandError> {
     let upload_path = modules
         .file_use_case()
-        .get_new_upload_image_path(&Arc::new(handle), work_id)?;
+        .get_new_upload_image_path(work_id)?;
     modules
         .process_use_case()
         .save_screenshot_by_pid(process_id, &upload_path)

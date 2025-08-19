@@ -7,13 +7,8 @@ mod tests {
     use crate::{
         domain::{
             collection::{
-                CollectionElement, CollectionElementInfo, CollectionElementPaths, 
-                CollectionElementInstall, CollectionElementThumbnail, NewCollectionElement, 
-                NewCollectionElementInfo, 
-                ScannedGameElement,
-            },
-            repository::collection::MockCollectionRepository,
-            Id,
+                CollectionElement, CollectionElementInfo, CollectionElementInstall, CollectionElementPaths, CollectionElementThumbnail, NewCollectionElement, NewCollectionElementInfo, ScannedGameElement
+            }, repository::collection::MockCollectionRepository, service::save_path_resolver::DirsSavePathResolver, Id
         },
         infrastructure::repositorymock::MockRepositoriesExtMock,
         usecase::{collection::CollectionUseCase, error::UseCaseError},
@@ -99,7 +94,7 @@ mod tests {
             .expect_collection_repository()
             .return_const(mock_repo);
 
-        let use_case = CollectionUseCase::new(Arc::new(mock_repositories));
+        let use_case = CollectionUseCase::new(Arc::new(mock_repositories), Arc::new(DirsSavePathResolver::default()));
         let element = create_test_new_element(1);
 
         let result = use_case.upsert_collection_element(&element).await;
@@ -120,7 +115,7 @@ mod tests {
             .expect_collection_repository()
             .return_const(mock_repo);
 
-        let use_case = CollectionUseCase::new(Arc::new(mock_repositories));
+        let use_case = CollectionUseCase::new(Arc::new(mock_repositories), Arc::new(DirsSavePathResolver::default()));
         let info = NewCollectionElementInfo::new(
             create_test_element_id(1),
             "Test Game Ruby".to_string(),
@@ -166,7 +161,7 @@ mod tests {
             .expect_collection_repository()
             .return_const(mock_repo);
 
-        let use_case = CollectionUseCase::new(Arc::new(mock_repositories));
+        let use_case = CollectionUseCase::new(Arc::new(mock_repositories), Arc::new(DirsSavePathResolver::default()));
         let element = create_test_scanned_game_element(1);
 
         let result = use_case.create_collection_element(&element).await;
@@ -195,7 +190,7 @@ mod tests {
             .expect_collection_repository()
             .return_const(mock_repo);
 
-        let use_case = CollectionUseCase::new(Arc::new(mock_repositories));
+        let use_case = CollectionUseCase::new(Arc::new(mock_repositories), Arc::new(DirsSavePathResolver::default()));
         let element = ScannedGameElement {
             erogamescape_id: 1,
             gamename: "Game 1".to_string(),
@@ -223,7 +218,7 @@ mod tests {
             .expect_collection_repository()
             .return_const(mock_repo);
 
-        let use_case = CollectionUseCase::new(Arc::new(mock_repositories));
+        let use_case = CollectionUseCase::new(Arc::new(mock_repositories), Arc::new(DirsSavePathResolver::default()));
         let id = create_test_element_id(1);
 
         let result = use_case.get_element_by_element_id(&id).await;
@@ -246,7 +241,7 @@ mod tests {
             .expect_collection_repository()
             .return_const(mock_repo);
 
-        let use_case = CollectionUseCase::new(Arc::new(mock_repositories));
+        let use_case = CollectionUseCase::new(Arc::new(mock_repositories), Arc::new(DirsSavePathResolver::default()));
         let id = create_test_element_id(1);
 
         let result = use_case.get_element_by_element_id(&id).await;
@@ -271,7 +266,7 @@ mod tests {
             .expect_collection_repository()
             .return_const(mock_repo);
 
-        let use_case = CollectionUseCase::new(Arc::new(mock_repositories));
+        let use_case = CollectionUseCase::new(Arc::new(mock_repositories), Arc::new(DirsSavePathResolver::default()));
         let id = create_test_element_id(1);
 
         let result = use_case.update_element_last_play_at(&id).await;
@@ -292,7 +287,7 @@ mod tests {
             .expect_collection_repository()
             .return_const(mock_repo);
 
-        let use_case = CollectionUseCase::new(Arc::new(mock_repositories));
+        let use_case = CollectionUseCase::new(Arc::new(mock_repositories), Arc::new(DirsSavePathResolver::default()));
         let id = create_test_element_id(1);
 
         let result = use_case.update_element_like_at(&id, true).await;
@@ -316,7 +311,7 @@ mod tests {
             .expect_collection_repository()
             .return_const(mock_repo);
 
-        let use_case = CollectionUseCase::new(Arc::new(mock_repositories));
+        let use_case = CollectionUseCase::new(Arc::new(mock_repositories), Arc::new(DirsSavePathResolver::default()));
         let id = create_test_element_id(1);
 
         let result = use_case.update_element_like_at(&id, false).await;
@@ -343,7 +338,7 @@ mod tests {
             .expect_collection_repository()
             .return_const(mock_repo);
 
-        let use_case = CollectionUseCase::new(Arc::new(mock_repositories));
+        let use_case = CollectionUseCase::new(Arc::new(mock_repositories), Arc::new(DirsSavePathResolver::default()));
         let id = create_test_element_id(1);
 
         let result = use_case.delete_collection_element_by_id(&id).await;
@@ -364,7 +359,7 @@ mod tests {
             .expect_collection_repository()
             .return_const(mock_repo);
 
-        let use_case = CollectionUseCase::new(Arc::new(mock_repositories));
+        let use_case = CollectionUseCase::new(Arc::new(mock_repositories), Arc::new(DirsSavePathResolver::default()));
         let id = create_test_element_id(1);
 
         let result = use_case.delete_collection_element_by_id(&id).await;
@@ -389,7 +384,7 @@ mod tests {
             .expect_collection_repository()
             .return_const(mock_repo);
 
-        let use_case = CollectionUseCase::new(Arc::new(mock_repositories));
+        let use_case = CollectionUseCase::new(Arc::new(mock_repositories), Arc::new(DirsSavePathResolver::default()));
 
         let result = use_case.get_not_registered_detail_element_ids().await;
         assert!(result.is_ok());
@@ -427,7 +422,7 @@ mod tests {
             .expect_collection_repository()
             .return_const(mock_repo);
 
-        let use_case = CollectionUseCase::new(Arc::new(mock_repositories));
+        let use_case = CollectionUseCase::new(Arc::new(mock_repositories), Arc::new(DirsSavePathResolver::default())    );
         let elements = vec![
             create_test_scanned_game_element(1),
             create_test_scanned_game_element(2),

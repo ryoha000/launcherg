@@ -15,6 +15,25 @@ pub trait SavePathResolver: Send + Sync {
 	fn play_history_jsonl_path(&self, id: i32) -> String { PathBuf::from(self.play_histories_dir()).join(format!("{}.jsonl", id)).to_string_lossy().to_string() }
 	fn memo_image_dir(&self, id: i32) -> String { let p = PathBuf::from(self.memos_dir()).join(format!("{}", id)); std::fs::create_dir_all(&p).ok(); p.to_string_lossy().to_string() }
 
+	// Generate new memo image path like game-memos/{id}/{UUID}.png (directory ensured)
+	fn memo_image_new_png_path(&self, id: i32) -> String {
+		let dir = PathBuf::from(self.memo_image_dir(id));
+		dir.join(format!("{}.png", uuid::Uuid::new_v4().to_string())).to_string_lossy().to_string()
+	}
+
+	// Generate screenshot file path with name-timestamp under screenshots dir (directory ensured)
+	fn screenshot_png_path_with_name(&self, name: &str) -> String {
+		let dir = PathBuf::from(self.screenshots_dir());
+		let timestamp = chrono::Local::now().format("%Y-%m-%d-%H-%M-%S");
+		dir.join(format!("{}-{}.png", name, timestamp)).to_string_lossy().to_string()
+	}
+
+	// Default memo markdown path like game-memos/{id}/untitled.md (directory ensured)
+	fn memo_default_md_path(&self, id: i32) -> String {
+		let dir = PathBuf::from(self.memo_image_dir(id));
+		dir.join("untitled.md").to_string_lossy().to_string()
+	}
+
 	fn tmp_download_path_for_queue(&self, queue_id: i32, url: &str) -> String {
 		let mut dir = std::env::temp_dir();
 		dir.push("launcherg-image-queue");

@@ -12,9 +12,8 @@ pub fn build_thumbnail_paths(id: &Id<CollectionElement>, src_url: &str) -> anyho
     // 互換: 既存の呼び出し用（今後は SavePathResolver へ移行）
     let resolver = DirsSavePathResolver::default();
     let resized = resolver.thumbnail_png_path(id.value);
-    let filename = resolver.filename_from_url(src_url);
-    let orig = std::env::temp_dir().join("launcherg-images").join(format!("{}-{}", id.value, filename));
-    Ok((orig.to_string_lossy().to_string(), resized))
+    let orig = resolver.tmp_download_path_for_id(id.value, src_url);
+    Ok((orig, resized))
 }
 
 pub async fn download_to_file(url: &str, path: &str) -> anyhow::Result<()> {

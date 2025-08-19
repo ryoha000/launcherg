@@ -1,4 +1,3 @@
-pub mod explorerimpl;
 pub mod native_messaging;
 pub mod pubsubimpl;
 pub mod repositoryimpl;
@@ -7,8 +6,6 @@ pub mod thumbnail;
 pub mod icon;
 pub mod image_queue_worker;
 
-#[cfg(test)]
-pub mod explorermock;
 #[cfg(test)]
 pub mod native_messaging_mock;
 #[cfg(test)]

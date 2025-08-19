@@ -3,12 +3,12 @@ mod tests {
     use std::{collections::HashMap, sync::Arc};
 
     use crate::{
-        domain::all_game_cache::AllGameCacheOne, infrastructure::explorerimpl::explorer::Explorers,
+        domain::{all_game_cache::AllGameCacheOne, service::save_path_resolver::DirsSavePathResolver},
         usecase::file::FileUseCase,
     };
 
-    fn get_use_case() -> FileUseCase<Explorers> {
-        FileUseCase::new(Arc::new(Explorers::new()))
+    fn get_use_case() -> FileUseCase {
+        FileUseCase::new(Arc::new(DirsSavePathResolver::default()))
     }
 
     const GAMENAME: &str = "gamename";

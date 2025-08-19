@@ -3,6 +3,8 @@ use std::{collections::HashMap, sync::Arc, time::Instant};
 
 use derive_new::new;
 use tauri::AppHandle;
+use base64::{engine::general_purpose, Engine as _};
+use crate::domain::service::save_path_resolver::SavePathResolver;
 
 use crate::domain::all_game_cache::{AllGameCache, AllGameCacheOne};
 use crate::domain::file::{get_file_created_at_sync, PlayHistory};
@@ -12,19 +14,17 @@ use crate::{
     domain::{
         collection::{CollectionElement, ScannedGameElement},
         distance::get_comparable_distance,
-        explorer::file::FileExplorer,
         file::{
             get_file_paths_by_exts, get_lnk_metadatas, get_most_probable_game_candidate,
             get_play_history_path, normalize, save_icon_to_png, start_process,
         },
         Id,
     },
-    infrastructure::explorerimpl::explorer::ExplorersExt,
 };
 
 #[derive(new)]
-pub struct FileUseCase<R: ExplorersExt> {
-    explorers: Arc<R>,
+pub struct FileUseCase {
+    resolver: Arc<dyn SavePathResolver>,
 }
 
 type FilePathString = String;
@@ -81,7 +81,7 @@ fn emit_progress_with_time<P: PubSubService>(
     )
 }
 
-impl<R: ExplorersExt> FileUseCase<R> {
+impl FileUseCase {
     pub async fn concurency_get_file_paths(
         &self,
         explore_dir_paths: Vec<String>,
@@ -281,28 +281,20 @@ impl<R: ExplorersExt> FileUseCase<R> {
 
         Ok(collection_elements)
     }
-    pub fn get_new_upload_image_path(
-        &self,
-        handle: &Arc<AppHandle>,
-        id: i32,
-    ) -> anyhow::Result<String> {
-        self.explorers
-            .file_explorer()
-            .get_save_image_path(handle, id)
+    pub fn get_new_upload_image_path(&self, id: i32) -> anyhow::Result<String> {
+        // resolver.memos_dir() 配下に UUID.png を生成
+        Ok(self.resolver.memo_image_new_png_path(id))
     }
     pub async fn upload_image(
         &self,
-        handle: &Arc<AppHandle>,
         id: i32,
         base64_image: String,
     ) -> anyhow::Result<String> {
-        let path = self
-            .explorers
-            .file_explorer()
-            .get_save_image_path(handle, id)?;
-        self.explorers
-            .file_explorer()
-            .save_base64_image(&path, base64_image)?;
+        let path = self.get_new_upload_image_path(id)?;
+        let decoded_data = general_purpose::STANDARD_NO_PAD.decode(base64_image)?;
+
+        let mut file = std::fs::File::create(&path)?;
+        file.write_all(&decoded_data)?;
         Ok(path)
     }
     pub fn start_game(

@@ -18,7 +18,6 @@ pub mod icon;
 pub mod save_image_queue;
 pub mod native_host_log;
 
-pub mod explorer;
 pub mod repository;
 pub mod windows;
 pub mod service;

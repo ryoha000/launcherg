@@ -6,7 +6,6 @@ use crate::{
     domain::pubsub::PubSubService,
     domain::service::save_path_resolver::{DirsSavePathResolver},
     infrastructure::{
-        explorerimpl::explorer::{Explorers, ExplorersExt},
         pubsubimpl::pubsub::{PubSub, PubSubExt},
         repositoryimpl::{
             driver::Db,
@@ -28,7 +27,7 @@ pub struct Modules {
     collection_use_case: CollectionUseCase<Repositories>,
     explored_cache_use_case: ExploredCacheUseCase<Repositories>,
     extension_manager_use_case: ExtensionManagerUseCase<Repositories, PubSub>,
-    file_use_case: FileUseCase<Explorers>,
+    file_use_case: FileUseCase,
     all_game_cache_use_case: AllGameCacheUseCase<Repositories>,
     process_use_case: ProcessUseCase<Windows>,
     image_use_case: ImageUseCase<ThumbnailServiceImpl, TauriIconServiceImpl>,
@@ -36,7 +35,6 @@ pub struct Modules {
 }
 pub trait ModulesExt {
     type Repositories: RepositoriesExt;
-    type Explorers: ExplorersExt;
     type Windows: WindowsExt;
     type PubSub: PubSubExt + PubSubService;
 
@@ -45,7 +43,7 @@ pub trait ModulesExt {
     fn explored_cache_use_case(&self) -> &ExploredCacheUseCase<Self::Repositories>;
     fn extension_manager_use_case(&self) -> &ExtensionManagerUseCase<Self::Repositories, Self::PubSub>;
     fn all_game_cache_use_case(&self) -> &AllGameCacheUseCase<Self::Repositories>;
-    fn file_use_case(&self) -> &FileUseCase<Self::Explorers>;
+    fn file_use_case(&self) -> &FileUseCase;
     fn process_use_case(&self) -> &ProcessUseCase<Self::Windows>;
     fn image_use_case(&self) -> &ImageUseCase<ThumbnailServiceImpl, TauriIconServiceImpl>;
     fn pubsub(&self) -> &Self::PubSub;
@@ -53,7 +51,6 @@ pub trait ModulesExt {
 
 impl ModulesExt for Modules {
     type Repositories = Repositories;
-    type Explorers = Explorers;
     type Windows = Windows;
     type PubSub = PubSub;
 
@@ -72,7 +69,7 @@ impl ModulesExt for Modules {
     fn all_game_cache_use_case(&self) -> &AllGameCacheUseCase<Self::Repositories> {
         &self.all_game_cache_use_case
     }
-    fn file_use_case(&self) -> &FileUseCase<Self::Explorers> {
+    fn file_use_case(&self) -> &FileUseCase {
         &self.file_use_case
     }
     fn process_use_case(&self) -> &ProcessUseCase<Self::Windows> {
@@ -91,7 +88,6 @@ impl Modules {
         let db = Db::new(handle).await;
 
         let repositories = Arc::new(Repositories::new(db.clone()));
-        let explorers = Arc::new(Explorers::new());
         let windows = Arc::new(Windows::new(Arc::new(handle.clone())));
         let pubsub = PubSub::new(Arc::new(handle.clone()));
 
@@ -101,7 +97,7 @@ impl Modules {
         let all_game_cache_use_case: AllGameCacheUseCase<Repositories> =
             AllGameCacheUseCase::new(repositories.clone());
 
-        let file_use_case: FileUseCase<Explorers> = FileUseCase::new(explorers.clone());
+        let file_use_case: FileUseCase = FileUseCase::new(Arc::new(DirsSavePathResolver::default()));
 
         let process_use_case: ProcessUseCase<Windows> = ProcessUseCase::new(windows.clone());
 
