@@ -87,4 +87,16 @@ impl ThumbnailService for ThumbnailServiceImpl {
     async fn save_thumbnail(&self, id: &Id<CollectionElement>, url: &str) -> anyhow::Result<()> {
         save_thumbnail_with_root(&self.root_dir, id, url, 400).await
     }
+
+    async fn get_thumbnail_size(&self, id: &Id<CollectionElement>) -> anyhow::Result<Option<(u32, u32)>> {
+        let dir = Path::new(&self.root_dir).join(THUMBNAILS_ROOT_DIR);
+        let resized = dir.join(format!("{}.png", id.value));
+        if !resized.exists() {
+            return Ok(None);
+        }
+        match image::image_dimensions(&resized) {
+            Ok((w, h)) => Ok(Some((w, h))),
+            Err(_) => Ok(None),
+        }
+    }
 }

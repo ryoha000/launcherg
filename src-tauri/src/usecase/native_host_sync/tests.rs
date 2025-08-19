@@ -26,6 +26,9 @@ impl ThumbnailService for TestThumbnailService {
         self.calls.lock().unwrap().push((id.value, url.to_string()));
         Ok(())
     }
+    async fn get_thumbnail_size(&self, _id: &Id<CollectionElement>) -> anyhow::Result<Option<(u32, u32)>> {
+        Ok(None)
+    }
 }
 
 #[derive(Clone, Default)]
