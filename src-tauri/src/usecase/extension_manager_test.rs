@@ -8,6 +8,8 @@ mod tests {
                 collection::MockCollectionRepository,
                 explored_cache::MockExploredCacheRepository,
                 all_game_cache::MockAllGameCacheRepository,
+                save_image_queue::MockImageSaveQueueRepository,
+                native_host_log::MockNativeHostLogRepository,
             },
             pubsub::PubSubService,
         },
@@ -19,6 +21,8 @@ mod tests {
         collection_repo: MockCollectionRepository,
         explored_cache_repo: MockExploredCacheRepository,
         all_game_cache_repo: MockAllGameCacheRepository,
+        image_queue_repo: MockImageSaveQueueRepository,
+        host_log_repo: MockNativeHostLogRepository,
     }
 
     impl MockRepositories {
@@ -27,6 +31,8 @@ mod tests {
                 collection_repo: MockCollectionRepository::new(),
                 explored_cache_repo: MockExploredCacheRepository::new(),
                 all_game_cache_repo: MockAllGameCacheRepository::new(),
+                image_queue_repo: MockImageSaveQueueRepository::new(),
+                host_log_repo: MockNativeHostLogRepository::new(),
             }
         }
     }
@@ -35,10 +41,14 @@ mod tests {
         type CollectionRepo = MockCollectionRepository;
         type ExploredCacheRepo = MockExploredCacheRepository;
         type AllGameCacheRepo = MockAllGameCacheRepository;
+        type ImageQueueRepo = MockImageSaveQueueRepository;
+        type HostLogRepo = MockNativeHostLogRepository;
 
         fn collection_repository(&self) -> &MockCollectionRepository { &self.collection_repo }
         fn explored_cache_repository(&self) -> &MockExploredCacheRepository { &self.explored_cache_repo }
         fn all_game_cache_repository(&self) -> &MockAllGameCacheRepository { &self.all_game_cache_repo }
+        fn image_queue_repository(&self) -> &MockImageSaveQueueRepository { &self.image_queue_repo }
+        fn host_log_repository(&self) -> &MockNativeHostLogRepository { &self.host_log_repo }
     }
 
     // モックPubSub実装

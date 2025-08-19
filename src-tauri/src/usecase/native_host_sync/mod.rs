@@ -7,6 +7,9 @@ use derive_new::new;
 use crate::domain::repository::collection::CollectionRepository;
 use crate::infrastructure::repositoryimpl::repository::RepositoriesExt;
 use crate::domain::{thumbnail::ThumbnailService, icon::IconService};
+use crate::domain::save_image_queue::{ImageSrcType, ImagePreprocess};
+use crate::domain::repository::save_image_queue::ImageSaveQueueRepository;
+use std::path::Path;
 
 /// 拡張から渡された image_url/thumbnail_url を保存に適したサムネイルURLへ正規化する
 /// - DLsite: /resize/images2/.../_img_main_300x300.jpg → /modpub/images2/.../_img_main.jpg
@@ -28,6 +31,16 @@ fn normalize_thumbnail_url(src_url: &str) -> String {
 		}
 	}
 	url
+}
+
+fn build_icon_dst_path(root_dir: &str, id: &crate::domain::Id<crate::domain::collection::CollectionElement>) -> String {
+	let p = Path::new(root_dir).join("game-icons").join(format!("{}.png", id.value));
+	p.to_string_lossy().to_string()
+}
+
+fn build_thumbnail_resized_dst_path(root_dir: &str, id: &crate::domain::Id<crate::domain::collection::CollectionElement>) -> String {
+	let p = Path::new(root_dir).join("thumbnails").join(format!("{}.png", id.value));
+	p.to_string_lossy().to_string()
 }
 
 #[derive(Clone, Debug)]
@@ -178,11 +191,15 @@ impl<R: RepositoriesExt, TS: ThumbnailService, IS: IconService> NativeHostSyncUs
 				}
 			}
 			if !image_url.is_empty() {
-				// アイコンの保存（URLから、短辺基準で縮小→中央正方形切り抜き）
-				let _ = self.icons.save_icon_from_url(&collection_element_id, &image_url).await;
-				// サムネイルの保存
+				let icon_dst = build_icon_dst_path(&host_root_dir(), &collection_element_id);
+				let _ = self.repositories.image_queue_repository()
+					.enqueue(&image_url, ImageSrcType::Url, &icon_dst, ImagePreprocess::ResizeAndCropSquare256)
+					.await;
 				let normalized = normalize_thumbnail_url(&image_url);
-				let _ = self.thumbnails.save_thumbnail(&collection_element_id, &normalized).await;
+				let thumb_dst = build_thumbnail_resized_dst_path(&host_root_dir(), &collection_element_id);
+				let _ = self.repositories.image_queue_repository()
+					.enqueue(&normalized, ImageSrcType::Url, &thumb_dst, ImagePreprocess::ResizeForWidth400)
+					.await;
 			}
 			success += 1;
 		}
@@ -228,11 +245,15 @@ impl<R: RepositoriesExt, TS: ThumbnailService, IS: IconService> NativeHostSyncUs
 				}
 			}
 			if !image_url.is_empty() {
-				// アイコンの保存（URLから、短辺基準で縮小→中央正方形切り抜き）
-				let _ = self.icons.save_icon_from_url(&collection_element_id, &image_url).await;
-				// サムネイルの保存
+				let icon_dst = build_icon_dst_path(&host_root_dir(), &collection_element_id);
+				let _ = self.repositories.image_queue_repository()
+					.enqueue(&image_url, ImageSrcType::Url, &icon_dst, ImagePreprocess::ResizeAndCropSquare256)
+					.await;
 				let normalized = normalize_thumbnail_url(&image_url);
-				let _ = self.thumbnails.save_thumbnail(&collection_element_id, &normalized).await;
+				let thumb_dst = build_thumbnail_resized_dst_path(&host_root_dir(), &collection_element_id);
+				let _ = self.repositories.image_queue_repository()
+					.enqueue(&normalized, ImageSrcType::Url, &thumb_dst, ImagePreprocess::ResizeForWidth400)
+					.await;
 			}
 			success += 1;
 		}

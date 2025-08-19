@@ -9,10 +9,14 @@ use crate::{
     domain::{
         collection::CollectionElement,
         repository::collection::MockCollectionRepository,
+        repository::save_image_queue::MockImageSaveQueueRepository,
+        repository::native_host_log::MockNativeHostLogRepository,
         Id,
     },
     infrastructure::repositorymock::MockRepositoriesExtMock,
 };
+use crate::domain::repository::save_image_queue::ImageSaveQueueRepository;
+use crate::domain::save_image_queue::{ImagePreprocess, ImageSrcType};
 
 #[derive(Clone, Default)]
 struct TestThumbnailService {
@@ -49,11 +53,25 @@ impl IconService for TestIconService {
 fn new_usecase_with(
     mock_repo: MockCollectionRepository,
     thumbs: TestThumbnailService,
+    expected_image_queue_calls: usize,
 ) -> (NativeHostSyncUseCase<MockRepositoriesExtMock, TestThumbnailService, TestIconService>, TestIconService) {
     let mut mock_repositories = MockRepositoriesExtMock::new();
     mock_repositories
         .expect_collection_repository()
         .return_const(mock_repo);
+
+    // image queue enqueue は2回呼ばれる想定（アイコン+サムネイル）
+    let mut imgq = MockImageSaveQueueRepository::new();
+    imgq.expect_enqueue().times(expected_image_queue_calls).returning(|_, _, _, _| Ok(Id::new(1)));
+    mock_repositories
+        .expect_image_queue_repository()
+        .return_const(imgq);
+
+    // host log は呼ばれないためダミーを返す
+    let hostlog = MockNativeHostLogRepository::new();
+    mock_repositories
+        .expect_host_log_repository()
+        .return_const(hostlog);
 
     let icons = TestIconService::default();
     (
@@ -93,7 +111,7 @@ async fn dmm_既存ならスキップ() {
         .returning(|_, _, _| Ok(Some(Id::<CollectionElement>::new(1))));
 
     let thumbs = TestThumbnailService::default();
-    let (usecase, _icons) = new_usecase_with(repo, thumbs.clone());
+    let (usecase, _icons) = new_usecase_with(repo, thumbs.clone(), 0);
 
     let params = vec![DmmSyncGameParam {
         store_id: "sid".into(),
@@ -141,7 +159,7 @@ async fn dmm_egsあり_新規作成とサムネイル保存() {
         .returning(|_, _, _, _| Ok(()));
 
     let thumbs = TestThumbnailService::default();
-    let (usecase, icons) = new_usecase_with(repo, thumbs.clone());
+    let (usecase, icons) = new_usecase_with(repo, thumbs.clone(), 2);
 
     let params = vec![DmmSyncGameParam {
         store_id: "sid".into(),
@@ -162,14 +180,11 @@ async fn dmm_egsあり_新規作成とサムネイル保存() {
 
     let res = usecase.sync_dmm_games(params).await.unwrap();
     assert_eq!(res, 1);
+    // 非同期化後は即時にアイコン/サムネイル保存は行われない
     let calls = thumbs.calls.lock().unwrap().clone();
-    assert_eq!(calls.len(), 1);
-    assert_eq!(calls[0].0, 100);
-    assert_eq!(calls[0].1, "https://pics.dmm.co.jp/digital/game/AAA/BBBpl.jpg");
+    assert_eq!(calls.len(), 0);
     let icon_calls = icons.calls.lock().unwrap().clone();
-    assert_eq!(icon_calls.len(), 1);
-    assert_eq!(icon_calls[0].0, 100);
-    assert_eq!(icon_calls[0].1, "https://pics.dmm.co.jp/digital/game/AAA/BBBps.jpg");
+    assert_eq!(icon_calls.len(), 0);
 }
 
 #[tokio::test]
@@ -192,7 +207,7 @@ async fn dmm_egsなし_新規作成のみ() {
         .returning(|_, _, _, _| Ok(()));
 
     let thumbs = TestThumbnailService::default();
-    let (usecase, icons) = new_usecase_with(repo, thumbs.clone());
+    let (usecase, icons) = new_usecase_with(repo, thumbs.clone(), 2);
 
     let params = vec![DmmSyncGameParam {
         store_id: "sid".into(),
@@ -206,13 +221,9 @@ async fn dmm_egsなし_新規作成のみ() {
     let res = usecase.sync_dmm_games(params).await.unwrap();
     assert_eq!(res, 1);
     let calls = thumbs.calls.lock().unwrap().clone();
-    assert_eq!(calls.len(), 1);
-    assert_eq!(calls[0].0, 200);
-    assert_eq!(calls[0].1, "https://pics.dmm.co.jp/digital/game/AAA/CCCpl.jpg");
+    assert_eq!(calls.len(), 0);
     let icon_calls = icons.calls.lock().unwrap().clone();
-    assert_eq!(icon_calls.len(), 1);
-    assert_eq!(icon_calls[0].0, 200);
-    assert_eq!(icon_calls[0].1, "https://pics.dmm.co.jp/digital/game/AAA/CCCps.jpg");
+    assert_eq!(icon_calls.len(), 0);
 }
 
 #[tokio::test]
@@ -224,7 +235,7 @@ async fn dlsite_既存ならスキップ() {
         .returning(|_, _| Ok(Some(Id::<CollectionElement>::new(10))));
 
     let thumbs = TestThumbnailService::default();
-    let (usecase, _icons) = new_usecase_with(repo, thumbs.clone());
+    let (usecase, _icons) = new_usecase_with(repo, thumbs.clone(), 0);
 
     let params = vec![DlsiteSyncGameParam {
         store_id: "sid".into(),
@@ -271,7 +282,7 @@ async fn dlsite_egsあり_新規作成とサムネイル保存() {
         .returning(|_, _, _| Ok(()));
 
     let thumbs = TestThumbnailService::default();
-    let (usecase, icons) = new_usecase_with(repo, thumbs.clone());
+    let (usecase, icons) = new_usecase_with(repo, thumbs.clone(), 2);
 
     let params = vec![DlsiteSyncGameParam {
         store_id: "sid".into(),
@@ -292,16 +303,9 @@ async fn dlsite_egsあり_新規作成とサムネイル保存() {
     let res = usecase.sync_dlsite_games(params).await.unwrap();
     assert_eq!(res, 1);
     let calls = thumbs.calls.lock().unwrap().clone();
-    assert_eq!(calls.len(), 1);
-    assert_eq!(calls[0].0, 300);
-    assert_eq!(
-        calls[0].1,
-        "https://img.dlsite.jp/modpub/images2/work/AAA/_img_main.jpg"
-    );
+    assert_eq!(calls.len(), 0);
     let icon_calls = icons.calls.lock().unwrap().clone();
-    assert_eq!(icon_calls.len(), 1);
-    assert_eq!(icon_calls[0].0, 300);
-    assert_eq!(icon_calls[0].1, "https://img.dlsite.jp/resize/images2/work/AAA/_img_main_300x300.jpg");
+    assert_eq!(icon_calls.len(), 0);
 }
 
 #[tokio::test]
@@ -324,7 +328,7 @@ async fn dlsite_egsなし_新規作成のみ() {
         .returning(|_, _, _| Ok(()));
 
     let thumbs = TestThumbnailService::default();
-    let (usecase, icons) = new_usecase_with(repo, thumbs.clone());
+    let (usecase, icons) = new_usecase_with(repo, thumbs.clone(), 2);
 
     let params = vec![DlsiteSyncGameParam {
         store_id: "sid".into(),
@@ -337,16 +341,9 @@ async fn dlsite_egsなし_新規作成のみ() {
     let res = usecase.sync_dlsite_games(params).await.unwrap();
     assert_eq!(res, 1);
     let calls = thumbs.calls.lock().unwrap().clone();
-    assert_eq!(calls.len(), 1);
-    assert_eq!(calls[0].0, 400);
-    assert_eq!(
-        calls[0].1,
-        "https://img.dlsite.jp/modpub/images2/work/BBB/_img_main.jpg"
-    );
+    assert_eq!(calls.len(), 0);
     let icon_calls = icons.calls.lock().unwrap().clone();
-    assert_eq!(icon_calls.len(), 1);
-    assert_eq!(icon_calls[0].0, 400);
-    assert_eq!(icon_calls[0].1, "https://img.dlsite.jp/resize/images2/work/BBB/_img_main_300x300.jpg");
+    assert_eq!(icon_calls.len(), 0);
 }
 
 

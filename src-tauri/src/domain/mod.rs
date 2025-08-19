@@ -15,6 +15,8 @@ pub mod process;
 pub mod pubsub;
 pub mod thumbnail;
 pub mod icon;
+pub mod save_image_queue;
+pub mod native_host_log;
 
 pub mod explorer;
 pub mod repository;

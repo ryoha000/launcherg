@@ -6,6 +6,7 @@ pub mod util;
 pub mod windowsimpl;
 pub mod thumbnail;
 pub mod icon;
+pub mod image_queue_worker;
 
 #[cfg(test)]
 pub mod explorermock;

@@ -79,13 +79,13 @@ impl IconServiceImpl {
 	pub fn new_from_app_handle(handle: Arc<AppHandle>) -> Self { Self { backend: Backend::Tauri(handle) } }
 	pub fn new_from_root_path(root_dir: String) -> Self { Self { backend: Backend::Host { root_dir } } }
 
-	fn build_icon_path_host(root_dir: &str, id: &Id<CollectionElement>) -> anyhow::Result<String> {
+	pub(crate) fn build_icon_path_host(root_dir: &str, id: &Id<CollectionElement>) -> anyhow::Result<String> {
 		let dir = Path::new(root_dir).join("game-icons");
 		fs::create_dir_all(&dir).ok();
 		Ok(dir.join(format!("{}.png", id.value)).to_string_lossy().to_string())
 	}
 
-	fn write_default_icon(save_path: &str) -> anyhow::Result<()> {
+	pub(crate) fn write_default_icon(save_path: &str) -> anyhow::Result<()> {
 		let bytes = include_bytes!("..\\..\\..\\icons\\notfound.png");
 		let mut file = std::fs::File::create(save_path)?;
 		use std::io::Write as _;

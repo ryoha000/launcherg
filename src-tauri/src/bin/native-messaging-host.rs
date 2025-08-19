@@ -22,10 +22,16 @@ use infrastructure::{
     repositoryimpl::{driver::Db as RepoDb, repository::Repositories},
     thumbnail::ThumbnailServiceImpl,
     icon::IconServiceImpl,
+    image_queue_worker::ImageQueueWorker,
 };
 use usecase::native_host_sync::{NativeHostSyncUseCase, DmmSyncGameParam, DlsiteSyncGameParam, EgsInfo};
+use domain::repository::native_host_log::NativeHostLogRepository;
+use infrastructure::repositoryimpl::repository::RepositoriesExt;
+use domain::native_host_log::{HostLogLevel, HostLogType};
 
 struct AppCtx {
+    repositories: Arc<Repositories>,
+    host_root: String,
     sync_usecase: NativeHostSyncUseCase<Repositories, ThumbnailServiceImpl, IconServiceImpl>,
 }
 
@@ -114,12 +120,12 @@ async fn main() {
     // UseCase/Repository を初期化
     let db_path = usecase::native_host_sync::db_file_path();
     let repo_db = RepoDb::from_path(&db_path).await;
-    let repositories = Repositories::new(repo_db);
+    let repositories = Arc::new(Repositories::new(repo_db));
     let host_root = crate::usecase::native_host_sync::host_root_dir();
     let thumbs = ThumbnailServiceImpl::new(host_root.clone());
-    let icons = IconServiceImpl::new_from_root_path(host_root);
-    let sync_usecase = NativeHostSyncUseCase::new(Arc::new(repositories), Arc::new(thumbs), Arc::new(icons));
-    let ctx = AppCtx { sync_usecase };
+    let icons = IconServiceImpl::new_from_root_path(host_root.clone());
+    let sync_usecase = NativeHostSyncUseCase::new(repositories.clone(), Arc::new(thumbs), Arc::new(icons));
+    let ctx = AppCtx { repositories, host_root, sync_usecase };
 
     log::info!("Native Messaging Host started");
 
@@ -179,6 +185,19 @@ async fn handle_message(ctx: &AppCtx) -> Result<bool, Box<dyn std::error::Error>
         None => "unknown",
     };
     log::info!("Received message type: {}", message_type);
+
+    // 受信ログをDBへ
+    let _ = match &message.message {
+        Some(native_message::Message::SyncDmmGames(req)) => {
+            let msg = format!("receive dmm sync {} games", req.games.len());
+            ctx.repositories.host_log_repository().insert_log(HostLogLevel::Info, HostLogType::ReceiveDmmSyncGamesRequest, &msg).await
+        }
+        Some(native_message::Message::SyncDlsiteGames(req)) => {
+            let msg = format!("receive dlsite sync {} games", req.games.len());
+            ctx.repositories.host_log_repository().insert_log(HostLogLevel::Info, HostLogType::ReceiveDlsiteSyncGamesRequest, &msg).await
+        }
+        _ => Ok(())
+    };
     
     // メッセージタイプに応じて処理
     let response = match &message.message {
@@ -197,6 +216,16 @@ async fn handle_message(ctx: &AppCtx) -> Result<bool, Box<dyn std::error::Error>
     
     // レスポンス形式に応じて送信
     send_response_with_format(&response, format).await?;
+
+    // 非同期画像保存ワーカー: sync系メッセージの後でのみドレイン実行
+    match &message.message {
+        Some(native_message::Message::SyncDmmGames(_)) | Some(native_message::Message::SyncDlsiteGames(_)) => {
+            let worker = ImageQueueWorker::new(ctx.repositories.clone(), ctx.host_root.clone());
+            let _ = worker.drain_until_empty().await;
+            return Ok(false); // 処理完了後はプロセス終了
+        }
+        _ => {}
+    }
     
     Ok(true)
 }
