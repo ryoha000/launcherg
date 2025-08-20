@@ -2,7 +2,7 @@ use derive_new::new;
 use domain::{native_host_log::NativeHostLogRow, save_image_queue::ImageSaveQueueRow};
 use std::marker::PhantomData;
 
-use crate::domain::{
+use domain::{
     all_game_cache::AllGameCache,
     collection::CollectionElement,
     explored_cache::ExploredCache,

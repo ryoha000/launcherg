@@ -9,7 +9,7 @@ use super::{
     },
     repository::RepositoryImpl,
 };
-use crate::domain::{
+use domain::{
     collection::{
         CollectionElement, CollectionElementInfo, CollectionElementInstall, CollectionElementLike,
         CollectionElementPaths, CollectionElementPlay, CollectionElementThumbnail,
@@ -208,7 +208,7 @@ impl CollectionRepository for RepositoryImpl<CollectionElement> {
         // DLStore廃止
         // EGS マッピング（JOINで取得）
         element.erogamescape = if let Some(egs_row_id) = row.get::<Option<i32>, _>("egs_id") {
-            Some(crate::domain::collection::CollectionElementErogamescape::new(
+            Some(domain::collection::CollectionElementErogamescape::new(
                 Id::new(egs_row_id),
                 id.clone(),
                 row.get("egs_erogamescape_id"),
@@ -577,7 +577,7 @@ impl CollectionRepository for RepositoryImpl<CollectionElement> {
     async fn get_element_erogamescape_by_element_id(
         &self,
         id: &Id<CollectionElement>,
-    ) -> anyhow::Result<Option<crate::domain::collection::CollectionElementErogamescape>> {
+    ) -> anyhow::Result<Option<domain::collection::CollectionElementErogamescape>> {
         let pool = self.pool.0.clone();
         let row = query_as::<_, super::models::collection::CollectionElementErogamescapeTable>(
             "SELECT * FROM collection_element_erogamescape_map WHERE collection_element_id = ?",

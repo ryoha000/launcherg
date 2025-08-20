@@ -1,7 +1,7 @@
 #[cfg(test)]
 mod tests {
-    use crate::usecase::extension_manager::ExtensionManagerUseCase;
-    use crate::domain::pubsub::PubSubService;
+    use crate::extension_manager::ExtensionManagerUseCase;
+    use domain::pubsub::PubSubService;
 
     // モックPubSub実装
     #[derive(Clone)]
@@ -20,12 +20,12 @@ mod tests {
         let _extension_manager = ExtensionManagerUseCase::new(pubsub);
 
         // 実行環境に依存しないよう、チェックをスキップ
-        let result: Result<crate::domain::extension::SyncStatus, crate::usecase::error::UseCaseError> = Ok(crate::domain::extension::SyncStatus {
+        let result: Result<domain::extension::SyncStatus, crate::error::UseCaseError> = Ok(domain::extension::SyncStatus {
             last_sync: None,
             total_synced: 0,
             connected_extensions: vec![],
             is_running: false,
-            connection_status: crate::domain::extension::ExtensionConnectionStatus::HostNotFound as i32,
+            connection_status: domain::extension::ExtensionConnectionStatus::HostNotFound as i32,
             error_message: "skipped in CI".to_string(),
         });
         
@@ -51,12 +51,12 @@ mod tests {
         let _extension_manager = ExtensionManagerUseCase::new(pubsub);
 
         // 実行環境に依存しないよう、チェックをスキップ
-        let result: Result<crate::domain::extension::SyncStatus, crate::usecase::error::UseCaseError> = Ok(crate::domain::extension::SyncStatus {
+        let result: Result<domain::extension::SyncStatus, crate::error::UseCaseError> = Ok(domain::extension::SyncStatus {
             last_sync: None,
             total_synced: 0,
             connected_extensions: vec![],
             is_running: false,
-            connection_status: crate::domain::extension::ExtensionConnectionStatus::HostNotFound as i32,
+            connection_status: domain::extension::ExtensionConnectionStatus::HostNotFound as i32,
             error_message: "skipped in CI".to_string(),
         });
         
@@ -79,12 +79,12 @@ mod tests {
         let _extension_manager = ExtensionManagerUseCase::new(pubsub);
 
         // 実行環境に依存しないよう、チェックをスキップ
-        let result: Result<crate::domain::extension::SyncStatus, crate::usecase::error::UseCaseError> = Ok(crate::domain::extension::SyncStatus {
+        let result: Result<domain::extension::SyncStatus, crate::error::UseCaseError> = Ok(domain::extension::SyncStatus {
             last_sync: None,
             total_synced: 0,
             connected_extensions: vec![],
             is_running: false,
-            connection_status: crate::domain::extension::ExtensionConnectionStatus::HostNotFound as i32,
+            connection_status: domain::extension::ExtensionConnectionStatus::HostNotFound as i32,
             error_message: "skipped in CI".to_string(),
         });
         
@@ -107,12 +107,12 @@ mod tests {
         let _extension_manager = ExtensionManagerUseCase::new(pubsub);
 
         // 実行環境に依存しないよう、チェックをスキップ
-        let result: Result<crate::domain::extension::SyncStatus, crate::usecase::error::UseCaseError> = Ok(crate::domain::extension::SyncStatus {
+        let result: Result<domain::extension::SyncStatus, crate::error::UseCaseError> = Ok(domain::extension::SyncStatus {
             last_sync: None,
             total_synced: 0,
             connected_extensions: vec![],
             is_running: false,
-            connection_status: crate::domain::extension::ExtensionConnectionStatus::HostNotFound as i32,
+            connection_status: domain::extension::ExtensionConnectionStatus::HostNotFound as i32,
             error_message: "skipped in CI".to_string(),
         });
         

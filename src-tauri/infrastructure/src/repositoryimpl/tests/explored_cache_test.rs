@@ -2,10 +2,8 @@
 mod tests {
     use std::collections::HashSet;
 
-    use crate::{
-        domain::repository::explored_cache::ExploredCacheRepository,
-        infrastructure::repositoryimpl::tests::TestDatabase,
-    };
+    use domain::repository::explored_cache::ExploredCacheRepository;
+    use crate::repositoryimpl::tests::TestDatabase;
 
     #[tokio::test]
     async fn test_get_all_empty() {

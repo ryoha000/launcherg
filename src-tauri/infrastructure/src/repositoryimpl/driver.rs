@@ -7,7 +7,7 @@ use sqlx::{
 };
 use tauri::AppHandle;
 
-use crate::domain::service::save_path_resolver::{SavePathResolver, DirsSavePathResolver};
+use domain::service::save_path_resolver::{SavePathResolver, DirsSavePathResolver};
 
 #[derive(Clone)]
 pub struct Db(pub(crate) Arc<Pool<Sqlite>>);

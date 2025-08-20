@@ -1,4 +1,4 @@
-use crate::domain::windows::proctail::{
+use domain::windows::proctail::{
     HealthCheckResult, IpcInfo, MonitoringInfo, ProcTail, ProcTailError, ProcTailEvent,
     ResourceInfo, ServiceInfo, ServiceStatus, WatchTarget,
 };

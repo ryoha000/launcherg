@@ -4,15 +4,13 @@ mod tests {
     use mockall::predicate::*;
     use std::sync::Arc;
 
-    use crate::{
-        domain::{
-            collection::{
-                CollectionElement, CollectionElementInfo, CollectionElementInstall, CollectionElementPaths, CollectionElementThumbnail, NewCollectionElement, NewCollectionElementInfo, ScannedGameElement
-            }, repository::collection::MockCollectionRepository, service::save_path_resolver::DirsSavePathResolver, Id
-        },
-        usecase::repositorymock::MockRepositoriesExtMock,
-        usecase::{collection::CollectionUseCase, error::UseCaseError},
+    use domain::{
+        collection::{
+            CollectionElement, CollectionElementInfo, CollectionElementInstall, CollectionElementPaths, CollectionElementThumbnail, NewCollectionElement, NewCollectionElementInfo, ScannedGameElement
+        }, repository::collection::MockCollectionRepository, service::save_path_resolver::DirsSavePathResolver, Id
     };
+    use crate::repositorymock::MockRepositoriesExtMock;
+    use crate::{collection::CollectionUseCase, error::UseCaseError};
 
     fn create_test_element_id(id: i32) -> Id<CollectionElement> {
         Id::new(id)

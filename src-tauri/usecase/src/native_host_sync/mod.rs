@@ -4,11 +4,11 @@
 
 use std::sync::Arc;
 use derive_new::new;
-use crate::domain::repository::collection::CollectionRepository;
-use crate::infrastructure::repositoryimpl::repository::RepositoriesExt;
-use crate::domain::save_image_queue::{ImageSrcType, ImagePreprocess};
-use crate::domain::repository::save_image_queue::ImageSaveQueueRepository;
-use crate::domain::service::save_path_resolver::{SavePathResolver, DirsSavePathResolver};
+use domain::repository::collection::CollectionRepository;
+use infrastructure::repositoryimpl::repository::RepositoriesExt;
+use domain::save_image_queue::{ImageSrcType, ImagePreprocess};
+use domain::repository::save_image_queue::ImageSaveQueueRepository;
+use domain::service::save_path_resolver::{SavePathResolver, DirsSavePathResolver};
 
 /// 拡張から渡された image_url/thumbnail_url を保存に適したサムネイルURLへ正規化する
 /// - DLsite: /resize/images2/.../_img_main_300x300.jpg → /modpub/images2/.../_img_main.jpg
@@ -87,7 +87,7 @@ impl<R: RepositoriesExt> NativeHostSyncUseCase<R> {
 	async fn ensure_collection_for_egs(
 		&self,
 		egs: &EgsInfo,
-	) -> anyhow::Result<crate::domain::Id<crate::domain::collection::CollectionElement>> {
+	) -> anyhow::Result<domain::Id<domain::collection::CollectionElement>> {
 		let collection_element_id;
 		if let Some(cid) = self
 			.repositories
@@ -111,7 +111,7 @@ impl<R: RepositoriesExt> NativeHostSyncUseCase<R> {
 		}
 
 		// erogamescape 由来の詳細情報を upsert
-		let info: crate::domain::collection::NewCollectionElementInfo = crate::domain::collection::NewCollectionElementInfo::new(
+		let info: domain::collection::NewCollectionElementInfo = domain::collection::NewCollectionElementInfo::new(
 			collection_element_id.clone(),
 			egs.gamename_ruby.clone(),
 			egs.brandname.clone(),
@@ -134,7 +134,7 @@ impl<R: RepositoriesExt> NativeHostSyncUseCase<R> {
 	async fn create_collection_without_egs(
 		&self,
 		gamename: &str,
-	) -> anyhow::Result<crate::domain::Id<crate::domain::collection::CollectionElement>> {
+	) -> anyhow::Result<domain::Id<domain::collection::CollectionElement>> {
 		self
 			.repositories
 			.collection_repository()

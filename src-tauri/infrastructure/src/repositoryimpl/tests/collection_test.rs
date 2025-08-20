@@ -1,19 +1,17 @@
 #[cfg(test)]
 mod tests {
-    use crate::{
-        domain::{
-            collection::{
-                NewCollectionElement, NewCollectionElementInfo, NewCollectionElementPaths,
-            },
-            repository::collection::CollectionRepository,
-            Id,
+    use domain::{
+        collection::{
+            NewCollectionElement, NewCollectionElementInfo, NewCollectionElementPaths,
         },
-        infrastructure::repositoryimpl::tests::TestDatabase,
+        repository::collection::CollectionRepository,
+        Id,
     };
+    use crate::repositoryimpl::tests::TestDatabase;
 
     fn create_test_collection_element_id(
         id: i32,
-    ) -> Id<crate::domain::collection::CollectionElement> {
+    ) -> Id<domain::collection::CollectionElement> {
         Id::new(id)
     }
 

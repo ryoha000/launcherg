@@ -2,16 +2,14 @@
 mod tests {
     use mockall::predicate::*;
 
-    use crate::{
-        domain::{
-            all_game_cache::{
-                AllGameCacheOne, AllGameCacheOneWithThumbnailUrl, NewAllGameCacheOne,
-            },
-            repository::all_game_cache::MockAllGameCacheRepository,
+    use domain::{
+        all_game_cache::{
+            AllGameCacheOne, AllGameCacheOneWithThumbnailUrl, NewAllGameCacheOne,
         },
-        usecase::repositorymock::MockRepositoriesExtMock,
-        usecase::all_game_cache::AllGameCacheUseCase,
+        repository::all_game_cache::MockAllGameCacheRepository,
     };
+    use crate::repositorymock::MockRepositoriesExtMock;
+    use crate::all_game_cache::AllGameCacheUseCase;
 
     fn create_test_new_cache_one(id: i32) -> NewAllGameCacheOne {
         NewAllGameCacheOne {

@@ -1,7 +1,7 @@
 use sqlx::types::chrono::NaiveDateTime;
 use sqlx::FromRow;
 
-use crate::domain::all_game_cache::AllGameCacheOne;
+use domain::all_game_cache::AllGameCacheOne;
 
 #[derive(FromRow)]
 pub struct AllGameCacheTable {

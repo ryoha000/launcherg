@@ -2,15 +2,11 @@ use derive_new::new;
 use chrono::Utc;
 
 use super::error::UseCaseError;
-use crate::{
-    domain::{
-        pubsub::{PubSubService, ExtensionConnectionPayload},
-        extension::{SyncStatus, ExtensionConnectionStatus, ExtensionConfig, NativeMessagingHostClient},
-    },
-    infrastructure::{
-        native_messaging::{NativeMessagingHostClientImpl, NativeHostPathResolver},
-    },
+use domain::{
+    pubsub::{PubSubService, ExtensionConnectionPayload},
+    extension::{SyncStatus, ExtensionConnectionStatus, ExtensionConfig, NativeMessagingHostClient},
 };
+use infrastructure::native_messaging::{NativeMessagingHostClientImpl, NativeHostPathResolver};
 
 #[derive(new)]
 pub struct ExtensionManagerUseCase<P: PubSubService> {

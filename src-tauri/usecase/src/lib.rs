@@ -21,10 +21,3 @@ mod repositorymock;
 mod windowsmock;
 #[cfg(test)]
 mod native_messaging_mock;
-// 再エクスポートは不要（各モジュールを直接公開）
-// 互換レイヤ: monorepo 時代の `crate::domain` / `crate::infrastructure` を解決
-pub mod domain { pub use ::domain::*; }
-pub mod infrastructure { pub use ::infrastructure::*; }
-// 互換レイヤ: crate::usecase::... を許容（既存テスト互換）
-pub mod usecase { pub use super::*; }
-

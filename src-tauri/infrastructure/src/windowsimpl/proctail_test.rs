@@ -1,7 +1,7 @@
 #[cfg(test)]
 mod tests {
     use super::super::proctail::ProcTailImpl;
-    use crate::domain::windows::proctail::ProcTail;
+    use domain::windows::proctail::ProcTail;
 
     #[tokio::test]
     #[ignore]

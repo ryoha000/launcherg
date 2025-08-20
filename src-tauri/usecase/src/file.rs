@@ -4,23 +4,21 @@ use std::{collections::HashMap, sync::Arc, time::Instant};
 use derive_new::new;
 use tauri::AppHandle;
 use base64::{engine::general_purpose, Engine as _};
-use crate::domain::service::save_path_resolver::SavePathResolver;
+use domain::service::save_path_resolver::SavePathResolver;
 use super::game_identifier::GameIdentifierUseCase;
 
-use crate::domain::all_game_cache::{AllGameCache, AllGameCacheOne};
-use crate::domain::file::{get_file_created_at_sync, PlayHistory};
-use crate::domain::game_matcher::get_file_name_without_extension;
-use crate::domain::pubsub::{ProgressLivePayload, ProgressPayload, PubSubService};
-use crate::{
-    domain::{
-        collection::{CollectionElement, ScannedGameElement},
-        distance::get_comparable_distance,
-        file::{
-            get_file_paths_by_exts, get_lnk_metadatas,
-            normalize, save_icon_to_png, start_process,
-        },
-        Id,
+use domain::all_game_cache::{AllGameCache, AllGameCacheOne};
+use domain::file::{get_file_created_at_sync, PlayHistory};
+use domain::game_matcher::get_file_name_without_extension;
+use domain::pubsub::{ProgressLivePayload, ProgressPayload, PubSubService};
+use domain::{
+    collection::{CollectionElement, ScannedGameElement},
+    distance::get_comparable_distance,
+    file::{
+        get_file_paths_by_exts, get_lnk_metadatas,
+        normalize, save_icon_to_png, start_process,
     },
+    Id,
 };
 
 #[derive(new)]

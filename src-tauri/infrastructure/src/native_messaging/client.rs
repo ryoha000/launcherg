@@ -4,7 +4,7 @@ use prost::Message;
 use pbjson_types::Timestamp;
 use chrono::Utc;
 
-use crate::domain::extension::{NativeMessagingHostClient, SyncStatus, ExtensionConfig};
+use domain::extension::{NativeMessagingHostClient, SyncStatus, ExtensionConfig};
 use super::proto::generated::launcherg::{common::*, status};
 
 pub struct NativeMessagingHostClientImpl {

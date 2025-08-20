@@ -3,13 +3,11 @@ mod tests {
     use mockall::predicate::*;
     use std::sync::Arc;
 
-    use crate::{
-        domain::{
-            explored_cache::ExploredCache, repository::explored_cache::MockExploredCacheRepository,
-        },
-        usecase::repositorymock::MockRepositoriesExtMock,
-        usecase::explored_cache::ExploredCacheUseCase,
+    use domain::{
+        explored_cache::ExploredCache, repository::explored_cache::MockExploredCacheRepository,
     };
+    use crate::repositorymock::MockRepositoriesExtMock;
+    use crate::explored_cache::ExploredCacheUseCase;
 
     fn create_test_explored_cache() -> ExploredCache {
         vec![

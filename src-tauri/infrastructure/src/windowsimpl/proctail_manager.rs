@@ -7,8 +7,8 @@ use sysinfo::{ProcessExt, System, SystemExt};
 use tauri::AppHandle;
 use tokio::sync::Mutex;
 
-use crate::domain::service::save_path_resolver::{SavePathResolver, DirsSavePathResolver};
-pub use crate::domain::windows::proctail_manager::{
+use domain::service::save_path_resolver::{SavePathResolver, DirsSavePathResolver};
+pub use domain::windows::proctail_manager::{
     ProcTailManagerError, ProcTailManagerStatus, ProcTailManagerTrait, ProcTailVersion,
 };
 

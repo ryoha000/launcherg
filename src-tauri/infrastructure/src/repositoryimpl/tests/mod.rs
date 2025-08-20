@@ -7,14 +7,12 @@ use sqlx::{
 };
 use tempfile::NamedTempFile;
 
-use crate::{
-    domain::{
-        all_game_cache::AllGameCache, collection::CollectionElement, explored_cache::ExploredCache,
-    },
-    infrastructure::repositoryimpl::{
-        driver::Db,
-        repository::{Repositories, RepositoriesExt, RepositoryImpl},
-    },
+use domain::{
+    all_game_cache::AllGameCache, collection::CollectionElement, explored_cache::ExploredCache,
+};
+use crate::repositoryimpl::{
+    driver::Db,
+    repository::{Repositories, RepositoriesExt, RepositoryImpl},
 };
 
 mod embedded {

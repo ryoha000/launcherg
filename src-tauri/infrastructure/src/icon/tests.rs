@@ -1,3 +1,4 @@
+use crate::icon;
 use std::io::Write as _;
 use image::{io::Reader as ImageReader, ColorType, ImageEncoder};
 
@@ -10,7 +11,7 @@ fn 期待出力を生成する() {
 	let src_path = base.join("test_src.jpg");
 	let dst_path = base.join("test_dest.jpg");
 	assert!(src_path.exists(), "test_src.jpg not found: {}", src_path.display());
-	crate::infrastructure::icon::process_square_icon(&src_path.to_string_lossy(), &dst_path.to_string_lossy(), 256).unwrap();
+	icon::process_square_icon(&src_path.to_string_lossy(), &dst_path.to_string_lossy(), 256).unwrap();
 	assert!(dst_path.exists(), "failed to write: {}", dst_path.display());
 }
 
@@ -35,7 +36,7 @@ fn 正方形に縮小して中央切り抜きされる() {
 		f.write_all(&buf).unwrap();
 	}
 
-	crate::infrastructure::icon::process_square_icon(&src_path.to_string_lossy(), &dst_path.to_string_lossy(), 256).unwrap();
+	icon::process_square_icon(&src_path.to_string_lossy(), &dst_path.to_string_lossy(), 256).unwrap();
 
 	let out = ImageReader::open(&dst_path).unwrap().with_guessed_format().unwrap().decode().unwrap();
 	assert_eq!(out.width(), 256);
@@ -58,7 +59,7 @@ fn 既知入力から同一画像が生成される() {
 	// 一時出力を生成
 	let tmp_dir = std::env::temp_dir();
 	let dst_path = tmp_dir.join("test_dest_gen.jpg");
-	crate::infrastructure::icon::process_square_icon(&src_path.to_string_lossy(), &dst_path.to_string_lossy(), 256).unwrap();
+	icon::process_square_icon(&src_path.to_string_lossy(), &dst_path.to_string_lossy(), 256).unwrap();
 
 	// 期待と実際をデコードして画素等価で比較
 	let expected = ImageReader::open(&expected_path).unwrap().with_guessed_format().unwrap().decode().unwrap().to_rgba8();

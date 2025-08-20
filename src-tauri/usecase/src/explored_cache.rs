@@ -2,10 +2,8 @@ use std::sync::Arc;
 
 use derive_new::new;
 
-use crate::{
-    domain::{explored_cache::ExploredCache, repository::explored_cache::ExploredCacheRepository},
-    infrastructure::repositoryimpl::repository::RepositoriesExt,
-};
+use domain::{explored_cache::ExploredCache, repository::explored_cache::ExploredCacheRepository};
+use infrastructure::repositoryimpl::repository::RepositoriesExt;
 
 #[derive(new)]
 pub struct ExploredCacheUseCase<R: RepositoriesExt> {

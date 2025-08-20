@@ -6,10 +6,10 @@ use std::{path::Path, fs};
 use tauri::AppHandle;
 use std::sync::Arc;
 
-use crate::domain::{collection::CollectionElement, Id, icon::IconService};
-use crate::domain::file::{save_icon_to_png as domain_save_icon_to_png};
-use crate::domain::service::save_path_resolver::{SavePathResolver, DirsSavePathResolver};
-use crate::infrastructure::thumbnail as thumb;
+use domain::{collection::CollectionElement, Id, icon::IconService};
+use domain::file::{save_icon_to_png as domain_save_icon_to_png};
+use domain::service::save_path_resolver::{SavePathResolver, DirsSavePathResolver};
+use crate::thumbnail as thumb;
 use anyhow::Context as _;
 use image::{io::Reader as ImageReader, ColorType, ImageEncoder};
 use fast_image_resize as fr;

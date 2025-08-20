@@ -1,19 +1,17 @@
 use super::*;
-use crate::domain::thumbnail::ThumbnailService;
-use crate::domain::icon::IconService;
+use domain::thumbnail::ThumbnailService;
+use domain::icon::IconService;
 use mockall::predicate::*;
 use std::sync::{Arc, Mutex};
 
-use crate::{
-    domain::{
-        collection::CollectionElement,
-        repository::collection::MockCollectionRepository,
-        repository::save_image_queue::MockImageSaveQueueRepository,
-        repository::native_host_log::MockNativeHostLogRepository,
-        Id,
-    },
-    usecase::repositorymock::MockRepositoriesExtMock,
+use domain::{
+    collection::CollectionElement,
+    repository::collection::MockCollectionRepository,
+    repository::save_image_queue::MockImageSaveQueueRepository,
+    repository::native_host_log::MockNativeHostLogRepository,
+    Id,
 };
+use crate::repositorymock::MockRepositoriesExtMock;
 
 #[derive(Clone, Default)]
 struct TestThumbnailService {

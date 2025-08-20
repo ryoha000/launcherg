@@ -1,8 +1,8 @@
 use std::sync::Arc;
 use derive_new::new;
 
-use crate::domain::all_game_cache::{AllGameCache, AllGameCacheOne};
-use crate::domain::game_matcher::{GameMatcher, Matcher, MatcherConfig, normalize};
+use domain::all_game_cache::{AllGameCache, AllGameCacheOne};
+use domain::game_matcher::{GameMatcher, Matcher, MatcherConfig, normalize};
 
 /// ファイルパスや名前からゲームを特定するUseCase
 #[derive(new)]
@@ -44,7 +44,7 @@ impl GameIdentifierUseCase {
     /// ファイルパスからゲームを特定
     pub fn identify_by_filepath(&self, filepath: &str) -> anyhow::Result<Vec<AllGameCacheOne>> {
         // ファイルパスから情報を抽出
-        let file_info = crate::domain::game_matcher::extract_file_info(filepath)?;
+        let file_info = domain::game_matcher::extract_file_info(filepath)?;
         
         // 複数の文字列でマッチング（元実装と同じロジック）
         let mut queries = Vec::new();
@@ -76,7 +76,7 @@ impl GameIdentifierUseCase {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::domain::all_game_cache::AllGameCacheOne;
+    use domain::all_game_cache::AllGameCacheOne;
 
     fn create_test_cache() -> AllGameCache {
         vec![

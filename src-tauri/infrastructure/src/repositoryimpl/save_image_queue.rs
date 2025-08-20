@@ -1,7 +1,7 @@
 use sqlx::{query, query_as};
 
 use super::repository::RepositoryImpl;
-use crate::domain::{repository::save_image_queue::{ImageSaveQueueRepository}, save_image_queue::{ImageSaveQueueRow, ImageSrcType, ImagePreprocess}, Id};
+use domain::{repository::save_image_queue::{ImageSaveQueueRepository}, save_image_queue::{ImageSaveQueueRow, ImageSrcType, ImagePreprocess}, Id};
 
 impl ImageSaveQueueRepository for RepositoryImpl<ImageSaveQueueRow> {
     async fn enqueue(&self, src: &str, src_type: ImageSrcType, dst_path: &str, preprocess: ImagePreprocess) -> anyhow::Result<Id<ImageSaveQueueRow>> {

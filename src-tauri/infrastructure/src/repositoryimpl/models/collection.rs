@@ -2,7 +2,7 @@ use chrono::Local;
 use sqlx::types::chrono::NaiveDateTime;
 use sqlx::FromRow;
 
-use crate::domain::{
+use domain::{
     collection::{
         CollectionElement, CollectionElementInfo, CollectionElementInstall, CollectionElementLike,
         CollectionElementPaths, CollectionElementPlay, CollectionElementThumbnail,

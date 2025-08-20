@@ -2,14 +2,12 @@ use std::sync::Arc;
 
 use derive_new::new;
 
-use crate::{
-    domain::windows::process::ProcessWindows,
-    domain::windows::proctail::{
-        HealthCheckResult, ProcTail, ProcTailEvent, ServiceStatus, WatchTarget,
-    },
-    domain::windows::proctail_manager::{ProcTailManagerStatus, ProcTailVersion, ProcTailManagerTrait},
-    infrastructure::windowsimpl::windows::WindowsExt,
+use domain::windows::process::ProcessWindows;
+use domain::windows::proctail::{
+    HealthCheckResult, ProcTail, ProcTailEvent, ServiceStatus, WatchTarget,
 };
+use domain::windows::proctail_manager::{ProcTailManagerStatus, ProcTailVersion, ProcTailManagerTrait};
+use infrastructure::windowsimpl::windows::WindowsExt;
 
 #[derive(new)]
 pub struct ProcessUseCase<R: WindowsExt> {

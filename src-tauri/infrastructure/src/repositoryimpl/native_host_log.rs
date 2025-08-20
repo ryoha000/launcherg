@@ -2,8 +2,8 @@ use chrono::{Local, TimeZone};
 use sqlx::{query, query_as};
 
 use super::repository::RepositoryImpl;
-use crate::domain::repository::native_host_log::NativeHostLogRepository;
-use crate::domain::native_host_log::{HostLogLevel, HostLogType, NativeHostLogRow};
+use domain::repository::native_host_log::NativeHostLogRepository;
+use domain::native_host_log::{HostLogLevel, HostLogType, NativeHostLogRow};
 use super::models::native_host_log::NativeHostLogTable;
 
 impl NativeHostLogRepository for RepositoryImpl<NativeHostLogRow> {
@@ -47,7 +47,7 @@ impl NativeHostLogRepository for RepositoryImpl<NativeHostLogRow> {
         let items = rows
             .into_iter()
             .map(|t| NativeHostLogRow {
-                id: crate::domain::Id::new(t.id as i32),
+                id: domain::Id::new(t.id as i32),
                 level: match t.level { 1 => HostLogLevel::Info, 2 => HostLogLevel::Warn, 3 => HostLogLevel::Error, _ => HostLogLevel::Info },
                 r#type: match t.r#type {
                     0 => HostLogType::Unknown,

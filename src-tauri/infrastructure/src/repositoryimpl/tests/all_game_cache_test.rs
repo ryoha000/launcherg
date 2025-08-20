@@ -1,11 +1,9 @@
 #[cfg(test)]
 mod tests {
-    use crate::{
-        domain::{
-            all_game_cache::NewAllGameCacheOne, repository::all_game_cache::AllGameCacheRepository,
-        },
-        infrastructure::repositoryimpl::tests::TestDatabase,
+    use domain::{
+        all_game_cache::NewAllGameCacheOne, repository::all_game_cache::AllGameCacheRepository,
     };
+    use crate::repositoryimpl::tests::TestDatabase;
 
     fn create_test_new_cache_item(
         id: i32,

@@ -5,7 +5,7 @@ use derive_new::new;
 use serde::Serialize;
 use tauri::{AppHandle, Emitter};
 
-use crate::domain::pubsub::PubSubService;
+use domain::pubsub::PubSubService;
 
 #[derive(new, Clone)]
 pub struct PubSub {

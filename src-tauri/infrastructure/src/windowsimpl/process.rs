@@ -4,7 +4,7 @@ use windows::Win32::{
 };
 
 use super::{screenshot::take, windows::WindowsImpl};
-use crate::domain::{process::Process, windows::process::ProcessWindows};
+use domain::{process::Process, windows::process::ProcessWindows};
 
 impl ProcessWindows for WindowsImpl<Process> {
     fn save_screenshot_by_process_id(&self, process_id: u32, filepath: &str) -> anyhow::Result<()> {

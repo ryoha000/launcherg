@@ -2,9 +2,9 @@ use std::sync::Arc;
 
 use derive_new::new;
 
-use crate::domain::{collection::CollectionElement, thumbnail::ThumbnailService, icon::IconService, Id};
+use domain::{collection::CollectionElement, thumbnail::ThumbnailService, icon::IconService, Id};
 use tauri::AppHandle;
-use crate::domain::service::save_path_resolver::{SavePathResolver, DirsSavePathResolver};
+use domain::service::save_path_resolver::{SavePathResolver, DirsSavePathResolver};
 
 #[derive(new)]
 pub struct ImageUseCase<TS: ThumbnailService, IS: IconService> {
@@ -55,7 +55,7 @@ impl<TS: ThumbnailService, IS: IconService> ImageUseCase<TS, IS> {
         if let Some(path) = exe_path.as_ref() {
             icon_source = Some(path.clone());
         } else if let Some(lnk) = lnk_path.as_ref() {
-            use crate::domain::file::get_lnk_metadatas;
+            use domain::file::get_lnk_metadatas;
             let metadatas = get_lnk_metadatas(vec![lnk.as_str()])?;
             if let Some(metadata) = metadatas.get(lnk.as_str()) {
                 if metadata.icon.to_lowercase().ends_with("ico") {

@@ -1,7 +1,7 @@
 use chrono::{DateTime, Local, NaiveDateTime};
 use sqlx::{query_as, QueryBuilder, Row};
 
-use crate::domain::{
+use domain::{
     all_game_cache::{AllGameCache, AllGameCacheOneWithThumbnailUrl, NewAllGameCacheOne},
     repository::all_game_cache::AllGameCacheRepository,
 };

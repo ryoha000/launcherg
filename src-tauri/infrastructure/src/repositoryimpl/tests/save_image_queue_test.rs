@@ -1,6 +1,6 @@
-use crate::domain::repository::save_image_queue::ImageSaveQueueRepository;
-use crate::domain::save_image_queue::{ImageSrcType, ImagePreprocess};
-use crate::infrastructure::repositoryimpl::repository::RepositoriesExt;
+use domain::repository::save_image_queue::ImageSaveQueueRepository;
+use domain::save_image_queue::{ImageSrcType, ImagePreprocess};
+use crate::repositoryimpl::repository::RepositoriesExt;
 use super::TestDatabase;
 
 #[tokio::test]

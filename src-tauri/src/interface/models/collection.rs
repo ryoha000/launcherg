@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 use tauri::AppHandle;
 
 use crate::domain;
-use crate::domain::service::save_path_resolver::{SavePathResolver, DirsSavePathResolver};
+use domain::service::save_path_resolver::{SavePathResolver, DirsSavePathResolver};
 
 #[derive(new, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -90,9 +90,9 @@ impl CollectionElement {
         };
 
         let install_status = match st.install_status() {
-            crate::domain::collection::GameInstallStatus::Installed => "installed",
-            crate::domain::collection::GameInstallStatus::OwnedNotInstalled => "owned-not-installed",
-            crate::domain::collection::GameInstallStatus::NotOwned => "not-owned",
+            domain::collection::GameInstallStatus::Installed => "installed",
+            domain::collection::GameInstallStatus::OwnedNotInstalled => "owned-not-installed",
+            domain::collection::GameInstallStatus::NotOwned => "not-owned",
         };
         let can_play = st.can_play();
         let can_install = st.can_install();

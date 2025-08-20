@@ -2,20 +2,18 @@ use std::{fs, sync::Arc};
 
 use chrono::Local;
 use derive_new::new;
-use crate::domain::service::save_path_resolver::SavePathResolver;
+use domain::service::save_path_resolver::SavePathResolver;
 // use tauri::AppHandle; // no longer needed
 
 use super::error::UseCaseError;
-use crate::{
-    domain::{
-        collection::{
-            CollectionElement, NewCollectionElement, NewCollectionElementPaths, ScannedGameElement,
-        },
-        repository::collection::CollectionRepository,
-        Id,
+use domain::{
+    collection::{
+        CollectionElement, NewCollectionElement, NewCollectionElementPaths, ScannedGameElement,
     },
-    infrastructure::repositoryimpl::repository::RepositoriesExt,
+    repository::collection::CollectionRepository,
+    Id,
 };
+use infrastructure::repositoryimpl::repository::RepositoriesExt;
 
 #[derive(new)]
 pub struct CollectionUseCase<R: RepositoriesExt> {
@@ -38,7 +36,7 @@ impl<R: RepositoriesExt> CollectionUseCase<R> {
     // スクレイピング情報を保存
     pub async fn upsert_collection_element_info(
         &self,
-        info: &crate::domain::collection::NewCollectionElementInfo,
+        info: &domain::collection::NewCollectionElementInfo,
     ) -> anyhow::Result<()> {
         self.repositories
             .collection_repository()
@@ -52,7 +50,7 @@ impl<R: RepositoriesExt> CollectionUseCase<R> {
         &self,
         element: &ScannedGameElement,
     ) -> anyhow::Result<Id<CollectionElement>> {
-        use crate::domain::collection::{
+        use domain::collection::{
             NewCollectionElement, NewCollectionElementInstall, NewCollectionElementPaths,
         };
 
@@ -193,7 +191,7 @@ impl<R: RepositoriesExt> CollectionUseCase<R> {
         let _icon_path = if let Some(paths) = paths {
             if let Some(lnk_path) = paths.lnk_path {
                 // lnkファイルからメタデータを取得してアイコンパスを決定
-                use crate::domain::file::get_lnk_metadatas;
+                use domain::file::get_lnk_metadatas;
                 let metadatas = get_lnk_metadatas(vec![lnk_path.as_str()])?;
                 let metadata = metadatas
                     .get(lnk_path.as_str())
@@ -201,7 +199,7 @@ impl<R: RepositoriesExt> CollectionUseCase<R> {
                 let dst = self.resolver.icon_png_path(id.value);
                 if metadata.icon.to_lowercase().ends_with("ico") {
                     log::info!("icon is ico");
-                    crate::domain::file::save_ico_to_png(&metadata.icon, &dst)?.await??;
+                    domain::file::save_ico_to_png(&metadata.icon, &dst)?.await??;
                 } else {
                     // exe抽出はAppHandleが必要なため、ここではコピーにフォールバック
                     let _ = std::fs::copy(&metadata.path, &dst);
@@ -227,7 +225,7 @@ impl<R: RepositoriesExt> CollectionUseCase<R> {
         id: &Id<CollectionElement>,
         src_url: String,
     ) -> anyhow::Result<()> {
-        crate::infrastructure::thumbnail::save_thumbnail(id, &src_url, 400).await
+        infrastructure::thumbnail::save_thumbnail(id, &src_url, 400).await
     }
 
     pub async fn concurency_save_thumbnails(
@@ -236,7 +234,7 @@ impl<R: RepositoriesExt> CollectionUseCase<R> {
     ) -> anyhow::Result<()> {
         use futures::StreamExt as _;
         futures::stream::iter(args.into_iter())
-            .map(move |(id, url)| async move { crate::infrastructure::thumbnail::save_thumbnail(&id, &url, 400).await })
+            .map(move |(id, url)| async move { infrastructure::thumbnail::save_thumbnail(&id, &url, 400).await })
             .buffered(50)
             .for_each(|res| async move {
                 if let Err(e) = res {

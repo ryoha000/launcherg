@@ -26,13 +26,13 @@ mockall::mock! {
 mockall::mock! {
     pub WindowsExtMock {}
 
-    impl ::infrastructure::windowsimpl::windows::WindowsExt for WindowsExtMock {
-        type ProcessWindows = crate::domain::windows::process::MockProcessWindows;
-        type ProcTail = crate::domain::windows::proctail::MockProcTail;
+    impl infrastructure::windowsimpl::windows::WindowsExt for WindowsExtMock {
+        type ProcessWindows = domain::windows::process::MockProcessWindows;
+        type ProcTail = domain::windows::proctail::MockProcTail;
         type ProcTailManager = MockProcTailManagerTrait;
 
-        fn process(&self) -> &crate::domain::windows::process::MockProcessWindows;
-        fn proctail(&self) -> &crate::domain::windows::proctail::MockProcTail;
+        fn process(&self) -> &domain::windows::process::MockProcessWindows;
+        fn proctail(&self) -> &domain::windows::proctail::MockProcTail;
         fn proctail_manager(&self) -> &MockProcTailManagerTrait;
     }
 }

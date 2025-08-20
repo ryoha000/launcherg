@@ -8,7 +8,7 @@ use tauri::AppHandle;
 use std::io::Write;
 use tempfile::NamedTempFile;
 
-use crate::domain::service::save_path_resolver::{SavePathResolver, DirsSavePathResolver};
+use domain::service::save_path_resolver::{SavePathResolver, DirsSavePathResolver};
 
 #[cfg(target_os = "windows")]
 use winreg::enums::*;

@@ -2,12 +2,12 @@ use derive_new::new;
 use std::marker::PhantomData;
 use std::sync::Arc;
 
-use crate::domain::{
+use domain::{
     process::Process, windows::process::ProcessWindows, windows::proctail::ProcTail,
 };
-use crate::infrastructure::windowsimpl::proctail::ProcTailImpl;
-use crate::infrastructure::windowsimpl::proctail_manager::AppHandleProcTailManager;
-use crate::domain::windows::proctail_manager::ProcTailManagerTrait;
+use crate::windowsimpl::proctail::ProcTailImpl;
+use crate::windowsimpl::proctail_manager::AppHandleProcTailManager;
+use domain::windows::proctail_manager::ProcTailManagerTrait;
 use tauri::AppHandle;
 
 #[derive(new)]

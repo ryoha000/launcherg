@@ -4,8 +4,8 @@ use anyhow::Context as _;
 use fast_image_resize as fr;
 use image::{io::Reader as ImageReader, ColorType, ImageEncoder};
 
-use crate::domain::{collection::CollectionElement, Id, thumbnail::ThumbnailService};
-use crate::domain::service::save_path_resolver::{SavePathResolver, DirsSavePathResolver};
+use domain::{collection::CollectionElement, Id, thumbnail::ThumbnailService};
+use domain::service::save_path_resolver::{SavePathResolver, DirsSavePathResolver};
 
 pub fn build_thumbnail_paths(id: &Id<CollectionElement>, src_url: &str) -> anyhow::Result<(String, String)> {
     // 互換: 既存の呼び出し用（今後は SavePathResolver へ移行）

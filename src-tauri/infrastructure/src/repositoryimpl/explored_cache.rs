@@ -1,6 +1,6 @@
 use sqlx::QueryBuilder;
 
-use crate::domain::{
+use domain::{
     explored_cache::ExploredCache, repository::explored_cache::ExploredCacheRepository,
 };
 

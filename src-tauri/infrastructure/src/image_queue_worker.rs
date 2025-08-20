@@ -1,13 +1,13 @@
 use std::path::Path;
 
-use crate::domain::{save_image_queue::{ImageSrcType, ImagePreprocess}};
-use crate::infrastructure::icon::process_square_icon;
-use crate::infrastructure::thumbnail as thumb_infra;
-use crate::infrastructure::repositoryimpl::repository::RepositoriesExt;
-use crate::domain::native_host_log::{HostLogLevel, HostLogType};
-use crate::domain::repository::native_host_log::NativeHostLogRepository;
-use crate::domain::repository::save_image_queue::ImageSaveQueueRepository;
-use crate::domain::service::save_path_resolver::SavePathResolver;
+use domain::{save_image_queue::{ImageSrcType, ImagePreprocess}};
+use crate::icon::process_square_icon;
+use crate::thumbnail as thumb_infra;
+use crate::repositoryimpl::repository::RepositoriesExt;
+use domain::native_host_log::{HostLogLevel, HostLogType};
+use domain::repository::native_host_log::NativeHostLogRepository;
+use domain::repository::save_image_queue::ImageSaveQueueRepository;
+use domain::service::save_path_resolver::SavePathResolver;
 
 pub struct ImageQueueWorker<R: RepositoriesExt> {
 	repositories: std::sync::Arc<R>,

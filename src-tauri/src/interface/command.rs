@@ -11,12 +11,12 @@ use super::{
     },
     module::{Modules, ModulesExt},
 };
-use crate::domain::extension::{SyncStatus, ExtensionConfig};
-use crate::domain::file::get_lnk_metadatas;
-use crate::domain::windows::proctail::{
+use domain::extension::{SyncStatus, ExtensionConfig};
+use domain::file::get_lnk_metadatas;
+use domain::windows::proctail::{
     HealthCheckResult, ProcTailEvent, ServiceStatus, WatchTarget,
 };
-use crate::domain::windows::proctail_manager::{ProcTailManagerStatus, ProcTailVersion};
+use domain::windows::proctail_manager::{ProcTailManagerStatus, ProcTailVersion};
 use crate::{
     domain::{
         collection::{ScannedGameElement},
@@ -27,8 +27,8 @@ use crate::{
     },
     usecase::models::collection::CreateCollectionElementDetail,
 };
-use crate::domain::{native_host_log::{HostLogLevel, HostLogType}, repository::native_host_log::NativeHostLogRepository};
-use crate::infrastructure::repositoryimpl::repository::RepositoriesExt;
+use domain::{native_host_log::{HostLogLevel, HostLogType}, repository::native_host_log::NativeHostLogRepository};
+use infrastructure::repositoryimpl::repository::RepositoriesExt;
 
 #[tauri::command]
 pub async fn create_elements_in_pc(
@@ -112,7 +112,7 @@ pub async fn create_elements_in_pc(
         .collect();
 
     // new_elements_game_caches は EGS id の配列なので、その順に個別解決
-    let mut thumb_args: Vec<(Id<crate::domain::collection::CollectionElement>, String)> = Vec::new();
+    let mut thumb_args: Vec<(Id<domain::collection::CollectionElement>, String)> = Vec::new();
     for gc in new_elements_game_caches.iter() {
         // 各 EGS id に対して resolved id を都度取得
         if let Some(rid) = modules
@@ -420,7 +420,7 @@ pub async fn upsert_collection_element_details(
     details: Vec<CreateCollectionElementDetail>,
 ) -> anyhow::Result<(), CommandError> {
     for detail in details {
-        let info = crate::domain::collection::NewCollectionElementInfo::new(
+        let info = domain::collection::NewCollectionElementInfo::new(
             Id::new(detail.collection_element_id),
             detail.gamename_ruby,
             detail.brandname,
@@ -529,7 +529,7 @@ pub async fn get_game_candidates(
         .get_all_game_cache()
         .await?;
     
-    let game_identifier = crate::usecase::game_identifier::GameIdentifierUseCase::with_default_matcher(all_game_cache);
+    let game_identifier = usecase::game_identifier::GameIdentifierUseCase::with_default_matcher(all_game_cache);
     
     Ok(game_identifier
         .identify_by_filepath(&filepath)?
@@ -548,7 +548,7 @@ pub async fn get_game_candidates_by_name(
         .get_all_game_cache()
         .await?;
     
-    let game_identifier = crate::usecase::game_identifier::GameIdentifierUseCase::with_default_matcher(all_game_cache);
+    let game_identifier = usecase::game_identifier::GameIdentifierUseCase::with_default_matcher(all_game_cache);
     
     Ok(game_identifier
         .identify_by_name(&game_name)?
@@ -894,8 +894,8 @@ pub async fn set_extension_config(
 #[tauri::command]
 pub async fn generate_extension_package(
     handle: AppHandle,
-) -> anyhow::Result<crate::usecase::extension_installer::ExtensionPackageInfo, CommandError> {
-    use crate::usecase::extension_installer::ExtensionInstallerUseCase;
+) -> anyhow::Result<usecase::extension_installer::ExtensionPackageInfo, CommandError> {
+    use usecase::extension_installer::ExtensionInstallerUseCase;
     
     let installer = ExtensionInstallerUseCase::new(Arc::new(handle));
     let package_info = installer.generate_extension_package().await
@@ -909,7 +909,7 @@ pub async fn setup_native_messaging_host(
     handle: AppHandle,
     extension_id: Option<String>,
 ) -> anyhow::Result<String, CommandError> {
-    use crate::usecase::extension_installer::ExtensionInstallerUseCase;
+    use usecase::extension_installer::ExtensionInstallerUseCase;
     
     let installer = ExtensionInstallerUseCase::new(Arc::new(handle));
     let result = installer.setup_native_messaging_host(extension_id).await
@@ -921,8 +921,8 @@ pub async fn setup_native_messaging_host(
 #[tauri::command]
 pub async fn get_extension_package_info(
     handle: AppHandle,
-) -> anyhow::Result<Option<crate::usecase::extension_installer::ExtensionPackageInfo>, CommandError> {
-    use crate::usecase::extension_installer::ExtensionInstallerUseCase;
+) -> anyhow::Result<Option<usecase::extension_installer::ExtensionPackageInfo>, CommandError> {
+    use usecase::extension_installer::ExtensionInstallerUseCase;
     
     let installer = ExtensionInstallerUseCase::new(Arc::new(handle));
     
@@ -933,7 +933,7 @@ pub async fn get_extension_package_info(
         let _package_size = installer.get_package_size()
             .map_err(|e| anyhow::anyhow!("パッケージサイズの取得に失敗: {}", e))?;
             
-        Ok(Some(crate::usecase::extension_installer::ExtensionPackageInfo {
+        Ok(Some(usecase::extension_installer::ExtensionPackageInfo {
             version: manifest_info.version.clone(),
             package_path: package_path.to_string_lossy().to_string(),
             manifest_info,
@@ -947,7 +947,7 @@ pub async fn get_extension_package_info(
 pub async fn copy_extension_for_development(
     handle: AppHandle,
 ) -> anyhow::Result<String, CommandError> {
-    use crate::usecase::extension_installer::ExtensionInstallerUseCase;
+    use usecase::extension_installer::ExtensionInstallerUseCase;
     
     let installer = ExtensionInstallerUseCase::new(Arc::new(handle));
     let dev_path = installer.copy_extension_for_development().await
@@ -960,7 +960,7 @@ pub async fn copy_extension_for_development(
 pub async fn get_dev_extension_info(
     handle: AppHandle,
 ) -> anyhow::Result<Option<String>, CommandError> {
-    use crate::usecase::extension_installer::ExtensionInstallerUseCase;
+    use usecase::extension_installer::ExtensionInstallerUseCase;
     
     let installer = ExtensionInstallerUseCase::new(Arc::new(handle));
     
@@ -975,8 +975,8 @@ pub async fn get_dev_extension_info(
 #[tauri::command]
 pub async fn check_registry_keys(
     handle: AppHandle,
-) -> anyhow::Result<Vec<crate::usecase::extension_installer::RegistryKeyInfo>, CommandError> {
-    use crate::usecase::extension_installer::ExtensionInstallerUseCase;
+) -> anyhow::Result<Vec<usecase::extension_installer::RegistryKeyInfo>, CommandError> {
+    use usecase::extension_installer::ExtensionInstallerUseCase;
     
     let installer = ExtensionInstallerUseCase::new(Arc::new(handle));
     let result = installer.check_registry_keys()
@@ -989,7 +989,7 @@ pub async fn check_registry_keys(
 pub async fn remove_registry_keys(
     handle: AppHandle,
 ) -> anyhow::Result<Vec<String>, CommandError> {
-    use crate::usecase::extension_installer::ExtensionInstallerUseCase;
+    use usecase::extension_installer::ExtensionInstallerUseCase;
     
     let installer = ExtensionInstallerUseCase::new(Arc::new(handle));
     let result = installer.remove_registry_keys()

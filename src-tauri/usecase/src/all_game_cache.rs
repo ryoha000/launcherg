@@ -3,13 +3,11 @@ use std::sync::Arc;
 use chrono::{DateTime, Local};
 use derive_new::new;
 
-use crate::{
-    domain::{
-        all_game_cache::{AllGameCache, AllGameCacheOneWithThumbnailUrl, NewAllGameCacheOne},
-        repository::all_game_cache::AllGameCacheRepository,
-    },
-    infrastructure::repositoryimpl::repository::RepositoriesExt,
+use domain::{
+    all_game_cache::{AllGameCache, AllGameCacheOneWithThumbnailUrl, NewAllGameCacheOne},
+    repository::all_game_cache::AllGameCacheRepository,
 };
+use infrastructure::repositoryimpl::repository::RepositoriesExt;
 
 #[derive(new)]
 pub struct AllGameCacheUseCase<R: RepositoriesExt> {
