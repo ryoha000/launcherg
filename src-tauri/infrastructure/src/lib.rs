@@ -5,4 +5,3 @@ pub mod pubsubimpl;
 pub mod repositoryimpl;
 pub mod thumbnail;
 pub mod windowsimpl;
-pub use repositoryimpl::repository::{Repositories, RepositoriesExt};

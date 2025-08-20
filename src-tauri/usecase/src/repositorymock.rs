@@ -2,7 +2,7 @@
 mockall::mock! {
     pub RepositoriesExtMock {}
 
-    impl infrastructure::repositoryimpl::repository::RepositoriesExt for RepositoriesExtMock {
+    impl domain::repository::RepositoriesExt for RepositoriesExtMock {
         type CollectionRepo = domain::repository::collection::MockCollectionRepository;
         type ExploredCacheRepo = domain::repository::explored_cache::MockExploredCacheRepository;
         type AllGameCacheRepo = domain::repository::all_game_cache::MockAllGameCacheRepository;

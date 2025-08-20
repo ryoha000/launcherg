@@ -1,17 +1,11 @@
 use derive_new::new;
-use domain::{native_host_log::NativeHostLogRow, save_image_queue::ImageSaveQueueRow};
+use domain::{native_host_log::NativeHostLogRow, repository::RepositoriesExt, save_image_queue::ImageSaveQueueRow};
 use std::marker::PhantomData;
 
 use domain::{
     all_game_cache::AllGameCache,
     collection::CollectionElement,
     explored_cache::ExploredCache,
-    repository::{
-        all_game_cache::AllGameCacheRepository, collection::CollectionRepository,
-        explored_cache::ExploredCacheRepository,
-        save_image_queue::ImageSaveQueueRepository,
-        native_host_log::NativeHostLogRepository,
-    },
 };
 
 use super::driver::Db;
@@ -29,20 +23,6 @@ pub struct Repositories {
     image_queue_repository: RepositoryImpl<ImageSaveQueueRow>,
     host_log_repository: RepositoryImpl<NativeHostLogRow>,
 }
-pub trait RepositoriesExt {
-    type CollectionRepo: CollectionRepository;
-    type ExploredCacheRepo: ExploredCacheRepository;
-    type AllGameCacheRepo: AllGameCacheRepository;
-    type ImageQueueRepo: ImageSaveQueueRepository;
-    type HostLogRepo: NativeHostLogRepository;
-
-    fn collection_repository(&self) -> &Self::CollectionRepo;
-    fn explored_cache_repository(&self) -> &Self::ExploredCacheRepo;
-    fn all_game_cache_repository(&self) -> &Self::AllGameCacheRepo;
-    fn image_queue_repository(&self) -> &Self::ImageQueueRepo;
-    fn host_log_repository(&self) -> &Self::HostLogRepo;
-}
-
 
 impl RepositoriesExt for Repositories {
     type CollectionRepo = RepositoryImpl<CollectionElement>;

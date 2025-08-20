@@ -67,3 +67,12 @@ pub trait NativeMessagingHostClient {
     /// 拡張機能設定を更新
     async fn set_config(&self, config: &ExtensionConfig) -> Result<String, Box<dyn std::error::Error + Send + Sync>>;
 }
+
+/// Native Messaging Hostクライアントを生成するファクトリのトレイト
+#[trait_variant::make(Send)]
+pub trait NativeMessagingHostClientFactory {
+    type Client: NativeMessagingHostClient;
+
+    /// クライアントを生成する
+    fn create(&self) -> Result<Self::Client, Box<dyn std::error::Error + Send + Sync>>;
+}

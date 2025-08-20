@@ -4,16 +4,17 @@ use chrono::Utc;
 use super::error::UseCaseError;
 use domain::{
     pubsub::{PubSubService, ExtensionConnectionPayload},
-    extension::{SyncStatus, ExtensionConnectionStatus, ExtensionConfig, NativeMessagingHostClient},
+    extension::{SyncStatus, ExtensionConnectionStatus, ExtensionConfig, NativeMessagingHostClient, NativeMessagingHostClientFactory},
 };
-use infrastructure::native_messaging::{NativeMessagingHostClientImpl, NativeHostPathResolver};
+use std::sync::Arc;
 
 #[derive(new)]
-pub struct ExtensionManagerUseCase<P: PubSubService> {
+pub struct ExtensionManagerUseCase<P: PubSubService, F: NativeMessagingHostClientFactory> {
     pubsub: P,
+    factory: Arc<F>,
 }
 
-impl<P: PubSubService> ExtensionManagerUseCase<P> {
+impl<P: PubSubService, F: NativeMessagingHostClientFactory> ExtensionManagerUseCase<P, F> {
     /// ブラウザ拡張機能の接続状況をチェックする
     pub async fn check_extension_connection(&self) -> Result<SyncStatus, UseCaseError> {
         // 接続開始をPubSubで通知
@@ -147,9 +148,8 @@ impl<P: PubSubService> ExtensionManagerUseCase<P> {
     }
 
     /// Native Messaging Hostクライアントを作成
-    fn create_native_messaging_client(&self) -> Result<NativeMessagingHostClientImpl, Box<dyn std::error::Error + Send + Sync>> {
-        let native_host_path = NativeHostPathResolver::resolve_path()?;
-        Ok(NativeMessagingHostClientImpl::new(native_host_path))
+    fn create_native_messaging_client(&self) -> Result<F::Client, Box<dyn std::error::Error + Send + Sync>> {
+        self.factory.create()
     }
 }
 

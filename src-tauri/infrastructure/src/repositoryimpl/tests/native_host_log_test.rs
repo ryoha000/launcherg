@@ -1,6 +1,6 @@
 use domain::repository::native_host_log::NativeHostLogRepository;
 use domain::native_host_log::{HostLogLevel, HostLogType};
-use crate::repositoryimpl::repository::RepositoriesExt;
+use domain::repository::RepositoriesExt;
 use super::TestDatabase;
 
 #[tokio::test]

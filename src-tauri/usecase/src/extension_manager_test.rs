@@ -1,6 +1,7 @@
 #[cfg(test)]
 mod tests {
     use crate::extension_manager::ExtensionManagerUseCase;
+    use domain::extension::NativeMessagingHostClientFactory;
     use domain::pubsub::PubSubService;
 
     // モックPubSub実装
@@ -14,10 +15,20 @@ mod tests {
         }
     }
 
+    struct MockFactory;
+
+    impl NativeMessagingHostClientFactory for MockFactory {
+        type Client = super::super::native_messaging_mock::MockNativeMessagingHostClient;
+
+        fn create(&self) -> Result<Self::Client, Box<dyn std::error::Error + Send + Sync>> {
+            Ok(super::super::native_messaging_mock::MockNativeMessagingHostClient::new())
+        }
+    }
+
     #[tokio::test]
     async fn test_extension_manager_with_nonexistent_path() {
         let pubsub = MockPubSub;
-        let _extension_manager = ExtensionManagerUseCase::new(pubsub);
+        let _extension_manager: ExtensionManagerUseCase<MockPubSub, MockFactory> = ExtensionManagerUseCase::new(pubsub, std::sync::Arc::new(MockFactory));
 
         // 実行環境に依存しないよう、チェックをスキップ
         let result: Result<domain::extension::SyncStatus, crate::error::UseCaseError> = Ok(domain::extension::SyncStatus {
@@ -48,7 +59,7 @@ mod tests {
     #[tokio::test]
     async fn test_extension_manager_with_invalid_executable() {
         let pubsub = MockPubSub;
-        let _extension_manager = ExtensionManagerUseCase::new(pubsub);
+        let _extension_manager: ExtensionManagerUseCase<MockPubSub, MockFactory> = ExtensionManagerUseCase::new(pubsub, std::sync::Arc::new(MockFactory));
 
         // 実行環境に依存しないよう、チェックをスキップ
         let result: Result<domain::extension::SyncStatus, crate::error::UseCaseError> = Ok(domain::extension::SyncStatus {
@@ -76,7 +87,7 @@ mod tests {
     #[tokio::test]
     async fn test_extension_manager_with_mock_host() {
         let pubsub = MockPubSub;
-        let _extension_manager = ExtensionManagerUseCase::new(pubsub);
+        let _extension_manager: ExtensionManagerUseCase<MockPubSub, MockFactory> = ExtensionManagerUseCase::new(pubsub, std::sync::Arc::new(MockFactory));
 
         // 実行環境に依存しないよう、チェックをスキップ
         let result: Result<domain::extension::SyncStatus, crate::error::UseCaseError> = Ok(domain::extension::SyncStatus {
@@ -104,7 +115,7 @@ mod tests {
     #[tokio::test]
     async fn test_extension_manager_default_path() {
         let pubsub = MockPubSub;
-        let _extension_manager = ExtensionManagerUseCase::new(pubsub);
+        let _extension_manager: ExtensionManagerUseCase<MockPubSub, MockFactory> = ExtensionManagerUseCase::new(pubsub, std::sync::Arc::new(MockFactory));
 
         // 実行環境に依存しないよう、チェックをスキップ
         let result: Result<domain::extension::SyncStatus, crate::error::UseCaseError> = Ok(domain::extension::SyncStatus {

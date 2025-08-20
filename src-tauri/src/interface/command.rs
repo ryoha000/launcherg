@@ -27,8 +27,7 @@ use crate::{
     },
     usecase::models::collection::CreateCollectionElementDetail,
 };
-use domain::{native_host_log::{HostLogLevel, HostLogType}, repository::native_host_log::NativeHostLogRepository};
-use infrastructure::repositoryimpl::repository::RepositoriesExt;
+use domain::{native_host_log::{HostLogLevel, HostLogType}, repository::{RepositoriesExt, native_host_log::NativeHostLogRepository}};
 
 #[tauri::command]
 pub async fn create_elements_in_pc(

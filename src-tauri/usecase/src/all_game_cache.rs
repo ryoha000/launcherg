@@ -7,7 +7,7 @@ use domain::{
     all_game_cache::{AllGameCache, AllGameCacheOneWithThumbnailUrl, NewAllGameCacheOne},
     repository::all_game_cache::AllGameCacheRepository,
 };
-use infrastructure::repositoryimpl::repository::RepositoriesExt;
+use domain::repository::RepositoriesExt;
 
 #[derive(new)]
 pub struct AllGameCacheUseCase<R: RepositoriesExt> {

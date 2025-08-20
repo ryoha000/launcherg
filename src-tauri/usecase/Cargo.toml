@@ -8,7 +8,6 @@ path = "src/lib.rs"
 
 [dependencies]
 domain = { path = "../domain" }
-infrastructure = { path = "../infrastructure" }
 anyhow = { workspace = true }
 thiserror = { workspace = true }
 serde = { workspace = true }
@@ -30,5 +29,4 @@ mockall = { workspace = true }
 [dev-dependencies]
 mockall = { workspace = true }
 domain = { path = "../domain" }
-infrastructure = { path = "../infrastructure" }
 

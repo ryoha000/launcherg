@@ -7,7 +7,7 @@ use domain::windows::proctail::{
     HealthCheckResult, ProcTail, ProcTailEvent, ServiceStatus, WatchTarget,
 };
 use domain::windows::proctail_manager::{ProcTailManagerStatus, ProcTailVersion, ProcTailManagerTrait};
-use infrastructure::windowsimpl::windows::WindowsExt;
+use domain::windows::WindowsExt;
 
 #[derive(new)]
 pub struct ProcessUseCase<R: WindowsExt> {

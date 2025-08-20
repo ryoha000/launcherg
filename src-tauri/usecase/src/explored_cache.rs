@@ -2,8 +2,7 @@ use std::sync::Arc;
 
 use derive_new::new;
 
-use domain::{explored_cache::ExploredCache, repository::explored_cache::ExploredCacheRepository};
-use infrastructure::repositoryimpl::repository::RepositoriesExt;
+use domain::{explored_cache::ExploredCache, repository::{explored_cache::ExploredCacheRepository, RepositoriesExt}};
 
 #[derive(new)]
 pub struct ExploredCacheUseCase<R: RepositoriesExt> {

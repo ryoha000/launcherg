@@ -6879,7 +6879,6 @@ dependencies = [
  "domain",
  "futures",
  "image 0.24.9",
- "infrastructure",
  "log",
  "mockall",
  "serde",

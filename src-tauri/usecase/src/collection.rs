@@ -2,26 +2,25 @@ use std::{fs, sync::Arc};
 
 use chrono::Local;
 use derive_new::new;
-use domain::service::save_path_resolver::SavePathResolver;
-// use tauri::AppHandle; // no longer needed
+use domain::{service::save_path_resolver::SavePathResolver, thumbnail::ThumbnailService};
 
 use super::error::UseCaseError;
 use domain::{
     collection::{
         CollectionElement, NewCollectionElement, NewCollectionElementPaths, ScannedGameElement,
     },
-    repository::collection::CollectionRepository,
+    repository::{collection::CollectionRepository, RepositoriesExt},
     Id,
 };
-use infrastructure::repositoryimpl::repository::RepositoriesExt;
 
 #[derive(new)]
-pub struct CollectionUseCase<R: RepositoriesExt> {
+pub struct CollectionUseCase<R: RepositoriesExt, TS: ThumbnailService> {
     repositories: Arc<R>,
     resolver: Arc<dyn SavePathResolver>,
+    thumbnail_service: Arc<TS>,
 }
 
-impl<R: RepositoriesExt> CollectionUseCase<R> {
+impl<R: RepositoriesExt, TS: ThumbnailService> CollectionUseCase<R, TS> {
     pub async fn upsert_collection_element(
         &self,
         source: &NewCollectionElement,
@@ -225,7 +224,7 @@ impl<R: RepositoriesExt> CollectionUseCase<R> {
         id: &Id<CollectionElement>,
         src_url: String,
     ) -> anyhow::Result<()> {
-        infrastructure::thumbnail::save_thumbnail(id, &src_url, 400).await
+        self.thumbnail_service.save_thumbnail(id, &src_url).await
     }
 
     pub async fn concurency_save_thumbnails(
@@ -234,7 +233,7 @@ impl<R: RepositoriesExt> CollectionUseCase<R> {
     ) -> anyhow::Result<()> {
         use futures::StreamExt as _;
         futures::stream::iter(args.into_iter())
-            .map(move |(id, url)| async move { infrastructure::thumbnail::save_thumbnail(&id, &url, 400).await })
+            .map(move |(id, url)| async move { self.thumbnail_service.save_thumbnail(&id, &url).await })
             .buffered(50)
             .for_each(|res| async move {
                 if let Err(e) = res {

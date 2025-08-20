@@ -9,10 +9,11 @@ use tempfile::NamedTempFile;
 
 use domain::{
     all_game_cache::AllGameCache, collection::CollectionElement, explored_cache::ExploredCache,
+    repository::RepositoriesExt,
 };
 use crate::repositoryimpl::{
     driver::Db,
-    repository::{Repositories, RepositoriesExt, RepositoryImpl},
+    repository::{Repositories, RepositoryImpl},
 };
 
 mod embedded {

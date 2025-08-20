@@ -3,11 +3,10 @@ use std::marker::PhantomData;
 use std::sync::Arc;
 
 use domain::{
-    process::Process, windows::process::ProcessWindows, windows::proctail::ProcTail,
+    process::Process, windows::WindowsExt,
 };
 use crate::windowsimpl::proctail::ProcTailImpl;
 use crate::windowsimpl::proctail_manager::AppHandleProcTailManager;
-use domain::windows::proctail_manager::ProcTailManagerTrait;
 use tauri::AppHandle;
 
 #[derive(new)]
@@ -20,16 +19,6 @@ pub struct Windows {
     proctail: ProcTailImpl,
     proctail_manager: AppHandleProcTailManager,
 }
-pub trait WindowsExt {
-    type ProcessWindows: ProcessWindows;
-    type ProcTail: ProcTail;
-    type ProcTailManager: ProcTailManagerTrait;
-
-    fn process(&self) -> &Self::ProcessWindows;
-    fn proctail(&self) -> &Self::ProcTail;
-    fn proctail_manager(&self) -> &Self::ProcTailManager;
-}
-
 
 impl WindowsExt for Windows {
     type ProcessWindows = WindowsImpl<Process>;

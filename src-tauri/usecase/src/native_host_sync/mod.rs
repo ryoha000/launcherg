@@ -4,8 +4,7 @@
 
 use std::sync::Arc;
 use derive_new::new;
-use domain::repository::collection::CollectionRepository;
-use infrastructure::repositoryimpl::repository::RepositoriesExt;
+use domain::repository::{collection::CollectionRepository, RepositoriesExt};
 use domain::save_image_queue::{ImageSrcType, ImagePreprocess};
 use domain::repository::save_image_queue::ImageSaveQueueRepository;
 use domain::service::save_path_resolver::{SavePathResolver, DirsSavePathResolver};

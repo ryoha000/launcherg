@@ -26,7 +26,7 @@ mockall::mock! {
 mockall::mock! {
     pub WindowsExtMock {}
 
-    impl infrastructure::windowsimpl::windows::WindowsExt for WindowsExtMock {
+    impl domain::windows::WindowsExt for WindowsExtMock {
         type ProcessWindows = domain::windows::process::MockProcessWindows;
         type ProcTail = domain::windows::proctail::MockProcTail;
         type ProcTailManager = MockProcTailManagerTrait;
