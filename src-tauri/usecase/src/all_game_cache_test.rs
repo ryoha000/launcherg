@@ -30,11 +30,13 @@ mod tests {
             .with(eq(vec![1]))
             .times(1)
             .returning(|_| {
-                Ok(vec![AllGameCacheOneWithThumbnailUrl {
+                Box::pin(async move {
+                    Ok(vec![AllGameCacheOneWithThumbnailUrl {
                     id: 1,
                     gamename: "Test Game 1".to_string(),
                     thumbnail_url: "https://example.com/thumbnail_1.jpg".to_string(),
-                }])
+                    }])
+                })
             });
 
         let mut mock_repositories = MockRepositoriesExtMock::new();
@@ -60,7 +62,7 @@ mod tests {
         mock_repo.expect_get_by_ids()
             .with(eq(vec![999]))
             .times(1)
-            .returning(|_| { Ok(vec![]) });
+            .returning(|_| Box::pin(async move { Ok::<_, anyhow::Error>(vec![]) }));
 
         let mut mock_repositories = MockRepositoriesExtMock::new();
         mock_repositories
@@ -85,7 +87,8 @@ mod tests {
             .with(eq(vec![1, 2]))
             .times(1)
             .returning(|_| {
-                Ok(vec![
+                Box::pin(async move {
+                    Ok(vec![
                     AllGameCacheOneWithThumbnailUrl {
                         id: 1,
                         gamename: "Test Game 1".to_string(),
@@ -96,7 +99,8 @@ mod tests {
                         gamename: "Test Game 2".to_string(),
                         thumbnail_url: "https://example.com/thumbnail_2.jpg".to_string(),
                     },
-                ])
+                    ])
+                })
             });
 
         let mut mock_repositories = MockRepositoriesExtMock::new();
@@ -123,7 +127,7 @@ mod tests {
         mock_repo.expect_get_by_ids()
             .with(eq(vec![]))
             .times(1)
-            .returning(|_| { Ok(vec![]) });
+            .returning(|_| Box::pin(async move { Ok::<_, anyhow::Error>(vec![]) }));
 
         let mut mock_repositories = MockRepositoriesExtMock::new();
         mock_repositories
@@ -145,7 +149,8 @@ mod tests {
 
         let mut mock_repo = MockAllGameCacheRepository::new();
         mock_repo.expect_get_all().times(1).returning(|| {
-            Ok(vec![
+            Box::pin(async move {
+                Ok(vec![
                 AllGameCacheOne {
                     id: 1,
                     gamename: "Test Game 1".to_string(),
@@ -155,6 +160,7 @@ mod tests {
                     gamename: "Test Game 2".to_string(),
                 },
             ])
+            })
         });
 
         let mut mock_repositories = MockRepositoriesExtMock::new();
@@ -181,7 +187,7 @@ mod tests {
             let expected_time = Local::now();
             repo.expect_get_last_updated()
                 .times(1)
-                .returning(move || { Ok((100, expected_time)) });
+                .returning(move || Box::pin(async move { Ok::<_, anyhow::Error>((100, expected_time)) }));
             repo
         };
 
@@ -207,11 +213,11 @@ mod tests {
         mock_repo.expect_delete_by_ids()
             .with(eq(vec![1, 2]))
             .times(1)
-            .returning(|_| { Ok(()) });
+            .returning(|_| Box::pin(async move { Ok::<_, anyhow::Error>(()) }));
         mock_repo.expect_update()
             .with(always())
             .times(1)
-            .returning(|_| { Ok(()) });
+            .returning(|_| Box::pin(async move { Ok::<_, anyhow::Error>(()) }));
 
         let mut mock_repositories = MockRepositoriesExtMock::new();
         mock_repositories
@@ -254,7 +260,7 @@ mod tests {
         mock_repo.expect_get_by_ids()
             .with(eq(vec![1]))
             .times(1)
-            .returning(|_| { Err(anyhow::anyhow!("Database error")) });
+            .returning(|_| Box::pin(async move { Err::<_, anyhow::Error>(anyhow::anyhow!("Database error")) }));
 
         let mut mock_repositories = MockRepositoriesExtMock::new();
         mock_repositories

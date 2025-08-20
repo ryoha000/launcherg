@@ -22,10 +22,10 @@ tauri-plugin-shell = { workspace = true }
 uuid = { workspace = true }
 url = { workspace = true }
 pbjson-types = { workspace = true }
-async-trait = { workspace = true }
 log = { workspace = true }
 dirs = { workspace = true }
 mockall = { workspace = true, optional = true }
+trait-variant = "0.1"
 
 [features]
 mocks = ["mockall"]

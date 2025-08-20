@@ -56,8 +56,8 @@ pub enum ExtensionConnectionStatus {
 }
 
 /// Native Messaging Hostクライアントのトレイト
-#[async_trait::async_trait]
-pub trait NativeMessagingHostClient: Send + Sync {
+#[trait_variant::make(Send)]
+pub trait NativeMessagingHostClient {
     /// ヘルスチェックを実行
     async fn health_check(&self) -> Result<bool, Box<dyn std::error::Error + Send + Sync>>;
     

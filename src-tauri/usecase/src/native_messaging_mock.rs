@@ -2,7 +2,6 @@
 mockall::mock! {
     pub NativeMessagingHostClient {}
 
-    #[async_trait::async_trait]
     impl crate::domain::extension::NativeMessagingHostClient for NativeMessagingHostClient {
         async fn health_check(&self) -> Result<bool, Box<dyn std::error::Error + Send + Sync>>;
         async fn get_sync_status(&self) -> Result<crate::domain::extension::SyncStatus, Box<dyn std::error::Error + Send + Sync>>;

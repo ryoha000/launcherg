@@ -17,7 +17,7 @@ use crate::{
         distance::get_comparable_distance,
         file::{
             get_file_paths_by_exts, get_lnk_metadatas,
-            get_play_history_path, normalize, save_icon_to_png, start_process,
+            normalize, save_icon_to_png, start_process,
         },
         Id,
     },
@@ -323,10 +323,9 @@ impl FileUseCase {
     }
     pub fn get_play_time_minutes(
         &self,
-        handle: &Arc<AppHandle>,
         collection_element_id: &Id<CollectionElement>,
     ) -> anyhow::Result<f32> {
-        let path = get_play_history_path(handle, collection_element_id);
+        let path = self.resolver.play_history_jsonl_path(collection_element_id.value);
 
         let exist = std::path::Path::new(&path).exists();
         if !exist {

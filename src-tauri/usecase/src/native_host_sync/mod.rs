@@ -6,7 +6,6 @@ use std::sync::Arc;
 use derive_new::new;
 use crate::domain::repository::collection::CollectionRepository;
 use crate::infrastructure::repositoryimpl::repository::RepositoriesExt;
-use crate::domain::{thumbnail::ThumbnailService, icon::IconService};
 use crate::domain::save_image_queue::{ImageSrcType, ImagePreprocess};
 use crate::domain::repository::save_image_queue::ImageSaveQueueRepository;
 use crate::domain::service::save_path_resolver::{SavePathResolver, DirsSavePathResolver};
@@ -75,14 +74,12 @@ pub struct EgsInfo {
 #[derive(new)]
 /// ストア情報をコレクションへ同期するユースケース。
 /// 内部で `CollectionRepository` を用いてマッピング作成・EGS 情報反映を行う。
-pub struct NativeHostSyncUseCase<R: RepositoriesExt, TS: ThumbnailService, IS: IconService> {
+pub struct NativeHostSyncUseCase<R: RepositoriesExt> {
 	repositories: Arc<R>,
-	thumbnails: Arc<TS>,
-	icons: Arc<IS>,
 	resolver: Arc<dyn SavePathResolver>,
 }
 
-impl<R: RepositoriesExt, TS: ThumbnailService, IS: IconService> NativeHostSyncUseCase<R, TS, IS> {
+impl<R: RepositoriesExt> NativeHostSyncUseCase<R> {
 	/// 指定 EGS に対応するコレクション要素を確実に用意する。
 	/// - 既存があれば名称・詳細を上書き更新
 	/// - なければ新規採番し、EGS マップ・名称・詳細を作成
@@ -269,16 +266,7 @@ pub fn host_root_dir() -> String {
 	DirsSavePathResolver::default().root_dir()
 }
 
-fn status_file_path() -> String { format!("{}/native_host_status.json", host_root_dir()) }
-fn config_file_path() -> String { format!("{}/native_host_config.json", host_root_dir()) }
 pub fn db_file_path() -> String { DirsSavePathResolver::default().db_file_path() }
-
-/// 拡張機能の設定を保存
-pub fn save_config(config: &crate::domain::extension::ExtensionConfig) -> anyhow::Result<()> {
-	let p = config_file_path();
-	std::fs::write(p, serde_json::to_string_pretty(config).unwrap_or("{}".to_string()))?;
-	Ok(())
-}
 
 #[derive(Clone, Debug)]
 pub struct HostStatusData {

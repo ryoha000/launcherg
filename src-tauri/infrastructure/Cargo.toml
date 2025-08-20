@@ -39,7 +39,6 @@ tauri-plugin-shell = { workspace = true }
 winreg = { workspace = true }
 zip = { workspace = true }
 semver = { workspace = true }
-async-trait = { workspace = true }
 mockall = { workspace = true, optional = true }
 
 [features]

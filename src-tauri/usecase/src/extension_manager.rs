@@ -1,4 +1,3 @@
-use std::sync::Arc;
 use derive_new::new;
 use chrono::Utc;
 
@@ -9,18 +8,16 @@ use crate::{
         extension::{SyncStatus, ExtensionConnectionStatus, ExtensionConfig, NativeMessagingHostClient},
     },
     infrastructure::{
-        repositoryimpl::repository::RepositoriesExt,
         native_messaging::{NativeMessagingHostClientImpl, NativeHostPathResolver},
     },
 };
 
 #[derive(new)]
-pub struct ExtensionManagerUseCase<R: RepositoriesExt, P: PubSubService> {
-    repositories: Arc<R>,
+pub struct ExtensionManagerUseCase<P: PubSubService> {
     pubsub: P,
 }
 
-impl<R: RepositoriesExt, P: PubSubService> ExtensionManagerUseCase<R, P> {
+impl<P: PubSubService> ExtensionManagerUseCase<P> {
     /// ブラウザ拡張機能の接続状況をチェックする
     pub async fn check_extension_connection(&self) -> Result<SyncStatus, UseCaseError> {
         // 接続開始をPubSubで通知

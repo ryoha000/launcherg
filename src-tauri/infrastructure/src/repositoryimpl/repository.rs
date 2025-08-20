@@ -1,4 +1,5 @@
 use derive_new::new;
+use domain::{native_host_log::NativeHostLogRow, save_image_queue::ImageSaveQueueRow};
 use std::marker::PhantomData;
 
 use crate::domain::{
@@ -25,8 +26,8 @@ pub struct Repositories {
     collection_repository: RepositoryImpl<CollectionElement>,
     explored_cache_repository: RepositoryImpl<ExploredCache>,
     all_game_cache_repository: RepositoryImpl<AllGameCache>,
-    image_queue_repository: RepositoryImpl<crate::domain::Id<CollectionElement>>, // phantom only
-    host_log_repository: RepositoryImpl<crate::domain::Id<CollectionElement>>, // phantom only
+    image_queue_repository: RepositoryImpl<ImageSaveQueueRow>,
+    host_log_repository: RepositoryImpl<NativeHostLogRow>,
 }
 pub trait RepositoriesExt {
     type CollectionRepo: CollectionRepository;
@@ -47,8 +48,8 @@ impl RepositoriesExt for Repositories {
     type CollectionRepo = RepositoryImpl<CollectionElement>;
     type ExploredCacheRepo = RepositoryImpl<ExploredCache>;
     type AllGameCacheRepo = RepositoryImpl<AllGameCache>;
-    type ImageQueueRepo = RepositoryImpl<crate::domain::Id<CollectionElement>>;
-    type HostLogRepo = RepositoryImpl<crate::domain::Id<CollectionElement>>;
+    type ImageQueueRepo = RepositoryImpl<ImageSaveQueueRow>;
+    type HostLogRepo = RepositoryImpl<NativeHostLogRow>;
 
     fn collection_repository(&self) -> &Self::CollectionRepo {
         &self.collection_repository

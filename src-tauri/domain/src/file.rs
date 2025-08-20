@@ -30,7 +30,6 @@ use windows::{
 use crate::service::save_path_resolver::{SavePathResolver, DirsSavePathResolver};
 
 use super::{
-    all_game_cache::{AllGameCache, AllGameCacheOne},
     collection::CollectionElement,
     Id,
 };
@@ -279,26 +278,6 @@ pub fn save_exe_file_png(
 
     Ok(handle)
 }
-
-const PLAY_HISTORIES_ROOT_DIR: &str = "play-histories";
-pub fn get_play_history_path(
-    _handle: &Arc<AppHandle>,
-    collection_element_id: &Id<CollectionElement>,
-) -> String {
-    let resolver = DirsSavePathResolver::default();
-    resolver.play_history_jsonl_path(collection_element_id.value)
-}
-
-// const TEMP_SCRIPTS_ROOT_DIR: &str = "temp-scripts";
-// pub fn get_temp_script_dir_path() -> String {
-//     let dir = Path::new(&get_save_root_abs_dir()).join(TEMP_SCRIPTS_ROOT_DIR);
-//     fs::create_dir_all(dir).unwrap();
-//     Path::new(&get_save_root_abs_dir())
-//         .join(PLAY_HISTORIES_ROOT_DIR)
-//         .join(format!("{}.jsonl", collection_element_id.value))
-//         .to_string_lossy()
-//         .to_string()
-// }
 
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]

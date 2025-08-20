@@ -1196,7 +1196,6 @@ name = "domain"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "async-trait",
  "chrono",
  "derive-new",
  "dirs 5.0.1",
@@ -1211,6 +1210,7 @@ dependencies = [
  "tauri-plugin-shell",
  "tempfile",
  "thiserror 1.0.69",
+ "trait-variant",
  "url",
  "uuid",
  "walkdir",
@@ -2662,7 +2662,6 @@ name = "infrastructure"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "async-trait",
  "axum",
  "base64 0.21.7",
  "chrono",
@@ -2922,7 +2921,6 @@ name = "launcherg"
 version = "0.0.0"
 dependencies = [
  "anyhow",
- "async-trait",
  "axum",
  "base64 0.21.7",
  "chrono",
@@ -6680,6 +6678,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "trait-variant"
+version = "0.1.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "70977707304198400eb4835a78f6a9f928bf41bba420deb8fdb175cd965d77a7"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 2.0.104",
+]
+
+[[package]]
 name = "tray-icon"
 version = "0.21.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -6864,7 +6873,6 @@ name = "usecase"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "async-trait",
  "base64 0.21.7",
  "chrono",
  "derive-new",

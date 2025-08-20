@@ -1,9 +1,7 @@
-use async_trait::async_trait;
-
 use crate::{collection::CollectionElement, Id};
 
-#[async_trait]
-pub trait IconService: Send + Sync {
+#[trait_variant::make(Send)]
+pub trait IconService {
     async fn save_icon_from_path(
         &self,
         id: &Id<CollectionElement>,

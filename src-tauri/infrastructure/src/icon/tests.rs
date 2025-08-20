@@ -1,4 +1,3 @@
-use super::*;
 use std::io::Write as _;
 use image::{io::Reader as ImageReader, ColorType, ImageEncoder};
 

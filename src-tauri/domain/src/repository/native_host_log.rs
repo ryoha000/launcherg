@@ -1,11 +1,10 @@
-use async_trait::async_trait;
 #[cfg(any(test, feature = "mocks"))]
 use mockall::automock;
 use crate::native_host_log::{HostLogLevel, HostLogType, NativeHostLogRow};
 
+#[trait_variant::make(Send)]
 #[cfg_attr(any(test, feature = "mocks"), automock)]
-#[async_trait]
-pub trait NativeHostLogRepository: Send + Sync {
+pub trait NativeHostLogRepository {
     async fn insert_log(&self, level: HostLogLevel, typ: HostLogType, message: &str) -> anyhow::Result<()>;
     async fn list_logs(
         &self,

@@ -26,7 +26,6 @@ tempfile = { workspace = true }
 zip = { workspace = true }
 winreg = { workspace = true }
 mockall = { workspace = true, optional = true }
-async-trait = { workspace = true }
 
 [features]
 mocks = ["mockall", "domain/mocks", "infrastructure/mocks"]

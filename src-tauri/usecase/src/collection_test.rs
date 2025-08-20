@@ -87,7 +87,7 @@ mod tests {
             .expect_upsert_collection_element()
             .with(always())
             .times(1)
-            .returning(|_| Ok(()));
+            .returning(|_| Box::pin(async move { Ok::<_, anyhow::Error>(()) }));
 
         let mut mock_repositories = MockRepositoriesExtMock::new();
         mock_repositories
@@ -108,7 +108,7 @@ mod tests {
             .expect_upsert_collection_element_info()
             .with(always())
             .times(1)
-            .returning(|_| Ok(()));
+            .returning(|_| Box::pin(async move { Ok::<_, anyhow::Error>(()) }));
 
         let mut mock_repositories = MockRepositoriesExtMock::new();
         mock_repositories
@@ -136,25 +136,25 @@ mod tests {
         mock_repo
             .expect_get_collection_id_by_erogamescape_id()
             .times(1)
-            .returning(|_| Ok(None));
+            .returning(|_| Box::pin(async move { Ok::<_, anyhow::Error>(None) }));
         mock_repo
             .expect_allocate_new_collection_element_id()
             .times(1)
-            .returning(|_| Ok(Id::new(100)));
+            .returning(|_| Box::pin(async move { Ok::<_, anyhow::Error>(Id::new(100)) }));
         mock_repo
             .expect_upsert_erogamescape_map()
             .times(1)
-            .returning(|_, _| Ok(()));
+            .returning(|_, _| Box::pin(async move { Ok::<_, anyhow::Error>(()) }));
         mock_repo
             .expect_upsert_collection_element_paths()
             .with(always())
             .times(1)
-            .returning(|_| Ok(()));
+            .returning(|_| Box::pin(async move { Ok::<_, anyhow::Error>(()) }));
         mock_repo
             .expect_upsert_collection_element_install()
             .with(always())
             .times(1)
-            .returning(|_| Ok(()));
+            .returning(|_| Box::pin(async move { Ok::<_, anyhow::Error>(()) }));
 
         let mut mock_repositories = MockRepositoriesExtMock::new();
         mock_repositories
@@ -175,15 +175,15 @@ mod tests {
         mock_repo
             .expect_get_collection_id_by_erogamescape_id()
             .times(1)
-            .returning(|_| Ok(None));
+            .returning(|_| Box::pin(async move { Ok::<_, anyhow::Error>(None) }));
         mock_repo
             .expect_allocate_new_collection_element_id()
             .times(1)
-            .returning(|_| Ok(Id::new(100)));
+            .returning(|_| Box::pin(async move { Ok::<_, anyhow::Error>(Id::new(100)) }));
         mock_repo
             .expect_upsert_erogamescape_map()
             .times(1)
-            .returning(|_, _| Ok(()));
+            .returning(|_, _| Box::pin(async move { Ok::<_, anyhow::Error>(()) }));
 
         let mut mock_repositories = MockRepositoriesExtMock::new();
         mock_repositories
@@ -211,7 +211,10 @@ mod tests {
             .expect_get_element_by_element_id()
             .with(eq(create_test_element_id(1)))
             .times(1)
-            .returning(move |_| Ok(Some(expected_element.clone())));
+            .returning(move |_| {
+                let value = expected_element.clone();
+                Box::pin(async move { Ok::<_, anyhow::Error>(Some(value)) })
+            });
 
         let mut mock_repositories = MockRepositoriesExtMock::new();
         mock_repositories
@@ -234,7 +237,7 @@ mod tests {
             .expect_get_element_by_element_id()
             .with(eq(create_test_element_id(1)))
             .times(1)
-            .returning(|_| Ok(None));
+            .returning(|_| Box::pin(async move { Ok::<_, anyhow::Error>(None) } ));
 
         let mut mock_repositories = MockRepositoriesExtMock::new();
         mock_repositories
@@ -259,7 +262,7 @@ mod tests {
             .expect_update_element_last_play_at_by_id()
             .with(eq(create_test_element_id(1)), always())
             .times(1)
-            .returning(|_, _| Ok(()));
+            .returning(|_, _| Box::pin(async move { Ok::<_, anyhow::Error>(()) }));
 
         let mut mock_repositories = MockRepositoriesExtMock::new();
         mock_repositories
@@ -280,7 +283,7 @@ mod tests {
             .expect_update_element_like_at_by_id()
             .with(eq(create_test_element_id(1)), always())
             .times(1)
-            .returning(|_, _| Ok(()));
+            .returning(|_, _| Box::pin(async move { Ok::<_, anyhow::Error>(()) }));
 
         let mut mock_repositories = MockRepositoriesExtMock::new();
         mock_repositories
@@ -304,7 +307,7 @@ mod tests {
                 eq(None::<chrono::DateTime<Local>>),
             )
             .times(1)
-            .returning(|_, _| Ok(()));
+            .returning(|_, _| Box::pin(async move { Ok::<_, anyhow::Error>(()) }));
 
         let mut mock_repositories = MockRepositoriesExtMock::new();
         mock_repositories
@@ -326,12 +329,15 @@ mod tests {
             .expect_get_element_by_element_id()
             .with(eq(create_test_element_id(1)))
             .times(1)
-            .returning(move |_| Ok(Some(expected_element.clone())));
+            .returning(move |_| {
+                let value = expected_element.clone();
+                Box::pin(async move { Ok::<_, anyhow::Error>(Some(value)) })
+            });
         mock_repo
             .expect_delete_collection_element()
             .with(eq(create_test_element_id(1)))
             .times(1)
-            .returning(|_| Ok(()));
+            .returning(|_| Box::pin(async move { Ok::<_, anyhow::Error>(()) }));
 
         let mut mock_repositories = MockRepositoriesExtMock::new();
         mock_repositories
@@ -352,7 +358,7 @@ mod tests {
             .expect_get_element_by_element_id()
             .with(eq(create_test_element_id(1)))
             .times(1)
-            .returning(|_| Ok(None));
+            .returning(|_| Box::pin(async move { Ok::<_, anyhow::Error>(None) }));
 
         let mut mock_repositories = MockRepositoriesExtMock::new();
         mock_repositories
@@ -377,7 +383,10 @@ mod tests {
         mock_repo
             .expect_get_not_registered_info_element_ids()
             .times(1)
-            .returning(move || Ok(expected_ids.clone()));
+            .returning(move || {
+                let value = expected_ids.clone();
+                Box::pin(async move { Ok::<_, anyhow::Error>(value) })
+            });
 
         let mut mock_repositories = MockRepositoriesExtMock::new();
         mock_repositories
@@ -399,23 +408,23 @@ mod tests {
         mock_repo
             .expect_get_collection_id_by_erogamescape_id()
             .times(2)
-            .returning(|_| Ok(None));
+            .returning(|_| Box::pin(async move { Ok::<_, anyhow::Error>(None) }));
         mock_repo
             .expect_allocate_new_collection_element_id()
             .times(2)
-            .returning(|_| Ok(Id::new(100)));
+            .returning(|_| Box::pin(async move { Ok::<_, anyhow::Error>(Id::new(100)) }));
         mock_repo
             .expect_upsert_erogamescape_map()
             .times(2)
-            .returning(|_, _| Ok(()));
+            .returning(|_, _| Box::pin(async move { Ok::<_, anyhow::Error>(()) }));
         mock_repo
             .expect_upsert_collection_element_paths()
             .times(2)
-            .returning(|_| Ok(()));
+            .returning(|_| Box::pin(async move { Ok::<_, anyhow::Error>(()) }));
         mock_repo
             .expect_upsert_collection_element_install()
             .times(2)
-            .returning(|_| Ok(()));
+            .returning(|_| Box::pin(async move { Ok::<_, anyhow::Error>(()) }));
 
         let mut mock_repositories = MockRepositoriesExtMock::new();
         mock_repositories

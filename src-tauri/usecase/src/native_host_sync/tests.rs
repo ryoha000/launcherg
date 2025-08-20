@@ -1,7 +1,6 @@
 use super::*;
 use crate::domain::thumbnail::ThumbnailService;
 use crate::domain::icon::IconService;
-use async_trait::async_trait;
 use mockall::predicate::*;
 use std::sync::{Arc, Mutex};
 
@@ -15,8 +14,6 @@ use crate::{
     },
     usecase::repositorymock::MockRepositoriesExtMock,
 };
-use crate::domain::repository::save_image_queue::ImageSaveQueueRepository;
-use crate::domain::save_image_queue::{ImagePreprocess, ImageSrcType};
 
 #[derive(Clone, Default)]
 struct TestThumbnailService {
@@ -24,7 +21,6 @@ struct TestThumbnailService {
     pub calls: Arc<Mutex<Vec<(i32, String)>>>,
 }
 
-#[async_trait]
 impl ThumbnailService for TestThumbnailService {
     async fn save_thumbnail(&self, id: &Id<CollectionElement>, url: &str) -> anyhow::Result<()> {
         self.calls.lock().unwrap().push((id.value, url.to_string()));
@@ -40,7 +36,6 @@ struct TestIconService {
     pub calls: Arc<Mutex<Vec<(i32, String)>>>,
 }
 
-#[async_trait]
 impl IconService for TestIconService {
     async fn save_icon_from_path(&self, _id: &Id<CollectionElement>, _source_path: &str) -> anyhow::Result<()> { Ok(()) }
     async fn save_icon_from_url(&self, id: &Id<CollectionElement>, url: &str) -> anyhow::Result<()> {
@@ -52,9 +47,8 @@ impl IconService for TestIconService {
 
 fn new_usecase_with(
     mock_repo: MockCollectionRepository,
-    thumbs: TestThumbnailService,
     expected_image_queue_calls: usize,
-) -> (NativeHostSyncUseCase<MockRepositoriesExtMock, TestThumbnailService, TestIconService>, TestIconService) {
+) -> (NativeHostSyncUseCase<MockRepositoriesExtMock>, TestIconService) {
     let mut mock_repositories = MockRepositoriesExtMock::new();
     mock_repositories
         .expect_collection_repository()
@@ -62,7 +56,7 @@ fn new_usecase_with(
 
     // image queue enqueue は2回呼ばれる想定（アイコン+サムネイル）
     let mut imgq = MockImageSaveQueueRepository::new();
-    imgq.expect_enqueue().times(expected_image_queue_calls).returning(|_, _, _, _| Ok(Id::new(1)));
+    imgq.expect_enqueue().times(expected_image_queue_calls).returning(|_, _, _, _| Box::pin(async move { Ok::<_, anyhow::Error>(Id::new(1)) }));
     mock_repositories
         .expect_image_queue_repository()
         .return_const(imgq);
@@ -74,14 +68,8 @@ fn new_usecase_with(
         .return_const(hostlog);
 
     let icons = TestIconService::default();
-    use crate::domain::service::save_path_resolver::DirsSavePathResolver;
     (
-        NativeHostSyncUseCase::new(
-            Arc::new(mock_repositories),
-            Arc::new(thumbs),
-            Arc::new(icons.clone()),
-            Arc::new(DirsSavePathResolver::default()),
-        ),
+        NativeHostSyncUseCase::new(Arc::new(mock_repositories), Arc::new(DirsSavePathResolver::default())),
         icons,
     )
 }
@@ -110,10 +98,10 @@ async fn dmm_既存ならスキップ() {
     repo.expect_get_collection_id_by_dmm_mapping()
         .with(eq("sid"), eq("cat"), eq("sub"))
         .times(1)
-        .returning(|_, _, _| Ok(Some(Id::<CollectionElement>::new(1))));
+        .returning(|_, _, _| Box::pin(async move { Ok::<_, anyhow::Error>(Some(Id::<CollectionElement>::new(1))) }));
 
     let thumbs = TestThumbnailService::default();
-    let (usecase, _icons) = new_usecase_with(repo, thumbs.clone(), 0);
+    let (usecase, _icons) = new_usecase_with(repo, 0);
 
     let params = vec![DmmSyncGameParam {
         store_id: "sid".into(),
@@ -136,32 +124,31 @@ async fn dmm_egsあり_新規作成とサムネイル保存() {
     repo.expect_get_collection_id_by_dmm_mapping()
         .with(eq("sid"), eq("cat"), eq("sub"))
         .times(1)
-        .returning(|_, _, _| Ok(None));
+        .returning(|_, _, _| Box::pin(async move { Ok::<_, anyhow::Error>(None) }));
     // ensure_collection_for_egs path
     repo.expect_get_collection_id_by_erogamescape_id()
         .with(eq(42))
         .times(1)
-        .returning(|_| Ok(None));
+        .returning(|_| Box::pin(async move { Ok::<_, anyhow::Error>(None) }));
     repo.expect_allocate_new_collection_element_id()
         .with(eq("EGS Name"))
         .times(1)
-        .returning(|_| Ok(Id::new(100)));
+        .returning(|_| Box::pin(async move { Ok::<_, anyhow::Error>(Id::new(100)) }));
     repo.expect_upsert_erogamescape_map()
         .with(eq(Id::new(100)), eq(42))
         .times(1)
-        .returning(|_, _| Ok(()));
+        .returning(|_, _| Box::pin(async move { Ok::<_, anyhow::Error>(()) }));
     repo.expect_upsert_collection_element_info()
         .with(always())
         .times(1)
-        .returning(|_| Ok(()));
+        .returning(|_| Box::pin(async move { Ok::<_, anyhow::Error>(()) }));
     // DMM mapping upsert
     repo.expect_upsert_dmm_mapping()
         .with(eq(Id::new(100)), eq("sid"), eq("cat"), eq("sub"))
         .times(1)
-        .returning(|_, _, _, _| Ok(()));
+        .returning(|_, _, _, _| Box::pin(async move { Ok::<_, anyhow::Error>(()) }));
 
-    let thumbs = TestThumbnailService::default();
-    let (usecase, icons) = new_usecase_with(repo, thumbs.clone(), 2);
+    let (usecase, icons) = new_usecase_with(repo, 2);
 
     let params = vec![DmmSyncGameParam {
         store_id: "sid".into(),
@@ -182,9 +169,6 @@ async fn dmm_egsあり_新規作成とサムネイル保存() {
 
     let res = usecase.sync_dmm_games(params).await.unwrap();
     assert_eq!(res, 1);
-    // 非同期化後は即時にアイコン/サムネイル保存は行われない
-    let calls = thumbs.calls.lock().unwrap().clone();
-    assert_eq!(calls.len(), 0);
     let icon_calls = icons.calls.lock().unwrap().clone();
     assert_eq!(icon_calls.len(), 0);
 }
@@ -196,20 +180,19 @@ async fn dmm_egsなし_新規作成のみ() {
     repo.expect_get_collection_id_by_dmm_mapping()
         .with(eq("sid"), eq("cat"), eq("sub"))
         .times(1)
-        .returning(|_, _, _| Ok(None));
+        .returning(|_, _, _| Box::pin(async move { Ok::<_, anyhow::Error>(None) }));
     // create_collection_without_egs path
     repo.expect_allocate_new_collection_element_id()
         .with(eq("Game Name"))
         .times(1)
-        .returning(|_| Ok(Id::new(200)));
+        .returning(|_| Box::pin(async move { Ok::<_, anyhow::Error>(Id::new(200)) }));
     // DMM mapping upsert
     repo.expect_upsert_dmm_mapping()
         .with(eq(Id::new(200)), eq("sid"), eq("cat"), eq("sub"))
         .times(1)
-        .returning(|_, _, _, _| Ok(()));
+        .returning(|_, _, _, _| Box::pin(async move { Ok::<_, anyhow::Error>(()) }));
 
-    let thumbs = TestThumbnailService::default();
-    let (usecase, icons) = new_usecase_with(repo, thumbs.clone(), 2);
+    let (usecase, icons) = new_usecase_with(repo, 2);
 
     let params = vec![DmmSyncGameParam {
         store_id: "sid".into(),
@@ -222,8 +205,6 @@ async fn dmm_egsなし_新規作成のみ() {
 
     let res = usecase.sync_dmm_games(params).await.unwrap();
     assert_eq!(res, 1);
-    let calls = thumbs.calls.lock().unwrap().clone();
-    assert_eq!(calls.len(), 0);
     let icon_calls = icons.calls.lock().unwrap().clone();
     assert_eq!(icon_calls.len(), 0);
 }
@@ -234,10 +215,9 @@ async fn dlsite_既存ならスキップ() {
     repo.expect_get_collection_id_by_dlsite_mapping()
         .with(eq("sid"), eq("cat"))
         .times(1)
-        .returning(|_, _| Ok(Some(Id::<CollectionElement>::new(10))));
+        .returning(|_, _| Box::pin(async move { Ok::<_, anyhow::Error>(Some(Id::<CollectionElement>::new(10))) }));
 
-    let thumbs = TestThumbnailService::default();
-    let (usecase, _icons) = new_usecase_with(repo, thumbs.clone(), 0);
+    let (usecase, _icons) = new_usecase_with(repo, 0);
 
     let params = vec![DlsiteSyncGameParam {
         store_id: "sid".into(),
@@ -249,7 +229,6 @@ async fn dlsite_既存ならスキップ() {
 
     let res = usecase.sync_dlsite_games(params).await.unwrap();
     assert_eq!(res, 0);
-    assert!(thumbs.calls.lock().unwrap().is_empty());
 }
 
 #[tokio::test]
@@ -259,32 +238,31 @@ async fn dlsite_egsあり_新規作成とサムネイル保存() {
     repo.expect_get_collection_id_by_dlsite_mapping()
         .with(eq("sid"), eq("cat"))
         .times(1)
-        .returning(|_, _| Ok(None));
+        .returning(|_, _| Box::pin(async move { Ok::<_, anyhow::Error>(None) }));
     // ensure_collection_for_egs path
     repo.expect_get_collection_id_by_erogamescape_id()
         .with(eq(77))
         .times(1)
-        .returning(|_| Ok(None));
+        .returning(|_| Box::pin(async move { Ok::<_, anyhow::Error>(None) }));
     repo.expect_allocate_new_collection_element_id()
         .with(eq("EGS Name DL"))
         .times(1)
-        .returning(|_| Ok(Id::new(300)));
+        .returning(|_| Box::pin(async move { Ok::<_, anyhow::Error>(Id::new(300)) }));
     repo.expect_upsert_erogamescape_map()
         .with(eq(Id::new(300)), eq(77))
         .times(1)
-        .returning(|_, _| Ok(()));
+        .returning(|_, _| Box::pin(async move { Ok::<_, anyhow::Error>(()) }));
     repo.expect_upsert_collection_element_info()
         .with(always())
         .times(1)
-        .returning(|_| Ok(()));
+        .returning(|_| Box::pin(async move { Ok::<_, anyhow::Error>(()) }));
     // DLsite mapping upsert
     repo.expect_upsert_dlsite_mapping()
         .with(eq(Id::new(300)), eq("sid"), eq("cat"))
         .times(1)
-        .returning(|_, _, _| Ok(()));
+        .returning(|_, _, _| Box::pin(async move { Ok::<_, anyhow::Error>(()) }));
 
-    let thumbs = TestThumbnailService::default();
-    let (usecase, icons) = new_usecase_with(repo, thumbs.clone(), 2);
+    let (usecase, icons) = new_usecase_with(repo, 2);
 
     let params = vec![DlsiteSyncGameParam {
         store_id: "sid".into(),
@@ -304,8 +282,6 @@ async fn dlsite_egsあり_新規作成とサムネイル保存() {
 
     let res = usecase.sync_dlsite_games(params).await.unwrap();
     assert_eq!(res, 1);
-    let calls = thumbs.calls.lock().unwrap().clone();
-    assert_eq!(calls.len(), 0);
     let icon_calls = icons.calls.lock().unwrap().clone();
     assert_eq!(icon_calls.len(), 0);
 }
@@ -317,20 +293,19 @@ async fn dlsite_egsなし_新規作成のみ() {
     repo.expect_get_collection_id_by_dlsite_mapping()
         .with(eq("sid"), eq("cat"))
         .times(1)
-        .returning(|_, _| Ok(None));
+        .returning(|_, _| Box::pin(async move { Ok::<_, anyhow::Error>(None) }));
     // create_collection_without_egs path
     repo.expect_allocate_new_collection_element_id()
         .with(eq("Game DL"))
         .times(1)
-        .returning(|_| Ok(Id::new(400)));
+        .returning(|_| Box::pin(async move { Ok::<_, anyhow::Error>(Id::new(400)) }));
     // DLsite mapping upsert
     repo.expect_upsert_dlsite_mapping()
         .with(eq(Id::new(400)), eq("sid"), eq("cat"))
         .times(1)
-        .returning(|_, _, _| Ok(()));
+        .returning(|_, _, _| Box::pin(async move { Ok::<_, anyhow::Error>(()) }));
 
-    let thumbs = TestThumbnailService::default();
-    let (usecase, icons) = new_usecase_with(repo, thumbs.clone(), 2);
+    let (usecase, icons) = new_usecase_with(repo, 2);
 
     let params = vec![DlsiteSyncGameParam {
         store_id: "sid".into(),
@@ -342,8 +317,6 @@ async fn dlsite_egsなし_新規作成のみ() {
 
     let res = usecase.sync_dlsite_games(params).await.unwrap();
     assert_eq!(res, 1);
-    let calls = thumbs.calls.lock().unwrap().clone();
-    assert_eq!(calls.len(), 0);
     let icon_calls = icons.calls.lock().unwrap().clone();
     assert_eq!(icon_calls.len(), 0);
 }

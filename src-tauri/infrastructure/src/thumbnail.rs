@@ -4,7 +4,6 @@ use anyhow::Context as _;
 use fast_image_resize as fr;
 use image::{io::Reader as ImageReader, ColorType, ImageEncoder};
 
-use async_trait::async_trait;
 use crate::domain::{collection::CollectionElement, Id, thumbnail::ThumbnailService};
 use crate::domain::service::save_path_resolver::{SavePathResolver, DirsSavePathResolver};
 
@@ -76,14 +75,13 @@ impl ThumbnailServiceImpl {
     pub fn new(resolver: std::sync::Arc<dyn SavePathResolver>) -> Self { Self { resolver } }
 }
 
-#[async_trait]
 impl ThumbnailService for ThumbnailServiceImpl {
     async fn save_thumbnail(&self, id: &Id<CollectionElement>, url: &str) -> anyhow::Result<()> {
         save_thumbnail(id, url, 400).await
     }
 
     async fn get_thumbnail_size(&self, id: &Id<CollectionElement>) -> anyhow::Result<Option<(u32, u32)>> {
-        let resized = DirsSavePathResolver::default().thumbnail_png_path(id.value);
+        let resized = self.resolver.thumbnail_png_path(id.value);
         if !Path::new(&resized).exists() {
             return Ok(None);
         }

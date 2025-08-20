@@ -11,20 +11,14 @@ use thiserror::Error;
 use proto::generated::launcherg::{common::*, sync::*, status::*};
 use infrastructure::{
     repositoryimpl::{driver::Db as RepoDb, repository::Repositories},
-    thumbnail::ThumbnailServiceImpl,
-    icon::IconServiceImpl,
     image_queue_worker::ImageQueueWorker,
 };
 use usecase::native_host_sync::{NativeHostSyncUseCase, DmmSyncGameParam, DlsiteSyncGameParam, EgsInfo};
 use domain::service::save_path_resolver::{SavePathResolver, DirsSavePathResolver};
-use domain::repository::native_host_log::NativeHostLogRepository;
-use infrastructure::repositoryimpl::repository::RepositoriesExt;
-use domain::native_host_log::{HostLogLevel, HostLogType};
 
 struct AppCtx {
     repositories: Arc<Repositories>,
-    host_root: String,
-    sync_usecase: NativeHostSyncUseCase<Repositories, ThumbnailServiceImpl, IconServiceImpl>,
+    sync_usecase: NativeHostSyncUseCase<Repositories>,
     resolver: Arc<dyn SavePathResolver>,
 }
 
@@ -49,18 +43,6 @@ enum HostError {
     Json(#[from] serde_json::Error),
     #[error("Message too large: {0} bytes (limit 1048576)")]
     TooLarge(usize),
-    #[error("Protocol error: {0}")]
-    Protocol(String),
-}
-
-fn error_chain_to_string<E: std::error::Error + ?Sized>(err: &E) -> String {
-    let mut msgs = vec![err.to_string()];
-    let mut curr = err.source();
-    while let Some(src) = curr {
-        msgs.push(src.to_string());
-        curr = src.source();
-    }
-    msgs.join(": ")
 }
 
 fn anyhow_chain_to_string(err: &anyhow::Error) -> String {
@@ -108,11 +90,8 @@ async fn main() {
     let repo_db = RepoDb::from_path(&db_path).await;
     let repositories = Arc::new(Repositories::new(repo_db));
     let resolver = Arc::new(DirsSavePathResolver::default());
-    let host_root = resolver.root_dir();
-    let thumbs = ThumbnailServiceImpl::new(resolver.clone());
-    let icons = IconServiceImpl::new_from_root_path(host_root.clone());
-    let sync_usecase = NativeHostSyncUseCase::new(repositories.clone(), Arc::new(thumbs), Arc::new(icons), resolver.clone());
-    let ctx = AppCtx { repositories, host_root, sync_usecase, resolver };
+    let sync_usecase = NativeHostSyncUseCase::new(repositories.clone(), resolver.clone());
+    let ctx = AppCtx { repositories, sync_usecase, resolver };
 
     log::info!("Native Messaging Host started");
 
@@ -168,7 +147,12 @@ async fn handle_message(ctx: &AppCtx) -> Result<bool, Box<dyn std::error::Error>
             request_id: message.request_id.clone(),
             response: None,
         },
-        Some(native_message::Message::SetConfig(req)) => handle_set_config(req, &message.request_id),
+        Some(native_message::Message::SetConfig(_)) => NativeResponse {
+            success: false,
+            error: "SetConfig is not supported".to_string(),
+            request_id: message.request_id.clone(),
+            response: None,
+        },
         Some(native_message::Message::HealthCheck(req)) => handle_health_check(req , &message.request_id),
         None => NativeResponse {
             success: false,
@@ -277,21 +261,6 @@ async fn handle_sync_dlsite_games(ctx: &AppCtx, request: &DlsiteSyncGamesRequest
                 request_id: request_id.to_string(),
                 response: Some(native_response::Response::SyncGamesResult(result)),
             }
-        }
-    }
-}
-
-fn handle_set_config(config: &ExtensionConfig, request_id: &str) -> NativeResponse {
-    let domain_config = convert_proto_config(config);
-    match usecase::native_host_sync::save_config(&domain_config) {
-        Ok(_) => {
-            let msg = "Config updated successfully".to_string();
-            NativeResponse { success: true, error: String::new(), request_id: request_id.to_string(), response: Some(native_response::Response::ConfigResult(ConfigUpdateResult { message: msg })) }
-        }
-        Err(e) => {
-            let err_msg = anyhow_chain_to_string(&e);
-            let msg = format!("Failed to save config: {}", err_msg);
-            NativeResponse { success: false, error: err_msg, request_id: request_id.to_string(), response: Some(native_response::Response::ConfigResult(ConfigUpdateResult { message: msg })) }
         }
     }
 }
@@ -466,13 +435,3 @@ fn build_buf_json_response(resp: &NativeResponse) -> serde_json::Value {
         "response": response,
     })
 }
-
-fn convert_proto_config(cfg: &ExtensionConfig) -> domain::extension::ExtensionConfig {
-    domain::extension::ExtensionConfig {
-        auto_sync: cfg.auto_sync,
-        allowed_domains: cfg.allowed_domains.clone(),
-        sync_interval_minutes: cfg.sync_interval_minutes,
-        debug_mode: cfg.debug_mode,
-    }
-}
-

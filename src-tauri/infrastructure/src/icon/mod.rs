@@ -3,7 +3,6 @@ mod tests;
 
 use std::{path::Path, fs};
 
-use async_trait::async_trait;
 use tauri::AppHandle;
 use std::sync::Arc;
 
@@ -95,7 +94,6 @@ impl IconServiceImpl {
 	const ICON_TARGET_SHORT_PX: u32 = 256;
 }
 
-#[async_trait]
 impl IconService for IconServiceImpl {
 	async fn save_icon_from_path(&self, id: &Id<CollectionElement>, source_path: &str) -> anyhow::Result<()> {
 		match &self.backend {

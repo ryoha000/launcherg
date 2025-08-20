@@ -28,7 +28,12 @@ mod tests {
         mock_repo
             .expect_get_all()
             .times(1)
-            .returning(move || Ok(expected_cache.clone()));
+            .returning(move || {
+                let value = expected_cache.clone();
+                Box::pin(async move {
+                    Ok::<_, anyhow::Error>(value)
+                })
+            });
 
         let mut mock_repositories = MockRepositoriesExtMock::new();
         mock_repositories
@@ -51,7 +56,12 @@ mod tests {
         mock_repo
             .expect_get_all()
             .times(1)
-            .returning(move || Ok(empty_cache.clone()));
+            .returning(move || {
+                let value = empty_cache.clone();
+                Box::pin(async move {
+                    Ok::<_, anyhow::Error>(value)
+                })
+            });
 
         let mut mock_repositories = MockRepositoriesExtMock::new();
         mock_repositories
@@ -74,7 +84,12 @@ mod tests {
         mock_repo
             .expect_get_all()
             .times(1)
-            .returning(move || Ok(existing_cache.clone()));
+            .returning(move || {
+                let value = existing_cache.clone();
+                Box::pin(async move {
+                    Ok::<_, anyhow::Error>(value)
+                })
+            });
         mock_repo
             .expect_add()
             .with(eq(vec![
@@ -84,7 +99,7 @@ mod tests {
             .into_iter()
             .collect::<ExploredCache>()))
             .times(1)
-            .returning(|_| Ok(()));
+            .returning(|_| Box::pin(async move { Ok::<_, anyhow::Error>(()) }));
 
         let mut mock_repositories = MockRepositoriesExtMock::new();
         mock_repositories
@@ -112,12 +127,17 @@ mod tests {
         mock_repo
             .expect_get_all()
             .times(1)
-            .returning(move || Ok(existing_cache.clone()));
+            .returning(move || {
+                let value = existing_cache.clone();
+                Box::pin(async move {
+                    Ok::<_, anyhow::Error>(value)
+                })
+            });
         mock_repo
             .expect_add()
             .with(eq(vec![].into_iter().collect::<ExploredCache>()))
             .times(1)
-            .returning(|_| Ok(()));
+            .returning(|_| Box::pin(async move { Ok::<_, anyhow::Error>(()) }));
 
         let mut mock_repositories = MockRepositoriesExtMock::new();
         mock_repositories
@@ -138,12 +158,17 @@ mod tests {
         mock_repo
             .expect_get_all()
             .times(1)
-            .returning(move || Ok(existing_cache.clone()));
+            .returning(move || {
+                let value = existing_cache.clone();
+                Box::pin(async move {
+                    Ok::<_, anyhow::Error>(value)
+                })
+            });
         mock_repo
             .expect_add()
             .with(eq(vec![].into_iter().collect::<ExploredCache>()))
             .times(1)
-            .returning(|_| Ok(()));
+            .returning(|_| Box::pin(async move { Ok::<_, anyhow::Error>(()) }));
 
         let mut mock_repositories = MockRepositoriesExtMock::new();
         mock_repositories
@@ -164,7 +189,12 @@ mod tests {
         mock_repo
             .expect_get_all()
             .times(1)
-            .returning(move || Ok(empty_cache.clone()));
+            .returning(move || {
+                let value = empty_cache.clone();
+                Box::pin(async move {
+                    Ok::<_, anyhow::Error>(value)
+                })
+            });
         mock_repo
             .expect_add()
             .with(eq(vec![
@@ -174,7 +204,7 @@ mod tests {
             .into_iter()
             .collect::<ExploredCache>()))
             .times(1)
-            .returning(|_| Ok(()));
+            .returning(|_| Box::pin(async move { Ok::<_, anyhow::Error>(()) }));
 
         let mut mock_repositories = MockRepositoriesExtMock::new();
         mock_repositories
@@ -194,7 +224,7 @@ mod tests {
         mock_repo
             .expect_get_all()
             .times(1)
-            .returning(|| Err(anyhow::anyhow!("Database error")));
+            .returning(|| Box::pin(async move { Err::<_, anyhow::Error>(anyhow::anyhow!("Database error")) }));
 
         let mut mock_repositories = MockRepositoriesExtMock::new();
         mock_repositories
@@ -214,12 +244,17 @@ mod tests {
         mock_repo
             .expect_get_all()
             .times(1)
-            .returning(move || Ok(existing_cache.clone()));
+            .returning(move || {
+                let value = existing_cache.clone();
+                Box::pin(async move {
+                    Ok::<_, anyhow::Error>(value)
+                })
+            });
         mock_repo
             .expect_add()
             .with(always())
             .times(1)
-            .returning(|_| Err(anyhow::anyhow!("Database error")));
+            .returning(|_| Box::pin(async move { Err::<_, anyhow::Error>(anyhow::anyhow!("Database error")) }));
 
         let mut mock_repositories = MockRepositoriesExtMock::new();
         mock_repositories

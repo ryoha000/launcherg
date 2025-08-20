@@ -29,7 +29,8 @@ pub enum ProcTailManagerError {
     Download(String),
 }
 
-// ProcTailManager のドメイン側トレイト定義
+// ProcTailManager のドメイン側トレイト定義（trait-variantで生成）
+#[trait_variant::make(Send)]
 #[cfg_attr(any(test, feature = "mocks"), mockall::automock)]
 pub trait ProcTailManagerTrait {
     async fn get_status(&self) -> Result<ProcTailManagerStatus, ProcTailManagerError>;
@@ -43,5 +44,4 @@ pub trait ProcTailManagerTrait {
     async fn stop_proctail(&self) -> Result<(), ProcTailManagerError>;
     async fn is_running(&self) -> bool;
 }
-
 

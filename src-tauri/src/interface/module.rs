@@ -26,7 +26,7 @@ pub struct Modules {
     repositories: Arc<Repositories>,
     collection_use_case: CollectionUseCase<Repositories>,
     explored_cache_use_case: ExploredCacheUseCase<Repositories>,
-    extension_manager_use_case: ExtensionManagerUseCase<Repositories, PubSub>,
+    extension_manager_use_case: ExtensionManagerUseCase<PubSub>,
     file_use_case: FileUseCase,
     all_game_cache_use_case: AllGameCacheUseCase<Repositories>,
     process_use_case: ProcessUseCase<Windows>,
@@ -41,7 +41,7 @@ pub trait ModulesExt {
     fn repositories(&self) -> &Self::Repositories;
     fn collection_use_case(&self) -> &CollectionUseCase<Self::Repositories>;
     fn explored_cache_use_case(&self) -> &ExploredCacheUseCase<Self::Repositories>;
-    fn extension_manager_use_case(&self) -> &ExtensionManagerUseCase<Self::Repositories, Self::PubSub>;
+    fn extension_manager_use_case(&self) -> &ExtensionManagerUseCase<Self::PubSub>;
     fn all_game_cache_use_case(&self) -> &AllGameCacheUseCase<Self::Repositories>;
     fn file_use_case(&self) -> &FileUseCase;
     fn process_use_case(&self) -> &ProcessUseCase<Self::Windows>;
@@ -63,7 +63,7 @@ impl ModulesExt for Modules {
     fn explored_cache_use_case(&self) -> &ExploredCacheUseCase<Self::Repositories> {
         &self.explored_cache_use_case
     }
-    fn extension_manager_use_case(&self) -> &ExtensionManagerUseCase<Self::Repositories, Self::PubSub> {
+    fn extension_manager_use_case(&self) -> &ExtensionManagerUseCase<Self::PubSub> {
         &self.extension_manager_use_case
     }
     fn all_game_cache_use_case(&self) -> &AllGameCacheUseCase<Self::Repositories> {
@@ -93,7 +93,7 @@ impl Modules {
 
         let collection_use_case = CollectionUseCase::new(repositories.clone(), Arc::new(DirsSavePathResolver::default()));
         let explored_cache_use_case = ExploredCacheUseCase::new(repositories.clone());
-        let extension_manager_use_case = ExtensionManagerUseCase::new(repositories.clone(), pubsub.clone());
+        let extension_manager_use_case = ExtensionManagerUseCase::new(pubsub.clone());
         let all_game_cache_use_case: AllGameCacheUseCase<Repositories> =
             AllGameCacheUseCase::new(repositories.clone());
 

@@ -1,55 +1,7 @@
 #[cfg(test)]
 mod tests {
     use crate::usecase::extension_manager::ExtensionManagerUseCase;
-    use crate::{
-        infrastructure::repositoryimpl::repository::RepositoriesExt,
-        domain::{
-            repository::{
-                collection::MockCollectionRepository,
-                explored_cache::MockExploredCacheRepository,
-                all_game_cache::MockAllGameCacheRepository,
-                save_image_queue::MockImageSaveQueueRepository,
-                native_host_log::MockNativeHostLogRepository,
-            },
-            pubsub::PubSubService,
-        },
-    };
-    use std::sync::Arc;
-
-    // シンプルなモック実装
-    struct MockRepositories {
-        collection_repo: MockCollectionRepository,
-        explored_cache_repo: MockExploredCacheRepository,
-        all_game_cache_repo: MockAllGameCacheRepository,
-        image_queue_repo: MockImageSaveQueueRepository,
-        host_log_repo: MockNativeHostLogRepository,
-    }
-
-    impl MockRepositories {
-        fn new() -> Self {
-            Self {
-                collection_repo: MockCollectionRepository::new(),
-                explored_cache_repo: MockExploredCacheRepository::new(),
-                all_game_cache_repo: MockAllGameCacheRepository::new(),
-                image_queue_repo: MockImageSaveQueueRepository::new(),
-                host_log_repo: MockNativeHostLogRepository::new(),
-            }
-        }
-    }
-
-    impl RepositoriesExt for MockRepositories {
-        type CollectionRepo = MockCollectionRepository;
-        type ExploredCacheRepo = MockExploredCacheRepository;
-        type AllGameCacheRepo = MockAllGameCacheRepository;
-        type ImageQueueRepo = MockImageSaveQueueRepository;
-        type HostLogRepo = MockNativeHostLogRepository;
-
-        fn collection_repository(&self) -> &MockCollectionRepository { &self.collection_repo }
-        fn explored_cache_repository(&self) -> &MockExploredCacheRepository { &self.explored_cache_repo }
-        fn all_game_cache_repository(&self) -> &MockAllGameCacheRepository { &self.all_game_cache_repo }
-        fn image_queue_repository(&self) -> &MockImageSaveQueueRepository { &self.image_queue_repo }
-        fn host_log_repository(&self) -> &MockNativeHostLogRepository { &self.host_log_repo }
-    }
+    use crate::domain::pubsub::PubSubService;
 
     // モックPubSub実装
     #[derive(Clone)]
@@ -64,9 +16,8 @@ mod tests {
 
     #[tokio::test]
     async fn test_extension_manager_with_nonexistent_path() {
-        let repositories = Arc::new(MockRepositories::new());
         let pubsub = MockPubSub;
-        let _extension_manager = ExtensionManagerUseCase::new(repositories, pubsub);
+        let _extension_manager = ExtensionManagerUseCase::new(pubsub);
 
         // 実行環境に依存しないよう、チェックをスキップ
         let result: Result<crate::domain::extension::SyncStatus, crate::usecase::error::UseCaseError> = Ok(crate::domain::extension::SyncStatus {
@@ -96,9 +47,8 @@ mod tests {
 
     #[tokio::test]
     async fn test_extension_manager_with_invalid_executable() {
-        let repositories = Arc::new(MockRepositories::new());
         let pubsub = MockPubSub;
-        let _extension_manager = ExtensionManagerUseCase::new(repositories, pubsub);
+        let _extension_manager = ExtensionManagerUseCase::new(pubsub);
 
         // 実行環境に依存しないよう、チェックをスキップ
         let result: Result<crate::domain::extension::SyncStatus, crate::usecase::error::UseCaseError> = Ok(crate::domain::extension::SyncStatus {
@@ -125,9 +75,8 @@ mod tests {
 
     #[tokio::test]
     async fn test_extension_manager_with_mock_host() {
-        let repositories = Arc::new(MockRepositories::new());
         let pubsub = MockPubSub;
-        let _extension_manager = ExtensionManagerUseCase::new(repositories, pubsub);
+        let _extension_manager = ExtensionManagerUseCase::new(pubsub);
 
         // 実行環境に依存しないよう、チェックをスキップ
         let result: Result<crate::domain::extension::SyncStatus, crate::usecase::error::UseCaseError> = Ok(crate::domain::extension::SyncStatus {
@@ -154,9 +103,8 @@ mod tests {
 
     #[tokio::test]
     async fn test_extension_manager_default_path() {
-        let repositories = Arc::new(MockRepositories::new());
         let pubsub = MockPubSub;
-        let _extension_manager = ExtensionManagerUseCase::new(repositories, pubsub);
+        let _extension_manager = ExtensionManagerUseCase::new(pubsub);
 
         // 実行環境に依存しないよう、チェックをスキップ
         let result: Result<crate::domain::extension::SyncStatus, crate::usecase::error::UseCaseError> = Ok(crate::domain::extension::SyncStatus {
@@ -179,7 +127,4 @@ mod tests {
             "パスが存在しない場合、適切なエラー状態になるはず: {:?}", status.connection_status
         );
     }
-
-    // ensure_process_terminatedはprivateメソッドなので、直接テストできない
-    // 代わりにcheck_extension_connectionを通じて間接的にテストされる
 }

@@ -1,6 +1,7 @@
 use std::path::PathBuf;
 
-pub trait SavePathResolver: Send + Sync {
+#[trait_variant::make(Send + Sync)]
+pub trait SavePathResolver {
 	fn root_dir(&self) -> String;
 
 	fn icons_dir(&self) -> String { self.join_and_ensure("game-icons") }

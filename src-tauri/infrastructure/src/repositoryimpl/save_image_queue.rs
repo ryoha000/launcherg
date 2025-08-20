@@ -1,11 +1,9 @@
 use sqlx::{query, query_as};
-use async_trait::async_trait;
 
 use super::repository::RepositoryImpl;
 use crate::domain::{repository::save_image_queue::{ImageSaveQueueRepository}, save_image_queue::{ImageSaveQueueRow, ImageSrcType, ImagePreprocess}, Id};
 
-#[async_trait]
-impl<T: Send + Sync> ImageSaveQueueRepository for RepositoryImpl<T> {
+impl ImageSaveQueueRepository for RepositoryImpl<ImageSaveQueueRow> {
     async fn enqueue(&self, src: &str, src_type: ImageSrcType, dst_path: &str, preprocess: ImagePreprocess) -> anyhow::Result<Id<ImageSaveQueueRow>> {
         let pool = self.pool.0.clone();
         let rec: (i64,) = query_as("INSERT INTO save_image_queue (src, src_type, dst_path, preprocess) VALUES (?, ?, ?, ?) RETURNING id")

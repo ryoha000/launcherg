@@ -59,7 +59,6 @@ wiremock = "0.5"
 prost = "0.14.0"
 pbjson = "0.8.0"
 pbjson-types = "0.8.0"
-async-trait = "0.1"
 uuid = { version = "1.3.3", features = ["v4", "fast-rng", "macro-diagnostics"] }
 windows = { version = "0.51", features = [
   "Win32_System_Com",
@@ -142,7 +141,6 @@ tempfile = "3.8"
 prost = "0.14.0"
 pbjson = "0.8.0"
 pbjson-types = "0.8.0"
-async-trait = "0.1"
 domain = { path = "domain" }
 usecase = { path = "usecase" }
 infrastructure = { path = "infrastructure" }

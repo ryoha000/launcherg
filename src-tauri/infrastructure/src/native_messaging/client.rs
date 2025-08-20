@@ -109,7 +109,6 @@ impl NativeMessagingHostClientImpl {
     }
 }
 
-#[async_trait::async_trait]
 impl NativeMessagingHostClient for NativeMessagingHostClientImpl {
     async fn health_check(&self) -> Result<bool, Box<dyn std::error::Error + Send + Sync>> {
         let message = NativeMessage {

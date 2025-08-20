@@ -12,8 +12,6 @@ use crate::domain::service::save_path_resolver::{SavePathResolver, DirsSavePathR
 #[derive(Clone)]
 pub struct Db(pub(crate) Arc<Pool<Sqlite>>);
 
-const DB_FILE: &str = "launcherg_sqlite.db3";
-
 mod embedded {
     use refinery::embed_migrations;
     embed_migrations!("./src/migrations");

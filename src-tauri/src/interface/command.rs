@@ -338,13 +338,12 @@ pub async fn play_game(
 
 #[tauri::command]
 pub async fn get_play_time_minutes(
-    handle: AppHandle,
     modules: State<'_, Arc<Modules>>,
     collection_element_id: i32,
 ) -> anyhow::Result<f32, CommandError> {
     Ok(modules
         .file_use_case()
-        .get_play_time_minutes(&Arc::new(handle), &Id::new(collection_element_id))?)
+        .get_play_time_minutes(&Id::new(collection_element_id))?)
 }
 
 #[tauri::command]
@@ -804,7 +803,6 @@ pub async fn link_installed_game(
 
 #[tauri::command]
 pub async fn get_sync_status(
-    _handle: AppHandle,
     modules: State<'_, Arc<Modules>>,
 ) -> anyhow::Result<SyncStatus, CommandError> {
     let status = modules.extension_manager_use_case().check_extension_connection().await
