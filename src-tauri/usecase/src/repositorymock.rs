@@ -1,4 +1,4 @@
-#[cfg(any(test, feature = "mocks"))]
+#[cfg(test)]
 mockall::mock! {
     pub RepositoriesExtMock {}
 

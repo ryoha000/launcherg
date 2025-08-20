@@ -39,14 +39,10 @@ tauri-plugin-shell = { workspace = true }
 winreg = { workspace = true }
 zip = { workspace = true }
 semver = { workspace = true }
-mockall = { workspace = true, optional = true }
-
-[features]
-mocks = ["mockall", "domain/mocks"]
+mockall = { workspace = true }
 
 [dev-dependencies]
 mockall = { workspace = true }
 wiremock = { workspace = true }
 tempfile = { workspace = true }
-domain = { path = "../domain", features = ["mocks"] }
-
+domain = { path = "../domain" }

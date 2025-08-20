@@ -1,4 +1,4 @@
-#[cfg(any(test, feature = "mocks"))]
+#[cfg(test)]
 mockall::mock! {
     pub ProcTailManagerTrait {}
 
@@ -22,7 +22,7 @@ mockall::mock! {
     }
 }
 
-#[cfg(any(test, feature = "mocks"))]
+#[cfg(test)]
 mockall::mock! {
     pub WindowsExtMock {}
 

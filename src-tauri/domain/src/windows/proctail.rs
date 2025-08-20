@@ -135,7 +135,7 @@ pub struct HealthCheckResult {
 // The macro generates `trait ProcTail: Send + Sync { fn ... -> impl Future + Send }`
 // from the async local trait below, eliminating async_fn_in_trait warnings.
 #[trait_variant::make(Send)]
-#[cfg_attr(any(test, feature = "mocks"), mockall::automock)]
+#[mockall::automock]
 pub trait ProcTail {
     /// Add a process to monitoring targets
     async fn add_watch_target(

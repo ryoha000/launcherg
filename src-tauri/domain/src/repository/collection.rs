@@ -12,7 +12,7 @@ use anyhow::Result;
 use chrono::{DateTime, Local};
 
 #[trait_variant::make(Send)]
-#[cfg_attr(any(test, feature = "mocks"), mockall::automock)]
+#[mockall::automock]
 pub trait CollectionRepository {
     // CollectionElement基本操作
     async fn get_all_elements(&self) -> Result<Vec<CollectionElement>>;

@@ -25,13 +25,10 @@ image = { workspace = true }
 tempfile = { workspace = true }
 zip = { workspace = true }
 winreg = { workspace = true }
-mockall = { workspace = true, optional = true }
-
-[features]
-mocks = ["mockall", "domain/mocks", "infrastructure/mocks"]
+mockall = { workspace = true }
 
 [dev-dependencies]
 mockall = { workspace = true }
-domain = { path = "../domain", features = ["mocks" ] }
-infrastructure = { path = "../infrastructure", features = ["mocks" ] }
+domain = { path = "../domain" }
+infrastructure = { path = "../infrastructure" }
 

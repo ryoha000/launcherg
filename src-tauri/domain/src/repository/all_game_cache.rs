@@ -5,7 +5,7 @@ use crate::all_game_cache::{
 };
 
 #[trait_variant::make(Send)]
-#[cfg_attr(any(test, feature = "mocks"), mockall::automock)]
+#[mockall::automock]
 pub trait AllGameCacheRepository {
     async fn get_by_ids(
         &self,

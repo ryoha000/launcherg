@@ -24,11 +24,8 @@ url = { workspace = true }
 pbjson-types = { workspace = true }
 log = { workspace = true }
 dirs = { workspace = true }
-mockall = { workspace = true, optional = true }
+mockall = { workspace = true }
 trait-variant = "0.1"
-
-[features]
-mocks = ["mockall"]
 
 [dev-dependencies]
 mockall = { workspace = true }
