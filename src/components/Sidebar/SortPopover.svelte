@@ -24,12 +24,12 @@
 
 <div>
   <div
-    class='font-bold text-(text-primary body3) p-(l-4 r-2 y-2) flex items-center'
+    class='flex items-center p-(y-2 l-4 r-2) text-(body3 text-primary) font-bold'
   >
     <div>Select sort option</div>
     <button
       onclick={onclose}
-      class='ml-auto w-5 h-5 i-iconoir-cancel color-text-tertiary hover:color-text-primary transition-all'
+      class='i-iconoir-cancel ml-auto h-5 w-5 color-text-tertiary transition-all hover:color-text-primary'
       aria-label='Close options'
     ></button>
   </div>

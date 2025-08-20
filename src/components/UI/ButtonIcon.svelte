@@ -12,5 +12,5 @@
 </script>
 
 <ButtonBase appendClass='h-8 w-8 flex items-center justify-center' {tooltip} {onclick}>
-  <div class='color-ui-tertiary w-5 h-5 {icon}'></div>
+  <div class='h-5 w-5 color-ui-tertiary {icon}'></div>
 </ButtonBase>

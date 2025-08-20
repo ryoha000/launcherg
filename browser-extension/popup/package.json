@@ -1,0 +1,30 @@
+{
+  "name": "@launcherg/popup",
+  "type": "module",
+  "version": "1.0.0",
+  "description": "Popup UI for Launcherg browser extension",
+  "scripts": {
+    "prebuild": "pnpm -C .. run format && pnpm run typecheck && pnpm -C .. run lint",
+    "build": "pnpm run prebuild && vite build",
+    "dev": "vite build --watch",
+    "clean": "rimraf dist",
+    "test": "vitest run",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@bufbuild/buf": "^1.47.0",
+    "@bufbuild/protobuf": "^2.0.0",
+    "@bufbuild/protoc-gen-es": "^2.0.0",
+    "@launcherg/shared": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/chrome": "0.1.1",
+    "@types/node": "24.1.0",
+    "@vitest/ui": "^3.2.4",
+    "happy-dom": "^18.0.1",
+    "rimraf": "6.0.1",
+    "typescript": "5.3.3",
+    "vite": "7.0.6",
+    "vitest": "^3.2.4"
+  }
+}

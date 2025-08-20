@@ -1,14 +1,14 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-mod domain;
-mod infrastructure;
 mod interface;
-mod usecase;
+pub mod domain { pub use ::domain::*; }
+pub mod infrastructure { pub use ::infrastructure::*; }
+pub mod usecase { pub use ::usecase::*; }
 
 use std::sync::Arc;
 
-use infrastructure::util::get_save_root_abs_dir_with_ptr_handle;
+use domain::service::save_path_resolver::{SavePathResolver, DirsSavePathResolver};
 use interface::{command, module::Modules};
 use tauri::{async_runtime::block_on, Manager};
 use tauri_plugin_log::{Target, TargetKind};
@@ -24,7 +24,7 @@ fn main() {
             // folder の中身を移動して folder を削除する
             // C:\Users\ryoha\AppData\Roaming\launcherg -> C:\Users\ryoha\AppData\Roaming\ryoha.moe\launcherg
 
-            let dst_dir = get_save_root_abs_dir_with_ptr_handle(app.handle());
+            let dst_dir = DirsSavePathResolver::default().root_dir();
             let src_dir = std::path::Path::new(&dst_dir)
                 .parent()
                 .unwrap()
@@ -71,8 +71,10 @@ fn main() {
             command::get_play_time_minutes,
             command::get_collection_element,
             command::delete_collection_element,
-            command::get_not_registered_detail_element_ids,
-            command::create_element_details,
+            command::get_not_registered_detail_erogamescape_ids,
+            command::get_collection_ids_by_erogamescape_ids,
+            command::upsert_collection_element_details,
+            command::get_erogamescape_id_by_collection_id,
             command::get_all_elements,
             command::update_element_like,
             command::open_folder,
@@ -98,6 +100,19 @@ fn main() {
             command::proctail_manager_start,
             command::proctail_manager_stop,
             command::proctail_manager_is_running,
+            command::open_store_page,
+            command::link_installed_game,
+            command::get_game_candidates_by_name,
+            command::get_sync_status,
+            command::set_extension_config,
+            command::generate_extension_package,
+            command::setup_native_messaging_host,
+            command::get_extension_package_info,
+            command::copy_extension_for_development,
+            command::get_dev_extension_info,
+            command::check_registry_keys,
+            command::remove_registry_keys,
+            command::get_native_host_logs,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

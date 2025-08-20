@@ -1,0 +1,43 @@
+{
+  "name": "launcherg-browser-extension",
+  "type": "module",
+  "version": "1.0.0",
+  "packageManager": "pnpm@8.0.0",
+  "description": "Browser extension for syncing DL store games to Launcherg",
+  "scripts": {
+    "prebuild": "pnpm run format && pnpm run typecheck && pnpm run lint",
+    "build": "pnpm run protobuf:generate && pnpm run prebuild && pnpm run copy-assets && pnpm run build:workspaces",
+    "build:workspaces": "pnpm run --filter @launcherg/shared build && pnpm run --filter !@launcherg/shared build",
+    "dev": "pnpm run protobuf:generate && pnpm run copy-assets && pnpm run -r dev",
+    "clean": "rimraf dist && pnpm run -r clean",
+    "copy-assets": "node scripts/copy-assets.js",
+    "protobuf:generate": "cd ../proto && buf generate --template ./buf.gen.yaml .",
+    "protobuf:lint": "buf lint ../proto",
+    "protobuf:format": "buf format -w ../proto",
+    "test": "pnpm -r run test",
+    "test:ui": "vitest --ui",
+    "test:playwright": "playwright test",
+    "test:playwright:ui": "playwright test --ui",
+    "test:dlsite": "pnpm run --filter @launcherg/content-scripts-dlsite test",
+    "test:popup": "pnpm run --filter @launcherg/popup test",
+    "test:shared": "pnpm run --filter @launcherg/shared test",
+    "typecheck": "pnpm -r run typecheck",
+    "format": "pnpm -C .. exec eslint --fix browser-extension",
+    "lint": "pnpm -C .. exec eslint browser-extension",
+    "coverage": "vitest --coverage",
+    "precommit": "cd ../ && npm run precommit"
+  },
+  "devDependencies": {
+    "@bufbuild/buf": "^1.47.0",
+    "@bufbuild/protoc-gen-es": "^2.0.0",
+    "@playwright/test": "^1.54.2",
+    "@types/node": "^20.11.5",
+    "@vitest/coverage-v8": "^3.2.4",
+    "@vitest/ui": "^3.2.4",
+    "happy-dom": "^18.0.1",
+    "playwright": "^1.54.2",
+    "rimraf": "^5.0.5",
+    "typescript": "^5.3.3",
+    "vitest": "^3.2.4"
+  }
+}

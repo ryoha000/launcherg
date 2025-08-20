@@ -1,0 +1,113 @@
+syntax = "proto3";
+
+package launcherg.extension_internal;
+
+// EGS 解決済み情報（拡張内部）
+message EgsInfo {
+  int32 erogamescape_id = 1;
+  string gamename = 2;
+  string gamename_ruby = 3;
+  string brandname = 4;
+  string brandname_ruby = 5;
+  string sellday = 6;
+  bool is_nukige = 7;
+}
+
+// Content ScriptからBackground Scriptへのリクエスト
+message ExtensionRequest {
+  string request_id = 1;
+  
+  oneof request {
+    DmmSyncGamesRequest sync_dmm_games = 10;
+    DlsiteSyncGamesRequest sync_dlsite_games = 11;
+    GetStatusRequest get_status = 12;
+    DebugNativeMessageRequest debug_native_message = 13;
+  }
+}
+
+// Background ScriptからContent Scriptへのレスポンス
+message ExtensionResponse {
+  string request_id = 1;
+  bool success = 2;
+  string error = 3;
+  
+  oneof response {
+    SyncGamesResponse sync_games_result = 10;
+    GetStatusResponse status_result = 11;
+    DebugNativeMessageResponse debug_result = 12;
+  }
+}
+
+// DMM向け ゲーム同期リクエスト（拡張内部）
+message DmmSyncGamesRequest {
+  repeated DmmGame games = 1;
+}
+
+// DLsite向け ゲーム同期リクエスト（拡張内部）
+message DlsiteSyncGamesRequest {
+  repeated DlsiteGame games = 1;
+}
+
+// DMM のゲームデータ（拡張内部）
+message DmmGame {
+  string id = 1;
+  string category = 2;    // "mono" | "digital"
+  string subcategory = 3; // "doujin" | "pcgame"
+  EgsInfo egs_info = 4;   // 省略可
+  string title = 5;       // ゲーム名（抽出元の名称）
+  string image_url = 6; // 画像URL（アイコン生成用）
+}
+
+// DLsite のゲームデータ（拡張内部）
+message DlsiteGame {
+  string id = 1;
+  string category = 2; // "ai" | "maniax" | "bl" | "home" | "appx" | "girls" | "pro" | "girls-pro" | "soft"
+  EgsInfo egs_info = 3; // 省略可
+  string title = 4;       // ゲーム名（抽出元の名称）
+  string image_url = 5; // 画像URL（アイコン生成用）
+}
+
+// ゲーム同期レスポンス
+message SyncGamesResponse {
+  SyncResult result = 1;
+  string message = 2;
+}
+
+// 同期結果
+message SyncResult {
+  uint32 success_count = 1;
+  uint32 error_count = 2;
+  repeated string errors = 3;
+  repeated string synced_games = 4;
+}
+
+// ステータス取得リクエスト
+message GetStatusRequest {
+  // 空のメッセージ
+}
+
+// ステータス取得レスポンス
+message GetStatusResponse {
+  StatusData status = 1;
+}
+
+// ステータスデータ
+message StatusData {
+  string last_sync = 1;  // ISO文字列
+  uint32 total_synced = 2;
+  repeated string connected_extensions = 3;
+  bool is_running = 4;
+  string connection_status = 5;  // enum値を文字列として格納
+  string error_message = 6;
+}
+
+// デバッグメッセージリクエスト
+message DebugNativeMessageRequest {
+  string payload_json = 1;  // JSON文字列としてペイロードを格納
+}
+
+// デバッグメッセージレスポンス
+message DebugNativeMessageResponse {
+  string native_response_json = 1;  // JSON文字列としてネイティブレスポンスを格納
+  string timestamp = 2;
+}

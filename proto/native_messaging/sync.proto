@@ -1,0 +1,53 @@
+syntax = "proto3";
+
+package launcherg.sync;
+
+// EGS 解決済み情報
+message EgsInfo {
+  int32 erogamescape_id = 1;
+  string gamename = 2;
+  string gamename_ruby = 3;
+  string brandname = 4;
+  string brandname_ruby = 5;
+  string sellday = 6;
+  bool is_nukige = 7;
+}
+
+// DMM 向けゲーム同期リクエスト
+message DmmSyncGamesRequest {
+  repeated DmmGame games = 1;
+  string extension_id = 2;
+}
+
+// DLsite 向けゲーム同期リクエスト
+message DlsiteSyncGamesRequest {
+  repeated DlsiteGame games = 1;
+  string extension_id = 2;
+}
+
+// DMM のゲームデータ
+message DmmGame {
+  string id = 1;
+  string category = 2;    // "mono" | "digital"
+  string subcategory = 3; // "doujin" | "pcgame"
+  EgsInfo egs_info = 4;   // 省略可。解決できた場合のみ付与
+  string title = 5;        // ゲーム名（抽出元の名称）
+  string image_url = 6; // 画像URL（アイコン生成用）
+}
+
+// DLsite のゲームデータ
+message DlsiteGame {
+  string id = 1;
+  string category = 2; // "ai" | "maniax" | "bl" | "home" | "appx" | "girls" | "pro" | "girls-pro" | "soft"
+  EgsInfo egs_info = 3; // 省略可。解決できた場合のみ付与
+  string title = 4;        // ゲーム名（抽出元の名称）
+  string image_url = 5; // 画像URL（アイコン生成用）
+}
+
+// ゲーム同期結果のバッチレスポンス
+message SyncBatchResult {
+  uint32 success_count = 1;
+  uint32 error_count = 2;
+  repeated string errors = 3;
+  repeated string synced_games = 4;  // ゲームタイトルのリスト
+}

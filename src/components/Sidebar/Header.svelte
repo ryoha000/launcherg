@@ -7,9 +7,9 @@
 
 <div class='w-full flex items-center px-2 pt-4'>
   <a href='/' use:route>
-    <div class='flex items-center gap-2 w-full'>
+    <div class='w-full flex items-center gap-2'>
       <img src={Icon} alt='launcherg icon' class='h-8' />
-      <div class='font-logo text-(h3 text-primary)'>Launcherg</div>
+      <div class='text-(h3 text-primary) font-logo'>Launcherg</div>
     </div>
   </a>
   <ButtonBase
@@ -23,7 +23,7 @@
     }}
   >
     <div
-      class='i-material-symbols-left-panel-close-outline w-6 h-6 color-text-primary'
+      class='i-material-symbols-left-panel-close-outline h-6 w-6 color-text-primary'
     ></div>
   </ButtonBase>
 </div>

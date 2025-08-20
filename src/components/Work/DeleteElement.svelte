@@ -31,10 +31,10 @@
   headerClass='border-b-(border-warning opacity-40) '
 >
   <div
-    class='bg-bg-warning border-(b-1px solid border-warning opacity-40) flex gap-2 p-(x-4 y-5)'
+    class='flex gap-2 border-(b-1px border-warning opacity-40 solid) bg-bg-warning p-(x-4 y-5)'
   >
     <div
-      class='w-6 h-6 i-material-symbols-warning-outline-rounded color-accent-warning'
+      class='i-material-symbols-warning-outline-rounded h-6 w-6 color-accent-warning'
     ></div>
     <div class='space-y-1'>
       <div class='text-(body text-primary) font-medium'>
@@ -46,7 +46,7 @@
     </div>
   </div>
   {#snippet footer()}
-    <div class='p-4 max-w-full'>
+    <div class='max-w-full p-4'>
       <Button
         text='{element.gamename} を削除する'
         variant='error'

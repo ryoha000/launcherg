@@ -39,7 +39,7 @@
   let scrollable: ScrollableHorizontal | undefined = $state()
 </script>
 
-<div class='space-y-1 w-full'>
+<div class='w-full space-y-1'>
   <div class='flex items-center gap-2'>
     <div class='flex-1'>
       <SearchInput
@@ -61,7 +61,7 @@
             }}
         >
           <div
-            class='color-ui-tertiary w-5 h-5 i-material-symbols-sort-rounded'
+            class='i-material-symbols-sort-rounded h-5 w-5 color-ui-tertiary'
           ></div>
         </ButtonBase>
       {/snippet}
@@ -70,7 +70,7 @@
       {/snippet}
     </APopover>
   </div>
-  <div class='relative hide-scrollbar'>
+  <div class='hide-scrollbar relative'>
     <ScrollableHorizontal
       onscroll={onScroll}
       bind:this={scrollable}

@@ -1,23 +1,25 @@
 use std::sync::Arc;
 use tauri::AppHandle;
 use tauri::State;
+use tauri_plugin_shell::ShellExt;
 
 use super::models::all_game_cache::AllGameCacheOne;
 use super::{
     error::CommandError,
-    models::collection::CollectionElement,
+    models::{
+        collection::CollectionElement,
+    },
     module::{Modules, ModulesExt},
 };
-use crate::domain::file::get_lnk_metadatas;
-use crate::domain::windows::proctail::{
+use domain::extension::{SyncStatus, ExtensionConfig};
+use domain::file::get_lnk_metadatas;
+use domain::windows::proctail::{
     HealthCheckResult, ProcTailEvent, ServiceStatus, WatchTarget,
 };
-use crate::infrastructure::windowsimpl::proctail_manager::{
-    ProcTailManagerStatus, ProcTailVersion,
-};
+use domain::windows::proctail_manager::{ProcTailManagerStatus, ProcTailVersion};
 use crate::{
     domain::{
-        collection::{NewCollectionElement, ScannedGameElement},
+        collection::{ScannedGameElement},
         distance::get_comparable_distance,
         file::{get_file_created_at_sync, normalize},
         pubsub::{ProgressLivePayload, ProgressPayload, PubSubService},
@@ -25,6 +27,7 @@ use crate::{
     },
     usecase::models::collection::CreateCollectionElementDetail,
 };
+use domain::{native_host_log::{HostLogLevel, HostLogType}, repository::{RepositoriesExt, native_host_log::NativeHostLogRepository}};
 
 #[tauri::command]
 pub async fn create_elements_in_pc(
@@ -79,9 +82,26 @@ pub async fn create_elements_in_pc(
         )
         .await?;
 
+    // 先に要素を作成/更新して collection_element_id を確定させる
+    modules
+        .collection_use_case()
+        .upsert_collection_elements(&new_elements_with_data)
+        .await?;
+
+    // EGS ID -> Collection ID 解決
+    let egs_ids: Vec<i32> = new_elements_with_data
+        .iter()
+        .map(|v| v.erogamescape_id)
+        .collect();
+    let resolved_ids = modules
+        .collection_use_case()
+        .get_collection_ids_by_erogamescape_ids(egs_ids.clone())
+        .await?;
+
+    // サムネイル用に EGSのキャッシュを取得
     let new_elements_game_caches = modules
         .all_game_cache_use_case()
-        .get_by_ids(new_elements_with_data.iter().map(|v| v.id.value).collect())
+        .get_by_ids(egs_ids)
         .await?;
 
     // ゲーム名を保存しておく（戻り値で使用）
@@ -90,29 +110,30 @@ pub async fn create_elements_in_pc(
         .map(|v| v.gamename.clone())
         .collect();
 
-    modules
-        .collection_use_case()
-        .concurency_save_thumbnails(
-            &handle,
-            new_elements_game_caches
-                .into_iter()
-                .map(|v| (Id::new(v.id), v.thumbnail_url))
-                .collect(),
-        )
-        .await?;
+    // new_elements_game_caches は EGS id の配列なので、その順に個別解決
+    let mut thumb_args: Vec<(Id<domain::collection::CollectionElement>, String)> = Vec::new();
+    for gc in new_elements_game_caches.iter() {
+        // 各 EGS id に対して resolved id を都度取得
+        if let Some(rid) = modules
+            .collection_use_case()
+            .get_collection_ids_by_erogamescape_ids(vec![gc.id])
+            .await?
+            .into_iter()
+            .next()
+        {
+            thumb_args.push((rid, gc.thumbnail_url.clone()));
+        }
+    }
 
     modules
         .collection_use_case()
-        .upsert_collection_elements(&new_elements_with_data)
+        .concurency_save_thumbnails(thumb_args)
         .await?;
 
-    let new_element_ids = new_elements_with_data
-        .iter()
-        .map(|v| v.id.clone())
-        .collect::<Vec<Id<_>>>();
+    // サムネイルサイズ反映
     modules
         .collection_use_case()
-        .concurency_upsert_collection_element_thumbnail_size(&handle, new_element_ids)
+        .concurency_upsert_collection_element_thumbnail_size(resolved_ids)
         .await?;
 
     modules
@@ -160,20 +181,20 @@ pub async fn get_nearest_key_and_distance(
 
 #[tauri::command]
 pub async fn upload_image(
-    handle: AppHandle,
+    _handle: AppHandle,
     modules: State<'_, Arc<Modules>>,
     id: i32,
     base64_image: String,
 ) -> anyhow::Result<String, CommandError> {
     Ok(modules
         .file_use_case()
-        .upload_image(&Arc::new(handle), id, base64_image)
+        .upload_image(id, base64_image)
         .await?)
 }
 
 #[tauri::command]
 pub async fn upsert_collection_element(
-    handle: AppHandle,
+    _handle: AppHandle,
     modules: State<'_, Arc<Modules>>,
     exe_path: Option<String>,
     lnk_path: Option<String>,
@@ -195,42 +216,49 @@ pub async fn upsert_collection_element(
     } else {
         _install_at = None;
     }
-    let element_id = Id::new(game_cache.id);
-    let handle = Arc::new(handle);
+    // 入力の game_cache.id は EGS の ID。
+    // create_collection_element で EGS -> collection_element_id の解決と作成/更新を行い、
+    // 以降の処理は必ず解決済みの collection_element_id を使用する。
+    let egs_id = game_cache.id;
+    // no handle needed
 
-    // ScannedGameElementを作成
+    // ScannedGameElementを作成（初期IDは EGS ID）
     let scanned_element = ScannedGameElement::new(
-        element_id.clone(),
+        egs_id,
+        game_cache.gamename.clone(),
         exe_path,
         lnk_path,
         _install_at,
     );
 
     // 関連データを含むコレクション要素を作成
-    modules
+    let new_element_id = modules
         .collection_use_case()
         .create_collection_element(&scanned_element)
         .await?;
 
-    // アイコンを保存
-    let new_element = NewCollectionElement::new(element_id.clone());
+    // アイコン保存
     modules
-        .collection_use_case()
-        .save_element_icon(&handle, &new_element)
+        .image_use_case()
+        .save_icon_by_paths(
+            &new_element_id,
+            &scanned_element.exe_path,
+            &scanned_element.lnk_path,
+        )
         .await?;
     modules
-        .collection_use_case()
-        .save_element_thumbnail(&handle, &new_element.id, game_cache.thumbnail_url)
+        .image_use_case()
+        .save_thumbnail(&new_element_id, &game_cache.thumbnail_url)
         .await?;
     Ok(modules
         .collection_use_case()
-        .upsert_collection_element_thumbnail_size(&handle, &new_element.id)
+        .upsert_collection_element_thumbnail_size(&new_element_id)
         .await?)
 }
 
 #[tauri::command]
 pub async fn update_collection_element_thumbnails(
-    handle: AppHandle,
+    _handle: AppHandle,
     modules: State<'_, Arc<Modules>>,
     ids: Vec<i32>,
 ) -> anyhow::Result<(), CommandError> {
@@ -238,11 +266,10 @@ pub async fn update_collection_element_thumbnails(
         .all_game_cache_use_case()
         .get_by_ids(ids.clone())
         .await?;
-    let handle = Arc::new(handle);
+    // no handle needed
     modules
-        .collection_use_case()
+        .image_use_case()
         .concurency_save_thumbnails(
-            &handle,
             all_game_cache
                 .into_iter()
                 .map(|v| (Id::new(v.id), v.thumbnail_url))
@@ -252,7 +279,6 @@ pub async fn update_collection_element_thumbnails(
     Ok(modules
         .collection_use_case()
         .concurency_upsert_collection_element_thumbnail_size(
-            &handle,
             ids.into_iter().map(|v| Id::new(v)).collect(),
         )
         .await?)
@@ -260,14 +286,14 @@ pub async fn update_collection_element_thumbnails(
 
 #[tauri::command]
 pub async fn update_collection_element_icon(
-    handle: AppHandle,
+    _handle: AppHandle,
     modules: State<'_, Arc<Modules>>,
     id: i32,
     path: String,
 ) -> anyhow::Result<(), CommandError> {
     Ok(modules
-        .collection_use_case()
-        .update_collection_element_icon(&Arc::new(handle), &Id::new(id), path)
+        .image_use_case()
+        .overwrite_icon_png(&Id::new(id), &path)
         .await?)
 }
 
@@ -311,13 +337,12 @@ pub async fn play_game(
 
 #[tauri::command]
 pub async fn get_play_time_minutes(
-    handle: AppHandle,
     modules: State<'_, Arc<Modules>>,
     collection_element_id: i32,
 ) -> anyhow::Result<f32, CommandError> {
     Ok(modules
         .file_use_case()
-        .get_play_time_minutes(&Arc::new(handle), &Id::new(collection_element_id))?)
+        .get_play_time_minutes(&Id::new(collection_element_id))?)
 }
 
 #[tauri::command]
@@ -345,27 +370,57 @@ pub async fn delete_collection_element(
 }
 
 #[tauri::command]
-pub async fn get_not_registered_detail_element_ids(
+pub async fn get_not_registered_detail_erogamescape_ids(
     modules: State<'_, Arc<Modules>>,
 ) -> anyhow::Result<Vec<i32>, CommandError> {
-    Ok(modules
+    // 詳細未登録の collection_element_id 群を取得し、EGS ID に変換して返す
+    let collection_ids = modules
         .collection_use_case()
         .get_not_registered_detail_element_ids()
-        .await?
-        .into_iter()
-        .map(|v| v.value)
-        .collect())
+        .await?;
+
+    let mut erogamescape_ids: Vec<i32> = Vec::with_capacity(collection_ids.len());
+    for cid in collection_ids.into_iter() {
+        if let Some(egs_id) = modules
+            .collection_use_case()
+            .get_erogamescape_id_by_collection_id(&cid)
+            .await?
+        {
+            erogamescape_ids.push(egs_id);
+        }
+    }
+    Ok(erogamescape_ids)
 }
 
 #[tauri::command]
-pub async fn create_element_details(
+pub async fn get_collection_ids_by_erogamescape_ids(
+    modules: State<'_, Arc<Modules>>,
+    erogamescape_ids: Vec<i32>,
+) -> anyhow::Result<Vec<(i32, i32)>, CommandError> {
+    // 入力された EGS ID ごとに対応する collection_element_id を対にして返す
+    let mut pairs: Vec<(i32, i32)> = Vec::new();
+    for egs_id in erogamescape_ids.into_iter() {
+        if let Some(cid) = modules
+            .collection_use_case()
+            .get_collection_ids_by_erogamescape_ids(vec![egs_id])
+            .await?
+            .into_iter()
+            .next()
+        {
+            pairs.push((egs_id, cid.value));
+        }
+    }
+    Ok(pairs)
+}
+
+#[tauri::command]
+pub async fn upsert_collection_element_details(
     modules: State<'_, Arc<Modules>>,
     details: Vec<CreateCollectionElementDetail>,
 ) -> anyhow::Result<(), CommandError> {
     for detail in details {
-        let info = crate::domain::collection::NewCollectionElementInfo::new(
+        let info = domain::collection::NewCollectionElementInfo::new(
             Id::new(detail.collection_element_id),
-            detail.gamename,
             detail.gamename_ruby,
             detail.brandname,
             detail.brandname_ruby,
@@ -381,14 +436,27 @@ pub async fn create_element_details(
 }
 
 #[tauri::command]
+pub async fn get_erogamescape_id_by_collection_id(
+    modules: State<'_, Arc<Modules>>,
+    collection_element_id: i32,
+) -> anyhow::Result<Option<i32>, CommandError> {
+    Ok(
+        modules
+            .collection_use_case()
+            .get_erogamescape_id_by_collection_id(&Id::new(collection_element_id))
+            .await?,
+    )
+}
+
+#[tauri::command]
 pub async fn get_all_elements(
-    handle: AppHandle,
+    _handle: AppHandle,
     modules: State<'_, Arc<Modules>>,
 ) -> anyhow::Result<Vec<CollectionElement>, CommandError> {
-    let handle = &Arc::new(handle);
+    let handle = &Arc::new(_handle);
     Ok(modules
         .collection_use_case()
-        .get_all_elements(&handle)
+        .get_all_elements()
         .await?
         .into_iter()
         .map(|v| CollectionElement::from_domain(&handle, v))
@@ -459,12 +527,32 @@ pub async fn get_game_candidates(
         .all_game_cache_use_case()
         .get_all_game_cache()
         .await?;
-
-    Ok(modules
-        .file_use_case()
-        .get_game_candidates(all_game_cache, filepath)
-        .await?
+    
+    let game_identifier = usecase::game_identifier::GameIdentifierUseCase::with_default_matcher(all_game_cache);
+    
+    Ok(game_identifier
+        .identify_by_filepath(&filepath)?
         .into_iter()
+        .map(|c| (c.id, c.gamename))
+        .collect())
+}
+
+#[tauri::command]
+pub async fn get_game_candidates_by_name(
+    modules: State<'_, Arc<Modules>>,
+    game_name: String,
+) -> anyhow::Result<Vec<(i32, String)>, CommandError> {
+    let all_game_cache = modules
+        .all_game_cache_use_case()
+        .get_all_game_cache()
+        .await?;
+    
+    let game_identifier = usecase::game_identifier::GameIdentifierUseCase::with_default_matcher(all_game_cache);
+    
+    Ok(game_identifier
+        .identify_by_name(&game_name)?
+        .into_iter()
+        .take(20) // 上位20件まで
         .map(|c| (c.id, c.gamename))
         .collect())
 }
@@ -502,14 +590,14 @@ pub async fn get_game_cache_by_id(
 
 #[tauri::command]
 pub async fn save_screenshot_by_pid(
-    handle: AppHandle,
+    _handle: AppHandle,
     modules: State<'_, Arc<Modules>>,
     work_id: i32,
     process_id: u32,
 ) -> anyhow::Result<String, CommandError> {
     let upload_path = modules
         .file_use_case()
-        .get_new_upload_image_path(&Arc::new(handle), work_id)?;
+        .get_new_upload_image_path(work_id)?;
     modules
         .process_use_case()
         .save_screenshot_by_pid(process_id, &upload_path)
@@ -685,3 +773,227 @@ pub async fn proctail_manager_is_running(
         .proctail_manager_is_running()
         .await?)
 }
+
+#[tauri::command]
+pub async fn open_store_page(handle: AppHandle, purchase_url: String) -> anyhow::Result<(), CommandError> {
+    #[allow(deprecated)]
+    let shell = handle.shell();
+    #[allow(deprecated)]
+    shell.open(purchase_url, None)
+        .map_err(|e| anyhow::anyhow!("Failed to open URL: {}", e))?;
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn link_installed_game(
+    modules: State<'_, Arc<Modules>>,
+    collection_element_id: i32,
+    exe_path: String,
+) -> anyhow::Result<(), CommandError> {
+    modules
+        .collection_use_case()
+        .link_installed_game(Id::new(collection_element_id), exe_path)
+        .await?;
+    Ok(())
+}
+
+
+// バッチ同期とステータス管理のコマンド
+
+#[tauri::command]
+pub async fn get_sync_status(
+    modules: State<'_, Arc<Modules>>,
+) -> anyhow::Result<SyncStatus, CommandError> {
+    let status = modules.extension_manager_use_case().check_extension_connection().await
+        .map_err(|e| anyhow::anyhow!("拡張機能の接続確認に失敗: {}", e))?;
+    
+    Ok(status)
+}
+
+// ========== Native Messaging Host Logs ==========
+
+#[derive(serde::Deserialize)]
+pub struct GetHostLogsRequest {
+    pub limit: Option<i32>,
+    pub offset: Option<i32>,
+    pub level: Option<i32>,
+    pub typ: Option<i32>,
+}
+
+#[derive(serde::Serialize)]
+pub struct HostLogDto {
+    pub id: i32,
+    pub level: i32,
+    pub typ: i32,
+    pub message: String,
+    pub created_at: String,
+}
+
+#[derive(serde::Serialize)]
+pub struct HostLogsResponse {
+    pub items: Vec<HostLogDto>,
+    pub total: i64,
+}
+
+#[tauri::command]
+pub async fn get_native_host_logs(
+    modules: State<'_, Arc<Modules>>,
+    request: GetHostLogsRequest,
+) -> anyhow::Result<HostLogsResponse, CommandError> {
+    let limit = request.limit.unwrap_or(50) as i64;
+    let offset = request.offset.unwrap_or(0) as i64;
+    let level = match request.level {
+        Some(1) => Some(HostLogLevel::Info),
+        Some(2) => Some(HostLogLevel::Warn),
+        Some(3) => Some(HostLogLevel::Error),
+        _ => None,
+    };
+    let typ = match request.typ {
+        Some(0) => Some(HostLogType::Unknown),
+        Some(1) => Some(HostLogType::ReceiveDmmSyncGamesRequest),
+        Some(2) => Some(HostLogType::ReceiveDlsiteSyncGamesRequest),
+        Some(10) => Some(HostLogType::ImageQueueWorkerStarted),
+        Some(11) => Some(HostLogType::ImageQueueWorkerFinished),
+        Some(20) => Some(HostLogType::ImageQueueItemStarted),
+        Some(21) => Some(HostLogType::ImageQueueItemSucceeded),
+        Some(22) => Some(HostLogType::ImageQueueItemFailed),
+        _ => None,
+    };
+
+    let repo = modules.repositories().host_log_repository();
+    let items = repo.list_logs(limit, offset, level, typ).await?;
+    let total = repo.count_logs(level, typ).await?;
+
+    Ok(HostLogsResponse {
+        items: items
+            .into_iter()
+            .map(|row| HostLogDto {
+                id: row.id.value,
+                level: row.level as i32,
+                typ: row.r#type as i32,
+                message: row.message,
+                created_at: row.created_at.to_rfc3339(),
+            })
+            .collect(),
+        total,
+    })
+}
+
+#[tauri::command]
+pub async fn set_extension_config(
+    config: ExtensionConfig,
+    modules: State<'_, Arc<Modules>>,
+) -> anyhow::Result<String, CommandError> {
+    let result = modules.extension_manager_use_case().set_extension_config(&config).await
+        .map_err(|e| anyhow::anyhow!("拡張機能設定の更新に失敗: {}", e))?;
+    
+    Ok(result)
+}
+
+#[tauri::command]
+pub async fn generate_extension_package(
+    handle: AppHandle,
+) -> anyhow::Result<usecase::extension_installer::ExtensionPackageInfo, CommandError> {
+    use usecase::extension_installer::ExtensionInstallerUseCase;
+    
+    let installer = ExtensionInstallerUseCase::new(Arc::new(handle));
+    let package_info = installer.generate_extension_package().await
+        .map_err(|e| anyhow::anyhow!("拡張機能パッケージの生成に失敗: {}", e))?;
+    
+    Ok(package_info)
+}
+
+#[tauri::command]
+pub async fn setup_native_messaging_host(
+    handle: AppHandle,
+    extension_id: Option<String>,
+) -> anyhow::Result<String, CommandError> {
+    use usecase::extension_installer::ExtensionInstallerUseCase;
+    
+    let installer = ExtensionInstallerUseCase::new(Arc::new(handle));
+    let result = installer.setup_native_messaging_host(extension_id).await
+        .map_err(|e| anyhow::anyhow!("Native Messaging Hostのセットアップに失敗: {}", e))?;
+    
+    Ok(result)
+}
+
+#[tauri::command]
+pub async fn get_extension_package_info(
+    handle: AppHandle,
+) -> anyhow::Result<Option<usecase::extension_installer::ExtensionPackageInfo>, CommandError> {
+    use usecase::extension_installer::ExtensionInstallerUseCase;
+    
+    let installer = ExtensionInstallerUseCase::new(Arc::new(handle));
+    
+    if installer.is_package_available() {
+        let manifest_info = installer.get_extension_manifest_info().await
+            .map_err(|e| anyhow::anyhow!("拡張機能情報の取得に失敗: {}", e))?;
+        let package_path = installer.get_package_path();
+        let _package_size = installer.get_package_size()
+            .map_err(|e| anyhow::anyhow!("パッケージサイズの取得に失敗: {}", e))?;
+            
+        Ok(Some(usecase::extension_installer::ExtensionPackageInfo {
+            version: manifest_info.version.clone(),
+            package_path: package_path.to_string_lossy().to_string(),
+            manifest_info,
+        }))
+    } else {
+        Ok(None)
+    }
+}
+
+#[tauri::command]
+pub async fn copy_extension_for_development(
+    handle: AppHandle,
+) -> anyhow::Result<String, CommandError> {
+    use usecase::extension_installer::ExtensionInstallerUseCase;
+    
+    let installer = ExtensionInstallerUseCase::new(Arc::new(handle));
+    let dev_path = installer.copy_extension_for_development().await
+        .map_err(|e| anyhow::anyhow!("開発用拡張機能のコピーに失敗: {}", e))?;
+    
+    Ok(dev_path)
+}
+
+#[tauri::command]
+pub async fn get_dev_extension_info(
+    handle: AppHandle,
+) -> anyhow::Result<Option<String>, CommandError> {
+    use usecase::extension_installer::ExtensionInstallerUseCase;
+    
+    let installer = ExtensionInstallerUseCase::new(Arc::new(handle));
+    
+    if installer.is_dev_extension_available() {
+        let dev_path = installer.get_dev_extension_path();
+        Ok(Some(dev_path.to_string_lossy().to_string()))
+    } else {
+        Ok(None)
+    }
+}
+
+#[tauri::command]
+pub async fn check_registry_keys(
+    handle: AppHandle,
+) -> anyhow::Result<Vec<usecase::extension_installer::RegistryKeyInfo>, CommandError> {
+    use usecase::extension_installer::ExtensionInstallerUseCase;
+    
+    let installer = ExtensionInstallerUseCase::new(Arc::new(handle));
+    let result = installer.check_registry_keys()
+        .map_err(|e| anyhow::anyhow!("Failed to check registry keys: {}", e))?;
+    
+    Ok(result)
+}
+
+#[tauri::command]
+pub async fn remove_registry_keys(
+    handle: AppHandle,
+) -> anyhow::Result<Vec<String>, CommandError> {
+    use usecase::extension_installer::ExtensionInstallerUseCase;
+    
+    let installer = ExtensionInstallerUseCase::new(Arc::new(handle));
+    let result = installer.remove_registry_keys()
+        .map_err(|e| anyhow::anyhow!("Failed to remove registry keys: {}", e))?;
+    
+    Ok(result)
+}
+

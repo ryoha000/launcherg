@@ -80,14 +80,20 @@ export async function commandDeleteCollectionElement(collectionElementId: number
   })
 }
 
-export async function commandGetNotRegisterdDetailElementIds() {
-  return await invoke<number[]>('get_not_registered_detail_element_ids', {})
+// 詳細未登録の EGS ID 群を取得
+export async function commandGetNotRegisteredDetailErogamescapeIds() {
+  return await invoke<number[]>('get_not_registered_detail_erogamescape_ids', {})
 }
 
-export async function commandCreateElementDetails(details: CollectionElementDetail[]) {
-  return await invoke<void>('create_element_details', {
-    details,
+// EGS ID -> CollectionElement ID の対応を取得
+export async function commandGetCollectionIdsByErogamescapeIds(erogamescapeIds: number[]) {
+  return await invoke<[number, number][]>('get_collection_ids_by_erogamescape_ids', {
+    erogamescapeIds,
   })
+}
+
+export async function commandUpsertCollectionElementDetails(details: CollectionElementDetail[]) {
+  return await invoke<void>('upsert_collection_element_details', { details })
 }
 
 export async function commandGetAllElements() {
@@ -119,6 +125,10 @@ export async function commandGetGameCandidates(filepath: string) {
   return await invoke<[number, string][]>('get_game_candidates', {
     filepath,
   })
+}
+
+export async function commandGetGameCandidatesByName(gameName: string) {
+  return await invoke<[number, string][]>('get_game_candidates_by_name', { gameName })
 }
 
 export async function commandGetExePathByLnk(filepath: string) {
@@ -206,4 +216,102 @@ export async function commandProcTailManagerStop() {
 
 export async function commandProcTailManagerIsRunning() {
   return await invoke<boolean>('proctail_manager_is_running')
+}
+
+export async function commandOpenStorePage(purchaseUrl: string) {
+  return await invoke<void>('open_store_page', { purchaseUrl })
+}
+
+export async function commandLinkInstalledGame(
+  collectionElementId: number,
+  exePath: string,
+) {
+  return await invoke<void>('link_installed_game', {
+    collectionElementId,
+    exePath,
+  })
+}
+
+// DLStore関連のコマンドは廃止
+
+// 拡張機能連携用の新しいコマンド
+
+export async function commandGetSyncStatus() {
+  return await invoke<any>('get_sync_status')
+}
+
+export async function commandSetExtensionConfig(config: any) {
+  return await invoke<void>('set_extension_config', { config })
+}
+
+// 拡張機能インストーラー関連の型定義
+interface ExtensionManifestInfo {
+  name: string
+  version: string
+  extension_id: string
+  description: string
+}
+
+interface ExtensionPackageInfo {
+  version: string
+  package_path: string
+  manifest_info: ExtensionManifestInfo
+}
+
+export async function commandGenerateExtensionPackage() {
+  return await invoke<ExtensionPackageInfo>('generate_extension_package')
+}
+
+export async function commandSetupNativeMessagingHost(options?: { extensionId?: string }) {
+  return await invoke<string>('setup_native_messaging_host', options || {})
+}
+
+export async function commandGetExtensionPackageInfo() {
+  return await invoke<ExtensionPackageInfo | null>('get_extension_package_info')
+}
+
+export async function commandCopyExtensionForDevelopment() {
+  return await invoke<string>('copy_extension_for_development')
+}
+
+export async function commandGetDevExtensionInfo() {
+  return await invoke<string | null>('get_dev_extension_info')
+}
+
+// 追加: collection_element_id から EGS ID を取得
+export async function commandGetErogamescapeIdByCollectionId(collectionElementId: number) {
+  return await invoke<number | null>('get_erogamescape_id_by_collection_id', {
+    collectionElementId,
+  })
+}
+
+// Native Messaging Host Logs
+export interface HostLogItem {
+  id: number
+  level: number
+  typ: number
+  message: string
+  created_at: string
+}
+export interface HostLogsResponse {
+  items: HostLogItem[]
+  total: number
+}
+export async function commandGetNativeHostLogs(req: { limit?: number; offset?: number; level?: number; typ?: number }) {
+  return await invoke<HostLogsResponse>('get_native_host_logs', { request: req })
+}
+
+export interface RegistryKeyInfo {
+  browser: string
+  key_path: string
+  value: string | null
+  exists: boolean
+}
+
+export async function commandCheckRegistryKeys() {
+  return await invoke<RegistryKeyInfo[]>('check_registry_keys')
+}
+
+export async function commandRemoveRegistryKeys() {
+  return await invoke<string[]>('remove_registry_keys')
 }

@@ -23,10 +23,10 @@
 />
 {#if value}
   <div
-    class='i-material-symbols-check-box-rounded color-border-button w-6 h-6'
+    class='i-material-symbols-check-box-rounded h-6 w-6 color-border-button'
   ></div>
 {:else}
   <div
-    class='i-material-symbols-check-box-outline-blank color-border-button w-6 h-6'
+    class='i-material-symbols-check-box-outline-blank h-6 w-6 color-border-button'
   ></div>
 {/if}

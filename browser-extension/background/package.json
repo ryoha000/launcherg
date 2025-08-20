@@ -1,0 +1,25 @@
+{
+  "name": "@launcherg/background",
+  "type": "module",
+  "version": "1.0.0",
+  "description": "Background script for Launcherg browser extension",
+  "scripts": {
+    "prebuild": "pnpm -C .. run format && pnpm run typecheck && pnpm -C .. run lint",
+    "build": "pnpm run prebuild && vite build",
+    "dev": "vite build --watch",
+    "clean": "rimraf dist",
+    "test": "vitest run --passWithNoTests",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@bufbuild/protobuf": "^2.0.0",
+    "@launcherg/shared": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/chrome": "^0.0.268",
+    "@types/node": "^20.11.5",
+    "rimraf": "^5.0.5",
+    "typescript": "^5.3.3",
+    "vite": "^7.0.6"
+  }
+}

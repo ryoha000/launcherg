@@ -1,0 +1,33 @@
+[package]
+name = "domain"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+path = "src/lib.rs"
+
+[dependencies]
+anyhow = { workspace = true }
+thiserror = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+reqwest = { workspace = true }
+derive-new = { workspace = true }
+chrono = { workspace = true }
+walkdir = { workspace = true }
+ico = { workspace = true }
+windows = { workspace = true }
+tauri = { workspace = true }
+tauri-plugin-shell = { workspace = true }
+uuid = { workspace = true }
+url = { workspace = true }
+pbjson-types = { workspace = true }
+log = { workspace = true }
+dirs = { workspace = true }
+mockall = { workspace = true }
+trait-variant = "0.1"
+
+[dev-dependencies]
+mockall = { workspace = true }
+tempfile = { workspace = true }
+

@@ -1,0 +1,32 @@
+[package]
+name = "usecase"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+path = "src/lib.rs"
+
+[dependencies]
+domain = { path = "../domain" }
+anyhow = { workspace = true }
+thiserror = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+derive-new = { workspace = true }
+chrono = { workspace = true }
+walkdir = { workspace = true }
+tokio = { workspace = true }
+log = { workspace = true }
+futures = { workspace = true }
+tauri = { workspace = true }
+base64 = { workspace = true }
+image = { workspace = true }
+tempfile = { workspace = true }
+zip = { workspace = true }
+winreg = { workspace = true }
+mockall = { workspace = true }
+
+[dev-dependencies]
+mockall = { workspace = true }
+domain = { path = "../domain" }
+

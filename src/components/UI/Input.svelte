@@ -6,6 +6,7 @@
     value: string
     placeholder?: string
     autofocus?: boolean
+    readonly?: boolean
   }
 
   let {
@@ -13,6 +14,7 @@
     value = $bindable(),
     placeholder = '',
     autofocus = false,
+    readonly = false,
   }: Props = $props()
 
   const dispatcher = createEventDispatcher<{ update: { value: string } }>()
@@ -30,10 +32,10 @@
 
 <label>
   {#if label}
-    <div class='text-(text-primary body) font-medium mb-1'>{label}</div>
+    <div class='mb-1 text-(body text-primary) font-medium'>{label}</div>
   {/if}
   <div
-    class='w-full border-(2px solid transparent) focus-within:border-accent-accent rounded transition-all'
+    class='w-full border-(2px transparent solid) rounded transition-all focus-within:border-accent-accent'
   >
     <input
       bind:this={input}
@@ -41,6 +43,7 @@
       type='text'
       oninput={e => dispatcher('update', { value: e.currentTarget.value })}
       {placeholder}
+      {readonly}
       class='w-full border border-(border-primary solid) rounded bg-bg-primary p-(x-3 y-1) text-(input text-primary) transition-all focus:border-transparent placeholder-ui-tertiary'
     />
   </div>

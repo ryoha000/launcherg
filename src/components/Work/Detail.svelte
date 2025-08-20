@@ -30,8 +30,8 @@
   }
 </script>
 
-<div class='border-(~ solid border-primary) rounded-xl'>
-  <div class='grid-(~ cols-[min-content_1fr])'>
+<div class='border border-(border-primary solid) rounded-xl'>
+  <div class='grid grid-(cols-[min-content_1fr])'>
     <DetailRow label='シナリオ' noBorder>
       <div class='flex flex-wrap gap-4'>
         {#each work.creators.writers as v (v.id)}
@@ -52,7 +52,7 @@
       <DetailRow label='声優'>
         <div class='flex flex-wrap gap-4'>
           {#each work.creators.voiceActors as v (v.id)}
-            <div class='flex gap-1 items-end'>
+            <div class='flex items-end gap-1'>
               <LinkText href={getCreatorUrl(v.id)} text={v.name} />
               <div class={getVoiceActorClass(v.importance)}>{v.role}</div>
             </div>
@@ -64,14 +64,14 @@
       <DetailRow label='楽曲'>
         <div class='flex flex-wrap gap-4'>
           {#each work.musics as title, i (`${title}-${i}`)}
-            <div class='flex gap-1 items-center max-w-full'>
+            <div class='max-w-full flex items-center gap-1'>
               <LinkText
                 href={encodeURI(
                   `https://www.youtube.com/results?search_query=${work.name}+${title}`,
                 )}
               >
-                <div class='flex gap-1 items-center'>
-                  <div class='i-iconoir-youtube w-4 h-4 color-#cc0000'></div>
+                <div class='flex items-center gap-1'>
+                  <div class='i-iconoir-youtube h-4 w-4 color-#cc0000'></div>
                   {title}
                 </div>
               </LinkText>

@@ -1,7 +1,7 @@
 use derive_new::new;
 use serde::{Deserialize, Serialize};
 
-use crate::domain::{self, all_game_cache::AllGameCacheOneWithThumbnailUrl};
+use domain::{self, all_game_cache::AllGameCacheOneWithThumbnailUrl};
 
 #[derive(new, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]

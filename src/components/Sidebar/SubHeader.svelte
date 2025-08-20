@@ -26,26 +26,29 @@
   }
 </script>
 
-<div class='mt-4 w-full px-2 flex items-center'>
-  <div class='text-(text-primary body) font-bold pl-2 mr-auto'>
+<div class='mt-4 w-full flex items-center px-2'>
+  <div class='mr-auto pl-2 text-(body text-primary) font-bold'>
     登録したゲーム
   </div>
-  <APopover panelClass='right-0'>
-    {#snippet button()}
-      <Button
-        text='Add'
-        leftIcon='i-material-symbols-computer-outline-rounded'
-        appendClass='ml-auto'
-      />
-    {/snippet}
-    {#snippet children({ close })}
-      <ImportPopover
-        onclose={() => close(null)}
-        onstartAuto={() => (isOpenImportAutomatically = true)}
-        onstartManual={() => (isOpenImportManually = true)}
-      />
-    {/snippet}
-  </APopover>
+  <div class='flex items-center gap-2'>
+    <!-- DLStore機能は廃止 -->
+    <APopover panelClass='right-0'>
+      {#snippet button()}
+        <Button
+          text='Add'
+          leftIcon='i-material-symbols-computer-outline-rounded'
+          appendClass='ml-auto'
+        />
+      {/snippet}
+      {#snippet children({ close })}
+        <ImportPopover
+          onclose={() => close(null)}
+          onstartAuto={() => (isOpenImportAutomatically = true)}
+          onstartManual={() => (isOpenImportManually = true)}
+        />
+      {/snippet}
+    </APopover>
+  </div>
 </div>
 <ImportAutomatically bind:isOpen={isOpenImportAutomatically} />
 <ImportManually
@@ -53,3 +56,4 @@
   onconfirm={importManually}
   oncancel={() => (isOpenImportManually = false)}
 />
+<!-- DLStoreManager 削除 -->

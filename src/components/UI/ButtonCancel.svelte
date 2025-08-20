@@ -11,6 +11,6 @@
   {onclick}
   type='button'
   tabindex={-1}
-  class='ml-auto w-5 h-5 {icon} color-text-tertiary hover:color-text-primary transition-all flex-shrink-0'
+  class='ml-auto h-5 w-5 {icon} flex-shrink-0 color-text-tertiary transition-all hover:color-text-primary'
   aria-label='Cancel'
 ></button>

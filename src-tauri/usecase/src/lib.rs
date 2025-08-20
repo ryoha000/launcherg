@@ -1,0 +1,23 @@
+pub mod all_game_cache;
+mod all_game_cache_test;
+pub mod collection;
+mod collection_test;
+pub mod error;
+pub mod explored_cache;
+mod explored_cache_test;
+pub mod extension_installer;
+pub mod extension_manager;
+mod extension_manager_test;
+pub mod image;
+pub mod file;
+mod file_test;
+pub mod game_identifier;
+pub mod models;
+pub mod process;
+pub mod native_host_sync;
+#[cfg(test)]
+mod repositorymock;
+#[cfg(test)]
+mod windowsmock;
+#[cfg(test)]
+mod native_messaging_mock;

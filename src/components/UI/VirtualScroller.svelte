@@ -27,13 +27,13 @@
   }>()
 </script>
 
-<div use:container class='w-full h-full overflow-y-auto {className}'>
+<div use:container class='h-full w-full overflow-y-auto {className}'>
   <div use:header>
     {@render topElement?.({})}
   </div>
   <div
     use:contents
-    class='relative transform-gpu backface-hidden'
+    class='backface-hidden relative transform-gpu'
     style='height: {$virtualHeight}px;'
   >
     {@render children?.({

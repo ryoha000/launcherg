@@ -26,18 +26,22 @@
   ])
 </script>
 
-<div class='space-y-4 max-w-full'>
+<div class='max-w-full space-y-4'>
   <div class='text-(h1 text-primary) font-bold'>{work.name}</div>
   {#await seiyaUrlPromise then seiyaUrl}
     <Actions id={work.id} name={work.name} {seiyaUrl} />
   {/await}
   <div class='flex items-center'>
     <LinkButton href={work.officialHomePage} text='Official' withIcon />
-    <LinkButton
-      href='https://erogamescape.dyndns.org/~ap2/ero/toukei_kaiseki/game.php?game={work.id}'
-      text='ErogameScape'
-      withIcon
-    />
+    {#if work.erogamescapeId}
+      <LinkButton
+        href='https://erogamescape.dyndns.org/~ap2/ero/toukei_kaiseki/game.php?game={work.erogamescapeId}'
+        text='ErogameScape'
+        withIcon
+      />
+    {:else}
+      <span class='text-gray-500'>EGS ID未連携</span>
+    {/if}
     {#await seiyaUrlPromise then url}
       <LinkButton href={url} text='誠也の部屋' withIcon />
     {/await}

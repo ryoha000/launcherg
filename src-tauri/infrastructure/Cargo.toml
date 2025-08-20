@@ -1,0 +1,48 @@
+[package]
+name = "infrastructure"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+path = "src/lib.rs"
+
+[dependencies]
+domain = { path = "../domain" }
+anyhow = { workspace = true }
+thiserror = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+derive-new = { workspace = true }
+chrono = { workspace = true }
+walkdir = { workspace = true }
+tokio = { workspace = true }
+tokio-util = { workspace = true }
+sqlx = { workspace = true }
+refinery = { workspace = true }
+tauri = { workspace = true }
+env_logger = { workspace = true }
+log = { workspace = true }
+reqwest = { workspace = true }
+image = { workspace = true }
+fast_image_resize = { workspace = true }
+base64 = { workspace = true }
+url = { workspace = true }
+ico = { workspace = true }
+sysinfo = { workspace = true }
+axum = { workspace = true }
+pbjson = { workspace = true }
+pbjson-types = { workspace = true }
+prost = { workspace = true }
+windows = { workspace = true }
+uuid = { workspace = true }
+tauri-plugin-shell = { workspace = true }
+winreg = { workspace = true }
+zip = { workspace = true }
+semver = { workspace = true }
+mockall = { workspace = true }
+
+[dev-dependencies]
+mockall = { workspace = true }
+wiremock = { workspace = true }
+tempfile = { workspace = true }
+domain = { path = "../domain" }

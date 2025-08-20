@@ -1,0 +1,30 @@
+{
+  "name": "@launcherg/content-scripts-dlsite",
+  "type": "module",
+  "version": "1.0.0",
+  "description": "DLsite content script for Launcherg browser extension",
+  "scripts": {
+    "prebuild": "pnpm -C ../.. run format && pnpm run typecheck && pnpm -C ../.. run lint",
+    "build": "pnpm run prebuild && vite build",
+    "dev": "vite build --watch",
+    "clean": "rimraf dist",
+    "test": "vitest run",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@bufbuild/protobuf": "^2.0.0",
+    "@launcherg/shared": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/chrome": "^0.0.268",
+    "@types/jsdom": "^21.1.7",
+    "@types/node": "^20.11.5",
+    "@vitest/ui": "^3.2.4",
+    "happy-dom": "^18.0.1",
+    "jsdom": "^26.1.0",
+    "rimraf": "^5.0.5",
+    "typescript": "^5.3.3",
+    "vite": "^7.0.6",
+    "vitest": "^3.2.4"
+  }
+}

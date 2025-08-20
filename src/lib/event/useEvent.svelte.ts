@@ -44,7 +44,7 @@ export function useEvent() {
    * すべてのイベントリスナーを停止
    */
   const stopAll = () => {
-    for (const [_eventName, unlistenFn] of listeners) {
+    for (const [, unlistenFn] of listeners) {
       unlistenFn()
     }
     listeners.clear()

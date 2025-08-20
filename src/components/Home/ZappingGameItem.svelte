@@ -13,24 +13,24 @@
 </script>
 
 <div
-  class='hover:scale-115 hover:shadow-md focus-within:scale-110 focus-within:shadow-md transition-all cursor-pointer w-full h-full relative hover:z-10'
+  class='relative h-full w-full cursor-pointer transition-all hover:z-10 focus-within:scale-110 hover:scale-115 focus-within:shadow-md hover:shadow-md'
 >
   <a
     tabIndex={0}
     href={`/works/${collectionElement.id}?gamename=${collectionElement.gamename}`}
     use:route
-    class='block w-full h-full'
+    class='block h-full w-full'
   >
     {#if collectionElement.thumbnailWidth && collectionElement.thumbnailHeight}
       <img
         decoding='async'
-        class='object-contain rounded w-full h-full'
+        class='h-full w-full rounded object-contain'
         src={imgSrc}
         alt={`${collectionElement.gamename}のサムネイル`}
       />
     {:else}
       <div
-        class='text-(body text-primary) font-bold px-6 rounded border bg-bg-primary w-full h-full flex items-center justify-center'
+        class='h-full w-full flex items-center justify-center border rounded bg-bg-primary px-6 text-(body text-primary) font-bold'
       >
         {collectionElement.gamename}
       </div>
