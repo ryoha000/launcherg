@@ -6,9 +6,8 @@ use crate::domain::{
     process::Process, windows::process::ProcessWindows, windows::proctail::ProcTail,
 };
 use crate::infrastructure::windowsimpl::proctail::ProcTailImpl;
-use crate::infrastructure::windowsimpl::proctail_manager::{
-    AppHandleProcTailManager, ProcTailManagerTrait,
-};
+use crate::infrastructure::windowsimpl::proctail_manager::AppHandleProcTailManager;
+use crate::domain::windows::proctail_manager::ProcTailManagerTrait;
 use tauri::AppHandle;
 
 #[derive(new)]

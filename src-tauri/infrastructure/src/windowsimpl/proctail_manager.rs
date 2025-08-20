@@ -1,14 +1,16 @@
 use semver::Version;
-use serde::{Deserialize, Serialize};
 use std::path::{Path, PathBuf};
 use std::process::{Child, Command};
 use std::sync::Arc;
-use std::{fs, io};
+use std::fs;
 use sysinfo::{ProcessExt, System, SystemExt};
 use tauri::AppHandle;
 use tokio::sync::Mutex;
 
 use crate::domain::service::save_path_resolver::{SavePathResolver, DirsSavePathResolver};
+pub use crate::domain::windows::proctail_manager::{
+    ProcTailManagerError, ProcTailManagerStatus, ProcTailManagerTrait, ProcTailVersion,
+};
 
 // AppHandleの依存を抽象化するtrait
 pub trait AppConfigProvider {
@@ -26,25 +28,7 @@ const PROCTAIL_DIR: &str = "proctail";
 const PROCTAIL_EXECUTABLE: &str = "ProcTail.Host.exe";
 const GITHUB_RELEASES_URL: &str = "https://api.github.com/repos/ryoha000/ProcTail/releases/latest";
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct ProcTailVersion {
-    pub version: String,
-    pub download_url: String,
-}
-
-#[derive(Debug, thiserror::Error)]
-pub enum ProcTailManagerError {
-    #[error("IO error: {0}")]
-    Io(#[from] io::Error),
-    #[error("HTTP error: {0}")]
-    Http(#[from] reqwest::Error),
-    #[error("JSON error: {0}")]
-    Json(#[from] serde_json::Error),
-    #[error("ProcTail process error: {0}")]
-    Process(String),
-    #[error("Download error: {0}")]
-    Download(String),
-}
+// 型定義・エラー型・トレイトは domain に移動しました（上記で再公開）
 
 pub struct ProcTailManager<T: AppConfigProvider> {
     config_provider: Arc<T>,
@@ -405,29 +389,6 @@ impl<T: AppConfigProvider> ProcTailManager<T> {
             update_available,
         })
     }
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct ProcTailManagerStatus {
-    pub current_version: Option<String>,
-    pub is_running: bool,
-    pub executable_exists: bool,
-    pub update_available: bool,
-}
-
-// ProcTailManagerのtrait定義
-#[cfg_attr(test, mockall::automock)]
-pub trait ProcTailManagerTrait {
-    async fn get_status(&self) -> Result<ProcTailManagerStatus, ProcTailManagerError>;
-    async fn get_latest_version(&self) -> Result<ProcTailVersion, ProcTailManagerError>;
-    async fn is_update_available(&self) -> Result<bool, ProcTailManagerError>;
-    async fn download_and_install(
-        &self,
-        version: &ProcTailVersion,
-    ) -> Result<(), ProcTailManagerError>;
-    async fn start_proctail(&self) -> Result<(), ProcTailManagerError>;
-    async fn stop_proctail(&self) -> Result<(), ProcTailManagerError>;
-    async fn is_running(&self) -> bool;
 }
 
 // ProcTailManagerにtraitを実装

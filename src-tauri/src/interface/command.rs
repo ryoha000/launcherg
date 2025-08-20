@@ -16,9 +16,7 @@ use crate::domain::file::get_lnk_metadatas;
 use crate::domain::windows::proctail::{
     HealthCheckResult, ProcTailEvent, ServiceStatus, WatchTarget,
 };
-use crate::infrastructure::windowsimpl::proctail_manager::{
-    ProcTailManagerStatus, ProcTailVersion,
-};
+use crate::domain::windows::proctail_manager::{ProcTailManagerStatus, ProcTailVersion};
 use crate::{
     domain::{
         collection::{ScannedGameElement},

@@ -1204,6 +1204,7 @@ dependencies = [
  "log",
  "mockall",
  "pbjson-types",
+ "reqwest 0.11.27",
  "serde",
  "serde_json",
  "tauri",

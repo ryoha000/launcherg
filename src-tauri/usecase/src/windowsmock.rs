@@ -2,22 +2,22 @@
 mockall::mock! {
     pub ProcTailManagerTrait {}
 
-    impl ::infrastructure::windowsimpl::proctail_manager::ProcTailManagerTrait for ProcTailManagerTrait {
+    impl ::domain::windows::proctail_manager::ProcTailManagerTrait for ProcTailManagerTrait {
         async fn get_status(&self) -> Result<
-            ::infrastructure::windowsimpl::proctail_manager::ProcTailManagerStatus,
-            ::infrastructure::windowsimpl::proctail_manager::ProcTailManagerError
+            ::domain::windows::proctail_manager::ProcTailManagerStatus,
+            ::domain::windows::proctail_manager::ProcTailManagerError
         >;
         async fn get_latest_version(&self) -> Result<
-            ::infrastructure::windowsimpl::proctail_manager::ProcTailVersion,
-            ::infrastructure::windowsimpl::proctail_manager::ProcTailManagerError
+            ::domain::windows::proctail_manager::ProcTailVersion,
+            ::domain::windows::proctail_manager::ProcTailManagerError
         >;
-        async fn is_update_available(&self) -> Result<bool, ::infrastructure::windowsimpl::proctail_manager::ProcTailManagerError>;
+        async fn is_update_available(&self) -> Result<bool, ::domain::windows::proctail_manager::ProcTailManagerError>;
         async fn download_and_install(
             &self,
-            version: &::infrastructure::windowsimpl::proctail_manager::ProcTailVersion,
-        ) -> Result<(), ::infrastructure::windowsimpl::proctail_manager::ProcTailManagerError>;
-        async fn start_proctail(&self) -> Result<(), ::infrastructure::windowsimpl::proctail_manager::ProcTailManagerError>;
-        async fn stop_proctail(&self) -> Result<(), ::infrastructure::windowsimpl::proctail_manager::ProcTailManagerError>;
+            version: &::domain::windows::proctail_manager::ProcTailVersion,
+        ) -> Result<(), ::domain::windows::proctail_manager::ProcTailManagerError>;
+        async fn start_proctail(&self) -> Result<(), ::domain::windows::proctail_manager::ProcTailManagerError>;
+        async fn stop_proctail(&self) -> Result<(), ::domain::windows::proctail_manager::ProcTailManagerError>;
         async fn is_running(&self) -> bool;
     }
 }
