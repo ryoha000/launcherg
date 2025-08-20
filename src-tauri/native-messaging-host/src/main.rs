@@ -1,22 +1,13 @@
 mod proto;
-#[path = "../infrastructure/mod.rs"]
-mod infrastructure;
-#[path = "../usecase/mod.rs"]
-mod usecase;
-#[path = "../domain/mod.rs"]
-mod domain;
 
 use std::io::ErrorKind;
 use std::sync::Arc;
 use tokio::io::{self as tokio_io, AsyncReadExt, AsyncWriteExt};
 use prost::Message;
- 
 use serde_json;
 use serde::Deserialize;
 use thiserror::Error;
- 
 
-// プロトタイプを使用
 use proto::generated::launcherg::{common::*, sync::*, status::*};
 use infrastructure::{
     repositoryimpl::{driver::Db as RepoDb, repository::Repositories},
@@ -44,7 +35,6 @@ enum RequestFormat {
     JsonBuf,
 }
 
-// 共通エラー型（最小導入）
 type HostResult<T> = Result<T, HostError>;
 
 #[derive(Debug, Error)]
@@ -63,7 +53,6 @@ enum HostError {
     Protocol(String),
 }
 
-// エラーチェーンを1行の文字列に整形
 fn error_chain_to_string<E: std::error::Error + ?Sized>(err: &E) -> String {
     let mut msgs = vec![err.to_string()];
     let mut curr = err.source();
@@ -74,12 +63,10 @@ fn error_chain_to_string<E: std::error::Error + ?Sized>(err: &E) -> String {
     msgs.join(": ")
 }
 
-// anyhow::Error 専用（chain() が使えるため安全）
 fn anyhow_chain_to_string(err: &anyhow::Error) -> String {
     err.chain().map(|e| e.to_string()).collect::<Vec<_>>().join(": ")
 }
 
-// 4バイト長 + 本体のフレーミングを読み取り（None=EOF）
 async fn read_framed() -> HostResult<Option<Vec<u8>>> {
     let mut stdin = tokio_io::stdin();
 
@@ -101,7 +88,6 @@ async fn read_framed() -> HostResult<Option<Vec<u8>>> {
     Ok(Some(message_bytes))
 }
 
-// 統一的なエラーレスポンス送信
 async fn send_error_response(request_id: &str, message: String, preferred_format: RequestFormat) -> Result<(), Box<dyn std::error::Error>> {
     let response = NativeResponse {
         success: false,
@@ -114,12 +100,10 @@ async fn send_error_response(request_id: &str, message: String, preferred_format
 
 #[tokio::main]
 async fn main() {
-    // 標準エラー出力にログを記録
     env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("info"))
         .target(env_logger::Target::Stderr)
         .init();
 
-    // UseCase/Repository を初期化
     let db_path = usecase::native_host_sync::db_file_path();
     let repo_db = RepoDb::from_path(&db_path).await;
     let repositories = Arc::new(Repositories::new(repo_db));
@@ -147,24 +131,20 @@ async fn main() {
 }
 
 async fn handle_message(ctx: &AppCtx) -> Result<bool, Box<dyn std::error::Error>> {
-    // フレームを読み取り
     let message_bytes = match read_framed().await {
         Ok(Some(bytes)) => bytes,
         Ok(None) => return Ok(false),
         Err(HostError::TooLarge(length)) => {
             let error_msg = format!("Message too large: {} bytes (limit 1048576)", length);
-            // 形式は拡張が既定で使用するBuf JSONに合わせる
             send_error_response("", error_msg, RequestFormat::JsonBuf).await?;
             return Ok(true);
         }
         Err(e) => return Err(e.into()),
     };
-    
-    // リクエスト形式を判定し、メッセージをパース
+
     let (message, format) = match parse_message(&message_bytes) {
         Ok(v) => v,
         Err(err) => {
-            // パースできなかった場合も、可能なら requestId を抽出してエラーを返す
             let mut request_id = String::new();
             if let Ok(s) = std::str::from_utf8(&message_bytes) {
                 if let Ok(v) = serde_json::from_str::<serde_json::Value>(s) {
@@ -178,31 +158,7 @@ async fn handle_message(ctx: &AppCtx) -> Result<bool, Box<dyn std::error::Error>
             return Ok(true);
         }
     };
-    
-    let message_type = match &message.message {
-        Some(native_message::Message::SyncDmmGames(_)) => "sync_dmm_games",
-        Some(native_message::Message::SyncDlsiteGames(_)) => "sync_dlsite_games",
-        Some(native_message::Message::GetStatus(_)) => "get_status",
-        Some(native_message::Message::SetConfig(_)) => "set_config",
-        Some(native_message::Message::HealthCheck(_)) => "health_check",
-        None => "unknown",
-    };
-    log::info!("Received message type: {}", message_type);
 
-    // 受信ログをDBへ
-    let _ = match &message.message {
-        Some(native_message::Message::SyncDmmGames(req)) => {
-            let msg = format!("receive dmm sync {} games", req.games.len());
-            ctx.repositories.host_log_repository().insert_log(HostLogLevel::Info, HostLogType::ReceiveDmmSyncGamesRequest, &msg).await
-        }
-        Some(native_message::Message::SyncDlsiteGames(req)) => {
-            let msg = format!("receive dlsite sync {} games", req.games.len());
-            ctx.repositories.host_log_repository().insert_log(HostLogLevel::Info, HostLogType::ReceiveDlsiteSyncGamesRequest, &msg).await
-        }
-        _ => Ok(())
-    };
-    
-    // メッセージタイプに応じて処理
     let response = match &message.message {
         Some(native_message::Message::SyncDmmGames(req)) => handle_sync_dmm_games(ctx, req, &message.request_id).await,
         Some(native_message::Message::SyncDlsiteGames(req)) => handle_sync_dlsite_games(ctx, req, &message.request_id).await,
@@ -213,7 +169,7 @@ async fn handle_message(ctx: &AppCtx) -> Result<bool, Box<dyn std::error::Error>
             response: None,
         },
         Some(native_message::Message::SetConfig(req)) => handle_set_config(req, &message.request_id),
-        Some(native_message::Message::HealthCheck(req)) => handle_health_check(req, &message.request_id),
+        Some(native_message::Message::HealthCheck(req)) => handle_health_check(req , &message.request_id),
         None => NativeResponse {
             success: false,
             error: "No message content provided".to_string(),
@@ -221,25 +177,22 @@ async fn handle_message(ctx: &AppCtx) -> Result<bool, Box<dyn std::error::Error>
             response: None,
         },
     };
-    
-    // レスポンス形式に応じて送信
+
     send_response_with_format(&response, format).await?;
 
-    // 非同期画像保存ワーカー: sync系メッセージの後でのみドレイン実行
     match &message.message {
         Some(native_message::Message::SyncDmmGames(_)) | Some(native_message::Message::SyncDlsiteGames(_)) => {
             let worker = ImageQueueWorker::new(ctx.repositories.clone(), ctx.resolver.clone());
             let _ = worker.drain_until_empty().await;
-            return Ok(false); // 処理完了後はプロセス終了
+            return Ok(false);
         }
         _ => {}
     }
-    
+
     Ok(true)
 }
 
 async fn handle_sync_dmm_games(ctx: &AppCtx, request: &DmmSyncGamesRequest, request_id: &str) -> NativeResponse {
-    log::info!("Syncing {} DMM games", request.games.len());
     let input_ids: Vec<String> = request.games.iter().map(|g| g.id.clone()).collect();
     let params: Vec<DmmSyncGameParam> = request
         .games
@@ -268,8 +221,6 @@ async fn handle_sync_dmm_games(ctx: &AppCtx, request: &DmmSyncGamesRequest, requ
         }
         Err(e) => {
             let err_msg = anyhow_chain_to_string(&e);
-            log::error!("sync_dmm_games failed: {}", err_msg);
-
             let result = SyncBatchResult {
                 success_count: 0,
                 error_count: input_ids.len() as u32,
@@ -287,7 +238,6 @@ async fn handle_sync_dmm_games(ctx: &AppCtx, request: &DmmSyncGamesRequest, requ
 }
 
 async fn handle_sync_dlsite_games(ctx: &AppCtx, request: &DlsiteSyncGamesRequest, request_id: &str) -> NativeResponse {
-    log::info!("Syncing {} DLsite games", request.games.len());
     let input_ids: Vec<String> = request.games.iter().map(|g| g.id.clone()).collect();
     let params: Vec<DlsiteSyncGameParam> = request
         .games
@@ -315,8 +265,6 @@ async fn handle_sync_dlsite_games(ctx: &AppCtx, request: &DlsiteSyncGamesRequest
         }
         Err(e) => {
             let err_msg = anyhow_chain_to_string(&e);
-            log::error!("sync_dlsite_games failed: {}", err_msg);
-
             let result = SyncBatchResult {
                 success_count: 0,
                 error_count: input_ids.len() as u32,
@@ -353,7 +301,6 @@ fn handle_health_check(_request: &HealthCheckRequest, request_id: &str) -> Nativ
         message: "OK".to_string(),
         version: env!("CARGO_PKG_VERSION").to_string(),
     };
-    
     NativeResponse {
         success: true,
         error: String::new(),
@@ -363,22 +310,16 @@ fn handle_health_check(_request: &HealthCheckRequest, request_id: &str) -> Nativ
 }
 
 fn parse_message(message_bytes: &[u8]) -> HostResult<(NativeMessage, RequestFormat)> {
-    // まずProtoBufとして直接パースを試みる
     if let Ok(message) = NativeMessage::decode(message_bytes) {
-        log::info!("Parsed as raw ProtoBuf message");
         return Ok((message, RequestFormat::Protobuf));
     }
 
-    // JSONとしてパース
     let json_str = std::str::from_utf8(message_bytes)?;
 
-    // 1) Prost互換JSON（oneofはフィールド名で表現）
     if let Ok(message) = serde_json::from_str::<NativeMessage>(json_str) {
-        log::info!("Parsed as JSON(prost) message");
         return Ok((message, RequestFormat::Json));
     }
 
-    // 2) buf.build互換(case/value) 形式（構造体としてパース）
     #[derive(Debug, Deserialize, Default)]
     struct BufDmmGame {
         #[serde(default)] id: String,
@@ -447,7 +388,6 @@ fn parse_message(message_bytes: &[u8]) -> HostResult<(NativeMessage, RequestForm
         }
     };
 
-    log::info!("Parsed as JSON(buf case/value) message");
     Ok((nm, RequestFormat::JsonBuf))
 }
 
@@ -456,31 +396,22 @@ async fn send_response_with_format(response: &NativeResponse, format: RequestFor
 
     match format {
         RequestFormat::Protobuf => {
-            // ProtoBuf形式で送信（生のバイナリデータ）
             let mut response_bytes = Vec::new();
             response.encode(&mut response_bytes)
                 .map_err(|e| format!("Failed to encode protobuf response: {}", e))?;
-            
             let length = response_bytes.len() as u32;
-            
             stdout.write_all(&length.to_le_bytes()).await?;
             stdout.write_all(&response_bytes).await?;
-            log::info!("Sent ProtoBuf response for request: {}", response.request_id);
         }
         RequestFormat::Json => {
-            // JSON形式で送信
             let json_response = serde_json::to_string(&response)
                 .map_err(|e| format!("Failed to serialize JSON response: {}", e))?;
-            
             let json_bytes = json_response.as_bytes();
             let length = json_bytes.len() as u32;
-            
             stdout.write_all(&length.to_le_bytes()).await?;
             stdout.write_all(json_bytes).await?;
-            log::info!("Sent JSON response for request: {}", response.request_id);
         }
         RequestFormat::JsonBuf => {
-            // buf.buildのcase/value形式で送信
             let json_value = build_buf_json_response(response);
             let json_string = serde_json::to_string(&json_value)
                 .map_err(|e| format!("Failed to serialize buf JSON: {}", e))?;
@@ -488,10 +419,8 @@ async fn send_response_with_format(response: &NativeResponse, format: RequestFor
             let length = json_bytes.len() as u32;
             stdout.write_all(&length.to_le_bytes()).await?;
             stdout.write_all(json_bytes).await?;
-            log::info!("Sent Buf-JSON response for request: {}", response.request_id);
         }
     }
-    
     stdout.flush().await?;
     Ok(())
 }
@@ -538,13 +467,12 @@ fn build_buf_json_response(resp: &NativeResponse) -> serde_json::Value {
     })
 }
 
-// =============== 補助関数 ===============
-// 補助: Proto -> Domain 変換（必要なら共通化）
-fn convert_proto_config(cfg: &ExtensionConfig) -> crate::domain::extension::ExtensionConfig {
-    crate::domain::extension::ExtensionConfig {
+fn convert_proto_config(cfg: &ExtensionConfig) -> domain::extension::ExtensionConfig {
+    domain::extension::ExtensionConfig {
         auto_sync: cfg.auto_sync,
         allowed_domains: cfg.allowed_domains.clone(),
         sync_interval_minutes: cfg.sync_interval_minutes,
         debug_mode: cfg.debug_mode,
     }
 }
+

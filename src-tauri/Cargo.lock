@@ -1192,6 +1192,29 @@ dependencies = [
 ]
 
 [[package]]
+name = "domain"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "chrono",
+ "derive-new",
+ "dirs 5.0.1",
+ "ico 0.3.0",
+ "log",
+ "pbjson-types",
+ "serde",
+ "serde_json",
+ "tauri",
+ "tauri-plugin-shell",
+ "thiserror 1.0.69",
+ "url",
+ "uuid",
+ "walkdir",
+ "windows 0.51.1",
+]
+
+[[package]]
 name = "dotenvy"
 version = "0.15.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2632,6 +2655,45 @@ dependencies = [
 ]
 
 [[package]]
+name = "infrastructure"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "axum",
+ "base64 0.21.7",
+ "chrono",
+ "derive-new",
+ "domain",
+ "env_logger",
+ "fast_image_resize",
+ "ico 0.3.0",
+ "image 0.24.9",
+ "log",
+ "pbjson",
+ "pbjson-types",
+ "prost",
+ "refinery",
+ "reqwest 0.11.27",
+ "semver",
+ "serde",
+ "serde_json",
+ "sqlx",
+ "sysinfo",
+ "tauri",
+ "tauri-plugin-shell",
+ "thiserror 1.0.69",
+ "tokio",
+ "tokio-util",
+ "url",
+ "uuid",
+ "walkdir",
+ "windows 0.51.1",
+ "winreg 0.52.0",
+ "zip",
+]
+
+[[package]]
 name = "inout"
 version = "0.1.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2860,11 +2922,13 @@ dependencies = [
  "chrono",
  "derive-new",
  "dirs 5.0.1",
+ "domain",
  "env_logger",
  "fast_image_resize",
  "futures",
  "ico 0.3.0",
  "image 0.24.9",
+ "infrastructure",
  "log",
  "mockall",
  "pbjson",
@@ -2893,6 +2957,7 @@ dependencies = [
  "tokio-test",
  "tokio-util",
  "url",
+ "usecase",
  "uuid",
  "walkdir",
  "windows 0.51.1",
@@ -3177,6 +3242,27 @@ name = "multimap"
 version = "0.10.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1d87ecb2933e8aeadb3e3a02b828fed80a7528047e68b4f424523a0981a3a084"
+
+[[package]]
+name = "native-messaging-host"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "chrono",
+ "domain",
+ "env_logger",
+ "infrastructure",
+ "log",
+ "pbjson",
+ "pbjson-types",
+ "prost",
+ "serde",
+ "serde_json",
+ "thiserror 1.0.69",
+ "tokio",
+ "usecase",
+ "windows 0.51.1",
+]
 
 [[package]]
 name = "native-tls"
@@ -6765,6 +6851,30 @@ dependencies = [
  "serde",
  "unic-ucd-ident",
  "url",
+]
+
+[[package]]
+name = "usecase"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "base64 0.21.7",
+ "chrono",
+ "derive-new",
+ "domain",
+ "futures",
+ "image 0.24.9",
+ "infrastructure",
+ "log",
+ "serde",
+ "serde_json",
+ "tauri",
+ "tempfile",
+ "thiserror 1.0.69",
+ "tokio",
+ "walkdir",
+ "winreg 0.52.0",
+ "zip",
 ]
 
 [[package]]

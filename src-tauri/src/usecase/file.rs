@@ -5,6 +5,7 @@ use derive_new::new;
 use tauri::AppHandle;
 use base64::{engine::general_purpose, Engine as _};
 use crate::domain::service::save_path_resolver::SavePathResolver;
+use super::game_identifier::GameIdentifierUseCase;
 
 use crate::domain::all_game_cache::{AllGameCache, AllGameCacheOne};
 use crate::domain::file::{get_file_created_at_sync, PlayHistory};
@@ -15,7 +16,7 @@ use crate::{
         collection::{CollectionElement, ScannedGameElement},
         distance::get_comparable_distance,
         file::{
-            get_file_paths_by_exts, get_lnk_metadatas, get_most_probable_game_candidate,
+            get_file_paths_by_exts, get_lnk_metadatas,
             get_play_history_path, normalize, save_icon_to_png, start_process,
         },
         Id,
@@ -166,7 +167,8 @@ impl FileUseCase {
             let all = normalized_all_games.clone();
             let pubsub_clone = Arc::clone(&pubsub);
             tauri::async_runtime::spawn(async move {
-                let res = get_most_probable_game_candidate(&all, path)?;
+                let identifier = GameIdentifierUseCase::with_default_matcher(all.as_ref().clone());
+                let res = identifier.get_most_probable_candidate(&path)?.map(|v| (v, path));
                 if let Err(e) = pubsub_clone.notify("progresslive", ProgressLivePayload::new(None))
                 {
                     return Err(e);

@@ -166,37 +166,6 @@ pub fn get_lnk_metadatas(lnk_file_paths: Vec<&str>) -> anyhow::Result<HashMap<&s
     Ok(metadatas)
 }
 
-pub fn get_most_probable_game_candidate(
-    id_name_pairs: &AllGameCache,
-    filepath: String,
-) -> anyhow::Result<Option<(AllGameCacheOne, String)>> {
-    let game_identifier = crate::usecase::game_identifier::GameIdentifierUseCase::with_default_matcher(id_name_pairs.clone());
-    let candidates = game_identifier.identify_by_filepath(&filepath)?;
-    Ok(candidates
-        .first()
-        .map(|candidate| (candidate.clone(), filepath)))
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_get_most_probable_game_candidate() {
-        let res = get_most_probable_game_candidate(
-            &vec![AllGameCacheOne::new(
-                27123,
-                "pieces/渡り鳥のソムニウム".to_string(),
-            )],
-            "W:\\others\\software\\Whirlpool\\pieces\\pieces.exe".to_string(),
-        )
-        .unwrap();
-        assert!(res.is_some());
-        let (pieces, _) = res.unwrap();
-        assert_eq!(pieces.id, 27123);
-    }
-}
-
 // (icons dir constant is no longer used; path resolution is centralized in SavePathResolver)
 pub fn save_icon_to_png(
     handle: &Arc<AppHandle>,

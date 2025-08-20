@@ -8,9 +8,82 @@ repository = ""
 edition = "2021"
 default-run = "launcherg"
 
-[[bin]]
-name = "native-messaging-host"
-path = "src/bin/native-messaging-host.rs"
+[workspace]
+members = [
+  "domain",
+  "infrastructure",
+  "usecase",
+  "native-messaging-host",
+]
+
+[workspace.package]
+edition = "2021"
+
+[workspace.dependencies]
+anyhow = "1.0"
+thiserror = "1.0"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+tauri = { version = "2.0.0-beta", features = ["protocol-asset"] }
+tauri-build = { version = "2.0.0-beta", features = [] }
+sqlx = { version = "0.6", features = ["runtime-tokio-rustls", "sqlite", "chrono"] }
+chrono = { version = "0.4.38", features = ["serde"] }
+derive-new = "0.5.0"
+walkdir = "2"
+reqwest = { version = "0.11", features = ["json", "stream"] }
+zip = "0.6"
+futures = "0.3"
+image = "0.24.6"
+base64 = "0.21.2"
+dirs = "5.0.1"
+fast_image_resize = "3.0.4"
+url = "2.4.1"
+ico = "0.3.0"
+sysinfo = "0.29.10"
+refinery = { version = "0.8.9", features = ["rusqlite"] }
+axum = "0.7.5"
+tokio = { version = "1.0", features = ["net", "signal", "process"] }
+tokio-util = "0.7.11"
+semver = "1.0"
+tauri-plugin-log = "2.6.0"
+tauri-plugin-clipboard-manager = "2.3.0"
+tauri-plugin-fs = "2.4.0"
+tauri-plugin-dialog = "2.3.0"
+tauri-plugin-shell = "2.3.0"
+tauri-plugin-http = "2.5.0"
+env_logger = "0.10"
+log = "0.4"
+tempfile = "3.8"
+prost = "0.14.0"
+pbjson = "0.8.0"
+pbjson-types = "0.8.0"
+async-trait = "0.1"
+uuid = { version = "1.3.3", features = ["v4", "fast-rng", "macro-diagnostics"] }
+windows = { version = "0.51", features = [
+  "Win32_System_Com",
+  "Win32_Foundation",
+  "Win32_System_Ole",
+  "Win32_UI_Shell",
+  "Win32_Storage_FileSystem",
+  "Win32_UI_WindowsAndMessaging",
+  "Win32_Graphics_Direct3D",
+  "Graphics_Capture",
+  "Win32_Graphics_Dxgi",
+  "Win32_Graphics_Direct3D11",
+  "Win32_System_WinRT_Direct3D11",
+  "Graphics_DirectX_Direct3D11",
+  "Win32_System_WinRT_Graphics_Capture",
+  "Win32_Graphics_Dwm",
+  "Win32_Graphics_Dxgi_Common",
+  "Win32_System_Threading",
+  "Win32_Security",
+  "Win32_System_Registry",
+  "Foundation",
+  "Graphics_Imaging",
+  "Storage",
+  "Storage_Streams",
+] }
+winreg = "0.52"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -68,6 +141,9 @@ prost = "0.14.0"
 pbjson = "0.8.0"
 pbjson-types = "0.8.0"
 async-trait = "0.1"
+domain = { path = "domain" }
+usecase = { path = "usecase" }
+infrastructure = { path = "infrastructure" }
 
 [target.'cfg(windows)'.dependencies]
 winreg = "0.52"

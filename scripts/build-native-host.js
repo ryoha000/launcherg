@@ -13,8 +13,8 @@ const tauriDir = join(rootDir, 'src-tauri')
 const isDebug = process.argv.includes('--debug')
 const profile = isDebug ? 'debug' : 'release'
 const buildCommand = isDebug
-  ? 'cargo build --bin native-messaging-host'
-  : 'cargo build --release --bin native-messaging-host'
+  ? 'cargo build -p native-messaging-host --bin native-messaging-host'
+  : 'cargo build -p native-messaging-host --release --bin native-messaging-host'
 
 console.log(`Building native-messaging-host (${profile} mode)...`)
 
