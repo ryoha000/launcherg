@@ -1,8 +1,8 @@
 #[cfg(any(test, feature = "mocks"))]
 mockall::mock! {
     pub RepositoriesExtMock {}
-    
-    impl super::repositoryimpl::repository::RepositoriesExt for RepositoriesExtMock {
+
+    impl ::infrastructure::repositoryimpl::repository::RepositoriesExt for RepositoriesExtMock {
         type CollectionRepo = crate::domain::repository::collection::MockCollectionRepository;
         type ExploredCacheRepo = crate::domain::repository::explored_cache::MockExploredCacheRepository;
         type AllGameCacheRepo = crate::domain::repository::all_game_cache::MockAllGameCacheRepository;
@@ -16,3 +16,5 @@ mockall::mock! {
         fn host_log_repository(&self) -> &crate::domain::repository::native_host_log::MockNativeHostLogRepository;
     }
 }
+
+

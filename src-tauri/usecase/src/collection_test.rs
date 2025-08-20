@@ -10,7 +10,7 @@ mod tests {
                 CollectionElement, CollectionElementInfo, CollectionElementInstall, CollectionElementPaths, CollectionElementThumbnail, NewCollectionElement, NewCollectionElementInfo, ScannedGameElement
             }, repository::collection::MockCollectionRepository, service::save_path_resolver::DirsSavePathResolver, Id
         },
-        infrastructure::repositorymock::MockRepositoriesExtMock,
+        usecase::repositorymock::MockRepositoriesExtMock,
         usecase::{collection::CollectionUseCase, error::UseCaseError},
     };
 

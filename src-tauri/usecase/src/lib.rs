@@ -15,6 +15,12 @@ pub mod game_identifier;
 pub mod models;
 pub mod process;
 pub mod native_host_sync;
+#[cfg(any(test, feature = "mocks"))]
+mod repositorymock;
+#[cfg(any(test, feature = "mocks"))]
+mod windowsmock;
+#[cfg(any(test, feature = "mocks"))]
+mod native_messaging_mock;
 // 再エクスポートは不要（各モジュールを直接公開）
 // 互換レイヤ: monorepo 時代の `crate::domain` / `crate::infrastructure` を解決
 pub mod domain { pub use ::domain::*; }

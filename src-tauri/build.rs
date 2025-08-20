@@ -6,7 +6,6 @@ fn main() {
     tauri_build::build();
 
     // Generate code from proto files
-    generate_code_from_proto(Path::new("src/bin/proto"));
     generate_code_from_proto(Path::new("infrastructure/src/native_messaging/proto"));
 }
 

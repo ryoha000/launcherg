@@ -13,7 +13,7 @@ use crate::{
         repository::native_host_log::MockNativeHostLogRepository,
         Id,
     },
-    infrastructure::repositorymock::MockRepositoriesExtMock,
+    usecase::repositorymock::MockRepositoriesExtMock,
 };
 use crate::domain::repository::save_image_queue::ImageSaveQueueRepository;
 use crate::domain::save_image_queue::{ImagePreprocess, ImageSrcType};
