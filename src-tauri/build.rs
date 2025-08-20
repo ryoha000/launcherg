@@ -7,7 +7,7 @@ fn main() {
 
     // Generate code from proto files
     generate_code_from_proto(Path::new("src/bin/proto"));
-    generate_code_from_proto(Path::new("src/infrastructure/native_messaging/proto"));
+    generate_code_from_proto(Path::new("infrastructure/src/native_messaging/proto"));
 }
 
 fn generate_code_from_proto(proto_out_dir: &Path) {

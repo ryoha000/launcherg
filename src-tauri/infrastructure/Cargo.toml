@@ -40,4 +40,14 @@ winreg = { workspace = true }
 zip = { workspace = true }
 semver = { workspace = true }
 async-trait = { workspace = true }
+mockall = { workspace = true, optional = true }
+
+[features]
+mocks = ["mockall", "domain/mocks"]
+
+[dev-dependencies]
+mockall = { workspace = true }
+wiremock = { workspace = true }
+tempfile = { workspace = true }
+domain = { path = "../domain", features = ["mocks"] }
 

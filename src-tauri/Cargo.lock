@@ -1202,11 +1202,13 @@ dependencies = [
  "dirs 5.0.1",
  "ico 0.3.0",
  "log",
+ "mockall",
  "pbjson-types",
  "serde",
  "serde_json",
  "tauri",
  "tauri-plugin-shell",
+ "tempfile",
  "thiserror 1.0.69",
  "url",
  "uuid",
@@ -2670,6 +2672,7 @@ dependencies = [
  "ico 0.3.0",
  "image 0.24.9",
  "log",
+ "mockall",
  "pbjson",
  "pbjson-types",
  "prost",
@@ -2682,6 +2685,7 @@ dependencies = [
  "sysinfo",
  "tauri",
  "tauri-plugin-shell",
+ "tempfile",
  "thiserror 1.0.69",
  "tokio",
  "tokio-util",
@@ -2690,6 +2694,7 @@ dependencies = [
  "walkdir",
  "windows 0.51.1",
  "winreg 0.52.0",
+ "wiremock",
  "zip",
 ]
 
@@ -6858,6 +6863,7 @@ name = "usecase"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "async-trait",
  "base64 0.21.7",
  "chrono",
  "derive-new",
@@ -6866,6 +6872,7 @@ dependencies = [
  "image 0.24.9",
  "infrastructure",
  "log",
+ "mockall",
  "serde",
  "serde_json",
  "tauri",

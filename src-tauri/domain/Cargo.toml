@@ -24,4 +24,12 @@ pbjson-types = { workspace = true }
 async-trait = { workspace = true }
 log = { workspace = true }
 dirs = { workspace = true }
+mockall = { workspace = true, optional = true }
+
+[features]
+mocks = ["mockall"]
+
+[dev-dependencies]
+mockall = { workspace = true }
+tempfile = { workspace = true }
 

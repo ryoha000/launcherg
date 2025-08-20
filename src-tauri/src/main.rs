@@ -1,10 +1,10 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-mod domain;
-mod infrastructure;
 mod interface;
-mod usecase;
+pub mod domain { pub use ::domain::*; }
+pub mod infrastructure { pub use ::infrastructure::*; }
+pub mod usecase { pub use ::usecase::*; }
 
 use std::sync::Arc;
 

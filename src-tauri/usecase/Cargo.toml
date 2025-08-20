@@ -25,4 +25,14 @@ image = { workspace = true }
 tempfile = { workspace = true }
 zip = { workspace = true }
 winreg = { workspace = true }
+mockall = { workspace = true, optional = true }
+async-trait = { workspace = true }
+
+[features]
+mocks = ["mockall", "domain/mocks", "infrastructure/mocks"]
+
+[dev-dependencies]
+mockall = { workspace = true }
+domain = { path = "../domain", features = ["mocks" ] }
+infrastructure = { path = "../infrastructure", features = ["mocks" ] }
 
