@@ -8,6 +8,7 @@ use super::{
     error::CommandError,
     models::{
         collection::CollectionElement,
+        deny_list::DenyListItemVm,
     },
     module::{Modules, ModulesExt},
 };
@@ -27,7 +28,7 @@ use crate::{
     },
     usecase::models::collection::CreateCollectionElementDetail,
 };
-use domain::{native_host_log::{HostLogLevel, HostLogType}, repository::{RepositoriesExt, native_host_log::NativeHostLogRepository}};
+use domain::{native_host_log::{HostLogLevel, HostLogType}, repository::{RepositoriesExt, native_host_log::NativeHostLogRepository}, deny_list::StoreType};
 
 #[tauri::command]
 pub async fn create_elements_in_pc(
@@ -995,5 +996,37 @@ pub async fn remove_registry_keys(
         .map_err(|e| anyhow::anyhow!("Failed to remove registry keys: {}", e))?;
     
     Ok(result)
+}
+
+// ========== Deny List ==========
+
+#[tauri::command]
+pub async fn deny_list_add(
+    modules: State<'_, Arc<Modules>>,
+    store_type: i32,
+    store_id: String,
+) -> anyhow::Result<(), CommandError> {
+    let st = StoreType::try_from(store_type).map_err(|_| anyhow::anyhow!("invalid store type"))?;
+    modules.deny_list_use_case().add(st, &store_id).await?;
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn deny_list_remove(
+    modules: State<'_, Arc<Modules>>,
+    store_type: i32,
+    store_id: String,
+) -> anyhow::Result<(), CommandError> {
+    let st = StoreType::try_from(store_type).map_err(|_| anyhow::anyhow!("invalid store type"))?;
+    modules.deny_list_use_case().remove(st, &store_id).await?;
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn deny_list_all(
+    modules: State<'_, Arc<Modules>>,
+) -> anyhow::Result<Vec<DenyListItemVm>, CommandError> {
+    let list = modules.deny_list_use_case().list().await?;
+    Ok(list.into_iter().map(|e| e.into()).collect())
 }
 

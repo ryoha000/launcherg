@@ -9,6 +9,7 @@ pub mod distance;
 pub mod explored_cache;
 pub mod extension;
 pub mod file;
+pub mod deny_list;
 pub mod game_matcher;
 pub mod network;
 pub mod process;

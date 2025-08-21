@@ -1,6 +1,7 @@
 import type { RouteConfig } from '@mateothegreat/svelte5-router'
 import ExtensionManager from '@/views/Debug/ExtensionManager.svelte'
 import ExtensionLog from '@/views/Debug/ExtensionLog.svelte'
+import DenyList from '@/views/Debug/DenyList.svelte'
 import ProcTailDebug from '@/views/Debug/ProcTail.svelte'
 import Home from '@/views/Home.svelte'
 import Memo from '@/views/Memo.svelte'
@@ -14,6 +15,7 @@ export const routes: RouteConfig[] = [
   { path: '/settings', component: Settings },
   { path: '/debug/extensionmanager', component: ExtensionManager },
   { path: '/debug/extensionlog', component: ExtensionLog },
+  { path: '/debug/denylist', component: DenyList },
   { path: '/debug/proctail', component: ProcTailDebug },
   // TODO: 404
 ]

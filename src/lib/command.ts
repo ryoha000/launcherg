@@ -297,7 +297,7 @@ export interface HostLogsResponse {
   items: HostLogItem[]
   total: number
 }
-export async function commandGetNativeHostLogs(req: { limit?: number; offset?: number; level?: number; typ?: number }) {
+export async function commandGetNativeHostLogs(req: { limit?: number, offset?: number, level?: number, typ?: number }) {
   return await invoke<HostLogsResponse>('get_native_host_logs', { request: req })
 }
 
@@ -314,4 +314,16 @@ export async function commandCheckRegistryKeys() {
 
 export async function commandRemoveRegistryKeys() {
   return await invoke<string[]>('remove_registry_keys')
+}
+
+// Deny List Commands
+export interface DenyListItemVm { id: number, storeType: number, storeId: string }
+export async function commandDenyListAdd(storeType: number, storeId: string) {
+  return await invoke<void>('deny_list_add', { storeType, storeId })
+}
+export async function commandDenyListRemove(storeType: number, storeId: string) {
+  return await invoke<void>('deny_list_remove', { storeType, storeId })
+}
+export async function commandDenyListAll() {
+  return await invoke<DenyListItemVm[]>('deny_list_all')
 }

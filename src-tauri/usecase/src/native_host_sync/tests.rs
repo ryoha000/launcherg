@@ -12,6 +12,7 @@ use domain::{
     Id,
 };
 use crate::repositorymock::MockRepositoriesExtMock;
+use domain::repository::deny_list::MockDenyListRepository;
 
 #[derive(Clone, Default)]
 struct TestThumbnailService {
@@ -64,6 +65,13 @@ fn new_usecase_with(
     mock_repositories
         .expect_host_log_repository()
         .return_const(hostlog);
+
+    // deny list は空を返すようにモック（全テストで共通仕様）
+    let mut deny = MockDenyListRepository::new();
+    deny.expect_list().returning(|| Box::pin(async { Ok::<_, anyhow::Error>(Vec::new()) }));
+    mock_repositories
+        .expect_deny_list_repository()
+        .return_const(deny);
 
     let icons = TestIconService::default();
     (

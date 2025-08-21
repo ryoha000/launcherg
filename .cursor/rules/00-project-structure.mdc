@@ -1,0 +1,17 @@
+---
+alwaysApply: true
+---
+# プロジェクト構成ガイド
+
+このリポジトリは Tauri/ Rust/ Svelte の多層構成です。主要ディレクトリ:
+
+- ドメイン層: [src-tauri/domain](mdc:src-tauri/domain)
+- インフラ層: [src-tauri/infrastructure](mdc:src-tauri/infrastructure)
+- ユースケース層: [src-tauri/usecase](mdc:src-tauri/usecase)
+- Tauri インターフェース(UIブリッジ): [src-tauri/src/interface](mdc:src-tauri/src/interface)
+- ネイティブメッセージングホスト: [src-tauri/native-messaging-host](mdc:src-tauri/native-messaging-host)
+- フロントエンド(Svelte): [src](mdc:src)
+
+全体の依存方向は Domain → Usecase → Interface/Host → UI の順に一方向です。DB マイグレーションは [src-tauri/infrastructure/src/migrations](mdc:src-tauri/infrastructure/src/migrations) に配置します。
+
+ID はドメインの `Id<T>` を用います。新規エンティティの `id` も極力 `Id<...>` で表現してください（例: `Id<DenyListEntry>`）。

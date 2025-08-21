@@ -36,6 +36,10 @@
   function navigateToExtensionLog() {
     goto('/debug/extensionlog')
   }
+
+  function navigateToDenyList() {
+    goto('/debug/denylist')
+  }
 </script>
 
 <div class='mx-auto h-full max-w-2xl overflow-y-auto p-6'>
@@ -108,6 +112,7 @@
       <h2 class='mb-3 text-(lg text-primary) font-semibold'>デバッグ</h2>
       <div class='space-y-3'>
         <Button variant='normal' onclick={navigateToProcTailDebug} text='ProcTailデバッグ画面' />
+        <Button variant='normal' onclick={navigateToDenyList} text='Deny List 管理 (DMM/DLsite)' />
       </div>
     </div>
 

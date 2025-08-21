@@ -6,6 +6,7 @@ use domain::{
     all_game_cache::AllGameCache,
     collection::CollectionElement,
     explored_cache::ExploredCache,
+    deny_list::DenyListEntry,
 };
 
 use super::driver::Db;
@@ -22,6 +23,7 @@ pub struct Repositories {
     all_game_cache_repository: RepositoryImpl<AllGameCache>,
     image_queue_repository: RepositoryImpl<ImageSaveQueueRow>,
     host_log_repository: RepositoryImpl<NativeHostLogRow>,
+    deny_list_repository: RepositoryImpl<DenyListEntry>,
 }
 
 impl RepositoriesExt for Repositories {
@@ -30,6 +32,7 @@ impl RepositoriesExt for Repositories {
     type AllGameCacheRepo = RepositoryImpl<AllGameCache>;
     type ImageQueueRepo = RepositoryImpl<ImageSaveQueueRow>;
     type HostLogRepo = RepositoryImpl<NativeHostLogRow>;
+    type DenyListRepo = RepositoryImpl<DenyListEntry>;
 
     fn collection_repository(&self) -> &Self::CollectionRepo {
         &self.collection_repository
@@ -42,6 +45,7 @@ impl RepositoriesExt for Repositories {
     }
     fn image_queue_repository(&self) -> &Self::ImageQueueRepo { &self.image_queue_repository }
     fn host_log_repository(&self) -> &Self::HostLogRepo { &self.host_log_repository }
+    fn deny_list_repository(&self) -> &Self::DenyListRepo { &self.deny_list_repository }
 }
 
 impl Repositories {
@@ -51,6 +55,7 @@ impl Repositories {
         let all_game_cache_repository = RepositoryImpl::new(db.clone());
         let image_queue_repository = RepositoryImpl::new(db.clone());
         let host_log_repository = RepositoryImpl::new(db.clone());
+        let deny_list_repository = RepositoryImpl::new(db.clone());
 
         Self {
             collection_repository,
@@ -58,6 +63,7 @@ impl Repositories {
             all_game_cache_repository,
             image_queue_repository,
             host_log_repository,
+            deny_list_repository,
         }
     }
 

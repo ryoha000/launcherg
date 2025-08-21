@@ -1,0 +1,40 @@
+---
+alwaysApply: true
+---
+# Deny List 実装ルール
+
+目的: DMM/DLsite の `storeId` を deny し、同期処理で除外する。
+
+## データベース
+- テーブル: `denied_store_ids`
+  - カラム: `id INTEGER PK`, `store_type INTEGER`, `store_id TEXT`, `created_at`, `updated_at`
+  - 制約: `UNIQUE(store_type, store_id)`
+  - インデックス: `(store_type, store_id)`
+
+## ドメイン
+- 型: `StoreType` (`Unspecified=0, Dmm=1, Dlsite=2`)
+- エンティティ: `DenyListEntry { id: Id<DenyListEntry>, store_type: StoreType, store_id: String }`
+- リポジトリ: `DenyListRepository { add, remove, list, exists }`
+
+## インフラ
+- 実装: [src-tauri/infrastructure/src/repositoryimpl/deny_list.rs](mdc:src-tauri/infrastructure/src/repositoryimpl/deny_list.rs)
+  - SQL: `INSERT OR IGNORE`, `DELETE`, `SELECT`、`Id::new(id)` を返す
+
+## ユースケース
+- `NativeHostSyncUseCase.sync_dmm_games/sync_dlsite_games` で deny セットを一括取得→ `HashSet` 化→ループで `contains` 除外
+- テストでは `MockDenyListRepository` を `list() -> Ok(vec![])` でモックする（本番ロジック分岐を禁止）
+
+## Tauri インターフェース
+- コマンド: `deny_list_add`, `deny_list_remove`, `deny_list_all`
+- VM は [src-tauri/src/interface/models/deny_list.rs](mdc:src-tauri/src/interface/models/deny_list.rs)
+  - `#[serde(rename_all = "camelCase")]`
+  - `impl From<domain::deny_list::DenyListEntry>` 実装済み
+
+## フロントエンド
+- 画面: [src/views/Debug/DenyList.svelte](mdc:src/views/Debug/DenyList.svelte)
+- ルート: `/debug/denylist` ([src/router/route.ts](mdc:src/router/route.ts))
+- invoke の payload は camelCase（`storeType`, `storeId`）
+
+## 注意事項
+- 既存の同期ハンドラ(`native-messaging-host`)では deny 判定をしない。判定は usecase に集約。
+- コマンド定義ファイルに VM 構造体を定義しない。`src-tauri/src/interface/models/*` に置く。

@@ -21,6 +21,7 @@ use crate::{
         all_game_cache::AllGameCacheUseCase, collection::CollectionUseCase,
         explored_cache::ExploredCacheUseCase, extension_manager::ExtensionManagerUseCase,
         file::FileUseCase, image::ImageUseCase, process::ProcessUseCase,
+        deny_list::DenyListUseCase,
     },
 };
 
@@ -33,6 +34,7 @@ pub struct Modules {
     all_game_cache_use_case: AllGameCacheUseCase<Repositories>,
     process_use_case: ProcessUseCase<Windows>,
     image_use_case: ImageUseCase<ThumbnailServiceImpl, TauriIconServiceImpl>,
+    deny_list_use_case: DenyListUseCase<Repositories>,
     pubsub: PubSub,
 }
 pub trait ModulesExt {
@@ -48,6 +50,7 @@ pub trait ModulesExt {
     fn file_use_case(&self) -> &FileUseCase;
     fn process_use_case(&self) -> &ProcessUseCase<Self::Windows>;
     fn image_use_case(&self) -> &ImageUseCase<ThumbnailServiceImpl, TauriIconServiceImpl>;
+    fn deny_list_use_case(&self) -> &DenyListUseCase<Self::Repositories>;
     fn pubsub(&self) -> &Self::PubSub;
 }
 
@@ -80,6 +83,7 @@ impl ModulesExt for Modules {
     fn image_use_case(&self) -> &ImageUseCase<ThumbnailServiceImpl, TauriIconServiceImpl> {
         &self.image_use_case
     }
+    fn deny_list_use_case(&self) -> &DenyListUseCase<Self::Repositories> { &self.deny_list_use_case }
     fn pubsub(&self) -> &Self::PubSub {
         &self.pubsub
     }
@@ -108,6 +112,7 @@ impl Modules {
         let process_use_case: ProcessUseCase<Windows> = ProcessUseCase::new(windows.clone());
 
         let image_use_case: ImageUseCase<ThumbnailServiceImpl, TauriIconServiceImpl> = ImageUseCase::new(thumbs.clone(), Arc::new(icons), resolver.clone());
+        let deny_list_use_case: DenyListUseCase<Repositories> = DenyListUseCase::new(repositories.clone());
 
         Self {
             repositories,
@@ -118,6 +123,7 @@ impl Modules {
             file_use_case,
             process_use_case,
             image_use_case,
+            deny_list_use_case,
             pubsub,
         }
     }

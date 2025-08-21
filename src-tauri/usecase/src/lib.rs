@@ -15,6 +15,7 @@ pub mod game_identifier;
 pub mod models;
 pub mod process;
 pub mod native_host_sync;
+pub mod deny_list;
 #[cfg(test)]
 mod repositorymock;
 #[cfg(test)]

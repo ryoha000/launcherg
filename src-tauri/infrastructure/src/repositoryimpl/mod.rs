@@ -6,6 +6,7 @@ pub mod models;
 pub mod repository;
 pub mod save_image_queue;
 pub mod native_host_log;
+pub mod deny_list;
 
 #[cfg(test)]
 pub mod tests;

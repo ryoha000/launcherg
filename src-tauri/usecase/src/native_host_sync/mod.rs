@@ -3,8 +3,10 @@
 //! - EGS 情報があれば名称/詳細も upsert し、EGS マップを作成/更新する
 
 use std::sync::Arc;
+use std::collections::HashSet;
 use derive_new::new;
-use domain::repository::{collection::CollectionRepository, RepositoriesExt};
+use domain::repository::{collection::CollectionRepository, RepositoriesExt, deny_list::DenyListRepository};
+use domain::deny_list::StoreType;
 use domain::save_image_queue::{ImageSrcType, ImagePreprocess};
 use domain::repository::save_image_queue::ImageSaveQueueRepository;
 use domain::service::save_path_resolver::{SavePathResolver, DirsSavePathResolver};
@@ -152,7 +154,17 @@ impl<R: RepositoriesExt> NativeHostSyncUseCase<R> {
 		games: Vec<DmmSyncGameParam>,
 	) -> anyhow::Result<u32> {
 		let mut success: u32 = 0;
+		// 先にDMMのdeny listを取得してセット化
+		let denied: HashSet<String> = self.repositories
+			.deny_list_repository()
+			.list()
+			.await?
+			.into_iter()
+			.filter(|e| matches!(e.store_type, StoreType::Dmm))
+			.map(|e| e.store_id)
+			.collect();
 		for DmmSyncGameParam { store_id, category, subcategory, gamename, egs, image_url } in games {
+			if denied.contains(&store_id) { continue; }
 			// 既存 (store_id, category, subcategory) がある場合はスキップ
 			let exists = self
 				.repositories
@@ -206,7 +218,17 @@ impl<R: RepositoriesExt> NativeHostSyncUseCase<R> {
 		games: Vec<DlsiteSyncGameParam>,
 	) -> anyhow::Result<u32> {
 		let mut success: u32 = 0;
+		// 先にDLsiteのdeny listを取得してセット化
+		let denied: HashSet<String> = self.repositories
+			.deny_list_repository()
+			.list()
+			.await?
+			.into_iter()
+			.filter(|e| matches!(e.store_type, StoreType::Dlsite))
+			.map(|e| e.store_id)
+			.collect();
 		for DlsiteSyncGameParam { store_id, category, gamename, egs, image_url } in games {
+			if denied.contains(&store_id) { continue; }
 			// 既存 (store_id, category) がある場合はスキップ
 			let exists = self
 				.repositories

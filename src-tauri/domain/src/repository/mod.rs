@@ -3,6 +3,7 @@ pub mod collection;
 pub mod explored_cache;
 pub mod save_image_queue;
 pub mod native_host_log;
+pub mod deny_list;
 
 pub trait RepositoriesExt {
     type CollectionRepo: collection::CollectionRepository;
@@ -10,10 +11,12 @@ pub trait RepositoriesExt {
     type AllGameCacheRepo: all_game_cache::AllGameCacheRepository;
     type ImageQueueRepo: save_image_queue::ImageSaveQueueRepository;
     type HostLogRepo: native_host_log::NativeHostLogRepository;
+    type DenyListRepo: deny_list::DenyListRepository;
 
     fn collection_repository(&self) -> &Self::CollectionRepo;
     fn explored_cache_repository(&self) -> &Self::ExploredCacheRepo;
     fn all_game_cache_repository(&self) -> &Self::AllGameCacheRepo;
     fn image_queue_repository(&self) -> &Self::ImageQueueRepo;
     fn host_log_repository(&self) -> &Self::HostLogRepo;
+    fn deny_list_repository(&self) -> &Self::DenyListRepo;
 }

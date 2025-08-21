@@ -1,0 +1,15 @@
+---
+alwaysApply: true
+---
+# Tauri インターフェース/モデル規約
+
+## モデル定義
+- `src-tauri/src/interface/command.rs` に構造体を定義しない。
+- すべて `src-tauri/src/interface/models/*.rs` に配置し、必要に応じて `From<domain::*::Entity>` を実装する。
+- すべてのシリアライズ可能なモデルに `#[serde(rename_all = "camelCase")]` を付与する。
+
+## invoke パラメータ
+- フロントエンド(TypeScript)→Rust の invoke は camelCase で送る（Tauri が snake_case に変換）。
+
+## ルーティング/リンク
+- 新規デバッグ系ページは `/debug/*` に追加し、設定画面からの導線を設ける。
