@@ -4,13 +4,11 @@ use std::io::ErrorKind;
 use std::sync::Arc;
 use tokio::io::{self as tokio_io, AsyncReadExt, AsyncWriteExt};
 use serde_json;
-use serde::Deserialize;
 use thiserror::Error;
 
 use models::{
     common::{NativeMessageCase, NativeMessageTs, NativeResponseCase, NativeResponseTs, HealthCheckRequestTs, HealthCheckResultTs},
     sync::{DmmSyncGamesRequestTs, DlsiteSyncGamesRequestTs, SyncBatchResultTs},
-    status::*,
     packs::{GetDmmPackIdsRequestTs, DmmPackIdsResponseTs},
 };
 use infrastructure::{
@@ -19,16 +17,12 @@ use infrastructure::{
 };
 use usecase::native_host_sync::{NativeHostSyncUseCase, DmmSyncGameParam, DlsiteSyncGameParam, EgsInfo};
 use domain::service::save_path_resolver::{SavePathResolver, DirsSavePathResolver};
-use domain::repository::{RepositoriesExt, dmm_pack::DmmPackRepository};
 
 struct AppCtx {
     repositories: Arc<Repositories>,
     sync_usecase: NativeHostSyncUseCase<Repositories>,
     resolver: Arc<dyn SavePathResolver>,
 }
-
-#[derive(Debug)]
-enum RequestFormat { Json }
 
 type HostResult<T> = Result<T, HostError>;
 
@@ -69,11 +63,6 @@ async fn read_framed() -> HostResult<Option<Vec<u8>>> {
     Ok(Some(message_bytes))
 }
 
-async fn send_error_response(request_id: &str, message: String) -> Result<(), Box<dyn std::error::Error>> {
-    let response = NativeResponseTs { success: false, error: message, request_id: request_id.to_string(), response: None };
-    send_response_json(&response).await
-}
-
 #[tokio::main]
 async fn main() {
     env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("info"))
@@ -103,27 +92,25 @@ async fn main() {
     log::info!("Native Messaging Host stopped");
 }
 
-async fn handle_message(ctx: &AppCtx) -> Result<bool, Box<dyn std::error::Error>> {
+async fn handle_message(ctx: &AppCtx) -> HostResult<bool> {
     let message_bytes = match read_framed().await {
         Ok(Some(bytes)) => bytes,
         Ok(None) => return Ok(false),
         Err(HostError::TooLarge(length)) => {
-            let error_msg = format!("Message too large: {} bytes (limit 1048576)", length);
+            let error_msg = HostError::TooLarge(length).to_string();
             send_error_response("", error_msg).await?;
             return Ok(true);
         }
-        Err(e) => return Err(e.into()),
+        Err(e) => return Err(e),
     };
 
-    let (message, format) = match parse_message(&message_bytes) {
+    let message = match parse_message(&message_bytes) {
         Ok(v) => v,
         Err(err) => {
             let mut request_id = String::new();
-            if let Ok(s) = std::str::from_utf8(&message_bytes) {
-                if let Ok(v) = serde_json::from_str::<serde_json::Value>(s) {
-                    if let Some(id) = v.get("request_id").and_then(|x| x.as_str()) {
-                        request_id = id.to_string();
-                    }
+            if let Ok(v) = serde_json::from_slice::<serde_json::Value>(&message_bytes) {
+                if let Some(id) = v.get("request_id").and_then(|x| x.as_str()) {
+                    request_id = id.to_string();
                 }
             }
 
@@ -141,7 +128,6 @@ async fn handle_message(ctx: &AppCtx) -> Result<bool, Box<dyn std::error::Error>
         NativeMessageCase::HealthCheck(_) => handle_health_check(&HealthCheckRequestTs {}, &message.request_id),
     };
 
-    let _ = format; // currently always Json
     send_response_json(&response).await?;
 
     // 画像キューの drain は同期時のみ
@@ -158,6 +144,127 @@ async fn handle_message(ctx: &AppCtx) -> Result<bool, Box<dyn std::error::Error>
 }
 
 async fn handle_sync_dmm_games(ctx: &AppCtx, request: &DmmSyncGamesRequestTs, request_id: &str) -> NativeResponseTs {
+    let (input_ids, params) = to_dmm_params(request);
+    match ctx.sync_usecase.sync_dmm_games(params).await {
+        Ok(success_count) => {
+            let result = SyncBatchResultTs { success_count, error_count: 0, errors: vec![], synced_games: input_ids.clone() };
+            ok(request_id, NativeResponseCase::SyncGamesResult(result))
+        }
+        Err(e) => {
+            let err_msg = anyhow_chain_to_string(&e);
+            let result = SyncBatchResultTs {
+                success_count: 0,
+                error_count: input_ids.len() as u32,
+                errors: vec![err_msg.clone()],
+                synced_games: input_ids,
+            };
+            fail_with_body(request_id, err_msg, NativeResponseCase::SyncGamesResult(result))
+        }
+    }
+}
+
+async fn handle_sync_dlsite_games(ctx: &AppCtx, request: &DlsiteSyncGamesRequestTs, request_id: &str) -> NativeResponseTs {
+    let (input_ids, params) = to_dlsite_params(request);
+    match ctx.sync_usecase.sync_dlsite_games(params).await {
+        Ok(success_count) => {
+            let result = SyncBatchResultTs { success_count, error_count: 0, errors: vec![], synced_games: input_ids.clone() };
+            ok(request_id, NativeResponseCase::SyncGamesResult(result))
+        }
+        Err(e) => {
+            let err_msg = anyhow_chain_to_string(&e);
+            let result = SyncBatchResultTs {
+                success_count: 0,
+                error_count: input_ids.len() as u32,
+                errors: vec![err_msg.clone()],
+                synced_games: input_ids,
+            };
+            fail_with_body(request_id, err_msg, NativeResponseCase::SyncGamesResult(result))
+        }
+    }
+}
+
+async fn handle_get_dmm_pack_ids(ctx: &AppCtx, _request: &GetDmmPackIdsRequestTs, request_id: &str) -> NativeResponseTs {
+    match ctx.sync_usecase.get_dmm_pack_store_ids().await {
+        Ok(store_ids) => {
+            let result = DmmPackIdsResponseTs { store_ids };
+            ok(request_id, NativeResponseCase::DmmPackIds(result))
+        }
+        Err(e) => {
+            err(request_id, anyhow_chain_to_string(&e))
+        }
+    }
+}
+
+fn handle_health_check(_request: &HealthCheckRequestTs, request_id: &str) -> NativeResponseTs {
+    let result = HealthCheckResultTs {
+        message: "OK".to_string(),
+        version: env!("CARGO_PKG_VERSION").to_string(),
+    };
+    ok(request_id, NativeResponseCase::HealthCheckResult(result))
+}
+
+fn parse_message(message_bytes: &[u8]) -> HostResult<NativeMessageTs> {
+    let message: NativeMessageTs = serde_json::from_slice(message_bytes)?;
+    Ok(message)
+}
+
+async fn send_response_json(response: &NativeResponseTs) -> HostResult<()> {
+    let mut stdout = tokio_io::stdout();
+
+    let json_response = serde_json::to_string(&response)?;
+    let json_bytes = json_response.as_bytes();
+    let length = json_bytes.len() as u32;
+    stdout.write_all(&length.to_le_bytes()).await?;
+    stdout.write_all(json_bytes).await?;
+    stdout.flush().await?;
+    Ok(())
+}
+
+async fn send_error_response(request_id: &str, message: String) -> HostResult<()> {
+    let response = err(request_id, message);
+    send_response_json(&response).await
+}
+
+fn ok<R: Into<NativeResponseCase>>(request_id: &str, body: R) -> NativeResponseTs {
+    NativeResponseTs {
+        success: true,
+        error: String::new(),
+        request_id: request_id.to_string(),
+        response: Some(body.into()),
+    }
+}
+
+fn err(request_id: &str, msg: impl Into<String>) -> NativeResponseTs {
+    NativeResponseTs {
+        success: false,
+        error: msg.into(),
+        request_id: request_id.to_string(),
+        response: None,
+    }
+}
+
+fn fail_with_body(request_id: &str, msg: impl Into<String>, body: NativeResponseCase) -> NativeResponseTs {
+    NativeResponseTs {
+        success: false,
+        error: msg.into(),
+        request_id: request_id.to_string(),
+        response: Some(body),
+    }
+}
+
+fn map_egs_ts(src: &models::sync::EgsInfoTs) -> EgsInfo {
+    EgsInfo {
+        erogamescape_id: src.erogamescape_id,
+        gamename: src.gamename.clone(),
+        gamename_ruby: src.gamename_ruby.clone(),
+        brandname: src.brandname.clone(),
+        brandname_ruby: src.brandname_ruby.clone(),
+        sellday: src.sellday.clone(),
+        is_nukige: src.is_nukige,
+    }
+}
+
+fn to_dmm_params(request: &DmmSyncGamesRequestTs) -> (Vec<String>, Vec<DmmSyncGameParam>) {
     let input_ids: Vec<String> = request.games.iter().map(|g| g.id.clone()).collect();
     let params: Vec<DmmSyncGameParam> = request
         .games
@@ -168,36 +275,13 @@ async fn handle_sync_dmm_games(ctx: &AppCtx, request: &DmmSyncGamesRequestTs, re
             subcategory: g.subcategory.clone(),
             gamename: g.title.clone(),
             image_url: g.image_url.clone(),
-            egs: g.egs_info.as_ref().map(|e| EgsInfo {
-                erogamescape_id: e.erogamescape_id,
-                gamename: e.gamename.clone(),
-                gamename_ruby: e.gamename_ruby.clone(),
-                brandname: e.brandname.clone(),
-                brandname_ruby: e.brandname_ruby.clone(),
-                sellday: e.sellday.clone(),
-                is_nukige: e.is_nukige,
-            }),
+            egs: g.egs_info.as_ref().map(map_egs_ts),
         })
         .collect();
-    match ctx.sync_usecase.sync_dmm_games(params).await {
-        Ok(success_count) => {
-            let result = SyncBatchResultTs { success_count, error_count: 0, errors: vec![], synced_games: input_ids };
-            NativeResponseTs { success: true, error: String::new(), request_id: request_id.to_string(), response: Some(NativeResponseCase::SyncGamesResult(result)) }
-        }
-        Err(e) => {
-            let err_msg = anyhow_chain_to_string(&e);
-            let result = SyncBatchResultTs {
-                success_count: 0,
-                error_count: input_ids.len() as u32,
-                errors: vec![err_msg.clone()],
-                synced_games: input_ids,
-            };
-            NativeResponseTs { success: false, error: err_msg, request_id: request_id.to_string(), response: Some(NativeResponseCase::SyncGamesResult(result)) }
-        }
-    }
+    (input_ids, params)
 }
 
-async fn handle_sync_dlsite_games(ctx: &AppCtx, request: &DlsiteSyncGamesRequestTs, request_id: &str) -> NativeResponseTs {
+fn to_dlsite_params(request: &DlsiteSyncGamesRequestTs) -> (Vec<String>, Vec<DlsiteSyncGameParam>) {
     let input_ids: Vec<String> = request.games.iter().map(|g| g.id.clone()).collect();
     let params: Vec<DlsiteSyncGameParam> = request
         .games
@@ -207,71 +291,9 @@ async fn handle_sync_dlsite_games(ctx: &AppCtx, request: &DlsiteSyncGamesRequest
             category: g.category.clone(),
             gamename: g.title.clone(),
             image_url: g.image_url.clone(),
-            egs: g.egs_info.as_ref().map(|e| EgsInfo {
-                erogamescape_id: e.erogamescape_id,
-                gamename: e.gamename.clone(),
-                gamename_ruby: e.gamename_ruby.clone(),
-                brandname: e.brandname.clone(),
-                brandname_ruby: e.brandname_ruby.clone(),
-                sellday: e.sellday.clone(),
-                is_nukige: e.is_nukige,
-            }),
+            egs: g.egs_info.as_ref().map(map_egs_ts),
         })
         .collect();
-    match ctx.sync_usecase.sync_dlsite_games(params).await {
-        Ok(success_count) => {
-            let result = SyncBatchResultTs { success_count, error_count: 0, errors: vec![], synced_games: input_ids };
-            NativeResponseTs { success: true, error: String::new(), request_id: request_id.to_string(), response: Some(NativeResponseCase::SyncGamesResult(result)) }
-        }
-        Err(e) => {
-            let err_msg = anyhow_chain_to_string(&e);
-            let result = SyncBatchResultTs {
-                success_count: 0,
-                error_count: input_ids.len() as u32,
-                errors: vec![err_msg.clone()],
-                synced_games: input_ids,
-            };
-            NativeResponseTs { success: false, error: err_msg, request_id: request_id.to_string(), response: Some(NativeResponseCase::SyncGamesResult(result)) }
-        }
-    }
-}
-
-async fn handle_get_dmm_pack_ids(ctx: &AppCtx, _request: &GetDmmPackIdsRequestTs, request_id: &str) -> NativeResponseTs {
-    let list = match ctx.repositories.dmm_pack_repository().list().await {
-        Ok(v) => v,
-        Err(e) => {
-            return NativeResponseTs { success: false, error: anyhow_chain_to_string(&e), request_id: request_id.to_string(), response: None }
-        }
-    };
-    let store_ids: Vec<String> = list.into_iter().map(|m| m.store_id).collect();
-    let result = DmmPackIdsResponseTs { store_ids };
-    NativeResponseTs { success: true, error: String::new(), request_id: request_id.to_string(), response: Some(NativeResponseCase::DmmPackIds(result)) }
-}
-
-fn handle_health_check(_request: &HealthCheckRequestTs, request_id: &str) -> NativeResponseTs {
-    let result = HealthCheckResultTs {
-        message: "OK".to_string(),
-        version: env!("CARGO_PKG_VERSION").to_string(),
-    };
-    NativeResponseTs { success: true, error: String::new(), request_id: request_id.to_string(), response: Some(NativeResponseCase::HealthCheckResult(result)) }
-}
-
-fn parse_message(message_bytes: &[u8]) -> HostResult<(NativeMessageTs, RequestFormat)> {
-    let json_str = std::str::from_utf8(message_bytes)?;
-    let message: NativeMessageTs = serde_json::from_str(json_str)?;
-    Ok((message, RequestFormat::Json))
-}
-
-async fn send_response_json(response: &NativeResponseTs) -> Result<(), Box<dyn std::error::Error>> {
-    let mut stdout = tokio_io::stdout();
-
-    let json_response = serde_json::to_string(&response)
-        .map_err(|e| format!("Failed to serialize JSON response: {}", e))?;
-    let json_bytes = json_response.as_bytes();
-    let length = json_bytes.len() as u32;
-    stdout.write_all(&length.to_le_bytes()).await?;
-    stdout.write_all(json_bytes).await?;
-    stdout.flush().await?;
-    Ok(())
+    (input_ids, params)
 }
 

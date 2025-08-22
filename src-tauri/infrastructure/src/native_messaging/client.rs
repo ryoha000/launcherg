@@ -1,6 +1,5 @@
 use std::{path::PathBuf, process::{Command, Stdio}, io::Write, time::Duration};
 use tokio::time::timeout;
-use chrono::Utc;
 use serde_json::json;
 
 use domain::extension::{NativeMessagingHostClient, SyncStatus, ExtensionConfig};

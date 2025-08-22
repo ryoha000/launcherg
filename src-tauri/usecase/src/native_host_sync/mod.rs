@@ -6,6 +6,7 @@ use std::sync::Arc;
 use std::collections::HashSet;
 use derive_new::new;
 use domain::repository::{collection::CollectionRepository, RepositoriesExt, deny_list::DenyListRepository};
+use domain::repository::dmm_pack::DmmPackRepository;
 use domain::deny_list::StoreType;
 use domain::save_image_queue::{ImageSrcType, ImagePreprocess};
 use domain::repository::save_image_queue::ImageSaveQueueRepository;
@@ -269,6 +270,16 @@ impl<R: RepositoriesExt> NativeHostSyncUseCase<R> {
 			success += 1;
 		}
 		Ok(success)
+	}
+
+	/// DMM のパック一覧を取得し、`store_id` の配列を返す。
+	pub async fn get_dmm_pack_store_ids(&self) -> anyhow::Result<Vec<String>> {
+		let list = self
+			.repositories
+			.dmm_pack_repository()
+			.list()
+			.await?;
+		Ok(list.into_iter().map(|m| m.store_id).collect())
 	}
 }
 
