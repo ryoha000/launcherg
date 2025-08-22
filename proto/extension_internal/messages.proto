@@ -2,6 +2,8 @@ syntax = "proto3";
 
 package launcherg.extension_internal;
 
+import "extension_internal/packs.proto";
+
 // EGS 解決済み情報（拡張内部）
 message EgsInfo {
   int32 erogamescape_id = 1;
@@ -22,6 +24,7 @@ message ExtensionRequest {
     DlsiteSyncGamesRequest sync_dlsite_games = 11;
     GetStatusRequest get_status = 12;
     DebugNativeMessageRequest debug_native_message = 13;
+    packs.GetDmmPackIdsRequest get_dmm_pack_ids = 14;
   }
 }
 
@@ -35,6 +38,7 @@ message ExtensionResponse {
     SyncGamesResponse sync_games_result = 10;
     GetStatusResponse status_result = 11;
     DebugNativeMessageResponse debug_result = 12;
+    packs.GetDmmPackIdsResponse get_dmm_pack_ids_result = 13;
   }
 }
 

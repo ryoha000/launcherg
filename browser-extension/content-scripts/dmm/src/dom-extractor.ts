@@ -1,5 +1,5 @@
 import type { DmmExtractedGame } from './types'
-import { logger } from '@launcherg/shared'
+import { logger, normalizeTitle } from '@launcherg/shared'
 
 const log = logger('dmm-dom-extractor')
 
@@ -29,7 +29,7 @@ function extractFromImageSrc(src: string | null): { storeId: string, category: s
   return { storeId, category, subcategory }
 }
 
-function extractGameDataFromImage(img: HTMLImageElement): DmmExtractedGame | null {
+export function extractGameDataFromImage(img: HTMLImageElement): DmmExtractedGame | null {
   try {
     const src = img.getAttribute('src')
     if (!src)
@@ -37,7 +37,7 @@ function extractGameDataFromImage(img: HTMLImageElement): DmmExtractedGame | nul
     const parsed = extractFromImageSrc(src)
     if (!parsed)
       return null
-    const title = typeof img.alt === 'string' ? img.alt.trim() : ''
+    const title = typeof img.alt === 'string' ? normalizeTitle(img.alt) : ''
     if (!title)
       return null
 

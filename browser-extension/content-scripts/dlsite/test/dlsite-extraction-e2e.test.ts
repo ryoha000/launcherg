@@ -61,47 +61,47 @@ describe('dLsite Play.html E2Eテスト（JSDOMバックエンド）', () => {
       storeId: 'VJ01004076',
       category: 'pro',
       title: '【通常版】神様ちゅ～ず！ センセー女の子似合ってるよっ！',
-      thumbnailUrl: 'https://img.dlsite.jp/resize/images2/work/professional/VJ01005000/VJ01004076_img_main_300x300.jpg',
+      imageUrl: 'https://img.dlsite.jp/resize/images2/work/professional/VJ01005000/VJ01004076_img_main_300x300.jpg',
     }, {
       storeId: 'VJ01000576',
       category: 'pro',
       title: 'ハルカナソラ',
-      thumbnailUrl: 'https://img.dlsite.jp/resize/images2/work/professional/VJ01001000/VJ01000576_img_main_300x300.jpg',
+      imageUrl: 'https://img.dlsite.jp/resize/images2/work/professional/VJ01001000/VJ01000576_img_main_300x300.jpg',
     }, {
       storeId: 'VJ01000575',
       category: 'pro',
       title: 'ヨスガノソラ',
-      thumbnailUrl: 'https://img.dlsite.jp/resize/images2/work/professional/VJ01001000/VJ01000575_img_main_300x300.jpg',
+      imageUrl: 'https://img.dlsite.jp/resize/images2/work/professional/VJ01001000/VJ01000575_img_main_300x300.jpg',
     }, {
       storeId: 'RJ358346',
       category: 'maniax',
       title: 'ニセモノ聖女の邪教討伐',
-      thumbnailUrl: 'https://img.dlsite.jp/resize/images2/work/doujin/RJ359000/RJ358346_img_main_300x300.jpg',
+      imageUrl: 'https://img.dlsite.jp/resize/images2/work/doujin/RJ359000/RJ358346_img_main_300x300.jpg',
     }, {
       storeId: 'RJ01225565',
       category: 'maniax',
       title: '玩具戦記 メス×ガキ・リビルドー',
-      thumbnailUrl: 'https://img.dlsite.jp/resize/images2/work/doujin/RJ01226000/RJ01225565_img_main_300x300.jpg',
+      imageUrl: 'https://img.dlsite.jp/resize/images2/work/doujin/RJ01226000/RJ01225565_img_main_300x300.jpg',
     }, {
       storeId: 'RJ01144692',
       category: 'maniax',
       title: 'ミラージュの離反',
-      thumbnailUrl: 'https://img.dlsite.jp/resize/images2/work/doujin/RJ01145000/RJ01144692_img_main_300x300.jpg',
+      imageUrl: 'https://img.dlsite.jp/resize/images2/work/doujin/RJ01145000/RJ01144692_img_main_300x300.jpg',
     }, {
       storeId: 'VJ01004243',
       category: 'pro',
       title: '【通常版】メイドちゃんは迷途ちゅう',
-      thumbnailUrl: 'https://img.dlsite.jp/resize/images2/work/professional/VJ01005000/VJ01004243_img_main_300x300.jpg',
+      imageUrl: 'https://img.dlsite.jp/resize/images2/work/professional/VJ01005000/VJ01004243_img_main_300x300.jpg',
     }, {
       storeId: 'RJ01380674',
       category: 'maniax',
       title: '満車率300% 3≒:Append.1 鉄板ギャル御乗車ぱっち',
-      thumbnailUrl: 'https://img.dlsite.jp/resize/images2/work/doujin/RJ01381000/RJ01380674_img_main_300x300.jpg',
+      imageUrl: 'https://img.dlsite.jp/resize/images2/work/doujin/RJ01381000/RJ01380674_img_main_300x300.jpg',
     }, {
       storeId: 'RJ01221390',
       category: 'maniax',
       title: '黒の迷宮',
-      thumbnailUrl: 'https://img.dlsite.jp/resize/images2/work/doujin/RJ01222000/RJ01221390_img_main_300x300.jpg',
+      imageUrl: 'https://img.dlsite.jp/resize/images2/work/doujin/RJ01222000/RJ01221390_img_main_300x300.jpg',
     }]
 
     expect(games).toEqual(expectedGames)

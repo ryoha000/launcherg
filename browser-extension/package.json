@@ -14,7 +14,7 @@
     "protobuf:generate": "cd ../proto && buf generate --template ./buf.gen.yaml .",
     "protobuf:lint": "buf lint ../proto",
     "protobuf:format": "buf format -w ../proto",
-    "test": "pnpm -r run test",
+    "test": "pnpm -C shared run build && pnpm -r run test",
     "test:ui": "vitest --ui",
     "test:playwright": "playwright test",
     "test:playwright:ui": "playwright test --ui",

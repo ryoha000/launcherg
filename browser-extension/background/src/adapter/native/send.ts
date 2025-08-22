@@ -43,9 +43,24 @@ function normalizeBufJsonNativeResponse(payload: unknown): unknown {
   return payload
 }
 
+function stripTypeNameDeep(value: unknown): unknown {
+  if (Array.isArray(value))
+    return value.map(v => stripTypeNameDeep(v))
+
+  if (isObjectRecord(value)) {
+    const entries = Object.entries(value as Record<string, unknown>)
+      .filter(([k]) => k !== '$typeName')
+      .map(([k, v]) => [k, stripTypeNameDeep(v)] as const)
+    return Object.fromEntries(entries)
+  }
+
+  return value
+}
+
 function decodeNativeResponse(payload: unknown): NativeResponse {
   const normalized = normalizeBufJsonNativeResponse(payload)
-  return fromJson(NativeResponseSchema, normalized as any)
+  const sanitized = stripTypeNameDeep(normalized)
+  return fromJson(NativeResponseSchema, sanitized as any)
 }
 
 function createOnceSettled<T, E>(resolve: (value: T) => void, reject: (reason: E) => void) {

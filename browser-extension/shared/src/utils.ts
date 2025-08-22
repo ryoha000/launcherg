@@ -40,3 +40,16 @@ export function sendExtensionRequest<TReq>(
     }
   })
 }
+
+// タイトル正規化（DMM / DLsite 共通）
+// - 角括弧【...】や丸括弧（...）/ (...)、角括弧[...]内の付帯情報を除去
+// - 連続空白を単一空白へ圧縮し、前後空白を除去
+export function normalizeTitle(raw: string): string {
+  return (raw || '')
+    .replace(/【.*?】/g, '')
+    .replace(/\[.*?\]/g, '')
+    .replace(/（.*?）/g, '')
+    .replace(/\(.*?\)/g, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+}

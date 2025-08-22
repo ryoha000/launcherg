@@ -7,7 +7,7 @@ pub struct NativeMessage {
     #[prost(string, tag = "2")]
     pub request_id: ::prost::alloc::string::String,
     /// oneofを使用してメッセージタイプとペイロードの整合性を保証
-    #[prost(oneof = "native_message::Message", tags = "10, 11, 12, 13, 14")]
+    #[prost(oneof = "native_message::Message", tags = "10, 11, 12, 13, 14, 15")]
     pub message: ::core::option::Option<native_message::Message>,
 }
 /// Nested message and enum types in `NativeMessage`.
@@ -25,6 +25,8 @@ pub mod native_message {
         SetConfig(super::super::status::ExtensionConfig),
         #[prost(message, tag = "14")]
         HealthCheck(super::HealthCheckRequest),
+        #[prost(message, tag = "15")]
+        GetDmmPackIds(super::super::packs::GetDmmPackIdsRequest),
     }
 }
 /// ステータス取得リクエスト（空のメッセージ）
@@ -47,7 +49,7 @@ pub struct NativeResponse {
     #[prost(string, tag = "3")]
     pub request_id: ::prost::alloc::string::String,
     /// oneofを使用してレスポンスタイプとデータの整合性を保証
-    #[prost(oneof = "native_response::Response", tags = "10, 11, 12, 13")]
+    #[prost(oneof = "native_response::Response", tags = "10, 11, 12, 13, 14")]
     pub response: ::core::option::Option<native_response::Response>,
 }
 /// Nested message and enum types in `NativeResponse`.
@@ -63,6 +65,8 @@ pub mod native_response {
         ConfigResult(super::ConfigUpdateResult),
         #[prost(message, tag = "13")]
         HealthCheckResult(super::HealthCheckResult),
+        #[prost(message, tag = "14")]
+        DmmPackIds(super::super::packs::DmmPackIdsResponse),
     }
 }
 /// 設定更新結果

@@ -56,9 +56,11 @@ log = "0.4"
 tempfile = "3.8"
 mockall = "0.11"
 wiremock = "0.5"
-prost = "0.14.0"
-pbjson = "0.8.0"
-pbjson-types = "0.8.0"
+prost = { version = "0.14.0" }
+pbjson = { version = "0.8.0" }
+pbjson-types = { version = "0.8.0" }
+prost-build = "0.14.0"
+pbjson-build = "0.8.0"
 uuid = { version = "1.3.3", features = ["v4", "fast-rng", "macro-diagnostics"] }
 windows = { version = "0.51", features = [
   "Win32_System_Com",
@@ -89,8 +91,6 @@ winreg = "0.52"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [build-dependencies]
-prost-build = "0.14.0"
-pbjson-build = "0.8.0"
 tauri-build = { version = "2.0.0-beta", features = [] }
 
 [dependencies]

@@ -6,9 +6,12 @@ export type LogLevel = 'silent' | 'error' | 'warn' | 'info' | 'debug'
 const levelOrder = { silent: 0, error: 1, warn: 2, info: 3, debug: 4 } as const
 
 let currentLevel: LogLevel
-  = (typeof localStorage !== 'undefined'
-    ? (localStorage.getItem('launcherg:log-level') as LogLevel)
-    : undefined) || 'debug'
+  // Vitest環境では'silent'、それ以外はlocalStorageまたは'debug'
+  = typeof import.meta !== 'undefined' && 'vitest' in import.meta
+    ? 'silent'
+    : typeof localStorage !== 'undefined'
+      ? (localStorage.getItem('launcherg:log-level') as LogLevel) || 'debug'
+      : 'debug'
 
 function shouldLog(target: keyof typeof levelOrder): boolean {
   return levelOrder[target] <= levelOrder[currentLevel]

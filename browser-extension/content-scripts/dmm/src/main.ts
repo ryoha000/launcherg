@@ -1,21 +1,22 @@
-import { create, toJson } from '@bufbuild/protobuf'
+import type { DmmExtractedGame } from './types'
 import {
   addNotificationStyles,
   logger,
-  sendExtensionRequest,
   setLogLevel,
   showInPageNotification,
   waitForPageLoad,
 } from '@launcherg/shared'
-import { DmmGameSchema, DmmSyncGamesRequestSchema, ExtensionRequestSchema } from '@launcherg/shared/proto/extension_internal'
-
 import { extractAllGames, shouldExtract } from './dom-extractor'
+import {
+  fetchPackIds,
+  processPacks,
+  syncDmmGames,
+} from './orchestrator'
 
 let isExtracting = false
 let currentUrl = window.location.href
 const log = logger('dmm-extractor')
-let pollingTimerId: number | null = null
-let didInitialWait = false
+const lastSyncedUrls = new Set<string>()
 
 async function extractAndSync(): Promise<void> {
   if (isExtracting) {
@@ -26,44 +27,23 @@ async function extractAndSync(): Promise<void> {
   isExtracting = true
 
   try {
-    if (!didInitialWait) {
-      await waitForPageLoad(2000)
-      didInitialWait = true
-    }
-
     const games = extractAllGames()
     if (games.length === 0) {
       log.info('No games found')
       return
     }
+    // 1) パックIDの取得
+    const packSet = await fetchPackIds()
+    // 2) パック要素はfetchで詳細取得し、配列で受け取る
+    const packOnly = games.filter(g => packSet.has(g.storeId))
+    const normalGames = games.filter(g => !packSet.has(g.storeId))
+    let packGames: DmmExtractedGame[] = []
+    if (packOnly.length > 0)
+      packGames = await processPacks(new Set(packOnly.map(g => g.storeId)))
 
-    log.info(`Found ${games.length} games`)
-
-    const dmmGames = games.map(g => create(DmmGameSchema, {
-      id: g.storeId,
-      category: g.category,
-      subcategory: g.subcategory,
-      title: g.title,
-      imageUrl: g.imageUrl,
-    }))
-
-    const request = create(ExtensionRequestSchema, {
-      requestId: Date.now().toString(36) + Math.random().toString(36).slice(2),
-      request: {
-        case: 'syncDmmGames',
-        value: create(DmmSyncGamesRequestSchema, {
-          games: dmmGames,
-        }),
-      },
-    })
-
-    try {
-      const responseJson = await sendExtensionRequest(request, req => toJson(ExtensionRequestSchema, req))
-      log.info('Sync successful:', responseJson)
-    }
-    catch (error) {
-      log.error('Sync failed:', error)
-    }
+    // 3) パック配下ゲームと通常ゲームを結合し、一度だけ同期
+    const allGames: DmmExtractedGame[] = [...normalGames, ...packGames]
+    await syncDmmGames(allGames)
   }
   catch (error) {
     log.error('Extraction failed:', error)
@@ -74,44 +54,30 @@ async function extractAndSync(): Promise<void> {
   }
 }
 
-function initDmmExtractor(): void {
+async function initDmmExtractor(): Promise<void> {
   const rootElement = document.getElementById('mylibrary')
-  if (shouldExtract(window.location.hostname, rootElement)) {
-    log.info('Target page detected - Starting extraction on DMM')
-    startPolling()
-  }
-  else {
+  if (!shouldExtract(window.location.hostname, rootElement)) {
     log.debug('Not a target page - skipping extraction')
-    stopPolling()
-  }
-}
-
-function startPolling(): void {
-  if (pollingTimerId !== null)
     return
-  void extractAndSync()
-  pollingTimerId = window.setInterval(() => {
-    void extractAndSync()
-  }, 500)
-  log.debug('Started polling every 500ms')
-}
-
-function stopPolling(): void {
-  if (pollingTimerId !== null) {
-    clearInterval(pollingTimerId)
-    pollingTimerId = null
-    log.debug('Stopped polling')
   }
+
+  const url = window.location.href
+  if (lastSyncedUrls.has(url)) {
+    log.debug('Already synced for this URL, skipping')
+    return
+  }
+
+  await waitForPageLoad(2000)
+  lastSyncedUrls.add(url)
+  log.info('Target page detected - Extracting once on DMM')
+  void extractAndSync()
 }
 
 function setupPageChangeObserver(): void {
   const observer = new MutationObserver(() => {
     if (window.location.href !== currentUrl) {
       currentUrl = window.location.href
-      setTimeout(() => {
-        didInitialWait = false
-        initDmmExtractor()
-      }, 2000)
+      void initDmmExtractor()
     }
   })
   observer.observe(document.body, { childList: true, subtree: true })
@@ -122,7 +88,7 @@ function main(): void {
   addNotificationStyles()
   setupPageChangeObserver()
   setTimeout(() => {
-    initDmmExtractor()
+    void initDmmExtractor()
   }, 1000)
 }
 

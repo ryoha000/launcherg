@@ -5,6 +5,7 @@ package launcherg.common;
 import "google/protobuf/timestamp.proto";
 import "native_messaging/sync.proto";
 import "native_messaging/status.proto";
+import "native_messaging/packs.proto";
 
 // Native Messaging Hostへのリクエストメッセージ
 message NativeMessage {
@@ -18,6 +19,7 @@ message NativeMessage {
     GetStatusRequest get_status = 12;
     status.ExtensionConfig set_config = 13;
     HealthCheckRequest health_check = 14;
+    packs.GetDmmPackIdsRequest get_dmm_pack_ids = 15;
   }
 }
 
@@ -43,6 +45,7 @@ message NativeResponse {
     status.SyncStatus status_result = 11;
     ConfigUpdateResult config_result = 12;
     HealthCheckResult health_check_result = 13;
+    packs.DmmPackIdsResponse dmm_pack_ids = 14;
   }
 }
 

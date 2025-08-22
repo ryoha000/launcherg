@@ -1,6 +1,7 @@
 // データ処理関連の純粋関数
 
 import type { DlsiteExtractedGame } from './types'
+import { normalizeTitle } from '@launcherg/shared'
 
 // DLsiteの日付フォーマットを正規化する純粋関数
 export function normalizeDLsiteDate(dateStr: string): string {
@@ -31,17 +32,6 @@ export function normalizeDLsiteDate(dateStr: string): string {
   catch {
     return dateStr
   }
-}
-
-// DLsiteのタイトルをクリーンアップする純粋関数
-export function cleanDLsiteTitle(title: string): string {
-  // DLsiteのタイトルから不要な情報を除去
-  return title
-    .replace(/\[.*?\]/g, '') // [サークル名] などを除去
-    .replace(/（.*?）/g, '') // 全角括弧の内容を除去
-    .replace(/\(.*?\)/g, '') // 半角括弧の内容を除去
-    .replace(/\s+/g, ' ') // 連続する空白を単一の空白に
-    .trim()
 }
 
 // URLを正規化する純粋関数
@@ -100,7 +90,7 @@ export function determineWorkType(storeId: string): string {
 export function processDLsiteGame(game: DlsiteExtractedGame): DlsiteExtractedGame {
   const processedGame: DlsiteExtractedGame = {
     ...game,
-    title: game.title ? cleanDLsiteTitle(game.title) : '',
+    title: game.title ? normalizeTitle(game.title) : '',
     imageUrl: normalizeUrl(game.imageUrl, 'image'),
   }
   return processedGame

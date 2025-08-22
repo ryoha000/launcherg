@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+package launcherg.extension_internal.packs;
+
+message GetDmmPackIdsRequest {}
+
+message GetDmmPackIdsResponse {
+  repeated string store_ids = 1;
+}
+
+

@@ -10,13 +10,15 @@ import type { DlsiteSyncGamesRequest, DmmSyncGamesRequest, SyncBatchResult } fro
 import { file_native_messaging_sync } from "./sync_pb";
 import type { ExtensionConfig, SyncStatus } from "./status_pb";
 import { file_native_messaging_status } from "./status_pb";
+import type { DmmPackIdsResponse, GetDmmPackIdsRequest } from "./packs_pb";
+import { file_native_messaging_packs } from "./packs_pb";
 import type { Message } from "@bufbuild/protobuf";
 
 /**
  * Describes the file native_messaging/common.proto.
  */
 export const file_native_messaging_common: GenFile = /*@__PURE__*/
-  fileDesc("Ch1uYXRpdmVfbWVzc2FnaW5nL2NvbW1vbi5wcm90bxIQbGF1bmNoZXJnLmNvbW1vbiKSAwoNTmF0aXZlTWVzc2FnZRItCgl0aW1lc3RhbXAYASABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEhIKCnJlcXVlc3RfaWQYAiABKAkSPQoOc3luY19kbW1fZ2FtZXMYCiABKAsyIy5sYXVuY2hlcmcuc3luYy5EbW1TeW5jR2FtZXNSZXF1ZXN0SAASQwoRc3luY19kbHNpdGVfZ2FtZXMYCyABKAsyJi5sYXVuY2hlcmcuc3luYy5EbHNpdGVTeW5jR2FtZXNSZXF1ZXN0SAASOAoKZ2V0X3N0YXR1cxgMIAEoCzIiLmxhdW5jaGVyZy5jb21tb24uR2V0U3RhdHVzUmVxdWVzdEgAEjcKCnNldF9jb25maWcYDSABKAsyIS5sYXVuY2hlcmcuc3RhdHVzLkV4dGVuc2lvbkNvbmZpZ0gAEjwKDGhlYWx0aF9jaGVjaxgOIAEoCzIkLmxhdW5jaGVyZy5jb21tb24uSGVhbHRoQ2hlY2tSZXF1ZXN0SABCCQoHbWVzc2FnZSISChBHZXRTdGF0dXNSZXF1ZXN0IhQKEkhlYWx0aENoZWNrUmVxdWVzdCLIAgoOTmF0aXZlUmVzcG9uc2USDwoHc3VjY2VzcxgBIAEoCBINCgVlcnJvchgCIAEoCRISCgpyZXF1ZXN0X2lkGAMgASgJEjwKEXN5bmNfZ2FtZXNfcmVzdWx0GAogASgLMh8ubGF1bmNoZXJnLnN5bmMuU3luY0JhdGNoUmVzdWx0SAASNQoNc3RhdHVzX3Jlc3VsdBgLIAEoCzIcLmxhdW5jaGVyZy5zdGF0dXMuU3luY1N0YXR1c0gAEj0KDWNvbmZpZ19yZXN1bHQYDCABKAsyJC5sYXVuY2hlcmcuY29tbW9uLkNvbmZpZ1VwZGF0ZVJlc3VsdEgAEkIKE2hlYWx0aF9jaGVja19yZXN1bHQYDSABKAsyIy5sYXVuY2hlcmcuY29tbW9uLkhlYWx0aENoZWNrUmVzdWx0SABCCgoIcmVzcG9uc2UiJQoSQ29uZmlnVXBkYXRlUmVzdWx0Eg8KB21lc3NhZ2UYASABKAkiNQoRSGVhbHRoQ2hlY2tSZXN1bHQSDwoHbWVzc2FnZRgBIAEoCRIPCgd2ZXJzaW9uGAIgASgJQoQBChRjb20ubGF1bmNoZXJnLmNvbW1vbkILQ29tbW9uUHJvdG9QAaICA0xDWKoCEExhdW5jaGVyZy5Db21tb27KAhBMYXVuY2hlcmdcQ29tbW9u4gIcTGF1bmNoZXJnXENvbW1vblxHUEJNZXRhZGF0YeoCEUxhdW5jaGVyZzo6Q29tbW9uYgZwcm90bzM", [file_google_protobuf_timestamp, file_native_messaging_sync, file_native_messaging_status]);
+  fileDesc("Ch1uYXRpdmVfbWVzc2FnaW5nL2NvbW1vbi5wcm90bxIQbGF1bmNoZXJnLmNvbW1vbiLVAwoNTmF0aXZlTWVzc2FnZRItCgl0aW1lc3RhbXAYASABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEhIKCnJlcXVlc3RfaWQYAiABKAkSPQoOc3luY19kbW1fZ2FtZXMYCiABKAsyIy5sYXVuY2hlcmcuc3luYy5EbW1TeW5jR2FtZXNSZXF1ZXN0SAASQwoRc3luY19kbHNpdGVfZ2FtZXMYCyABKAsyJi5sYXVuY2hlcmcuc3luYy5EbHNpdGVTeW5jR2FtZXNSZXF1ZXN0SAASOAoKZ2V0X3N0YXR1cxgMIAEoCzIiLmxhdW5jaGVyZy5jb21tb24uR2V0U3RhdHVzUmVxdWVzdEgAEjcKCnNldF9jb25maWcYDSABKAsyIS5sYXVuY2hlcmcuc3RhdHVzLkV4dGVuc2lvbkNvbmZpZ0gAEjwKDGhlYWx0aF9jaGVjaxgOIAEoCzIkLmxhdW5jaGVyZy5jb21tb24uSGVhbHRoQ2hlY2tSZXF1ZXN0SAASQQoQZ2V0X2RtbV9wYWNrX2lkcxgPIAEoCzIlLmxhdW5jaGVyZy5wYWNrcy5HZXREbW1QYWNrSWRzUmVxdWVzdEgAQgkKB21lc3NhZ2UiEgoQR2V0U3RhdHVzUmVxdWVzdCIUChJIZWFsdGhDaGVja1JlcXVlc3QihQMKDk5hdGl2ZVJlc3BvbnNlEg8KB3N1Y2Nlc3MYASABKAgSDQoFZXJyb3IYAiABKAkSEgoKcmVxdWVzdF9pZBgDIAEoCRI8ChFzeW5jX2dhbWVzX3Jlc3VsdBgKIAEoCzIfLmxhdW5jaGVyZy5zeW5jLlN5bmNCYXRjaFJlc3VsdEgAEjUKDXN0YXR1c19yZXN1bHQYCyABKAsyHC5sYXVuY2hlcmcuc3RhdHVzLlN5bmNTdGF0dXNIABI9Cg1jb25maWdfcmVzdWx0GAwgASgLMiQubGF1bmNoZXJnLmNvbW1vbi5Db25maWdVcGRhdGVSZXN1bHRIABJCChNoZWFsdGhfY2hlY2tfcmVzdWx0GA0gASgLMiMubGF1bmNoZXJnLmNvbW1vbi5IZWFsdGhDaGVja1Jlc3VsdEgAEjsKDGRtbV9wYWNrX2lkcxgOIAEoCzIjLmxhdW5jaGVyZy5wYWNrcy5EbW1QYWNrSWRzUmVzcG9uc2VIAEIKCghyZXNwb25zZSIlChJDb25maWdVcGRhdGVSZXN1bHQSDwoHbWVzc2FnZRgBIAEoCSI1ChFIZWFsdGhDaGVja1Jlc3VsdBIPCgdtZXNzYWdlGAEgASgJEg8KB3ZlcnNpb24YAiABKAlChAEKFGNvbS5sYXVuY2hlcmcuY29tbW9uQgtDb21tb25Qcm90b1ABogIDTENYqgIQTGF1bmNoZXJnLkNvbW1vbsoCEExhdW5jaGVyZ1xDb21tb27iAhxMYXVuY2hlcmdcQ29tbW9uXEdQQk1ldGFkYXRh6gIRTGF1bmNoZXJnOjpDb21tb25iBnByb3RvMw", [file_google_protobuf_timestamp, file_native_messaging_sync, file_native_messaging_status, file_native_messaging_packs]);
 
 /**
  * Native Messaging Hostへのリクエストメッセージ
@@ -69,6 +71,12 @@ export type NativeMessage = Message<"launcherg.common.NativeMessage"> & {
      */
     value: HealthCheckRequest;
     case: "healthCheck";
+  } | {
+    /**
+     * @generated from field: launcherg.packs.GetDmmPackIdsRequest get_dmm_pack_ids = 15;
+     */
+    value: GetDmmPackIdsRequest;
+    case: "getDmmPackIds";
   } | { case: undefined; value?: undefined };
 };
 
@@ -163,6 +171,12 @@ export type NativeResponse = Message<"launcherg.common.NativeResponse"> & {
      */
     value: HealthCheckResult;
     case: "healthCheckResult";
+  } | {
+    /**
+     * @generated from field: launcherg.packs.DmmPackIdsResponse dmm_pack_ids = 14;
+     */
+    value: DmmPackIdsResponse;
+    case: "dmmPackIds";
   } | { case: undefined; value?: undefined };
 };
 

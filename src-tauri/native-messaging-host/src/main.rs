@@ -8,13 +8,14 @@ use serde_json;
 use serde::Deserialize;
 use thiserror::Error;
 
-use proto::generated::launcherg::{common::*, sync::*, status::*};
+use proto::generated::launcherg::{common::*, sync::*, status::*, packs as packs_generated};
 use infrastructure::{
     repositoryimpl::{driver::Db as RepoDb, repository::Repositories},
     image_queue_worker::ImageQueueWorker,
 };
 use usecase::native_host_sync::{NativeHostSyncUseCase, DmmSyncGameParam, DlsiteSyncGameParam, EgsInfo};
 use domain::service::save_path_resolver::{SavePathResolver, DirsSavePathResolver};
+use domain::repository::{RepositoriesExt, dmm_pack::DmmPackRepository};
 
 struct AppCtx {
     repositories: Arc<Repositories>,
@@ -141,6 +142,7 @@ async fn handle_message(ctx: &AppCtx) -> Result<bool, Box<dyn std::error::Error>
     let response = match &message.message {
         Some(native_message::Message::SyncDmmGames(req)) => handle_sync_dmm_games(ctx, req, &message.request_id).await,
         Some(native_message::Message::SyncDlsiteGames(req)) => handle_sync_dlsite_games(ctx, req, &message.request_id).await,
+        Some(native_message::Message::GetDmmPackIds(req)) => handle_get_dmm_pack_ids(ctx, req, &message.request_id).await,
         Some(native_message::Message::GetStatus(_)) => NativeResponse {
             success: false,
             error: "GetStatus is not supported".to_string(),
@@ -265,6 +267,28 @@ async fn handle_sync_dlsite_games(ctx: &AppCtx, request: &DlsiteSyncGamesRequest
     }
 }
 
+async fn handle_get_dmm_pack_ids(ctx: &AppCtx, _request: &packs_generated::GetDmmPackIdsRequest, request_id: &str) -> NativeResponse {
+    let list = match ctx.repositories.dmm_pack_repository().list().await {
+        Ok(v) => v,
+        Err(e) => {
+            return NativeResponse {
+                success: false,
+                error: anyhow_chain_to_string(&e),
+                request_id: request_id.to_string(),
+                response: None,
+            }
+        }
+    };
+    let store_ids: Vec<String> = list.into_iter().map(|m| m.store_id).collect();
+    let result = packs_generated::DmmPackIdsResponse { store_ids };
+    NativeResponse {
+        success: true,
+        error: String::new(),
+        request_id: request_id.to_string(),
+        response: Some(native_response::Response::DmmPackIds(result)),
+    }
+}
+
 fn handle_health_check(_request: &HealthCheckRequest, request_id: &str) -> NativeResponse {
     let result = HealthCheckResult {
         message: "OK".to_string(),
@@ -321,6 +345,7 @@ fn parse_message(message_bytes: &[u8]) -> HostResult<(NativeMessage, RequestForm
         #[serde(rename = "getStatus")] GetStatus {},
         #[serde(rename = "setConfig")] SetConfig(#[serde(default)] BufExtensionConfig),
         #[serde(rename = "healthCheck")] HealthCheck {},
+        #[serde(rename = "getDmmPackIds")] GetDmmPackIds { #[serde(default, rename = "extensionId")] extension_id: String },
     }
     #[derive(Debug, Deserialize)]
     struct BufEnvelope { #[serde(default, rename = "requestId")] request_id: String, message: BufCase }
@@ -354,6 +379,9 @@ fn parse_message(message_bytes: &[u8]) -> HostResult<(NativeMessage, RequestForm
         }
         BufCase::HealthCheck {} => {
             NativeMessage { timestamp, request_id: env.request_id.clone(), message: Some(native_message::Message::HealthCheck(HealthCheckRequest {})) }
+        }
+        BufCase::GetDmmPackIds { extension_id } => {
+            NativeMessage { timestamp, request_id: env.request_id.clone(), message: Some(native_message::Message::GetDmmPackIds(packs_generated::GetDmmPackIdsRequest { extension_id })) }
         }
     };
 
@@ -424,6 +452,10 @@ fn build_buf_json_response(resp: &NativeResponse) -> serde_json::Value {
         Some(native_response::Response::HealthCheckResult(h)) => json!({
             "case": "healthCheckResult",
             "value": {"message": h.message, "version": h.version}
+        }),
+        Some(native_response::Response::DmmPackIds(p)) => json!({
+            "case": "dmmPackIds",
+            "value": {"storeIds": p.store_ids}
         }),
         None => json!({"case": serde_json::Value::Null, "value": serde_json::Value::Null}),
     };

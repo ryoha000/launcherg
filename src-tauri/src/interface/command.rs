@@ -9,6 +9,7 @@ use super::{
     models::{
         collection::CollectionElement,
         deny_list::DenyListItemVm,
+        dmm_pack::DmmPackMarkVm,
     },
     module::{Modules, ModulesExt},
 };
@@ -29,6 +30,7 @@ use crate::{
     usecase::models::collection::CreateCollectionElementDetail,
 };
 use domain::{native_host_log::{HostLogLevel, HostLogType}, repository::{RepositoriesExt, native_host_log::NativeHostLogRepository}, deny_list::StoreType};
+use domain::repository::dmm_pack::DmmPackRepository;
 
 #[tauri::command]
 pub async fn create_elements_in_pc(
@@ -1027,6 +1029,34 @@ pub async fn deny_list_all(
     modules: State<'_, Arc<Modules>>,
 ) -> anyhow::Result<Vec<DenyListItemVm>, CommandError> {
     let list = modules.deny_list_use_case().list().await?;
+    Ok(list.into_iter().map(|e| e.into()).collect())
+}
+
+// ========== DMM Pack Marks ==========
+
+#[tauri::command]
+pub async fn dmm_pack_add(
+    modules: State<'_, Arc<Modules>>,
+    store_id: String,
+) -> anyhow::Result<(), CommandError> {
+    modules.repositories().dmm_pack_repository().add(&store_id).await?;
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn dmm_pack_remove(
+    modules: State<'_, Arc<Modules>>,
+    store_id: String,
+) -> anyhow::Result<(), CommandError> {
+    modules.repositories().dmm_pack_repository().remove(&store_id).await?;
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn dmm_pack_all(
+    modules: State<'_, Arc<Modules>>,
+) -> anyhow::Result<Vec<DmmPackMarkVm>, CommandError> {
+    let list = modules.repositories().dmm_pack_repository().list().await?;
     Ok(list.into_iter().map(|e| e.into()).collect())
 }
 

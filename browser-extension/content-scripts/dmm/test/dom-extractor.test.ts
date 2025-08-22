@@ -52,14 +52,14 @@ describe('dmm dom-extractor', () => {
       category: 'digital',
       subcategory: 'pcgame',
       title: 'タイトルA',
-      thumbnailUrl: 'https://pics.dmm.co.jp/digital/pcgame/x_1/x_1ps.jpg',
+      imageUrl: 'https://pics.dmm.co.jp/digital/pcgame/x_1/x_1ps.jpg',
     })
     expect(games[1]).toEqual({
       storeId: 'y_2',
       category: 'digital',
       subcategory: 'pcgame',
       title: 'タイトルB',
-      thumbnailUrl: 'https://pics.dmm.co.jp/digital/pcgame/y_2/y_2ps.jpg',
+      imageUrl: 'https://pics.dmm.co.jp/digital/pcgame/y_2/y_2ps.jpg',
     })
 
     document.body.innerHTML = ''

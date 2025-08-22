@@ -30,9 +30,6 @@ url = { workspace = true }
 ico = { workspace = true }
 sysinfo = { workspace = true }
 axum = { workspace = true }
-pbjson = { workspace = true }
-pbjson-types = { workspace = true }
-prost = { workspace = true }
 windows = { workspace = true }
 uuid = { workspace = true }
 tauri-plugin-shell = { workspace = true }

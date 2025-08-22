@@ -1,11 +1,9 @@
 use std::{path::PathBuf, process::{Command, Stdio}, io::Write, time::Duration};
 use tokio::time::timeout;
-use prost::Message;
-use pbjson_types::Timestamp;
 use chrono::Utc;
+use serde_json::json;
 
 use domain::extension::{NativeMessagingHostClient, SyncStatus, ExtensionConfig};
-use super::proto::generated::launcherg::{common::*, status};
 
 pub struct NativeMessagingHostClientImpl {
     native_host_path: PathBuf,
@@ -25,7 +23,7 @@ impl NativeMessagingHostClientImpl {
 
 
     /// Native Messaging Hostプロセスにメッセージを送信
-    async fn send_message_to_native_host(&self, message: &NativeMessage) -> Result<NativeResponse, Box<dyn std::error::Error + Send + Sync>> {
+    async fn send_message_to_native_host_json(&self, payload: &serde_json::Value) -> Result<serde_json::Value, Box<dyn std::error::Error + Send + Sync>> {
         let native_host_path = self.get_native_host_path();
         
         let mut child = Command::new(native_host_path)
@@ -39,10 +37,9 @@ impl NativeMessagingHostClientImpl {
             "Failed to get stdin"
         })?;
 
-        // ProtoBufメッセージをエンコード
-        let mut message_bytes = Vec::new();
-        message.encode(&mut message_bytes)
-            .map_err(|e| format!("Failed to encode protobuf message: {}", e))?;
+        // JSON(Buf)メッセージをエンコード
+        let message_string = serde_json::to_string(payload)?;
+        let message_bytes = message_string.as_bytes();
 
         // Native Messagingプロトコル：長さ（4バイト）+ バイナリデータ
         let length = (message_bytes.len() as u32).to_le_bytes();
@@ -50,7 +47,7 @@ impl NativeMessagingHostClientImpl {
         stdin.write_all(&length).map_err(|e| {
             format!("Failed to write length: {}", e)
         })?;
-        stdin.write_all(&message_bytes).map_err(|e| {
+        stdin.write_all(message_bytes).map_err(|e| {
             format!("Failed to write message: {}", e)
         })?;
         drop(stdin);
@@ -79,76 +76,64 @@ impl NativeMessagingHostClientImpl {
             return Err("Incomplete response".into());
         }
 
-        // ProtoBufレスポンスをデコード
-        let response = NativeResponse::decode(&stdout[4..4 + response_length])
-            .map_err(|e| format!("Failed to decode protobuf response: {}", e))?;
-        
-        Ok(response)
+        // JSON(Buf) レスポンスをデコード
+        let value: serde_json::Value = serde_json::from_slice(&stdout[4..4 + response_length])?;
+        Ok(value)
     }
 
-    /// ProtoBuf SyncStatusをドメインモデルに変換
-    fn convert_sync_status(&self, proto_status: &status::SyncStatus) -> SyncStatus {
+    /// SyncStatusをドメインモデルに変換（Buf JSON）
+    fn convert_sync_status(&self, v: &serde_json::Value) -> SyncStatus {
+        let last_sync = None;
         SyncStatus {
-            last_sync: proto_status.last_sync.clone(),
-            total_synced: proto_status.total_synced,
-            connected_extensions: proto_status.connected_extensions.clone(),
-            is_running: proto_status.is_running,
-            connection_status: proto_status.connection_status,
-            error_message: proto_status.error_message.clone(),
+            last_sync,
+            total_synced: v.get("totalSynced").and_then(|x| x.as_u64()).unwrap_or(0) as u32,
+            connected_extensions: v.get("connectedExtensions").and_then(|x| x.as_array()).map(|arr| arr.iter().filter_map(|e| e.as_str().map(|s| s.to_string())).collect()).unwrap_or_default(),
+            is_running: v.get("isRunning").and_then(|x| x.as_bool()).unwrap_or(false),
+            connection_status: v.get("connectionStatus").and_then(|x| x.as_i64()).unwrap_or_default() as i32,
+            error_message: v.get("errorMessage").and_then(|x| x.as_str()).unwrap_or("").to_string(),
         }
     }
 
-    /// ドメインモデルをProtoBuf ExtensionConfigに変換
-    fn convert_extension_config(&self, config: &ExtensionConfig) -> status::ExtensionConfig {
-        status::ExtensionConfig {
-            auto_sync: config.auto_sync,
-            allowed_domains: config.allowed_domains.clone(),
-            sync_interval_minutes: config.sync_interval_minutes,
-            debug_mode: config.debug_mode,
-        }
+    /// ドメインモデルを Buf JSON の設定に変換
+    fn convert_extension_config_json(&self, config: &ExtensionConfig) -> serde_json::Value {
+        json!({
+            "autoSync": config.auto_sync,
+            "allowedDomains": config.allowed_domains,
+            "syncIntervalMinutes": config.sync_interval_minutes,
+            "debugMode": config.debug_mode,
+        })
     }
 }
 
 impl NativeMessagingHostClient for NativeMessagingHostClientImpl {
     async fn health_check(&self) -> Result<bool, Box<dyn std::error::Error + Send + Sync>> {
-        let message = NativeMessage {
-            timestamp: Some(Timestamp {
-                seconds: Utc::now().timestamp(),
-                nanos: 0,
-            }),
-            request_id: "health-check".to_string(),
-            message: Some(native_message::Message::HealthCheck(HealthCheckRequest {})),
-        };
+        let payload = json!({
+            "requestId": "health-check",
+            "message": { "case": "healthCheck", "value": {} },
+        });
         
-        match timeout(Duration::from_secs(5), self.send_message_to_native_host(&message)).await {
-            Ok(Ok(response)) => {
-                Ok(response.success)
-            }
+        match timeout(Duration::from_secs(5), self.send_message_to_native_host_json(&payload)).await {
+            Ok(Ok(response)) => Ok(response.get("success").and_then(|x| x.as_bool()).unwrap_or(false)),
             Ok(Err(e)) => Err(e),
             Err(_) => Err("Health check timeout".into()),
         }
     }
 
     async fn get_sync_status(&self) -> Result<SyncStatus, Box<dyn std::error::Error + Send + Sync>> {
-        let message = NativeMessage {
-            timestamp: Some(Timestamp {
-                seconds: Utc::now().timestamp(),
-                nanos: 0,
-            }),
-            request_id: "get-status".to_string(),
-            message: Some(native_message::Message::GetStatus(GetStatusRequest {})),
-        };
+        let payload = json!({
+            "requestId": "get-status",
+            "message": { "case": "getStatus", "value": {} },
+        });
         
-        match timeout(Duration::from_secs(5), self.send_message_to_native_host(&message)).await {
+        match timeout(Duration::from_secs(5), self.send_message_to_native_host_json(&payload)).await {
             Ok(Ok(response)) => {
-                if response.success {
-                    if let Some(native_response::Response::StatusResult(status)) = response.response {
-                        Ok(self.convert_sync_status(&status))
-                    } else {
-                        Err("Invalid response format: expected status result".into())
-                    }
+                if response.get("success").and_then(|x| x.as_bool()).unwrap_or(false) {
+                    let status = response.get("response").and_then(|r| r.get("value")).and_then(|v| v.get("status"));
+                    let status = status.unwrap_or(&serde_json::Value::Null);
+                    Ok(self.convert_sync_status(status))
                 } else {
-                    Err(format!("Failed to get status: {}", response.error).into())
+                    let err = response.get("error").and_then(|x| x.as_str()).unwrap_or("");
+                    Err(format!("Failed to get status: {}", err).into())
                 }
             }
             Ok(Err(e)) => Err(e),
@@ -157,26 +142,20 @@ impl NativeMessagingHostClient for NativeMessagingHostClientImpl {
     }
 
     async fn set_config(&self, config: &ExtensionConfig) -> Result<String, Box<dyn std::error::Error + Send + Sync>> {
-        let proto_config = self.convert_extension_config(config);
-        let message = NativeMessage {
-            timestamp: Some(Timestamp {
-                seconds: Utc::now().timestamp(),
-                nanos: 0,
-            }),
-            request_id: "set-config".to_string(),
-            message: Some(native_message::Message::SetConfig(proto_config)),
-        };
+        let cfg = self.convert_extension_config_json(config);
+        let payload = json!({
+            "requestId": "set-config",
+            "message": { "case": "setConfig", "value": cfg },
+        });
         
-        match timeout(Duration::from_secs(5), self.send_message_to_native_host(&message)).await {
+        match timeout(Duration::from_secs(5), self.send_message_to_native_host_json(&payload)).await {
             Ok(Ok(response)) => {
-                if response.success {
-                    if let Some(native_response::Response::ConfigResult(result)) = response.response {
-                        Ok(result.message)
-                    } else {
-                        Ok("Config updated successfully".to_string())
-                    }
+                if response.get("success").and_then(|x| x.as_bool()).unwrap_or(false) {
+                    let msg = response.get("response").and_then(|r| r.get("value")).and_then(|v| v.get("message")).and_then(|x| x.as_str()).unwrap_or("Config updated successfully");
+                    Ok(msg.to_string())
                 } else {
-                    Err(format!("Failed to set config: {}", response.error).into())
+                    let err = response.get("error").and_then(|x| x.as_str()).unwrap_or("");
+                    Err(format!("Failed to set config: {}", err).into())
                 }
             }
             Ok(Err(e)) => Err(e),

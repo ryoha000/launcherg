@@ -1,7 +1,6 @@
 import type { DlsiteExtractedGame } from './types'
 import { describe, expect, it } from 'vitest'
 import {
-  cleanDLsiteTitle,
   determineWorkType,
   normalizeDLsiteDate,
   normalizeStoreId,
@@ -37,31 +36,7 @@ describe('data-processor', () => {
     })
   })
 
-  describe('cleanDLsiteTitle', () => {
-    it('[サークル名]を除去する', () => {
-      expect(cleanDLsiteTitle('[サークル名] ゲームタイトル')).toBe('ゲームタイトル')
-      expect(cleanDLsiteTitle('ゲーム[情報]タイトル')).toBe('ゲームタイトル')
-    })
-
-    it('全角括弧の内容を除去する', () => {
-      expect(cleanDLsiteTitle('ゲーム（追加情報）タイトル')).toBe('ゲームタイトル')
-      expect(cleanDLsiteTitle('（前情報）ゲームタイトル')).toBe('ゲームタイトル')
-    })
-
-    it('半角括弧の内容を除去する', () => {
-      expect(cleanDLsiteTitle('ゲーム(追加情報)タイトル')).toBe('ゲームタイトル')
-      expect(cleanDLsiteTitle('(前情報)ゲームタイトル')).toBe('ゲームタイトル')
-    })
-
-    it('連続する空白を単一の空白に正規化する', () => {
-      expect(cleanDLsiteTitle('ゲーム   タイトル')).toBe('ゲーム タイトル')
-      expect(cleanDLsiteTitle('  ゲーム  タイトル  ')).toBe('ゲーム タイトル')
-    })
-
-    it('複数の括弧を処理する', () => {
-      expect(cleanDLsiteTitle('[サークル] ゲーム（バージョン）(English)')).toBe('ゲーム')
-    })
-  })
+  // cleanDLsiteTitle は shared の normalizeTitle に統合したため削除
 
   describe('normalizeUrl', () => {
     it('プロトコルなしのURLにhttpsを追加する', () => {

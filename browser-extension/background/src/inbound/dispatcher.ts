@@ -3,7 +3,7 @@ import type { HandlerContext } from '../shared/types'
 import { create, fromJson, toJson } from '@bufbuild/protobuf'
 import { logger } from '@launcherg/shared'
 import { ExtensionRequestSchema, ExtensionResponseSchema } from '@launcherg/shared/proto/extension_internal'
-import { handleDebugNativeMessage, handleGetStatus, handleSyncDlsiteGames, handleSyncDmmGames } from '../usecase'
+import { handleDebugNativeMessage, handleGetDmmPackIds, handleGetStatus, handleSyncDlsiteGames, handleSyncDmmGames } from '../usecase'
 
 const log = logger('background:dispatcher')
 
@@ -44,6 +44,15 @@ export function createMessageDispatcher(context: HandlerContext) {
           return toJson(
             ExtensionResponseSchema,
             await handleDebugNativeMessage(
+              context,
+              extensionRequest.requestId,
+              extensionRequest.request.value,
+            ),
+          )
+        case 'getDmmPackIds':
+          return toJson(
+            ExtensionResponseSchema,
+            await handleGetDmmPackIds(
               context,
               extensionRequest.requestId,
               extensionRequest.request.value,

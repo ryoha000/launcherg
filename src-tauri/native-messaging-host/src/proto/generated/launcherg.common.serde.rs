@@ -380,6 +380,9 @@ impl serde::Serialize for NativeMessage {
                 native_message::Message::HealthCheck(v) => {
                     struct_ser.serialize_field("healthCheck", v)?;
                 }
+                native_message::Message::GetDmmPackIds(v) => {
+                    struct_ser.serialize_field("getDmmPackIds", v)?;
+                }
             }
         }
         struct_ser.end()
@@ -405,6 +408,8 @@ impl<'de> serde::Deserialize<'de> for NativeMessage {
             "setConfig",
             "health_check",
             "healthCheck",
+            "get_dmm_pack_ids",
+            "getDmmPackIds",
         ];
 
         #[allow(clippy::enum_variant_names)]
@@ -416,6 +421,7 @@ impl<'de> serde::Deserialize<'de> for NativeMessage {
             GetStatus,
             SetConfig,
             HealthCheck,
+            GetDmmPackIds,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
             fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
@@ -444,6 +450,7 @@ impl<'de> serde::Deserialize<'de> for NativeMessage {
                             "getStatus" | "get_status" => Ok(GeneratedField::GetStatus),
                             "setConfig" | "set_config" => Ok(GeneratedField::SetConfig),
                             "healthCheck" | "health_check" => Ok(GeneratedField::HealthCheck),
+                            "getDmmPackIds" | "get_dmm_pack_ids" => Ok(GeneratedField::GetDmmPackIds),
                             _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
                         }
                     }
@@ -515,6 +522,13 @@ impl<'de> serde::Deserialize<'de> for NativeMessage {
                             message__ = map_.next_value::<::std::option::Option<_>>()?.map(native_message::Message::HealthCheck)
 ;
                         }
+                        GeneratedField::GetDmmPackIds => {
+                            if message__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("getDmmPackIds"));
+                            }
+                            message__ = map_.next_value::<::std::option::Option<_>>()?.map(native_message::Message::GetDmmPackIds)
+;
+                        }
                     }
                 }
                 Ok(NativeMessage {
@@ -571,6 +585,9 @@ impl serde::Serialize for NativeResponse {
                 native_response::Response::HealthCheckResult(v) => {
                     struct_ser.serialize_field("healthCheckResult", v)?;
                 }
+                native_response::Response::DmmPackIds(v) => {
+                    struct_ser.serialize_field("dmmPackIds", v)?;
+                }
             }
         }
         struct_ser.end()
@@ -595,6 +612,8 @@ impl<'de> serde::Deserialize<'de> for NativeResponse {
             "configResult",
             "health_check_result",
             "healthCheckResult",
+            "dmm_pack_ids",
+            "dmmPackIds",
         ];
 
         #[allow(clippy::enum_variant_names)]
@@ -606,6 +625,7 @@ impl<'de> serde::Deserialize<'de> for NativeResponse {
             StatusResult,
             ConfigResult,
             HealthCheckResult,
+            DmmPackIds,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
             fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
@@ -634,6 +654,7 @@ impl<'de> serde::Deserialize<'de> for NativeResponse {
                             "statusResult" | "status_result" => Ok(GeneratedField::StatusResult),
                             "configResult" | "config_result" => Ok(GeneratedField::ConfigResult),
                             "healthCheckResult" | "health_check_result" => Ok(GeneratedField::HealthCheckResult),
+                            "dmmPackIds" | "dmm_pack_ids" => Ok(GeneratedField::DmmPackIds),
                             _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
                         }
                     }
@@ -703,6 +724,13 @@ impl<'de> serde::Deserialize<'de> for NativeResponse {
                                 return Err(serde::de::Error::duplicate_field("healthCheckResult"));
                             }
                             response__ = map_.next_value::<::std::option::Option<_>>()?.map(native_response::Response::HealthCheckResult)
+;
+                        }
+                        GeneratedField::DmmPackIds => {
+                            if response__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("dmmPackIds"));
+                            }
+                            response__ = map_.next_value::<::std::option::Option<_>>()?.map(native_response::Response::DmmPackIds)
 ;
                         }
                     }

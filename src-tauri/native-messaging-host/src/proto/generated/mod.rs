@@ -4,6 +4,10 @@ pub mod launcherg {
         include!("launcherg.common.rs");
         include!("launcherg.common.serde.rs");
     }
+    pub mod packs {
+        include!("launcherg.packs.rs");
+        include!("launcherg.packs.serde.rs");
+    }
     pub mod sync {
         include!("launcherg.sync.rs");
         include!("launcherg.sync.serde.rs");

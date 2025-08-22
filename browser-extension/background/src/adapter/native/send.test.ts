@@ -144,8 +144,9 @@ describe('ネイティブメッセンジャー送受信とデコード', () => {
     }) as CallbackSendNativeMessage)
 
     const p = messenger.send(msg)
+    const assertion = expect(p).rejects.toThrow('timeout')
     await vi.advanceTimersByTimeAsync(30000)
-    await expect(p).rejects.toThrow('timeout')
+    await assertion
     vi.useRealTimers()
   })
 })

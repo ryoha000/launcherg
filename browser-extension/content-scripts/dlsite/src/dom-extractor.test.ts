@@ -85,7 +85,7 @@ describe('dom-extractor', () => {
         storeId: 'RJ123456',
         category: 'maniax',
         title: 'Test Game Title',
-        thumbnailUrl: 'https://example.com/RJ123456_thumb.jpg',
+        imageUrl: 'https://example.com/RJ123456_thumb.jpg',
       })
     })
 
