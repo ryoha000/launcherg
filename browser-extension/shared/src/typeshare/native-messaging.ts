@@ -3,59 +3,59 @@
 */
 
 export interface ConfigUpdateResultTs {
-  message: string
+	message: string;
 }
 
 export interface EgsInfoTs {
-  erogamescape_id: number
-  gamename: string
-  gamename_ruby: string
-  brandname: string
-  brandname_ruby: string
-  sellday: string
-  is_nukige: boolean
+	erogamescape_id: number;
+	gamename: string;
+	gamename_ruby: string;
+	brandname: string;
+	brandname_ruby: string;
+	sellday: string;
+	is_nukige: boolean;
 }
 
 export interface DlsiteGameTs {
-  id: string
-  category: string
-  title: string
-  image_url: string
-  egs_info?: EgsInfoTs
+	id: string;
+	category: string;
+	title: string;
+	image_url: string;
+	egs_info?: EgsInfoTs;
 }
 
 export interface DlsiteSyncGamesRequestTs {
-  games: DlsiteGameTs[]
-  extension_id: string
+	games: DlsiteGameTs[];
+	extension_id: string;
 }
 
 export interface DmmGameTs {
-  id: string
-  category: string
-  subcategory: string
-  title: string
-  image_url: string
-  egs_info?: EgsInfoTs
+	id: string;
+	category: string;
+	subcategory: string;
+	title: string;
+	image_url: string;
+	egs_info?: EgsInfoTs;
 }
 
 export interface DmmPackIdsResponseTs {
-  store_ids: string[]
+	store_ids: string[];
 }
 
 export interface DmmSyncGamesRequestTs {
-  games: DmmGameTs[]
-  extension_id: string
+	games: DmmGameTs[];
+	extension_id: string;
 }
 
 export interface ExtensionConfigTs {
-  auto_sync: boolean
-  allowed_domains: string[]
-  sync_interval_minutes: number
-  debug_mode: boolean
+	auto_sync: boolean;
+	allowed_domains: string[];
+	sync_interval_minutes: number;
+	debug_mode: boolean;
 }
 
 export interface GetDmmPackIdsRequestTs {
-  extension_id: string
+	extension_id: string;
 }
 
 export interface GetStatusRequestTs {
@@ -65,54 +65,55 @@ export interface HealthCheckRequestTs {
 }
 
 export interface HealthCheckResultTs {
-  message: string
-  version: string
+	message: string;
+	version: string;
 }
 
-export type NativeMessageCase
-	= | { case: 'SyncDmmGames', value: DmmSyncGamesRequestTs }
-	  | { case: 'SyncDlsiteGames', value: DlsiteSyncGamesRequestTs }
-	  | { case: 'GetStatus', value: GetStatusRequestTs }
-	  | { case: 'SetConfig', value: ExtensionConfigTs }
-	  | { case: 'HealthCheck', value: HealthCheckRequestTs }
-	  | { case: 'GetDmmPackIds', value: GetDmmPackIdsRequestTs }
+export type NativeMessageCase = 
+	| { case: "SyncDmmGames", value: DmmSyncGamesRequestTs }
+	| { case: "SyncDlsiteGames", value: DlsiteSyncGamesRequestTs }
+	| { case: "GetStatus", value: GetStatusRequestTs }
+	| { case: "SetConfig", value: ExtensionConfigTs }
+	| { case: "HealthCheck", value: HealthCheckRequestTs }
+	| { case: "GetDmmPackIds", value: GetDmmPackIdsRequestTs };
 
 export interface NativeMessageTs {
-  request_id: string
-  message: NativeMessageCase
+	request_id: string;
+	message: NativeMessageCase;
 }
 
-export type NativeResponseCase
-	= | { case: 'SyncGamesResult', value: SyncBatchResultTs }
-	  | { case: 'StatusResult', value: SyncStatusTs }
-	  | { case: 'ConfigResult', value: ConfigUpdateResultTs }
-	  | { case: 'HealthCheckResult', value: HealthCheckResultTs }
-	  | { case: 'DmmPackIds', value: DmmPackIdsResponseTs }
+export type NativeResponseCase = 
+	| { case: "SyncGamesResult", value: SyncBatchResultTs }
+	| { case: "StatusResult", value: SyncStatusTs }
+	| { case: "ConfigResult", value: ConfigUpdateResultTs }
+	| { case: "HealthCheckResult", value: HealthCheckResultTs }
+	| { case: "DmmPackIds", value: DmmPackIdsResponseTs };
 
 export interface NativeResponseTs {
-  success: boolean
-  error: string
-  request_id: string
-  response?: NativeResponseCase
+	success: boolean;
+	error: string;
+	request_id: string;
+	response?: NativeResponseCase;
 }
 
 export interface SyncBatchResultTs {
-  success_count: number
-  error_count: number
-  errors: string[]
-  synced_games: string[]
+	success_count: number;
+	error_count: number;
+	errors: string[];
+	synced_games: string[];
 }
 
 export interface TimestampTs {
-  seconds: number
-  nanos: number
+	seconds: number;
+	nanos: number;
 }
 
 export interface SyncStatusTs {
-  last_sync?: TimestampTs
-  total_synced: number
-  connected_extensions: number
-  is_running: boolean
-  connection_status: string
-  error_message: string
+	last_sync?: TimestampTs;
+	total_synced: number;
+	connected_extensions: number;
+	is_running: boolean;
+	connection_status: string;
+	error_message: string;
 }
+

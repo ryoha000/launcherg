@@ -5,9 +5,10 @@ export type LogLevel = 'silent' | 'error' | 'warn' | 'info' | 'debug'
 
 const levelOrder = { silent: 0, error: 1, warn: 2, info: 3, debug: 4 } as const
 
+const isVitest = typeof globalThis !== 'undefined' && typeof (globalThis as any).vi !== 'undefined'
 let currentLevel: LogLevel
   // Vitest環境では'silent'、それ以外はlocalStorageまたは'debug'
-  = typeof import.meta !== 'undefined' && 'vitest' in import.meta
+  = isVitest
     ? 'silent'
     : typeof localStorage !== 'undefined'
       ? (localStorage.getItem('launcherg:log-level') as LogLevel) || 'debug'

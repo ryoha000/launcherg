@@ -5,7 +5,6 @@ import {
   addNotificationStyles,
   logger,
   sendExtensionRequest,
-  setLogLevel,
   showInPageNotification,
   waitForPageLoad,
 } from '@launcherg/shared'
@@ -154,11 +153,6 @@ function main(): void {
   }, 1000)
 }
 
-// スクリプトの実行
-// 開発時はデバッグログを有効化
-if ((import.meta as any).env?.MODE === 'development') {
-  setLogLevel('debug')
-}
 main()
 
 // バックグラウンド/ポップアップからのメッセージを受け取って同期を実行

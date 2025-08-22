@@ -2,7 +2,6 @@ import type { DmmExtractedGame } from './types'
 import {
   addNotificationStyles,
   logger,
-  setLogLevel,
   showInPageNotification,
   waitForPageLoad,
 } from '@launcherg/shared'
@@ -92,9 +91,6 @@ function main(): void {
   }, 1000)
 }
 
-if ((import.meta as any).env?.MODE === 'development') {
-  setLogLevel('debug')
-}
 main()
 
 chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {

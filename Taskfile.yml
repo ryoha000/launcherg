@@ -10,7 +10,7 @@ tasks:
 
   # check
   check:
-    description: check all
+    description: 開発しているパッケージをすべてチェック
     deps:
       - check:browser-extension
       - check:tauri
@@ -18,55 +18,56 @@ tasks:
 
   # check:browser-extension
   check:browser-extension:
+    description: ブラウザ拡張機能をすべてチェック
     deps:
       - check:browser-extension:background
       - check:browser-extension:content-scripts
       - check:browser-extension:shared
   check:browser-extension:background:
     dir: browser-extension/background
-    description: check browser-extension/background
+    description: ブラウザ拡張機能のバックグラウンドスクリプトをチェック
     cmds:
       - pnpm run build
       - pnpm run test
   check:browser-extension:content-scripts:
     dir: browser-extension/content-scripts
-    description: check browser-extension/content-scripts
+    description: ブラウザ拡張機能のコンテンツスクリプトをすべてチェック
     deps:
       - check:browser-extension:content-scripts:dmm
       - check:browser-extension:content-scripts:dlsite
   check:browser-extension:content-scripts:dmm:
     dir: browser-extension/content-scripts/dmm
-    description: check browser-extension/content-scripts/dmm
+    description: ブラウザ拡張機能のDMMコンテンツスクリプトをチェック
     cmds:
       - pnpm run build
       - pnpm run test
   check:browser-extension:content-scripts:dlsite:
     dir: browser-extension/content-scripts/dlsite
-    description: check browser-extension/content-scripts/dlsite
+    description: ブラウザ拡張機能のDLsiteコンテンツスクリプトをチェック
     cmds:
       - pnpm run build
       - pnpm run test
   check:browser-extension:shared:
     dir: browser-extension/shared
-    description: check browser-extension/shared
+    description: ブラウザ拡張機能の共有パッケージをチェック
     cmds:
       - pnpm run build
       - pnpm run test
 
   # check:tauri
   check:tauri:
-    description: check tauri
+    description: Tauri関係のパッケージをすべてチェック
     deps:
       - check:tauri:frontend
       - check:tauri:rust
   check:tauri:frontend:
-    description: check tauri:frontend
+    description: Tauriのフロントエンドをチェック
     cmds:
       - npm run format
       - npm run lint
       - npm run check
   check:tauri:rust:
-    description: check tauri:rust
+    description: TauriのRustコードをチェック
     dir: src-tauri
     cmds:
       - cargo check
@@ -75,7 +76,7 @@ tasks:
   # check:src-tauri:native-messaging-host
   check:native-messaging-host:
     dir: src-tauri/native-messaging-host
-    description: check src-tauri/native-messaging-host
+    description: Native Messaging Hostをチェック
     cmds:
       - cargo check
       - cargo test
@@ -85,8 +86,8 @@ tasks:
     description: build extension
     deps:
       - build:extension:native-messaging-host
+      - build:extension:browser-extension
   build:extension:native-messaging-host:
-    dir: src-tauri/native-messaging-host
     description: build src-tauri/native-messaging-host
     cmds:
       - node scripts/build-native-host.js
