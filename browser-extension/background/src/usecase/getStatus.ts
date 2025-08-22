@@ -1,47 +1,36 @@
 import type { GetStatusRequest } from '@launcherg/shared/proto/extension_internal'
+import type { NativeMessageTs } from '@launcherg/shared/typeshare/native-messaging'
 import type { HandlerContext } from '../shared/types'
 import { create } from '@bufbuild/protobuf'
-import { TimestampSchema } from '@bufbuild/protobuf/wkt'
 import {
   ExtensionResponseSchema,
   GetStatusResponseSchema,
   StatusDataSchema,
 } from '@launcherg/shared/proto/extension_internal'
-import {
-  GetStatusRequestSchema as NativeGetStatusRequestSchema,
-  NativeMessageSchema,
-} from '@launcherg/shared/proto/native_messaging'
 
 export async function handleGetStatus(
   context: HandlerContext,
   requestId: string,
   _getStatusRequest: GetStatusRequest,
 ) {
-  const nativeMessage = create(NativeMessageSchema, {
-    timestamp: create(TimestampSchema, {
-      seconds: BigInt(Math.floor(Date.now() / 1000)),
-    }),
-    requestId: context.idGenerator.generate(),
-    message: {
-      case: 'getStatus',
-      value: create(NativeGetStatusRequestSchema, {}),
-    },
-  })
-
-  const nativeResponse = await context.nativeMessenger.send(nativeMessage)
+  const nativeMessage: NativeMessageTs = {
+    request_id: context.idGenerator.generate(),
+    message: { case: 'GetStatus', value: {} },
+  }
+  const nativeResponse: any = await context.nativeMessenger.sendJson?.(nativeMessage)
 
   let statusData
-  if (nativeResponse && nativeResponse.response.case === 'statusResult') {
+  if (nativeResponse && nativeResponse.response?.case === 'StatusResult') {
     const syncStatus = nativeResponse.response.value
     statusData = create(StatusDataSchema, {
-      lastSync: syncStatus.lastSync
-        ? new Date(Number(syncStatus.lastSync.seconds) * 1000).toISOString()
+      lastSync: syncStatus.last_sync
+        ? new Date(Number(syncStatus.last_sync.seconds) * 1000).toISOString()
         : '',
-      totalSynced: Number(syncStatus.totalSynced),
-      connectedExtensions: syncStatus.connectedExtensions,
-      isRunning: syncStatus.isRunning,
-      connectionStatus: syncStatus.connectionStatus.toString(),
-      errorMessage: syncStatus.errorMessage,
+      totalSynced: Number(syncStatus.total_synced),
+      connectedExtensions: Array.from({ length: syncStatus.connected_extensions || 0 }).map((_, i) => `ext-${i + 1}`),
+      isRunning: syncStatus.is_running,
+      connectionStatus: String(syncStatus.connection_status),
+      errorMessage: syncStatus.error_message,
     })
   }
 

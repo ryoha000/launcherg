@@ -30,4 +30,3 @@ trait-variant = "0.1"
 [dev-dependencies]
 mockall = { workspace = true }
 tempfile = { workspace = true }
-

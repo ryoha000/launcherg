@@ -1,66 +1,9 @@
-import type { NativeMessage, NativeResponse } from '@launcherg/shared/proto/native_messaging'
-import { fromJson, toJson } from '@bufbuild/protobuf'
 import { logger } from '@launcherg/shared'
-import { NativeMessageSchema, NativeResponseSchema } from '@launcherg/shared/proto/native_messaging'
 
 const log = logger('background:native')
 
-function isNonNull<T>(value: T | null | undefined): value is T {
-  return value != null
-}
-
 function isObjectRecord(value: unknown): value is object {
   return typeof value === 'object' && value !== null
-}
-
-function normalizeBufJsonNativeResponse(payload: unknown): unknown {
-  if (!isObjectRecord(payload))
-    return payload
-
-  log.info('normalizeBufJsonNativeResponse', { payload })
-
-  // 対応: { response: { case: string, value: any }, ... } → { [case]: value, ... }
-  const maybeResponse = (payload as any).response
-  if (isObjectRecord(maybeResponse) && 'case' in maybeResponse) {
-    const caseName = (maybeResponse as any).case
-    const caseValue = (maybeResponse as any).value
-    if (typeof caseName === 'string') {
-      const { response: _omit, ...rest } = payload as Record<string, unknown>
-      return { ...rest, [caseName]: caseValue }
-    }
-  }
-
-  // 対応: { response: { statusResult: {...} } } のような prost/serde 既定の oneof 表現
-  if (isObjectRecord(maybeResponse)) {
-    const keys = Object.keys(maybeResponse)
-    if (keys.length === 1) {
-      const onlyKey = keys[0]
-      const { response: _omit, ...rest } = payload as Record<string, unknown>
-      return { ...rest, [onlyKey]: (maybeResponse as any)[onlyKey] }
-    }
-  }
-
-  return payload
-}
-
-function stripTypeNameDeep(value: unknown): unknown {
-  if (Array.isArray(value))
-    return value.map(v => stripTypeNameDeep(v))
-
-  if (isObjectRecord(value)) {
-    const entries = Object.entries(value as Record<string, unknown>)
-      .filter(([k]) => k !== '$typeName')
-      .map(([k, v]) => [k, stripTypeNameDeep(v)] as const)
-    return Object.fromEntries(entries)
-  }
-
-  return value
-}
-
-function decodeNativeResponse(payload: unknown): NativeResponse {
-  const normalized = normalizeBufJsonNativeResponse(payload)
-  const sanitized = stripTypeNameDeep(normalized)
-  return fromJson(NativeResponseSchema, sanitized as any)
 }
 
 function createOnceSettled<T, E>(resolve: (value: T) => void, reject: (reason: E) => void) {
@@ -86,55 +29,33 @@ function createOnceSettled<T, E>(resolve: (value: T) => void, reject: (reason: E
   return { resolveOnce, rejectOnce, startTimer }
 }
 
-function recieve(requestId: string, response: unknown, resolve: (value: NativeResponse | null) => void, reject: (reason?: any) => void): void {
-  if (chrome.runtime.lastError) {
-    log.error('Native messaging lastError', { requestId, message: chrome.runtime.lastError.message })
-    reject(new Error(chrome.runtime.lastError.message))
-    return
-  }
-
-  if (response == null) {
-    resolve(null)
-    return
-  }
-
-  try {
-    const nativeResponse = decodeNativeResponse(response)
-    log.debug('Received native response', { requestId, success: nativeResponse.success })
-    resolve(nativeResponse)
-  }
-  catch (e) {
-    log.error('Failed to parse native response', e)
-    reject(e)
-  }
-}
-
 export function createNativeMessenger(nativeHostName: string) {
   const TIMEOUT_MS = 30000
-  const send = async (message: NativeMessage): Promise<NativeResponse | null> => {
+
+  const sendJson = async <TRes = unknown>(message: object): Promise<TRes | null> => {
     return new Promise((_resolve, _reject) => {
       const { resolveOnce: resolve, rejectOnce: reject, startTimer } = createOnceSettled(_resolve, _reject)
       startTimer(TIMEOUT_MS, () => new Error('Native messaging timeout'))
 
-      const payload = toJson(NativeMessageSchema, message)
-      if (!isNonNull(payload))
-        return reject(new Error('Failed to encode native message'))
-      if (!isObjectRecord(payload))
-        return reject(new Error('Encoded native message is not an object'))
+      if (!isObjectRecord(message))
+        return reject(new Error('Encoded JSON message is not an object'))
 
-      log.debug('Sending native message', { host: nativeHostName, requestId: message.requestId })
+      const requestId = (message as any).request_id ?? (message as any).requestId
+      log.debug('Sending native message(JSON)', { host: nativeHostName, requestId })
 
       chrome.runtime.sendNativeMessage(
         nativeHostName,
-        payload,
+        message,
         (response) => {
-          recieve(message.requestId, response, resolve, reject)
+          if (chrome.runtime.lastError)
+            return reject(new Error(chrome.runtime.lastError.message))
+          resolve(response as TRes)
         },
       )
     })
   }
 
-  return { send }
+  return { sendJson }
 }
 
 export {}

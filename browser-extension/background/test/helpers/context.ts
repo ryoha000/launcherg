@@ -5,7 +5,7 @@ export function buildTestContext(overrides: Partial<HandlerContext> = {}): Handl
     extensionId: 'test-extension-id',
     nativeHostName: 'test-native-host',
     nativeMessenger: {
-      send: async () => null,
+      sendJson: async () => null,
     },
     egsResolver: {
       resolveForDmm: async () => null,

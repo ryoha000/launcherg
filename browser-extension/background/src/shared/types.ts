@@ -1,8 +1,7 @@
 import type { DlsiteGame, DmmGame, EgsInfo } from '@launcherg/shared/proto/extension_internal'
-import type { NativeMessage, NativeResponse } from '@launcherg/shared/proto/native_messaging'
 
 export interface NativeMessenger {
-  send: (message: NativeMessage) => Promise<NativeResponse | null>
+  sendJson: (message: object) => Promise<unknown | null>
 }
 
 export interface EgsResolver {

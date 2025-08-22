@@ -18,3 +18,15 @@ export async function sendExtensionRequestRaw<T extends ExtensionRequest>(reques
     })
   })
 }
+
+// Send a plain JSON object (already shaped) and get raw JSON response back
+export async function sendJson<TReq extends object, TRes = unknown>(payload: TReq): Promise<TRes> {
+  return new Promise((resolve, reject) => {
+    chrome.runtime.sendMessage(payload, (response) => {
+      const lastError = chrome.runtime?.lastError
+      if (lastError)
+        return reject(new Error(lastError.message))
+      resolve(response as TRes)
+    })
+  })
+}

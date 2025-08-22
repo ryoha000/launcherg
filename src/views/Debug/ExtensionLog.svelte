@@ -1,7 +1,8 @@
 <script lang='ts'>
-  import Button from '@/components/UI/Button.svelte'
+  import type { HostLogItem } from '@/lib/command'
   import { onMount } from 'svelte'
-  import { commandGetNativeHostLogs, type HostLogItem } from '@/lib/command'
+  import Button from '@/components/UI/Button.svelte'
+  import { commandGetNativeHostLogs } from '@/lib/command'
 
   const LEVELS = [
     { value: 0, label: 'すべて' },
@@ -53,13 +54,15 @@
       })
       items = res.items
       total = res.total
-    } finally {
+    }
+    finally {
       loading = false
     }
   }
 
   const loadMore = async () => {
-    if (items.length >= total) return
+    if (items.length >= total)
+      return
     loading = true
     try {
       const nextOffset = offset + limit
@@ -72,7 +75,8 @@
       items = [...items, ...res.items]
       offset = nextOffset
       total = res.total
-    } finally {
+    }
+    finally {
       loading = false
     }
   }
@@ -83,7 +87,7 @@
 <div class='mx-auto h-full max-w-5xl overflow-y-auto p-6'>
   <div class='mb-4 flex items-end gap-3'>
     <div>
-      <div class='text-(sm text-secondary) mb-1'>レベル</div>
+      <div class='mb-1 text-(sm text-secondary)'>レベル</div>
       <select bind:value={levelFilter} class='border border-(border-primary) rounded bg-(bg-primary) p-2 text-(text-primary)'>
         {#each LEVELS as lv}
           <option value={lv.value}>{lv.label}</option>
@@ -91,28 +95,28 @@
       </select>
     </div>
     <div>
-      <div class='text-(sm text-secondary) mb-1'>タイプ</div>
-      <select bind:value={typeFilter} class='border border-(border-primary) rounded bg-(bg-primary) p-2 text-(text-primary) min-w-72'>
+      <div class='mb-1 text-(sm text-secondary)'>タイプ</div>
+      <select bind:value={typeFilter} class='min-w-72 border border-(border-primary) rounded bg-(bg-primary) p-2 text-(text-primary)'>
         {#each TYPES as tp}
           <option value={tp.value}>{tp.label}</option>
         {/each}
       </select>
     </div>
     <Button text='更新' onclick={reload} disabled={loading} />
-    <div class='text-(sm text-secondary) ml-auto'>合計 {total} 件</div>
+    <div class='ml-auto text-(sm text-secondary)'>合計 {total} 件</div>
   </div>
 
-  <div class='rounded border border-(border-primary) bg-(bg-secondary)'>
+  <div class='border border-(border-primary) rounded bg-(bg-secondary)'>
     {#if items.length === 0}
-      <div class='p-6 text-center text-(text-secondary)'>ログがありません</div>
+      <div class='p-6 text-(center text-secondary)'>ログがありません</div>
     {:else}
-      <div class='max-h-[70vh] overflow-y-auto divide-y divide-(border-primary)'>
+      <div class='max-h-[70vh] overflow-y-auto divide-(y border-primary)'>
         {#each items as it}
-          <div class='p-3 hover:bg-(bg-tertiary) transition-colors'>
+          <div class='p-3 transition-colors hover:bg-(bg-tertiary)'>
             <div class='mb-1 flex items-center gap-3'>
               <span class='text-(xs text-tertiary) font-mono'>{fmt(it.created_at)}</span>
-              <span class={'text-(xs font-medium) ' + levelBadgeClass(it.level)}>{levelLabel(it.level)}</span>
-              <span class='text-(xs text-secondary) rounded bg-(bg-primary) px-1'>{typeLabel(it.typ)}</span>
+              <span class={`text-(xs font-medium) ${levelBadgeClass(it.level)}`}>{levelLabel(it.level)}</span>
+              <span class='rounded bg-(bg-primary) px-1 text-(xs text-secondary)'>{typeLabel(it.typ)}</span>
               <span class='text-(xs text-tertiary)'>#{it.id}</span>
             </div>
             <div class='whitespace-pre-wrap break-words text-(sm text-primary) font-mono'>{it.message}</div>
@@ -120,12 +124,10 @@
         {/each}
       </div>
       {#if items.length < total}
-        <div class='p-3 border-t border-(border-primary) text-center'>
+        <div class='border-(t border-primary) p-3 text-center'>
           <Button text={loading ? '読み込み中...' : 'もっと読む'} onclick={loadMore} disabled={loading} />
         </div>
       {/if}
     {/if}
   </div>
 </div>
-
-

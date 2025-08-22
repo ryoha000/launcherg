@@ -14,13 +14,8 @@ serde = { workspace = true }
 tokio = { workspace = true }
 env_logger = { workspace = true }
 log = { workspace = true }
-prost = { workspace = true }
-pbjson = { workspace = true }
-pbjson-types = { workspace = true }
 windows = { workspace = true }
 chrono = { workspace = true }
+typeshare = "1"
 
 [build-dependencies]
-prost-build = { workspace = true }
-pbjson-build = { workspace = true }
-

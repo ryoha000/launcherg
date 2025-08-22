@@ -1,7 +1,6 @@
 import type { HandlerContext } from '../shared/types'
 import { create, fromJson, toJson } from '@bufbuild/protobuf'
 import { ExtensionRequestSchema, ExtensionResponseSchema, GetStatusRequestSchema } from '@launcherg/shared/proto/extension_internal'
-import { NativeResponseSchema, SyncStatusSchema } from '@launcherg/shared/proto/native_messaging'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { buildTestContext } from '../../test/helpers/context'
 import { createMessageDispatcher } from './dispatcher'
@@ -11,21 +10,7 @@ describe('メッセージディスパッチャ', () => {
 
   beforeEach(() => {
     context = buildTestContext({
-      nativeMessenger: { send: vi.fn(async () => create(NativeResponseSchema, {
-        success: true,
-        error: '',
-        requestId: 'rid-1',
-        response: {
-          case: 'statusResult',
-          value: create(SyncStatusSchema, {
-            totalSynced: 0,
-            connectedExtensions: ['ext-1'],
-            isRunning: true,
-            connectionStatus: 1,
-            errorMessage: '',
-          }),
-        },
-      })) },
+      nativeMessenger: { sendJson: vi.fn(async () => ({ success: true, error: '', request_id: 'rid-1', response: { case: 'StatusResult', value: { total_synced: 0, connected_extensions: 1, is_running: true, connection_status: 'connected', error_message: '' } } })) },
       egsResolver: {
         resolveForDmm: vi.fn(async () => null),
         resolveForDlsite: vi.fn(async () => null),

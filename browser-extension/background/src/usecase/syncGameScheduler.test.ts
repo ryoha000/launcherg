@@ -1,6 +1,5 @@
 import { create } from '@bufbuild/protobuf'
 import { EgsInfoSchema } from '@launcherg/shared/proto/extension_internal'
-import { NativeResponseSchema, SyncBatchResultSchema } from '@launcherg/shared/proto/native_messaging'
 import { describe, expect, it, vi } from 'vitest'
 import { buildTestContext } from '../../test/helpers/context'
 import { syncGame } from './syncGameScheduler'
@@ -37,19 +36,12 @@ describe('ゲーム同期スケジューラ（syncGameScheduler）', () => {
       brandnameRuby: 'brand2-ruby',
     })))
 
-    const send = vi.fn(async (message: any) => {
-      const isDmm = message.message.case === 'syncDmmGames'
-      const count = isDmm ? message.message.value.games.length : message.message.value.games.length
-      return create(NativeResponseSchema, {
-        success: true,
-        error: '',
-        requestId: 'res-1',
-        response: {
-          case: 'syncGamesResult',
-          value: create(SyncBatchResultSchema, { successCount: count, errorCount: 0, errors: [], syncedGames: [] }),
-        },
-      })
-    })
+    const sendJson = vi.fn(async (_message: any) => ({
+      success: true,
+      error: '',
+      request_id: 'res-1',
+      response: { case: 'SyncGamesResult', value: { success_count: 1, error_count: 0, errors: [], synced_games: [] } },
+    }))
 
     const context = buildTestContext({
       syncPool: {
@@ -62,14 +54,14 @@ describe('ゲーム同期スケジューラ（syncGameScheduler）', () => {
         resolveForDmmBulk,
         resolveForDlsiteBulk,
       },
-      nativeMessenger: { send },
+      nativeMessenger: { sendJson },
     })
 
     await syncGame(context)
 
     expect(resolveForDmmBulk).toHaveBeenCalledTimes(1)
     expect(resolveForDlsiteBulk).toHaveBeenCalledTimes(1)
-    expect(send).toHaveBeenCalledTimes(2)
+    expect(sendJson).toHaveBeenCalledTimes(2)
   })
 
   it('1件でもバルク解決を呼び出す', async () => {
@@ -97,11 +89,11 @@ describe('ゲーム同期スケジューラ（syncGameScheduler）', () => {
       brandnameRuby: 'br2',
     })]))
 
-    const send = vi.fn(async (_message: any) => create(NativeResponseSchema, {
+    const sendJson = vi.fn(async (_message: any) => ({
       success: true,
       error: '',
-      requestId: 'res-2',
-      response: { case: 'syncGamesResult', value: create(SyncBatchResultSchema, { successCount: 1, errorCount: 0, errors: [], syncedGames: [] }) },
+      request_id: 'res-2',
+      response: { case: 'SyncGamesResult', value: { success_count: 1, error_count: 0, errors: [], synced_games: [] } },
     }))
 
     const context = buildTestContext({
@@ -110,13 +102,13 @@ describe('ゲーム同期スケジューラ（syncGameScheduler）', () => {
         sync: async (callback) => { await callback(items as any) },
       },
       egsResolver: { resolveForDmm: async () => null, resolveForDlsite: async () => null, resolveForDmmBulk, resolveForDlsiteBulk },
-      nativeMessenger: { send },
+      nativeMessenger: { sendJson },
     })
 
     await syncGame(context)
 
     expect(resolveForDmmBulk).toHaveBeenCalledTimes(1)
     expect(resolveForDlsiteBulk).toHaveBeenCalledTimes(1)
-    expect(send).toHaveBeenCalledTimes(2)
+    expect(sendJson).toHaveBeenCalledTimes(2)
   })
 })

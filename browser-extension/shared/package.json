@@ -12,13 +12,13 @@
       "types": "./src/proto/extension_internal/index.ts",
       "import": "./dist/proto/extension_internal/index.js"
     },
-    "./proto/native_messaging": {
-      "types": "./src/proto/native_messaging/index.ts",
-      "import": "./dist/proto/native_messaging/index.js"
-    },
     "./types": {
       "types": "./src/types/index.ts",
       "import": "./dist/types/index.js"
+    },
+    "./typeshare/native-messaging": {
+      "types": "./src/typeshare/native-messaging.ts",
+      "import": "./src/typeshare/native-messaging.ts"
     }
   },
   "scripts": {

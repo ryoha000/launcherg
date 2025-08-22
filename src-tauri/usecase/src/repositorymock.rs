@@ -9,6 +9,7 @@ mockall::mock! {
         type ImageQueueRepo = domain::repository::save_image_queue::MockImageSaveQueueRepository;
         type HostLogRepo = domain::repository::native_host_log::MockNativeHostLogRepository;
         type DenyListRepo = domain::repository::deny_list::MockDenyListRepository;
+        type DmmPackRepo = domain::repository::dmm_pack::MockDmmPackRepository;
 
         fn collection_repository(&self) -> &domain::repository::collection::MockCollectionRepository;
         fn explored_cache_repository(&self) -> &domain::repository::explored_cache::MockExploredCacheRepository;
@@ -16,6 +17,7 @@ mockall::mock! {
         fn image_queue_repository(&self) -> &domain::repository::save_image_queue::MockImageSaveQueueRepository;
         fn host_log_repository(&self) -> &domain::repository::native_host_log::MockNativeHostLogRepository;
         fn deny_list_repository(&self) -> &domain::repository::deny_list::MockDenyListRepository;
+        fn dmm_pack_repository(&self) -> &domain::repository::dmm_pack::MockDmmPackRepository;
     }
 }
 

@@ -15,7 +15,10 @@ serde_json = { workspace = true }
 derive-new = { workspace = true }
 chrono = { workspace = true }
 walkdir = { workspace = true }
-tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }
+tokio = { workspace = true, features = [
+  "macros",
+  "rt-multi-thread"
+] }
 log = { workspace = true }
 futures = { workspace = true }
 tauri = { workspace = true }
@@ -29,4 +32,3 @@ mockall = { workspace = true }
 [dev-dependencies]
 mockall = { workspace = true }
 domain = { path = "../domain" }
-
