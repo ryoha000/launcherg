@@ -1,0 +1,23 @@
+---
+alwaysApply: true
+---
+### プロジェクト共通ワークフロー（Taskfileベース）
+
+- **全体チェック**: `task check` はブラウザ拡張、Tauri、Native Messaging Host を順に実行します。
+- **拡張機能のチェック**: `task check:browser-extension` は background / content-scripts / shared をビルド+テストします。
+- **Tauriのチェック**: `task check:tauri` はフロントエンドの `format`/`lint`/`check` と Rust の `cargo check`/`cargo test --workspace` を実行します。
+- **Native Messaging Hostのチェック**: `task check:native-messaging-host` は `cargo check`/`cargo test` を実行します。
+- **拡張機能のビルド**: `task build:extension` は Native Host バイナリ生成 → 拡張全体ビルドを行います。
+- **型共有の生成**: `task gen` は Native Messaging のRustモデルからTypeScriptを生成します。
+
+### 開発ルール
+- **チェックは最小単位で実行**: 影響範囲に応じて `check:*` のサブタスクを優先実行し、全体 `task check` はPR前や大きな変更時に実行。
+- **生成物の同期**: Rustモデルを変更した場合は必ず `task gen` を実行して TypeScript 型を更新。
+- **拡張の一貫ビルド**: 拡張配布物の生成時は `task build:extension` を使用（Native Hostの再ビルドを保証）。
+- **CI前提のローカル整合**: `task check` がローカルで通る状態でPRを作成。
+- **テスト方針**: テストはコードから分離しディレクトリで整理し、テスト名は日本語で記述。
+- **不要コード**: 不要になったコードはコメントアウトせず削除する。
+- **PowerShell利用時のテスト**: PowerShell (pwsh) ではテストをパイプで `| cat` しないで実行する。
+
+### 参照
+- [Taskfile.yml](mdc:Taskfile.yml)

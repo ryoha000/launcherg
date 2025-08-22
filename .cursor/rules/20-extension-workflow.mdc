@@ -1,0 +1,19 @@
+---
+globs: browser-extension/**/*.ts
+---
+### ブラウザ拡張 ワークフロー（background / content-scripts / shared）
+
+- **チェック**:
+  - ルートから `task check:browser-extension` を実行
+  - パッケージ単位の実行が必要な場合は該当の `check:browser-extension:*` を選択
+- **パッケージ単位**:
+  - background: `browser-extension/background`
+  - content-scripts: `browser-extension/content-scripts`（`dmm`, `dlsite` はそれぞれでチェック）
+  - shared: `browser-extension/shared`
+- **Chrome APIの型**: `as any` を避け、必要に応じて型定義パッケージを導入。
+- **ロガー/ユーティリティ**: 共有モジュールを優先利用し、重複実装を避ける。
+- **コマンド実行ポリシー**: ブラウザ拡張のまとめチェック・ビルドは `task` 経由で実行（`check:*` / `build:*`）。
+
+### 参照
+- [Taskfile.yml](mdc:Taskfile.yml)
+- [browser-extension/shared/src/typeshare/native-messaging.ts](mdc:browser-extension/shared/src/typeshare/native-messaging.ts)
