@@ -16,10 +16,12 @@ use domain::{
         NewCollectionElement, NewCollectionElementInfo, 
         NewCollectionElementInstall, NewCollectionElementLike, NewCollectionElementPaths, 
         NewCollectionElementPlay, NewCollectionElementThumbnail,
+        StoreMappedElement,
     },
     repository::collection::CollectionRepository,
     Id,
 };
+use domain::deny_list::StoreType;
 
 impl CollectionRepository for RepositoryImpl<CollectionElement> {
     // CollectionElement基本操作
@@ -722,5 +724,101 @@ impl CollectionRepository for RepositoryImpl<CollectionElement> {
         .execute(&*pool)
         .await?;
         Ok(())
+    }
+
+    async fn list_store_mapped_elements(&self) -> anyhow::Result<Vec<StoreMappedElement>> {
+        let pool = self.pool.0.clone();
+        // DMM 側
+        let dmm_rows = sqlx::query(
+            r#"
+            SELECT ce.id as collection_element_id,
+                   dmm.store_id as store_id,
+                   dmm.category as dmm_category,
+                   dmm.subcategory as dmm_subcategory,
+                   ce.gamename as title,
+                   info.brandname as brand,
+                   cet.thumbnail_width, cet.thumbnail_height,
+                   CASE WHEN cet.thumbnail_width IS NOT NULL AND cet.thumbnail_height IS NOT NULL THEN 1 ELSE 0 END as has_thumb,
+                   CASE WHEN ds.id IS NULL THEN 0 ELSE 1 END as already_denied,
+                   CASE WHEN pm.id IS NULL THEN 0 ELSE 1 END as is_dmm_pack
+            FROM collection_elements ce
+            INNER JOIN collection_element_dmm dmm ON ce.id = dmm.collection_element_id
+            LEFT JOIN collection_element_info_by_erogamescape info ON ce.id = info.collection_element_id
+            LEFT JOIN collection_element_thumbnails cet ON ce.id = cet.collection_element_id
+            LEFT JOIN denied_store_ids ds ON ds.store_type = 1 AND ds.store_id = dmm.store_id
+            LEFT JOIN dmm_pack_marks pm ON pm.store_id = dmm.store_id
+            "#
+        )
+        .fetch_all(&*pool)
+        .await?;
+
+        let mut result: Vec<StoreMappedElement> = Vec::with_capacity(dmm_rows.len());
+        for r in dmm_rows.into_iter() {
+            let collection_element_id: i64 = r.try_get("collection_element_id").unwrap_or(0);
+            let store_id: Option<String> = r.try_get("store_id").ok();
+            let title: Option<String> = r.try_get("title").ok();
+            let brand: Option<String> = r.try_get("brand").ok();
+            let dmm_category: Option<String> = r.try_get("dmm_category").ok();
+            let dmm_subcategory: Option<String> = r.try_get("dmm_subcategory").ok();
+            let already_denied: i64 = r.try_get("already_denied").unwrap_or(0);
+            let is_dmm_pack: i64 = r.try_get("is_dmm_pack").unwrap_or(0);
+
+            result.push(StoreMappedElement {
+                collection_element_id: Id::new(collection_element_id as i32),
+                store_type: StoreType::Dmm,
+                store_id: store_id.unwrap_or_default(),
+                title: title.unwrap_or_default(),
+                brand: brand.unwrap_or_default(),
+                dmm_category,
+                dmm_subcategory,
+                dlsite_category: None,
+                already_denied: already_denied == 1,
+                is_dmm_pack: is_dmm_pack == 1,
+            });
+        }
+
+        // DLsite 側
+        let dl_rows = sqlx::query(
+            r#"
+            SELECT ce.id as collection_element_id,
+                   dl.store_id as store_id,
+                   dl.category as dlsite_category,
+                   ce.gamename as title,
+                   info.brandname as brand,
+                   cet.thumbnail_width, cet.thumbnail_height,
+                   CASE WHEN cet.thumbnail_width IS NOT NULL AND cet.thumbnail_height IS NOT NULL THEN 1 ELSE 0 END as has_thumb,
+                   CASE WHEN ds.id IS NULL THEN 0 ELSE 1 END as already_denied
+            FROM collection_elements ce
+            INNER JOIN collection_element_dlsite dl ON ce.id = dl.collection_element_id
+            LEFT JOIN collection_element_info_by_erogamescape info ON ce.id = info.collection_element_id
+            LEFT JOIN collection_element_thumbnails cet ON ce.id = cet.collection_element_id
+            LEFT JOIN denied_store_ids ds ON ds.store_type = 2 AND ds.store_id = dl.store_id
+            "#
+        )
+        .fetch_all(&*pool)
+        .await?;
+
+        for r in dl_rows.into_iter() {
+            let collection_element_id: i64 = r.try_get("collection_element_id").unwrap_or(0);
+            let store_id: Option<String> = r.try_get("store_id").ok();
+            let title: Option<String> = r.try_get("title").ok();
+            let brand: Option<String> = r.try_get("brand").ok();
+            let dlsite_category: Option<String> = r.try_get("dlsite_category").ok();
+            let already_denied: i64 = r.try_get("already_denied").unwrap_or(0);
+            result.push(StoreMappedElement {
+                collection_element_id: Id::new(collection_element_id as i32),
+                store_type: StoreType::Dlsite,
+                store_id: store_id.unwrap_or_default(),
+                title: title.unwrap_or_default(),
+                brand: brand.unwrap_or_default(),
+                dmm_category: None,
+                dmm_subcategory: None,
+                dlsite_category,
+                already_denied: already_denied == 1,
+                is_dmm_pack: false,
+            });
+        }
+
+        Ok(result)
     }
 }

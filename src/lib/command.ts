@@ -317,13 +317,39 @@ export async function commandRemoveRegistryKeys() {
 }
 
 // Deny List Commands
-export interface DenyListItemVm { id: number, storeType: number, storeId: string }
-export async function commandDenyListAdd(storeType: number, storeId: string) {
-  return await invoke<void>('deny_list_add', { storeType, storeId })
+export interface DenyListItemVm { id: number, storeType: number, storeId: string, name: string }
+export async function commandDenyListAdd(storeType: number, storeId: string, name: string) {
+  return await invoke<void>('deny_list_add', { storeType, storeId, name })
 }
 export async function commandDenyListRemove(storeType: number, storeId: string) {
   return await invoke<void>('deny_list_remove', { storeType, storeId })
 }
 export async function commandDenyListAll() {
   return await invoke<DenyListItemVm[]>('deny_list_all')
+}
+
+// Store Mapped Elements
+export interface StoreMappedElementVm {
+  collectionElementId: number
+  storeType: number // 1=DMM, 2=DLsite
+  storeId: string
+  title: string
+  brand: string
+  dmmCategory?: string
+  dmmSubcategory?: string
+  dlsiteCategory?: string
+  alreadyDenied: boolean
+  isDmmPack: boolean
+  thumbnail: string
+}
+export async function commandGetStoreMappedElements() {
+  return await invoke<StoreMappedElementVm[]>('get_store_mapped_elements')
+}
+
+// DMM Pack Marks wrappers
+export async function commandDmmPackAdd(storeId: string, name: string) {
+  return await invoke<void>('dmm_pack_add', { storeId, name })
+}
+export async function commandDmmPackRemove(storeId: string) {
+  return await invoke<void>('dmm_pack_remove', { storeId })
 }

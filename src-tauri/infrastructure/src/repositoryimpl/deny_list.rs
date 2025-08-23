@@ -5,11 +5,12 @@ use domain::{deny_list::{DenyListEntry, StoreType}, repository::deny_list::DenyL
 use super::repository::RepositoryImpl;
 
 impl DenyListRepository for RepositoryImpl<DenyListEntry> {
-    async fn add(&self, store_type: StoreType, store_id: &str) -> anyhow::Result<()> {
+    async fn add(&self, store_type: StoreType, store_id: &str, name: &str) -> anyhow::Result<()> {
         let pool = self.pool.0.clone();
-        query("INSERT OR IGNORE INTO denied_store_ids (store_type, store_id) VALUES (?, ?)")
+        query("INSERT OR IGNORE INTO denied_store_ids (store_type, store_id, name) VALUES (?, ?, ?)")
             .bind(i32::from(store_type) as i64)
             .bind(store_id)
+            .bind(name)
             .execute(&*pool)
             .await?;
         Ok(())
@@ -27,16 +28,16 @@ impl DenyListRepository for RepositoryImpl<DenyListEntry> {
 
     async fn list(&self) -> anyhow::Result<Vec<DenyListEntry>> {
         let pool = self.pool.0.clone();
-        let rows: Vec<(i64, i64, String)> = query_as(
-            "SELECT id, store_type, store_id FROM denied_store_ids ORDER BY id DESC",
+        let rows: Vec<(i64, i64, String, String)> = query_as(
+            "SELECT id, store_type, store_id, name FROM denied_store_ids ORDER BY id DESC",
         )
         .fetch_all(&*pool)
         .await?;
         Ok(rows
             .into_iter()
-            .filter_map(|(id, typ, sid)| {
+            .filter_map(|(id, typ, sid, name)| {
                 if let Ok(st) = StoreType::try_from(typ as i32) {
-                    Some(DenyListEntry { id: domain::Id::new(id as i32), store_type: st, store_id: sid })
+                    Some(DenyListEntry { id: domain::Id::new(id as i32), store_type: st, store_id: sid, name })
                 } else { None }
             })
             .collect())

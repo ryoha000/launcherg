@@ -7,6 +7,7 @@ import ProcTailDebug from '@/views/Debug/ProcTail.svelte'
 import Home from '@/views/Home.svelte'
 import Memo from '@/views/Memo.svelte'
 import Settings from '@/views/Settings.svelte'
+import StoreMapped from '@/views/StoreMapped.svelte'
 import Work from '@/views/Work.svelte'
 
 export const routes: RouteConfig[] = [
@@ -14,6 +15,7 @@ export const routes: RouteConfig[] = [
   { path: '/works/(?<id>.*)', component: Work },
   { path: '/memos/(?<id>.*)', component: Memo },
   { path: '/settings', component: Settings },
+  { path: '/store-mapped', component: StoreMapped },
   { path: '/debug/extensionmanager', component: ExtensionManager },
   { path: '/debug/extensionlog', component: ExtensionLog },
   { path: '/debug/denylist', component: DenyList },

@@ -12,6 +12,7 @@
   let items = $state<DenyListItemVm[]>([])
   let storeType = $state(1)
   let storeId = $state('')
+  let name = $state('')
   let loading = $state(false)
 
   const reload = async () => {
@@ -26,10 +27,12 @@
 
   const add = async () => {
     const id = storeId.trim()
-    if (!id)
+    const nm = name.trim()
+    if (!id || !nm)
       return
-    await commandDenyListAdd(storeType, id)
+    await commandDenyListAdd(storeType, id, nm)
     storeId = ''
+    name = ''
     await reload()
   }
 
@@ -55,6 +58,10 @@
       <div class='mb-1 text-(sm text-secondary)'>Store ID</div>
       <input bind:value={storeId} class='w-full border border-(border-primary) rounded bg-(bg-primary) p-2 text-(text-primary)' placeholder='例: dmm: product id / dlsite: RJxxxxxx など' />
     </div>
+    <div class='flex-1'>
+      <div class='mb-1 text-(sm text-secondary)'>Name</div>
+      <input bind:value={name} class='w-full border border-(border-primary) rounded bg-(bg-primary) p-2 text-(text-primary)' placeholder='例: ゲームタイトル' />
+    </div>
     <Button text='追加' onclick={add} disabled={loading} />
   </div>
 
@@ -65,7 +72,7 @@
       <div class='divide-(y border-primary)'>
         {#each items as it}
           <div class='flex items-center justify-between p-3'>
-            <div class='text-(sm text-primary) font-mono'>[{it.storeType === 1 ? 'DMM' : 'DLsite'}] {it.storeId}</div>
+            <div class='text-(sm text-primary) font-mono'>[{it.storeType === 1 ? 'DMM' : 'DLsite'}] {it.storeId} — {it.name}</div>
             <Button text='削除' onclick={() => remove(it)} />
           </div>
         {/each}

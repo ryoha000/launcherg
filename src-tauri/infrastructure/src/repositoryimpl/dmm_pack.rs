@@ -5,10 +5,11 @@ use domain::{dmm_pack::DmmPackMark, repository::dmm_pack::DmmPackRepository};
 use super::repository::RepositoryImpl;
 
 impl DmmPackRepository for RepositoryImpl<DmmPackMark> {
-    async fn add(&self, store_id: &str) -> anyhow::Result<()> {
+    async fn add(&self, store_id: &str, name: &str) -> anyhow::Result<()> {
         let pool = self.pool.0.clone();
-        query("INSERT OR IGNORE INTO dmm_pack_marks (store_id) VALUES (?)")
+        query("INSERT OR IGNORE INTO dmm_pack_marks (store_id, name) VALUES (?, ?)")
             .bind(store_id)
+            .bind(name)
             .execute(&*pool)
             .await?;
         Ok(())
@@ -25,14 +26,14 @@ impl DmmPackRepository for RepositoryImpl<DmmPackMark> {
 
     async fn list(&self) -> anyhow::Result<Vec<DmmPackMark>> {
         let pool = self.pool.0.clone();
-        let rows: Vec<(i64, String)> = query_as(
-            "SELECT id, store_id FROM dmm_pack_marks ORDER BY id DESC",
+        let rows: Vec<(i64, String, String)> = query_as(
+            "SELECT id, store_id, name FROM dmm_pack_marks ORDER BY id DESC",
         )
         .fetch_all(&*pool)
         .await?;
         Ok(rows
             .into_iter()
-            .map(|(id, sid)| DmmPackMark { id: domain::Id::new(id as i32), store_id: sid })
+            .map(|(id, sid, name)| DmmPackMark { id: domain::Id::new(id as i32), store_id: sid, name })
             .collect())
     }
 

@@ -1,8 +1,6 @@
 <script lang='ts'>
   import { createEventDispatcher } from 'svelte'
 
-  import { run } from 'svelte/legacy'
-
   interface Props {
     value: boolean
   }
@@ -10,15 +8,15 @@
   let { value = $bindable() }: Props = $props()
 
   const dispather = createEventDispatcher<{ update: { value: boolean } }>()
-  run(() => {
-    dispather('update', { value })
-  })
 </script>
 
 <input
   type='checkbox'
   checked={value}
-  onchange={e => (value = e.currentTarget.checked)}
+  onchange={(e) => {
+    value = e.currentTarget.checked
+    dispather('update', { value })
+  }}
   class='hidden'
 />
 {#if value}

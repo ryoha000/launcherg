@@ -2,6 +2,7 @@ use chrono::{DateTime, Local};
 use derive_new::new;
 
 use super::Id;
+use crate::deny_list::StoreType;
 
 #[derive(new, Clone, Debug, PartialEq)]
 pub struct CollectionElement {
@@ -221,4 +222,19 @@ impl CollectionElement {
     pub fn can_install(&self) -> bool {
         matches!(self.install_status(), GameInstallStatus::OwnedNotInstalled)
     }
+}
+
+// DMM / DLsite のストアマッピングを持つ要素の一覧用エンティティ
+#[derive(Clone, Debug)]
+pub struct StoreMappedElement {
+    pub collection_element_id: Id<CollectionElement>,
+    pub store_type: StoreType, // 1=DMM, 2=DLsite
+    pub store_id: String,
+    pub title: String,
+    pub brand: String,
+    pub dmm_category: Option<String>,
+    pub dmm_subcategory: Option<String>,
+    pub dlsite_category: Option<String>,
+    pub already_denied: bool,
+    pub is_dmm_pack: bool,
 }

@@ -79,6 +79,13 @@ function createTabs() {
       return
     }
 
+    // ストア紐づけ一覧（ID不要ページ）
+    if (path === '/store-mapped') {
+      // タブ管理対象外にしておく（必要なら追加実装）
+      selected.set(-1)
+      return
+    }
+
     // デバッグページの場合の処理
     if (path.startsWith('/debug')) {
       const debugType = path.split('/')[2] // '/debug/proctail' の 'proctail' 部分を取得

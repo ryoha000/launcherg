@@ -10,6 +10,7 @@ use super::{
         collection::CollectionElement,
         deny_list::DenyListItemVm,
         dmm_pack::DmmPackMarkVm,
+        store_mapped::StoreMappedElementVm,
     },
     module::{Modules, ModulesExt},
 };
@@ -19,6 +20,7 @@ use domain::windows::proctail::{
     HealthCheckResult, ProcTailEvent, ServiceStatus, WatchTarget,
 };
 use domain::windows::proctail_manager::{ProcTailManagerStatus, ProcTailVersion};
+use domain::service::save_path_resolver::SavePathResolver;
 use crate::{
     domain::{
         collection::{ScannedGameElement},
@@ -30,7 +32,7 @@ use crate::{
     usecase::models::collection::CreateCollectionElementDetail,
 };
 use domain::{native_host_log::{HostLogLevel, HostLogType}, repository::{RepositoriesExt, native_host_log::NativeHostLogRepository}, deny_list::StoreType};
-use domain::repository::dmm_pack::DmmPackRepository;
+use domain::repository::{dmm_pack::DmmPackRepository, collection::CollectionRepository};
 
 #[tauri::command]
 pub async fn create_elements_in_pc(
@@ -1007,9 +1009,10 @@ pub async fn deny_list_add(
     modules: State<'_, Arc<Modules>>,
     store_type: i32,
     store_id: String,
+    name: String,
 ) -> anyhow::Result<(), CommandError> {
     let st = StoreType::try_from(store_type).map_err(|_| anyhow::anyhow!("invalid store type"))?;
-    modules.deny_list_use_case().add(st, &store_id).await?;
+    modules.deny_list_use_case().add(st, &store_id, &name).await?;
     Ok(())
 }
 
@@ -1032,14 +1035,46 @@ pub async fn deny_list_all(
     Ok(list.into_iter().map(|e| e.into()).collect())
 }
 
+// ========== Store Mapped Elements (DMM / DLsite) ==========
+#[tauri::command]
+pub async fn get_store_mapped_elements(
+    modules: State<'_, Arc<Modules>>,
+) -> anyhow::Result<Vec<StoreMappedElementVm>, CommandError> {
+    let list = modules
+        .repositories()
+        .collection_repository()
+        .list_store_mapped_elements()
+        .await?;
+    // build VMs with thumbnail path resolved via service (if necessary)
+    let resolver = domain::service::save_path_resolver::DirsSavePathResolver::default();
+    let vms: Vec<StoreMappedElementVm> = list
+        .into_iter()
+        .map(|e| StoreMappedElementVm {
+            collection_element_id: e.collection_element_id.value,
+            store_type: i32::from(e.store_type),
+            store_id: e.store_id,
+            title: e.title,
+            brand: e.brand,
+            dmm_category: e.dmm_category,
+            dmm_subcategory: e.dmm_subcategory,
+            dlsite_category: e.dlsite_category,
+            already_denied: e.already_denied,
+            is_dmm_pack: e.is_dmm_pack,
+            thumbnail: resolver.thumbnail_png_path(e.collection_element_id.value),
+        })
+        .collect();
+    Ok(vms)
+}
+
 // ========== DMM Pack Marks ==========
 
 #[tauri::command]
 pub async fn dmm_pack_add(
     modules: State<'_, Arc<Modules>>,
     store_id: String,
+    name: String,
 ) -> anyhow::Result<(), CommandError> {
-    modules.repositories().dmm_pack_repository().add(&store_id).await?;
+    modules.repositories().dmm_pack_repository().add(&store_id, &name).await?;
     Ok(())
 }
 

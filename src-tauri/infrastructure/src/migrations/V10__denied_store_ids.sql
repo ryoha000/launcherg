@@ -5,6 +5,7 @@ CREATE TABLE IF NOT EXISTS denied_store_ids (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     store_type INTEGER NOT NULL, -- 1=DMM, 2=DLsite（Rust側enumと対応）
     store_id TEXT NOT NULL,
+    name TEXT NOT NULL,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     UNIQUE(store_type, store_id)

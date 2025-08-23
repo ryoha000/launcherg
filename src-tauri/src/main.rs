@@ -116,6 +116,10 @@ fn main() {
             command::deny_list_add,
             command::deny_list_remove,
             command::deny_list_all,
+            command::get_store_mapped_elements,
+            command::dmm_pack_add,
+            command::dmm_pack_remove,
+            command::dmm_pack_all,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

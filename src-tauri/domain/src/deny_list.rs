@@ -30,6 +30,7 @@ pub struct DenyListEntry {
     pub id: Id<DenyListEntry>,
     pub store_type: StoreType,
     pub store_id: String,
+    pub name: String,
 }
 
 

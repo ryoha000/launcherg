@@ -63,7 +63,7 @@
         <div class='i-iconoir-cancel h-5 w-5'></div>
       </button>
     </div>
-    <div class:p-4={withContentPadding} class='overflow-y-auto'>
+    <div class:p-4={withContentPadding} class='overflow-y-auto text-(text-primary)'>
       {@render children?.()}
     </div>
     {#if withFooter}

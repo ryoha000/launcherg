@@ -6,6 +6,7 @@ use crate::Id;
 pub struct DmmPackMark {
     pub id: Id<DmmPackMark>,
     pub store_id: String,
+    pub name: String,
 }
 
 

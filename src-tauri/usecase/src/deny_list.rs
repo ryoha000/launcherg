@@ -9,8 +9,8 @@ pub struct DenyListUseCase<R: RepositoriesExt> {
 }
 
 impl<R: RepositoriesExt> DenyListUseCase<R> {
-    pub async fn add(&self, store_type: StoreType, store_id: &str) -> anyhow::Result<()> {
-        self.repositories.deny_list_repository().add(store_type, store_id).await
+    pub async fn add(&self, store_type: StoreType, store_id: &str, name: &str) -> anyhow::Result<()> {
+        self.repositories.deny_list_repository().add(store_type, store_id, name).await
     }
     pub async fn remove(&self, store_type: StoreType, store_id: &str) -> anyhow::Result<()> {
         self.repositories.deny_list_repository().remove(store_type, store_id).await
