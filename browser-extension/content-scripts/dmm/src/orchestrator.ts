@@ -1,4 +1,4 @@
-import type { DmmGame, DmmSyncGamesRequest, ExtensionRequest, GetDmmPackIdsRequest, GetDmmPackIdsResponse } from '@launcherg/shared'
+import type { DmmGame, DmmSyncGamesRequest, ExtensionRequest, GetDmmPackIdsRequest } from '@launcherg/shared'
 import type { DmmExtractedGame } from './types'
 
 import { sendExtensionRequest } from '@launcherg/shared'
@@ -9,11 +9,16 @@ export async function fetchPackIds(): Promise<Set<string>> {
   const packReq: ExtensionRequest = {
     requestId: Date.now().toString(36) + Math.random().toString(36).slice(2),
     request: { case: 'getDmmPackIds', value: {} as GetDmmPackIdsRequest },
-  } as any
-  const packResJson = await sendExtensionRequest(packReq as any, (req: any) => req)
-  const raw = (packResJson as any)?.response?.value ?? (packResJson as any)?.getDmmPackIdsResult ?? {}
-  const packRes = raw as GetDmmPackIdsResponse
-  return new Set<string>(packRes.storeIds || [])
+  }
+  const packResJson = await sendExtensionRequest(packReq)
+  const dmmPackIds: string[] = []
+  if (packResJson?.response?.case === 'getDmmPackIdsResult') {
+    dmmPackIds.push(...packResJson.response.value.storeIds)
+  }
+  else {
+    throw new Error('Unexpected response from getDmmPackIds')
+  }
+  return new Set<string>(dmmPackIds)
 }
 
 export async function syncDmmGames(games: DmmExtractedGame[]): Promise<void> {
@@ -30,7 +35,7 @@ export async function syncDmmGames(games: DmmExtractedGame[]): Promise<void> {
     requestId: Date.now().toString(36) + Math.random().toString(36).slice(2),
     request: { case: 'syncDmmGames', value: { games: dmmGames } as DmmSyncGamesRequest },
   }
-  await sendExtensionRequest(request, req => req)
+  await sendExtensionRequest(request)
 }
 
 export async function processPacks(packSet: Set<string>): Promise<DmmExtractedGame[]> {

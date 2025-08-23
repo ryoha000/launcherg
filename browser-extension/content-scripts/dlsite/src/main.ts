@@ -65,7 +65,7 @@ async function extractAndSync(): Promise<void> {
     }
 
     try {
-      const responseJson = await sendExtensionRequest(request, req => req)
+      const responseJson = await sendExtensionRequest(request)
       log.info('Sync successful:', responseJson)
     }
     catch (error) {
