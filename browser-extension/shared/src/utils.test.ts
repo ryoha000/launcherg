@@ -44,5 +44,25 @@ describe('utils', () => {
     it('複合ケースに対応する', () => {
       expect(normalizeTitle('[サークル] ゲーム（バージョン）(English)【受賞】')).toBe('ゲーム')
     })
+
+    it('hTMLエンティティ（数値参照）を復号する', () => {
+      expect(normalizeTitle('Rock &#039;n&#x27; Roll')).toBe('Rock \'n\' Roll')
+      expect(normalizeTitle('A&#x20;B')).toBe('A B')
+    })
+
+    it('hTMLエンティティ（名前付き・基本）を復号する', () => {
+      expect(normalizeTitle('&amp; &lt; &gt; &quot; &apos;')).toBe('& < > " \'')
+    })
+
+    it('hTMLエンティティ（括弧や角括弧）を復号して除去対象に反映する', () => {
+      expect(normalizeTitle('ゲーム &lpar;注釈&rpar; タイトル')).toBe('ゲーム タイトル')
+      expect(normalizeTitle('&lsqb;タグ&rsqb; ゲーム &lbrack;情報&rbrack;')).toBe('ゲーム')
+    })
+
+    it('hTMLエンティティ（記号類）を復号する', () => {
+      expect(normalizeTitle('Price: 100&nbsp;&yen; &middot; 特価')).toBe('Price: 100 ¥ ・ 特価')
+      expect(normalizeTitle('ダッシュ: &ndash; &mdash; 省略: &hellip;')).toBe('ダッシュ: – — 省略: …')
+      expect(normalizeTitle('記号: &copy; &reg; &trade;')).toBe('記号: © ® ™')
+    })
   })
 })
