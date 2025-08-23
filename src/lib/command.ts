@@ -347,6 +347,9 @@ export async function commandGetStoreMappedElements() {
 }
 
 // DMM Pack Marks wrappers
+export async function commandDmmPackAll() {
+  return await invoke<string[]>('dmm_pack_all')
+}
 export async function commandDmmPackAdd(storeId: string, name: string) {
   return await invoke<void>('dmm_pack_add', { storeId, name })
 }
