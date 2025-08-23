@@ -1,7 +1,5 @@
-import type { EgsInfo } from '@launcherg/shared/proto/extension_internal'
+import type { EgsInfo } from '@launcherg/shared'
 import type { KvCache } from '../kv-cache'
-import { create } from '@bufbuild/protobuf'
-import { EgsInfoSchema } from '@launcherg/shared/proto/extension_internal'
 import { createKvCache } from '../kv-cache'
 
 const BASE_COL_NUMS = 7
@@ -42,7 +40,7 @@ function buildTuples(keys: string[][]): string {
 }
 
 function toEgsInfo(row: string[]): EgsInfo {
-  return create(EgsInfoSchema, {
+  return {
     erogamescapeId: +row[0],
     gamename: row[1],
     gamenameRuby: row[2],
@@ -50,7 +48,7 @@ function toEgsInfo(row: string[]): EgsInfo {
     isNukige: row[4]?.includes('t') ?? false,
     brandname: row[5],
     brandnameRuby: row[6],
-  })
+  }
 }
 
 function dmmKeyFromRow(row: string[]): string {

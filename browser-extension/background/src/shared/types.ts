@@ -1,4 +1,4 @@
-import type { DlsiteGame, DmmGame, EgsInfo } from '@launcherg/shared/proto/extension_internal'
+import type { DlsiteGame, DmmGame, EgsInfo } from '@launcherg/shared'
 
 export interface NativeMessenger {
   sendJson: (message: object) => Promise<unknown | null>

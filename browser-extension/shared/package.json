@@ -8,10 +8,6 @@
       "types": "./src/index.ts",
       "import": "./dist/index.js"
     },
-    "./proto/extension_internal": {
-      "types": "./src/proto/extension_internal/index.ts",
-      "import": "./dist/proto/extension_internal/index.js"
-    },
     "./types": {
       "types": "./src/types/index.ts",
       "import": "./dist/types/index.js"
@@ -30,7 +26,6 @@
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
-    "@bufbuild/protobuf": "^2.0.0",
     "uuid": "^9.0.1"
   },
   "devDependencies": {

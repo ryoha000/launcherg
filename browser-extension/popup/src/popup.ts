@@ -1,20 +1,9 @@
 // ポップアップUIの制御スクリプト
 
 // Extension Internal protobuf types
-import type {
-  ExtensionRequest,
-  StatusData,
-} from '@launcherg/shared/proto/extension_internal'
+import type { DebugNativeMessageRequest, ExtensionRequest, GetStatusRequest, StatusData } from '@launcherg/shared'
 
-import { create, fromJson, toJson } from '@bufbuild/protobuf'
 import { logger } from '@launcherg/shared'
-
-import {
-  DebugNativeMessageRequestSchema,
-  ExtensionRequestSchema,
-  ExtensionResponseSchema,
-  GetStatusRequestSchema,
-} from '@launcherg/shared/proto/extension_internal'
 
 interface ExtensionConfig {
   auto_sync: boolean
@@ -337,31 +326,26 @@ export class PopupController {
     this.displayDebugResponse({ message: '送信中...' }, false)
 
     try {
-      // プロトバフメッセージを作成
-      const request = create(ExtensionRequestSchema, {
+      const request: ExtensionRequest = {
         requestId: this.generateRequestId(),
         request: {
           case: 'debugNativeMessage',
-          value: create(DebugNativeMessageRequestSchema, {
-            payloadJson: JSON.stringify(parsedMessage),
-          }),
+          value: { payloadJson: JSON.stringify(parsedMessage) } as DebugNativeMessageRequest,
         },
-      })
+      }
 
-      // バックグラウンドスクリプトに送信
-      const responseJson = await this.sendProtobufMessage(request)
-      const response = fromJson(ExtensionResponseSchema, responseJson)
+      const response = await this.sendPlainMessage(request)
 
       this.displayDebugResponse(response, !response.success)
 
-      if (response.success) {
+      if (response && (response as any).success) {
         this.addLog(
           'success',
           `デバッグメッセージ送信成功: ${parsedMessage.type || 'unknown'}`,
         )
       }
       else {
-        this.addLog('error', `デバッグメッセージ送信失敗: ${response.error}`)
+        this.addLog('error', `デバッグメッセージ送信失敗`)
       }
     }
     catch (error) {
@@ -526,25 +510,18 @@ export class PopupController {
 
   private async updateStatus(): Promise<void> {
     try {
-      // プロトバフメッセージを作成
-      const request = create(ExtensionRequestSchema, {
+      const request: ExtensionRequest = {
         requestId: this.generateRequestId(),
         request: {
           case: 'getStatus',
-          value: create(GetStatusRequestSchema, {}),
+          value: {} as GetStatusRequest,
         },
-      })
+      }
 
-      // バックグラウンドスクリプトからステータスを取得
-      const responseJson = await this.sendProtobufMessage(request)
-      const response = fromJson(ExtensionResponseSchema, responseJson)
+      const response = await this.sendPlainMessage(request)
 
-      if (
-        response
-        && response.success
-        && response.response.case === 'statusResult'
-      ) {
-        this.updateStatusDisplay(response.response.value.status)
+      if (response && (response as any).success && (response as any).response?.case === 'statusResult') {
+        this.updateStatusDisplay((response as any).response?.value?.status)
         this.updateConnectionStatus('connected')
       }
       else {
@@ -813,12 +790,9 @@ export class PopupController {
     })
   }
 
-  private async sendProtobufMessage(request: ExtensionRequest): Promise<any> {
+  private async sendPlainMessage(request: ExtensionRequest): Promise<any> {
     return new Promise((resolve, reject) => {
-      // プロトバフメッセージをJSONとしてシリアライズ
-      const messageJson = toJson(ExtensionRequestSchema, request)
-
-      chrome.runtime.sendMessage(messageJson, (response) => {
+      chrome.runtime.sendMessage(request, (response) => {
         if (chrome.runtime.lastError) {
           reject(new Error(chrome.runtime.lastError.message))
         }

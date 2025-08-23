@@ -1,5 +1,3 @@
-import { create } from '@bufbuild/protobuf'
-import { EgsInfoSchema } from '@launcherg/shared/proto/extension_internal'
 import { describe, expect, it } from 'vitest'
 import { createEgsResolver } from './resolver'
 
@@ -16,7 +14,7 @@ describe.skip('eGS リゾルバ（実ネットワーク）', () => {
 
     const result = await resolver.resolveForDmm(storeId, category, subcategory)
 
-    const expected = create(EgsInfoSchema, {
+    const expected = {
       erogamescapeId: 21641,
       gamename: '妹のセイイキ',
       gamenameRuby: 'イモウトノセイイキ',
@@ -24,7 +22,7 @@ describe.skip('eGS リゾルバ（実ネットワーク）', () => {
       brandnameRuby: 'フォン',
       sellday: '2015-08-28',
       isNukige: true,
-    })
+    }
     expect(result).toEqual(expected)
   }, 30_000)
 
@@ -35,7 +33,7 @@ describe.skip('eGS リゾルバ（実ネットワーク）', () => {
 
     const result = await resolver.resolveForDlsite(storeId, category)
 
-    const expected = create(EgsInfoSchema, {
+    const expected = {
       erogamescapeId: 29245,
       gamename: 'MECHANICA -うさぎと水星のバラッド-',
       gamenameRuby: 'メカニカウサギトスイセイノバラッド',
@@ -43,7 +41,7 @@ describe.skip('eGS リゾルバ（実ネットワーク）', () => {
       brandnameRuby: 'ルーザーハイフンエス',
       sellday: '2020-04-10',
       isNukige: true,
-    })
+    }
     expect(result).toEqual(expected)
   }, 30_000)
 
@@ -55,7 +53,7 @@ describe.skip('eGS リゾルバ（実ネットワーク）', () => {
     ]
     // select gamelist.id, gamelist.gamename, gamelist.furigana, gamelist.sellday, gamelist.okazu, brandlist.brandname, brandlist.brandfurigana from gamelist inner join brandlist on brandlist.id = gamelist.brandname where dmm = 'feng_0004' and dmm_genre = 'digital' and dmm_genre_2 = 'pcgame' limit 1;
     const results = await resolver.resolveForDmmBulk(items)
-    const expected0 = create(EgsInfoSchema, {
+    const expected0 = {
       erogamescapeId: 21641,
       gamename: '妹のセイイキ',
       gamenameRuby: 'イモウトノセイイキ',
@@ -63,8 +61,8 @@ describe.skip('eGS リゾルバ（実ネットワーク）', () => {
       brandnameRuby: 'フォン',
       sellday: '2015-08-28',
       isNukige: true,
-    })
-    const expected1 = create(EgsInfoSchema, {
+    }
+    const expected1 = {
       erogamescapeId: 13640,
       gamename: '穢翼のユースティア',
       gamenameRuby: 'アイヨクノユースティア',
@@ -72,7 +70,7 @@ describe.skip('eGS リゾルバ（実ネットワーク）', () => {
       brandnameRuby: 'オーガスト',
       sellday: '2011-04-28',
       isNukige: false,
-    })
+    }
 
     expect(Array.isArray(results)).toBe(true)
     expect(results).toHaveLength(items.length)
@@ -87,7 +85,7 @@ describe.skip('eGS リゾルバ（実ネットワーク）', () => {
       { storeId: 'RJ000000', category: 'maniax' },
     ]
     const results = await resolver.resolveForDlsiteBulk(items)
-    const expected0 = create(EgsInfoSchema, {
+    const expected0 = {
       erogamescapeId: 29245,
       gamename: 'MECHANICA -うさぎと水星のバラッド-',
       gamenameRuby: 'メカニカウサギトスイセイノバラッド',
@@ -95,7 +93,7 @@ describe.skip('eGS リゾルバ（実ネットワーク）', () => {
       brandnameRuby: 'ルーザーハイフンエス',
       sellday: '2020-04-10',
       isNukige: true,
-    })
+    }
     expect(Array.isArray(results)).toBe(true)
     expect(results).toHaveLength(items.length)
     expect(results[0]).toEqual(expected0)

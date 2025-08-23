@@ -1,4 +1,4 @@
-import type { DlsiteGame as ExtDlsiteGame, DmmGame as ExtDmmGame, EgsInfo as ExtEgsInfo } from '@launcherg/shared/proto/extension_internal'
+import type { DlsiteGame as ExtDlsiteGame, DmmGame as ExtDmmGame, EgsInfo as ExtEgsInfo } from '@launcherg/shared'
 import type { HandlerContext } from '../shared/types'
 
 const SYNC_GAME_ALARM = 'sync_game'

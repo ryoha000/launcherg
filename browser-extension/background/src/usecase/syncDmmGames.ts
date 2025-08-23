@@ -1,27 +1,20 @@
-import type { DmmSyncGamesRequest } from '@launcherg/shared/proto/extension_internal'
+import type { DmmSyncGamesRequest, ExtensionResponse } from '@launcherg/shared'
 import type { HandlerContext } from '../shared/types'
-import { create } from '@bufbuild/protobuf'
-import {
-  ExtensionResponseSchema,
-  SyncGamesResponseSchema,
-} from '@launcherg/shared/proto/extension_internal'
 
 export async function handleSyncDmmGames(
   context: HandlerContext,
   requestId: string,
   syncGamesRequest: DmmSyncGamesRequest,
-) {
+): Promise<ExtensionResponse> {
   context.syncPool.add({ type: 'dmm', games: syncGamesRequest.games })
 
-  return create(ExtensionResponseSchema, {
+  return {
     requestId,
     success: true,
     error: '',
     response: {
       case: 'syncGamesResult',
-      value: create(SyncGamesResponseSchema, {
-        message: `プールに追加しました`,
-      }),
+      value: { message: 'プールに追加しました' },
     },
-  })
+  }
 }

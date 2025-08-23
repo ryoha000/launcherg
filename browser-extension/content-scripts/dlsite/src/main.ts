@@ -1,6 +1,6 @@
 // DLsite用独立型抽出器のメインエントリーポイント
 
-import { create, toJson } from '@bufbuild/protobuf'
+import type { DlsiteGame, DlsiteSyncGamesRequest, ExtensionRequest } from '@launcherg/shared'
 import {
   addNotificationStyles,
   logger,
@@ -8,7 +8,6 @@ import {
   showInPageNotification,
   waitForPageLoad,
 } from '@launcherg/shared'
-import { DlsiteGameSchema, DlsiteSyncGamesRequestSchema, ExtensionRequestSchema } from '@launcherg/shared/proto/extension_internal'
 
 import { processGames } from './data-processor'
 import { extractAllGames, shouldExtract } from './dom-extractor'
@@ -50,25 +49,23 @@ async function extractAndSync(): Promise<void> {
     const processedGames = processGames(games)
 
     // 同期リクエストを送信（DLsite専用）
-    const dlsiteGames = processedGames.map(g => create(DlsiteGameSchema, {
+    const dlsiteGames: DlsiteGame[] = processedGames.map(g => ({
       id: g.storeId,
       category: g.category,
       title: g.title,
       imageUrl: g.imageUrl,
     }))
 
-    const request = create(ExtensionRequestSchema, {
+    const request: ExtensionRequest = {
       requestId: Date.now().toString(36) + Math.random().toString(36).slice(2),
       request: {
         case: 'syncDlsiteGames',
-        value: create(DlsiteSyncGamesRequestSchema, {
-          games: dlsiteGames,
-        }),
+        value: { games: dlsiteGames } as DlsiteSyncGamesRequest,
       },
-    })
+    }
 
     try {
-      const responseJson = await sendExtensionRequest(request, req => toJson(ExtensionRequestSchema, req))
+      const responseJson = await sendExtensionRequest(request, req => req)
       log.info('Sync successful:', responseJson)
     }
     catch (error) {

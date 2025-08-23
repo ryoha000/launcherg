@@ -1,24 +1,20 @@
-import type { DlsiteSyncGamesRequest } from '@launcherg/shared/proto/extension_internal'
+import type { DlsiteSyncGamesRequest, ExtensionResponse } from '@launcherg/shared'
 import type { HandlerContext } from '../shared/types'
-import { create } from '@bufbuild/protobuf'
-import { ExtensionResponseSchema, SyncGamesResponseSchema } from '@launcherg/shared/proto/extension_internal'
 
 export async function handleSyncDlsiteGames(
   context: HandlerContext,
   requestId: string,
   syncGamesRequest: DlsiteSyncGamesRequest,
-) {
+): Promise<ExtensionResponse> {
   context.syncPool.add({ type: 'dlsite', games: syncGamesRequest.games })
 
-  return create(ExtensionResponseSchema, {
+  return {
     requestId,
     success: true,
     error: '',
     response: {
       case: 'syncGamesResult',
-      value: create(SyncGamesResponseSchema, {
-        message: `プールに追加しました`,
-      }),
+      value: { message: 'プールに追加しました' },
     },
-  })
+  }
 }

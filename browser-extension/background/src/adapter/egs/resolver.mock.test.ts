@@ -1,5 +1,3 @@
-import { create } from '@bufbuild/protobuf'
-import { EgsInfoSchema } from '@launcherg/shared/proto/extension_internal'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createEgsResolver } from './resolver'
 
@@ -45,7 +43,7 @@ describe('eGS リゾルバ（モック）', () => {
     const resolver = createEgsResolver()
     const result = await resolver.resolveForDmm('feng_0004', 'digital', 'pcgame')
 
-    const expected = create(EgsInfoSchema, {
+    const expected = {
       erogamescapeId: 21641,
       gamename: '妹のセイイキ',
       gamenameRuby: 'イモウトノセイイキ',
@@ -53,7 +51,7 @@ describe('eGS リゾルバ（モック）', () => {
       brandnameRuby: 'フォン',
       sellday: '2015-08-28',
       isNukige: true,
-    })
+    }
     expect(result).toEqual(expected)
     expect(globalThis.fetch).toHaveBeenCalledTimes(1)
   })
@@ -67,7 +65,7 @@ describe('eGS リゾルバ（モック）', () => {
     const resolver = createEgsResolver()
     const result = await resolver.resolveForDlsite('RJ278019', 'maniax')
 
-    const expected = create(EgsInfoSchema, {
+    const expected = {
       erogamescapeId: 29245,
       gamename: 'MECHANICA -うさぎと水星のバラッド-',
       gamenameRuby: 'メカニカウサギトスイセイノバラッド',
@@ -75,7 +73,7 @@ describe('eGS リゾルバ（モック）', () => {
       brandnameRuby: 'ルーザーハイフンエス',
       sellday: '2020-04-10',
       isNukige: true,
-    })
+    }
     expect(result).toEqual(expected)
     expect(globalThis.fetch).toHaveBeenCalledTimes(1)
   })
@@ -104,7 +102,7 @@ describe('eGS リゾルバ（モック）', () => {
     ]
     const results = await resolver.resolveForDmmBulk!(items)
 
-    const expected0 = create(EgsInfoSchema, {
+    const expected0 = {
       erogamescapeId: 21641,
       gamename: '妹のセイイキ',
       gamenameRuby: 'イモウトノセイイキ',
@@ -112,7 +110,7 @@ describe('eGS リゾルバ（モック）', () => {
       brandnameRuby: 'フォン',
       sellday: '2015-08-28',
       isNukige: true,
-    })
+    }
 
     expect(results).toHaveLength(2)
     expect(results[0]).toEqual(expected0)
@@ -143,7 +141,7 @@ describe('eGS リゾルバ（モック）', () => {
     ]
     const results = await resolver.resolveForDlsiteBulk!(items)
 
-    const expected0 = create(EgsInfoSchema, {
+    const expected0 = {
       erogamescapeId: 29245,
       gamename: 'MECHANICA -うさぎと水星のバラッド-',
       gamenameRuby: 'メカニカウサギトスイセイノバラッド',
@@ -151,7 +149,7 @@ describe('eGS リゾルバ（モック）', () => {
       brandnameRuby: 'ルーザーハイフンエス',
       sellday: '2020-04-10',
       isNukige: true,
-    })
+    }
 
     expect(results).toHaveLength(2)
     expect(results[0]).toEqual(expected0)

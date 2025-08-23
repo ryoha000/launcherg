@@ -1,6 +1,5 @@
+import type { ExtensionRequest } from '@launcherg/shared'
 import type { HandlerContext } from '../shared/types'
-import { create, fromJson, toJson } from '@bufbuild/protobuf'
-import { ExtensionRequestSchema, ExtensionResponseSchema, GetStatusRequestSchema } from '@launcherg/shared/proto/extension_internal'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { buildTestContext } from '../../test/helpers/context'
 import { createMessageDispatcher } from './dispatcher'
@@ -23,12 +22,8 @@ describe('メッセージディスパッチャ', () => {
 
   it('getStatus をルーティングし拡張レスポンスJSONを返す', async () => {
     const dispatcher = createMessageDispatcher(context)
-    const request = create(ExtensionRequestSchema, {
-      requestId: 'ext-1',
-      request: { case: 'getStatus', value: create(GetStatusRequestSchema, {}) },
-    })
-    const resultJson = await dispatcher(toJson(ExtensionRequestSchema, request))
-    const result = fromJson(ExtensionResponseSchema, resultJson)
+    const request: ExtensionRequest = { requestId: 'ext-1', request: { case: 'getStatus', value: {} } }
+    const result = await dispatcher(request) as any
     expect(result.success).toBe(true)
     expect(result.requestId).toBe('ext-1')
   })
@@ -36,8 +31,7 @@ describe('メッセージディスパッチャ', () => {
   it('未知のリクエストタイプではエラーを返す', async () => {
     const dispatcher = createMessageDispatcher(context)
     const badJson = { requestId: 'x', request: { case: 'unknown', value: {} } }
-    const resultJson = await dispatcher(badJson)
-    const result = fromJson(ExtensionResponseSchema, resultJson)
+    const result = await dispatcher(badJson) as any
     expect(result.success).toBe(false)
   })
 })

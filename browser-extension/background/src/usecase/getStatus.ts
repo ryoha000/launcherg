@@ -1,28 +1,22 @@
-import type { GetStatusRequest } from '@launcherg/shared/proto/extension_internal'
+import type { ExtensionResponse, GetStatusRequest, StatusData } from '@launcherg/shared'
 import type { NativeMessageTs } from '@launcherg/shared/typeshare/native-messaging'
 import type { HandlerContext } from '../shared/types'
-import { create } from '@bufbuild/protobuf'
-import {
-  ExtensionResponseSchema,
-  GetStatusResponseSchema,
-  StatusDataSchema,
-} from '@launcherg/shared/proto/extension_internal'
 
 export async function handleGetStatus(
   context: HandlerContext,
   requestId: string,
   _getStatusRequest: GetStatusRequest,
-) {
+): Promise<ExtensionResponse> {
   const nativeMessage: NativeMessageTs = {
     request_id: context.idGenerator.generate(),
     message: { case: 'GetStatus', value: {} },
   }
   const nativeResponse: any = await context.nativeMessenger.sendJson?.(nativeMessage)
 
-  let statusData
+  let statusData: StatusData | undefined
   if (nativeResponse && nativeResponse.response?.case === 'StatusResult') {
     const syncStatus = nativeResponse.response.value
-    statusData = create(StatusDataSchema, {
+    statusData = {
       lastSync: syncStatus.last_sync
         ? new Date(Number(syncStatus.last_sync.seconds) * 1000).toISOString()
         : '',
@@ -31,18 +25,16 @@ export async function handleGetStatus(
       isRunning: syncStatus.is_running,
       connectionStatus: String(syncStatus.connection_status),
       errorMessage: syncStatus.error_message,
-    })
+    }
   }
 
-  return create(ExtensionResponseSchema, {
+  return {
     requestId,
     success: true,
     error: '',
     response: {
       case: 'statusResult',
-      value: create(GetStatusResponseSchema, {
-        status: statusData,
-      }),
+      value: { status: statusData },
     },
-  })
+  }
 }

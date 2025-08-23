@@ -1,5 +1,3 @@
-import { create } from '@bufbuild/protobuf'
-import { EgsInfoSchema } from '@launcherg/shared/proto/extension_internal'
 import { describe, expect, it, vi } from 'vitest'
 import { buildTestContext } from '../../test/helpers/context'
 import { syncGame } from './syncGameScheduler'
@@ -17,7 +15,7 @@ describe('ゲーム同期スケジューラ（syncGameScheduler）', () => {
       ] },
     ]
 
-    const resolveForDmmBulk = vi.fn(async (arr: Array<{ storeId: string, category: string, subcategory: string }>) => arr.map((_v, i) => create(EgsInfoSchema, {
+    const resolveForDmmBulk = vi.fn(async (arr: Array<{ storeId: string, category: string, subcategory: string }>) => arr.map((_v, i) => ({
       erogamescapeId: 100 + i,
       gamename: `DMM-${i}`,
       gamenameRuby: `dmm-${i}`,
@@ -26,7 +24,7 @@ describe('ゲーム同期スケジューラ（syncGameScheduler）', () => {
       brandname: 'brand',
       brandnameRuby: 'brand-ruby',
     })))
-    const resolveForDlsiteBulk = vi.fn(async (arr: Array<{ storeId: string, category: string }>) => arr.map((_v, i) => create(EgsInfoSchema, {
+    const resolveForDlsiteBulk = vi.fn(async (arr: Array<{ storeId: string, category: string }>) => arr.map((_v, i) => ({
       erogamescapeId: 200 + i,
       gamename: `DLS-${i}`,
       gamenameRuby: `dls-${i}`,
@@ -70,7 +68,7 @@ describe('ゲーム同期スケジューラ（syncGameScheduler）', () => {
       { type: 'dlsite' as const, games: [{ id: 'RJ999', category: 'girls' }] },
     ]
 
-    const resolveForDmmBulk = vi.fn(async () => ([create(EgsInfoSchema, {
+    const resolveForDmmBulk = vi.fn(async () => ([{
       erogamescapeId: 1,
       gamename: 'g',
       gamenameRuby: 'gr',
@@ -78,8 +76,8 @@ describe('ゲーム同期スケジューラ（syncGameScheduler）', () => {
       isNukige: false,
       brandname: 'b',
       brandnameRuby: 'br',
-    })]))
-    const resolveForDlsiteBulk = vi.fn(async () => ([create(EgsInfoSchema, {
+    }]))
+    const resolveForDlsiteBulk = vi.fn(async () => ([{
       erogamescapeId: 2,
       gamename: 'g2',
       gamenameRuby: 'gr2',
@@ -87,7 +85,7 @@ describe('ゲーム同期スケジューラ（syncGameScheduler）', () => {
       isNukige: true,
       brandname: 'b2',
       brandnameRuby: 'br2',
-    })]))
+    }]))
 
     const sendJson = vi.fn(async (_message: any) => ({
       success: true,

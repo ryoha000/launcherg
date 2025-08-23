@@ -1,15 +1,9 @@
+import type { ExtensionRequest, ExtensionResponse, GetStatusResponse, StatusData } from '../../shared/src/models'
 import { readFileSync } from 'node:fs'
 import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { create, fromJson, toJson } from '@bufbuild/protobuf'
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import {
-  ExtensionRequestSchema,
-  ExtensionResponseSchema,
-  GetStatusResponseSchema,
-  StatusDataSchema,
-} from '../../shared/src/proto/extension_internal/messages_pb'
 // PopupControllerをインポート
 import { PopupController } from '../src/popup'
 
@@ -56,25 +50,24 @@ describe('popupController', () => {
         sendMessage: vi.fn().mockImplementation((messageJson, callback) => {
           if (callback) {
             try {
-              // JSONからExtensionRequestをデコード
-              const request = fromJson(ExtensionRequestSchema, messageJson)
+              const request = messageJson as ExtensionRequest
 
               // GetStatusRequestの場合のレスポンスを作成
               if (request.request.case === 'getStatus') {
-                const statusData = create(StatusDataSchema, {
+                const statusData: StatusData = {
                   lastSync: new Date().toISOString(),
                   totalSynced: 42,
                   connectedExtensions: [],
                   isRunning: true,
                   connectionStatus: 'connected',
                   errorMessage: '',
-                })
+                }
 
-                const statusResponse = create(GetStatusResponseSchema, {
+                const statusResponse: GetStatusResponse = {
                   status: statusData,
-                })
+                }
 
-                const response = create(ExtensionResponseSchema, {
+                const response: ExtensionResponse = {
                   requestId: request.requestId,
                   success: true,
                   error: '',
@@ -82,21 +75,19 @@ describe('popupController', () => {
                     case: 'statusResult',
                     value: statusResponse,
                   },
-                })
+                }
 
-                // JSONとしてシリアライズして返す
-                const responseJson = toJson(ExtensionResponseSchema, response)
-                callback(responseJson)
+                callback(response)
               }
               else {
                 // その他のリクエストの場合
-                const response = create(ExtensionResponseSchema, {
+                const response: ExtensionResponse = {
                   requestId: request.requestId,
                   success: true,
                   error: '',
-                })
-                const responseJson = toJson(ExtensionResponseSchema, response)
-                callback(responseJson)
+                  response: { case: undefined },
+                }
+                callback(response)
               }
             }
             catch (error) {

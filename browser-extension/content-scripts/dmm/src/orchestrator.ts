@@ -1,37 +1,36 @@
+import type { DmmGame, DmmSyncGamesRequest, ExtensionRequest, GetDmmPackIdsRequest, GetDmmPackIdsResponse } from '@launcherg/shared'
 import type { DmmExtractedGame } from './types'
-import { create, fromJson, toJson } from '@bufbuild/protobuf'
 
 import { sendExtensionRequest } from '@launcherg/shared'
-import { DmmGameSchema, DmmSyncGamesRequestSchema, ExtensionRequestSchema, GetDmmPackIdsRequestSchema as ExtGetPacksReq, GetDmmPackIdsResponseSchema as ExtGetPacksRes } from '@launcherg/shared/proto/extension_internal'
 import { fetchPackDetailHtmlForItemId, findDetailItemIdForStoreId } from './pack-helpers'
 import { parsePackModal } from './pack-parser'
 
 export async function fetchPackIds(): Promise<Set<string>> {
-  const packReq = create(ExtensionRequestSchema, {
+  const packReq: ExtensionRequest = {
     requestId: Date.now().toString(36) + Math.random().toString(36).slice(2),
-    request: { case: 'getDmmPackIds', value: create(ExtGetPacksReq, {}) },
-  } as any)
-  const packResJson = await sendExtensionRequest(packReq as any, (req: any) => toJson(ExtensionRequestSchema, req as any))
+    request: { case: 'getDmmPackIds', value: {} as GetDmmPackIdsRequest },
+  } as any
+  const packResJson = await sendExtensionRequest(packReq as any, (req: any) => req)
   const raw = (packResJson as any)?.response?.value ?? (packResJson as any)?.getDmmPackIdsResult ?? {}
-  const packRes = fromJson(ExtGetPacksRes, raw)
-  return new Set<string>(packRes.storeIds)
+  const packRes = raw as GetDmmPackIdsResponse
+  return new Set<string>(packRes.storeIds || [])
 }
 
 export async function syncDmmGames(games: DmmExtractedGame[]): Promise<void> {
   if (games.length === 0)
     return
-  const dmmGames = games.map(g => create(DmmGameSchema, {
+  const dmmGames: DmmGame[] = games.map(g => ({
     id: g.storeId,
     category: g.category,
     subcategory: g.subcategory,
     title: g.title,
     imageUrl: g.imageUrl,
   }))
-  const request = create(ExtensionRequestSchema, {
+  const request: ExtensionRequest = {
     requestId: Date.now().toString(36) + Math.random().toString(36).slice(2),
-    request: { case: 'syncDmmGames', value: create(DmmSyncGamesRequestSchema, { games: dmmGames }) },
-  })
-  await sendExtensionRequest(request, req => toJson(ExtensionRequestSchema, req))
+    request: { case: 'syncDmmGames', value: { games: dmmGames } as DmmSyncGamesRequest },
+  }
+  await sendExtensionRequest(request, req => req)
 }
 
 export async function processPacks(packSet: Set<string>): Promise<DmmExtractedGame[]> {
