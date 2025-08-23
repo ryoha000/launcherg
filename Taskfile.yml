@@ -66,6 +66,7 @@ tasks:
       - npm run format
       - npm run lint
       - npm run check
+      - npm run test
   check:tauri:rust:
     description: TauriのRustコードをチェック
     dir: src-tauri

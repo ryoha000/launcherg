@@ -10,6 +10,7 @@
     "check": "svelte-check --tsconfig ./tsconfig.json",
     "lint": "eslint .",
     "format": "eslint --fix .",
+    "test": "vitest run --dir src",
     "tauri": "tauri",
     "cargo-test-local:proctail": "cd src-tauri && cargo test infrastructure::windowsimpl::proctail_test::tests -- --nocapture --ignored --test-threads=1"
   },
