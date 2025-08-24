@@ -5,17 +5,17 @@
   import { onMount } from 'svelte'
   import { get } from 'svelte/store'
   import tippy from 'tippy.js'
+  import ConfirmDeleteOnCheckModal from '@/components/Setting/Download/ConfirmDeleteOnCheckModal.svelte'
   import APopover from '@/components/UI/APopover.svelte'
   import Button from '@/components/UI/Button.svelte'
   import Checkbox from '@/components/UI/Checkbox.svelte'
-  import Modal from '@/components/UI/Modal.svelte'
-  import { commandGetStoreMappedElements } from '@/lib/command'
+  import { commandDeleteCollectionElement, commandGetStoreMappedElements } from '@/lib/command'
   import { useAddDenyListMutation, useDenyListQuery, useRemoveDenyListMutation } from '@/lib/data/queries/denyList'
   import { useAddDmmPackMutation, useDmmPackQuery, useRemoveDmmPackMutation } from '@/lib/data/queries/dmmPack'
   import { showErrorToast, showInfoToast } from '@/lib/toast'
   import { createWritable } from '@/lib/utils'
+  import { settings } from '@/store/settings'
   import { sidebarCollectionElements } from '@/store/sidebarCollectionElements'
-  // import { sidebarCollectionElements } from '@/store/sidebarCollectionElements'
 
   const [{ subscribe, set }, value] = createWritable<StoreMappedElementVm[]>([])
   export const items = { subscribe, value }
@@ -35,33 +35,21 @@
   let keyword = $state('')
   // 行操作はトグルのみ（削除ボタンは列から撤去）
 
-  // 一括削除モーダル
-  let isOpenDeleteSelected = $state(false)
-  const deletableItems = $derived.by<StoreMappedElementVm[]>(() =>
-    $items.filter(v => v.alreadyDenied || (v.storeType === 1 && v.isDmmPack)),
-  )
-  const openDeleteModal = () => {
-    if (deletableItems.length === 0) {
-      showErrorToast('削除対象がありません')
-      return
-    }
-    isOpenDeleteSelected = true
+  // チェック時の単体削除確認（今後表示しない設定付き）
+  const getAutoDeletePref = () => get(settings).storeMapped.autoDeleteOnCheck
+  const setAutoDeletePref = (v: boolean) => {
+    settings.update(s => ({
+      ...s,
+      storeMapped: { ...s.storeMapped, autoDeleteOnCheck: v },
+    }))
   }
-  const confirmDelete = async () => {
+  let isOpenConfirmDelete = $state(false)
+  let confirmDeleteTarget = $state(null as { id: number, title: string } | null)
+  let dontAskAgain = $state(false)
+  const performDeleteElement = async (id: number, _title?: string) => {
     try {
-      // まとめて削除: collectionElementId 単位
-      const ids: number[] = Array.from(new Set(deletableItems.map(v => v.collectionElementId)))
-      // フロント即時反映
-      set(value().filter(v => !ids.includes(v.collectionElementId)))
-      // バックエンド削除
-      for (const id of ids) {
-        try {
-          await (await import('@/lib/command')).commandDeleteCollectionElement(id)
-        }
-        catch (e) {
-          console.error(e)
-        }
-      }
+      await commandDeleteCollectionElement(id)
+      set(await commandGetStoreMappedElements())
       await sidebarCollectionElements.refetch()
       showInfoToast('削除しました')
     }
@@ -70,8 +58,38 @@
       showErrorToast('削除に失敗しました')
     }
     finally {
-      isOpenDeleteSelected = false
+      isOpenConfirmDelete = false
+      confirmDeleteTarget = null
+      dontAskAgain = false
     }
+  }
+  const maybeDeleteOnFlagSet = async (collectionElementId?: number, title?: string) => {
+    if (!collectionElementId)
+      return
+    if (getAutoDeletePref()) {
+      await performDeleteElement(collectionElementId, title)
+      return
+    }
+    confirmDeleteTarget = { id: collectionElementId, title: title ?? '' }
+    isOpenConfirmDelete = true
+  }
+
+  function resetConfirmDeleteState() {
+    isOpenConfirmDelete = false
+    confirmDeleteTarget = null
+    dontAskAgain = false
+  }
+  async function onConfirmDeleteModal() {
+    if (dontAskAgain)
+      setAutoDeletePref(true)
+    if (confirmDeleteTarget)
+      await performDeleteElement(confirmDeleteTarget.id, confirmDeleteTarget.title)
+  }
+
+  async function onConfirmDeleteFromChild(checked: boolean) {
+    if (checked)
+      setAutoDeletePref(true)
+    await onConfirmDeleteModal()
   }
 
   const denyListQuery = useDenyListQuery()
@@ -139,7 +157,7 @@
     if (nextValue === prev)
       return
     if (!collectionElementId && !nextValue && !checkIsDmmPack(storeId)) {
-      showErrorToast('未登録のゲームでは『連携除外』または『パック作品』のいずれかを選択してください。両方を未選択にはできません。')
+      showErrorToast('未登録のゲームでは『連携除外』または『セット商品』のいずれかを選択してください。両方を未選択にはできません。')
       return
     }
     try {
@@ -154,6 +172,9 @@
         ? `「連携除外」設定: ${title}（${storeLabel} / ${storeId}）`
         : `「連携除外」解除: ${title}（${storeLabel} / ${storeId}）`,
       )
+      if (nextValue) {
+        await maybeDeleteOnFlagSet(collectionElementId, title)
+      }
     }
     catch (e) {
       console.error(e)
@@ -172,7 +193,7 @@
     if (nextValue === prev)
       return
     if (!collectionElementId && !nextValue && !checkIsDenied(1, storeId)) {
-      showErrorToast('未登録のゲームでは『連携除外』または『パック作品』のいずれかを選択してください。両方を未選択にはできません。')
+      showErrorToast('未登録のゲームでは『連携除外』または『セット商品』のいずれかを選択してください。両方を未選択にはできません。')
       return
     }
     try {
@@ -183,13 +204,16 @@
         await get(removeDmmPackMutation).mutateAsync({ storeId })
       }
       showInfoToast(nextValue
-        ? `「パック作品」設定: ${title}（DMM / ${storeId}）`
-        : `「パック作品」解除: ${title}（DMM / ${storeId}）`,
+        ? `「セット商品」設定: ${title}（DMM / ${storeId}）`
+        : `「セット商品」解除: ${title}（DMM / ${storeId}）`,
       )
+      if (nextValue) {
+        await maybeDeleteOnFlagSet(collectionElementId, title)
+      }
     }
     catch (e) {
       console.error(e)
-      showErrorToast(`「パック作品」の${nextValue ? '設定' : '解除'}に失敗しました: ${title}`)
+      showErrorToast(`「セット商品」の${nextValue ? '設定' : '解除'}に失敗しました: ${title}`)
     }
   }
 
@@ -321,24 +345,17 @@
       <span class='ml-3'>DMM {dmmCount} 件</span>
       <span class='ml-2'>DLsite {dlsiteCount} 件</span>
       <span class='ml-2'>除外 {denyListTotal} 件</span>
-      <span class='ml-2'>パック {dmmPackTotal} 件</span>
+      <span class='ml-2'>セット {dmmPackTotal} 件</span>
     </div>
   </div>
   <div class='mb-2 flex items-center justify-end gap-2'>
-    <Button text='再取得' onclick={refetch} />
-    <Button
-      text='除外・パック指定を一括削除'
-      tooltip={{ content: '連携除外/パック作品にチェックが入っている要素を全て削除します', placement: 'bottom', theme: 'default' }}
-      variant='error'
-      onclick={openDeleteModal}
-    />
   </div>
   <div class='overflow-hidden border-(1px border-primary solid) rounded'>
     <div class='max-h-full overflow-auto'>
       <table class='w-full border-separate border-spacing-0 table-fixed whitespace-nowrap text-(left text-primary)'>
         <thead class='sticky top-0 z-20 bg-bg-primary'>
           <tr>
-            <th class='w-16 border-(b border-primary) px-2 py-2'>ソース</th>
+            <th class='w-16 border-(b border-primary) px-2 py-2'></th>
             <th class='w-18 border-(b border-primary) px-2 py-2'></th>
             <th class='w-36 border-(b border-primary) px-2 py-2'>タイトル</th>
             <th class='w-32 border-(b border-primary) px-2 py-2'>
@@ -352,7 +369,7 @@
             </th>
             <th class='w-36 border-(b border-primary) px-2 py-2'>
               <div class='flex items-center gap-1'>
-                パック作品
+                セット商品
                 <span
                   use:tooltipAction={{ content: 'DMMのセット商品（複数作品を含む）として扱います。含まれる個別作品を取得するための特別処理を有効にします。DMM以外には適用されません。', placement: 'top', theme: 'default' }}
                   class='i-material-symbols-help-outline-rounded h-4 w-4 color-text-tertiary'
@@ -382,14 +399,14 @@
               <td class='px-2 py-1'>
                 <label class='flex items-center gap-2'>
                   <Checkbox value={checkIsDenied(item.storeType, item.storeId)} on:update={e => updateDenied({ ...item, nextValue: e.detail.value })} disabled={disabledDenyList} />
-                  <span>{checkIsDenied(item.storeType, item.storeId) ? '除外中' : '未設定'}</span>
+                  <span>{checkIsDenied(item.storeType, item.storeId) ? '除外対象' : '未設定'}</span>
                 </label>
               </td>
               <td class='px-2 py-1'>
                 {#if item.storeType === 1}
                   <label class='flex items-center gap-2'>
                     <Checkbox value={checkIsDmmPack(item.storeId)} on:update={e => updateDmmPack({ ...item, nextValue: e.detail.value })} disabled={disabledDmmPack} />
-                    <span>{checkIsDmmPack(item.storeId) ? 'パック中' : '未設定'}</span>
+                    <span>{checkIsDmmPack(item.storeId) ? 'セット' : '未設定'}</span>
                   </label>
                 {:else}
                   <span class='opacity-50'>対象外</span>
@@ -402,34 +419,10 @@
     </div>
   </div>
 </div>
-<Modal
-  isOpen={isOpenDeleteSelected}
-  title='確認'
-  confirmText='削除する'
-  cancelText='キャンセル'
-  onconfirm={confirmDelete}
-  oncancel={() => (isOpenDeleteSelected = false)}
-  onclose={() => (isOpenDeleteSelected = false)}
->
-  {#snippet children()}
-    <div class='space-y-2'>
-      <div>以下の要素を削除します。よろしいですか？</div>
-      <ul class='list-disc pl-6'>
-        {#each deletableItems.slice(0, 10) as it}
-          <li>{it.title}（{it.brand}）</li>
-        {/each}
-        {#if deletableItems.length > 10}
-          <li>...ほか {deletableItems.length - 10} 件</li>
-        {/if}
-      </ul>
-    </div>
-  {/snippet}
-  {#snippet footer()}
-    <div class='flex items-center border-(t-1px border-primary solid) p-4'>
-      <div class='ml-auto flex items-center gap-2'>
-        <Button text='キャンセル' onclick={() => (isOpenDeleteSelected = false)} />
-        <Button variant='error' text='削除する' onclick={confirmDelete} />
-      </div>
-    </div>
-  {/snippet}
-</Modal>
+<ConfirmDeleteOnCheckModal
+  isOpen={isOpenConfirmDelete}
+  targetTitle={confirmDeleteTarget ? confirmDeleteTarget.title : null}
+  on:confirm={e => onConfirmDeleteFromChild(e.detail.dontAskAgain)}
+  on:cancel={resetConfirmDeleteState}
+  on:close={resetConfirmDeleteState}
+/>

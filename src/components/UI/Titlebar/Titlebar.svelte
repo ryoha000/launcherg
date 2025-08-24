@@ -22,7 +22,7 @@
   })
 </script>
 
-<div class='grid grid-cols-[1fr_auto] h-8 items-center bg-[#202020] text-(text-primary)'>
+<div class='z-999 grid grid-cols-[1fr_auto] h-8 items-center bg-[#202020] text-(text-primary)'>
   <div data-tauri-drag-region class='h-full'></div>
   <div class='ml-auto h-full flex items-center'>
     <button class='h-7 w-7 flex items-center justify-center rounded-1 bg-transparent transition-all' aria-label='Open Settings' onclick={navigateToSettings}>
