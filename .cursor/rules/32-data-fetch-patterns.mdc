@@ -1,0 +1,124 @@
+---
+description: Data fetch patterns for TanStack Query + Tauri in this project
+globs: src/**/*.ts,src/**/*.svelte
+---
+
+## Data Fetch パターン（TanStack Query + Tauri）
+
+このルールは、SQLite/Tauri コマンド連携を TanStack Query で統一するための運用規約です。UI 層は直接 `invoke` を呼ばず、データ層（Query/Mutation）を経由します。
+
+### コア設計
+- QueryClient は単一インスタンスを `QueryClientProvider` でアプリ全体に提供。
+  - 実装: [src/lib/data/queryClient.ts](mdc:src/lib/data/queryClient.ts)
+  - 既定オプション（`staleTime` 等）はここで集中管理。例外のみクエリ側で上書き。
+- クエリキーは安定・最小の粒度で `queryKeys` に集約。
+  - 実装: [src/lib/data/queryKeys.ts](mdc:src/lib/data/queryKeys.ts)
+- リソース別に Query/Mutation を `src/lib/data/queries/*` に定義。
+  - 例: [src/lib/data/queries/denyList.ts](mdc:src/lib/data/queries/denyList.ts)
+- UI 層からはコマンドを直接呼ばず、Query/Mutation のみ使用。
+
+### ディレクトリ構成（要点）
+- `src/lib/data/queryClient.ts` … QueryClient の生成・既定オプション
+- `src/lib/data/queryKeys.ts` … 安定キー（例: `denyList.all()`、`games()`, `game(id)`）
+- `src/lib/data/queries/*.ts` … リソース毎の `useXxxQuery`/`useXxxMutation`
+
+### Provider（アプリ組み込み）
+`App.svelte` で `QueryClientProvider` をルートに設置。
+
+```svelte
+<script lang="ts">
+  import { QueryClientProvider } from '@tanstack/svelte-query'
+  import { queryClient } from '@/lib/data/queryClient'
+</script>
+
+<QueryClientProvider client={queryClient}>
+  <!-- App content -->
+</QueryClientProvider>
+```
+
+### クエリ定義（読み取り系）
+- 命名は `useXxxQuery`。返り値は Svelte ストア（`CreateQueryResult`）。
+- `queryKey` は `queryKeys` を使用。
+- 既定オプションは `queryClient` に寄せ、特殊な場合のみクエリ側で指定。
+
+```ts
+// src/lib/data/queries/denyList.ts
+import { createQuery } from '@tanstack/svelte-query'
+import { commandDenyListAll } from '@/lib/command'
+import { queryKeys } from '@/lib/data/queryKeys'
+
+export function useDenyListQuery() {
+  return createQuery({
+    queryKey: queryKeys.denyList.all(),
+    queryFn: () => commandDenyListAll(),
+  })
+}
+```
+
+### ミューテーション定義（更新系）
+- 命名は `useXxxMutation`。成功時に関連クエリをピンポイントで invalidate。
+- 必要に応じて楽観的更新（`onMutate`）→ ロールバック（`onError`）を使用。
+
+```ts
+// src/lib/data/queries/denyList.ts
+import { createMutation } from '@tanstack/svelte-query'
+import { commandDenyListAdd, commandDenyListRemove } from '@/lib/command'
+import { queryClient } from '@/lib/data/queryClient'
+import { queryKeys } from '@/lib/data/queryKeys'
+
+export function useAddDenyListMutation() {
+  return createMutation<unknown, Error, { storeType: number, storeId: string, name: string }>({
+    mutationFn: input => commandDenyListAdd(input.storeType, input.storeId, input.name),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: queryKeys.denyList.all() })
+    },
+  })
+}
+
+export function useRemoveDenyListMutation() {
+  return createMutation<unknown, Error, { storeType: number, storeId: string }>({
+    mutationFn: input => commandDenyListRemove(input.storeType, input.storeId),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: queryKeys.denyList.all() })
+    },
+  })
+}
+```
+
+### Svelte での利用パターン
+- `createQuery`/`createMutation` はストアを返す。`refetch`/`mutateAsync` 等を呼ぶときは `get(store)` 経由で取り出す。
+- 値の参照は `$store`、派生は `$derived` を活用。
+
+```svelte
+<script lang="ts">
+  import { get } from 'svelte/store'
+  import { useDenyListQuery, useAddDenyListMutation } from '@/lib/data/queries/denyList'
+
+  const denyListQuery = useDenyListQuery()
+  const addMutation = useAddDenyListMutation()
+
+  const items = $derived($denyListQuery.data ?? [])
+
+  async function add(storeType: number, storeId: string, name: string) {
+    await get(addMutation).mutateAsync({ storeType, storeId, name })
+  }
+</script>
+```
+
+### Invalidation 戦略
+- クエリキー設計を前提に、更新に応じて最低限のキーのみ invalidate。
+- 例: DenyList 追加/削除 → `queryKeys.denyList.all()` を invalidate。
+
+### Tauri コマンドとの連携ポリシー
+- TypeScript → Rust へ渡すペイロードのフィールド名は `camelCase` を使用（Tauri が snake_case へ自動マップ）。
+- 共有型を活用し、`any` は避ける。
+
+### エラーハンドリング・UX
+- 失敗時はトースト等で通知を統一。ミューテーションは `onError` を活用。
+- デスクトップアプリの特性上、フォーカス切替による自動再取得の要否は `queryClient` の既定で統制。個別クエリでの上書きは最小限に。
+
+### マイグレーション指針
+1. 読み取り系から順に Query 化（UI は Query の結果を参照）
+2. 更新系を Mutation 化し、成功時に invalidate
+3. 旧 `src/lib/command.ts` の直接参照を段階的に置換（不要になったコードは削除）
+

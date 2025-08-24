@@ -9,5 +9,9 @@ globs: src/**/*.svelte,src/**/*.ts
 - **型安全**: 共有の型定義を活用し、`any` を避ける。
 - **コマンド実行ポリシー**: まとめチェックは `task` 経由で実行。
 
+### 分岐スタイル（TypeScript ユニオンの扱い）
+- `switch` で分岐し、`default` に `const _exhaustive: never = value` を置いて網羅性を型で保証する。
+- `if` 連鎖でのユニオン分岐は禁止（見落とし防止）。
+
 ### 参照
 - [Taskfile.yml](mdc:Taskfile.yml)
