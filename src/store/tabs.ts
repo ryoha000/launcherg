@@ -1,174 +1,62 @@
 import type { Hook } from '@mateothegreat/svelte5-router'
 import { goto } from '@mateothegreat/svelte5-router'
 import { createLocalStorageWritable } from '@/lib/utils'
+import { ROUTE_REGISTRY } from '@/router/const'
+import { buildPath, getTabActionFromLocation } from '@/store/tabs/schema'
+import { decideNextAfterDelete, upsertKeyedTab, upsertSingletonTab } from '@/store/tabs/updaters'
 
 export interface Tab {
   id: number
   workId: number
-  type: 'works' | 'memos' | 'settings' | 'debug' | `debug-${string}`
+  type: string
   scrollTo: number
   title: string
 }
 
-function isValidTabType(src: string): src is 'works' | 'memos' | 'settings' | 'debug' {
-  return src === 'works' || src === 'memos' || src === 'settings' || src === 'debug'
-}
-
-function extractId(path: string) {
-  const match = path.match(/^\/(works|memos)\/(\d+)$/)
-  if (match) {
-    return Number(match[2]) // match[2] にID（12345など）が入っている
-  }
-  else {
-    return null // マッチしなければ null を返す
-  }
-}
-
 function createTabs() {
-  const [tabs, getTabs] = createLocalStorageWritable<Tab[]>('tabs', [
-    { id: 0, workId: 7402, type: 'works', scrollTo: 0, title: 'G線上の魔王' },
-    {
-      id: 2,
-      workId: 21228,
-      type: 'memos',
-      scrollTo: 0,
-      title: 'メモ - G線上の魔王',
-    },
-    { id: 3, workId: 20460, type: 'works', scrollTo: 0, title: 'G線上の魔王' },
-    {
-      id: 4,
-      workId: 21531,
-      type: 'memos',
-      scrollTo: 0,
-      title: 'メモ - G線上の魔王',
-    },
-  ])
+  const [tabs, getTabs] = createLocalStorageWritable<Tab[]>('tabs', [])
 
   const [selected, getSelected] = createLocalStorageWritable('tab-selected', 0)
 
   const routeLoaded: Hook = (event) => {
     const path = event.result.path.original
-    const isHome = path === '/'
-    if (isHome) {
-      selected.set(-1)
-      return
-    }
+    const queryParams = typeof event.result.querystring.params === 'object'
+      ? (event.result.querystring.params as Record<string, unknown>)
+      : undefined
 
-    // 設定ページの場合の処理
-    if (path === '/settings') {
-      const settingsTabIndex = getTabs().findIndex(
-        v => v.type === 'settings',
-      )
-      if (settingsTabIndex === -1) {
-        const newTab: Tab = {
-          id: new Date().getTime(),
-          type: 'settings',
-          workId: -1,
-          scrollTo: 0,
-          title: '設定',
-        }
-        tabs.update((v) => {
-          return [...v, newTab]
-        })
-        const newSelected = getTabs().length - 1
-        selected.set(newSelected)
-      }
-      else {
-        selected.set(settingsTabIndex)
-      }
-      return
-    }
+    const action = getTabActionFromLocation(ROUTE_REGISTRY, {
+      path,
+      pathParams: event.result.path.params as Record<string, unknown> | undefined,
+      queryParams,
+    })
 
-    // ストア紐づけ一覧（ID不要ページ）
-    if (path === '/store-mapped') {
-      // タブ管理対象外にしておく（必要なら追加実装）
-      selected.set(-1)
-      return
-    }
-
-    // デバッグページの場合の処理
-    if (path.startsWith('/debug')) {
-      const debugType = path.split('/')[2] // '/debug/proctail' の 'proctail' 部分を取得
-      const debugTabIndex = getTabs().findIndex(
-        v => v.type === `debug-${debugType}`,
-      )
-      if (debugTabIndex === -1) {
-        const newTab: Tab = {
-          id: new Date().getTime(),
-          type: `debug-${debugType}`,
-          workId: -2,
-          scrollTo: 0,
-          title: `${debugType} デバッグ`,
-        }
-        tabs.update((v) => {
-          return [...v, newTab]
-        })
-        const newSelected = getTabs().length - 1
-        selected.set(newSelected)
+    switch (action.mode) {
+      case 'none': {
+        selected.set(-1)
+        return true
       }
-      else {
-        selected.set(debugTabIndex)
+      case 'singleton': {
+        const { nextTabs, selectedIndex } = upsertSingletonTab(getTabs(), action)
+        tabs.set(nextTabs)
+        selected.set(selectedIndex)
+        return true
       }
-      return
-    }
-
-    const id = extractId(path)
-    if (!id || Number.isNaN(id)) {
-      console.error('params[id] is undefined (not home)')
-      return
-    }
-
-    const tabType = event.result.path.original.split('/')[1]
-    if (!isValidTabType(tabType)) {
-      console.error('tabType is invalid (not home)')
-      return
-    }
-
-    const tabIndex = getTabs().findIndex(
-      v => v.workId === id && v.type === tabType,
-    )
-    if (tabIndex === -1) {
-      let gamename = ''
-      if (typeof event.result.querystring.params === 'object') {
-        for (const [key, value] of Object.entries(event.result.querystring.params)) {
-          if (key === 'gamename' && typeof value === 'string') {
-            gamename = decodeURIComponent(value)
-          }
-        }
+      case 'keyed': {
+        const { nextTabs, selectedIndex } = upsertKeyedTab(getTabs(), action)
+        tabs.set(nextTabs)
+        selected.set(selectedIndex)
+        return true
       }
-      if (!gamename) {
-        console.error('tabs にないのに gamename の queryParam がない')
-        return
+      default: {
+        const _exhaustive: never = action
+        return _exhaustive
       }
-      let title = gamename
-      if (tabType === 'memos') {
-        title = `メモ - ${title}`
-      }
-      const newTab: Tab = {
-        id: new Date().getTime(),
-        type: tabType,
-        workId: id,
-        scrollTo: 0,
-        title,
-      }
-      tabs.update((v) => {
-        return [...v, newTab]
-      })
-      const newSelected = getTabs().length - 1
-      selected.set(newSelected)
     }
-    else {
-      selected.set(tabIndex)
-    }
-
-    return true
   }
   const deleteTab = (id: number) => {
     const deleteIndex = getTabs().findIndex(v => v.id === id)
     const currentIndex = getSelected()
 
-    const isCurrentTab = deleteIndex === currentIndex
-    const isDeletePrevTab = deleteIndex < currentIndex
     const isRightestTab = deleteIndex === getTabs().length - 1
 
     tabs.update((v) => {
@@ -180,27 +68,19 @@ function createTabs() {
     })
 
     if (isRightestTab && getTabs().length === 0) {
-      // すでに home へ遷移済
       return
     }
 
-    if (isCurrentTab) {
-      const newIndex = isRightestTab ? currentIndex - 1 : currentIndex
-      const nextTab = getTabs()[newIndex]
-      if (nextTab.type === 'settings') {
-        goto('/settings')
-      }
-      else if (nextTab.type.startsWith('debug-')) {
-        goto(`/debug/${nextTab.type.split('-')[1]}`)
-      }
-      else {
-        goto(`/${nextTab.type}/${nextTab.workId}`)
-      }
+    const { nextIndex } = decideNextAfterDelete(getTabs(), deleteIndex, currentIndex)
+    if (nextIndex === null)
       return
+    const nextTab = getTabs()[nextIndex]
+    const descriptor = ROUTE_REGISTRY.find(d => d.kind === nextTab.type)
+    if (descriptor) {
+      goto(buildPath(descriptor, nextTab.workId))
     }
-
-    if (isDeletePrevTab) {
-      selected.update(v => v - 1)
+    else {
+      goto('/')
     }
   }
   const initialize = () => {
@@ -220,14 +100,12 @@ function createTabs() {
       return
     }
     const tab = _tabs[index]
-    if (tab.type === 'settings') {
-      goto('/settings')
-    }
-    else if (tab.type.startsWith('debug-')) {
-      goto(`/debug/${tab.type.split('-')[1]}`)
+    const descriptor = ROUTE_REGISTRY.find(d => d.kind === tab.type)
+    if (descriptor) {
+      goto(buildPath(descriptor, tab.workId))
     }
     else {
-      goto(`/${tab.type}/${tab.workId}`)
+      goto('/')
     }
   }
   const getSelectedTab = () => getTabs()[getSelected()]

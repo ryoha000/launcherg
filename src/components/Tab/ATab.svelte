@@ -2,7 +2,9 @@
   import type { Tab } from '@/store/tabs'
 
   import { goto } from '@mateothegreat/svelte5-router'
+  import { ROUTE_REGISTRY } from '@/router/const'
   import { deleteTab } from '@/store/tabs'
+  import { buildPath } from '@/store/tabs/schema'
 
   interface Props {
     tab: Tab
@@ -11,14 +13,10 @@
 
   const { tab, selected }: Props = $props()
 
-  const tabIcon
-    = $derived(tab.type === 'works'
-      ? 'i-material-symbols-computer-outline-rounded color-accent-accent'
-      : tab.type === 'memos'
-      ? 'i-material-symbols-drive-file-rename-outline color-accent-edit'
-      : tab.type === 'settings'
-      ? 'i-material-symbols-settings-outline-rounded color-text-disabled'
-      : '')
+  const tabIcon = $derived.by(() => {
+    const descriptor = ROUTE_REGISTRY.find(r => r.kind === tab.type)
+    return descriptor && 'icon' in descriptor && descriptor.icon
+  })
 
   const closeWheelClick = (e: MouseEvent) => {
     if (e.button === 1) {
@@ -32,15 +30,10 @@
   }
 
   const navigate = () => {
-    if (tab.type === 'settings') {
-      goto('/settings')
-    }
-    else if (tab.type.startsWith('debug-')) {
-      goto(`/debug/${tab.type.split('-')[1]}`)
-    }
-    else {
-      goto(`/${tab.type}/${tab.workId}`)
-    }
+    const d = ROUTE_REGISTRY.find(r => r.kind === tab.type)
+    if (!d)
+      return goto('/')
+    goto(buildPath(d, tab.workId))
   }
 </script>
 
