@@ -3,9 +3,10 @@
 
   interface Props {
     value: boolean
+    disabled?: boolean
   }
 
-  let { value = $bindable() }: Props = $props()
+  let { value = $bindable(), disabled = $bindable() }: Props = $props()
 
   const dispather = createEventDispatcher<{ update: { value: boolean } }>()
 </script>
@@ -13,6 +14,7 @@
 <input
   type='checkbox'
   checked={value}
+  disabled={disabled}
   onchange={(e) => {
     value = e.currentTarget.checked
     dispather('update', { value })

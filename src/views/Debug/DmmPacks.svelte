@@ -1,7 +1,8 @@
 <script lang='ts'>
-  import { invoke } from '@tauri-apps/api/core'
-  import { onMount } from 'svelte'
+  import type { DmmPackMarkVm } from '@/lib/command'
+  import { get } from 'svelte/store'
   import Button from '@/components/UI/Button.svelte'
+  import { useAddDmmPackMutation, useDmmPackQuery, useRemoveDmmPackMutation } from '@/lib/data/queries/dmmPack'
 
   type Element = {
     id: number
@@ -9,18 +10,22 @@
     dmm?: { id: number, collectionElementId: number, category: string, subcategory: string } | null
   }
 
-  let elements: Element[] = []
-  let packList: Array<{ id: number, storeId: string }> = []
-  let newStoreId = ''
-  let loading = false
+  let elements = $state<Element[]>([])
+  const dmmPackQuery = useDmmPackQuery()
+  const addMutation = useAddDmmPackMutation()
+  const removeMutation = useRemoveDmmPackMutation()
+  let newStoreId = $state('')
+  let loading = $state(false)
+  let packs: DmmPackMarkVm[] = $derived($dmmPackQuery.data ?? [])
 
   async function load() {
     loading = true
     try {
-      const all = await invoke<Element[]>('get_all_elements')
+      // 既存デバッグ用の全要素取得
+      const { commandGetAllElements } = await import('@/lib/command')
+      const all = await commandGetAllElements()
       elements = all
-      const packs = await invoke<Array<{ id: number, storeId: string }>>('dmm_pack_all')
-      packList = packs
+      await get(dmmPackQuery).refetch()
     }
     finally {
       loading = false
@@ -31,17 +36,21 @@
     const sid = newStoreId.trim()
     if (!sid)
       return
-    await invoke('dmm_pack_add', { storeId: sid })
+    // name はデバッグ画面では storeId をそのまま入れておく
+    await get(addMutation).mutateAsync({ storeId: sid, name: sid })
     newStoreId = ''
     await load()
   }
 
   async function removePack(id: number, storeId: string) {
-    await invoke('dmm_pack_remove', { storeId })
+    await get(removeMutation).mutateAsync({ storeId })
     await load()
   }
 
-  onMount(load)
+  $effect(() => {
+    // 初期ロード
+    void load()
+  })
 </script>
 
 <div class='mx-auto h-full max-w-3xl overflow-y-auto p-6 space-y-4'>
@@ -77,11 +86,13 @@
     <div class='mt-6 space-y-2'>
       <h3 class='text-(sm text-secondary) font-semibold'>登録済み Pack</h3>
       <div class='border border-(border-primary) rounded bg-(bg-secondary)'>
-        {#if packList.length === 0}
+        {#if $dmmPackQuery.isLoading}
+          <div class='p-6 text-(center text-secondary)'>Loading...</div>
+        {:else if packs.length === 0}
           <div class='p-6 text-(center text-secondary)'>なし</div>
         {:else}
           <div class='divide-(y border-primary)'>
-            {#each packList as p}
+            {#each packs as p}
               <div class='flex items-center justify-between p-3'>
                 <div class='border border-(border-primary) rounded bg-(bg-primary) px-1 py-0.5 text-(sm text-primary) font-mono'>
                   {p.storeId}
