@@ -3,7 +3,7 @@ import { goto } from '@mateothegreat/svelte5-router'
 import { createLocalStorageWritable } from '@/lib/utils'
 import { ROUTE_REGISTRY } from '@/router/const'
 import { buildPath, getTabActionFromLocation } from '@/store/tabs/schema'
-import { decideNextAfterDelete, upsertKeyedTab, upsertSingletonTab } from '@/store/tabs/updaters'
+import { computeTabDeletionPlan, upsertKeyedTab, upsertSingletonTab } from '@/store/tabs/updaters'
 
 export interface Tab {
   id: number
@@ -54,33 +54,27 @@ function createTabs() {
     }
   }
   const deleteTab = (id: number) => {
-    const deleteIndex = getTabs().findIndex(v => v.id === id)
-    const currentIndex = getSelected()
+    const tabsSnapshot = getTabs()
+    const selectedIndex = getSelected()
 
-    const isRightestTab = deleteIndex === getTabs().length - 1
-
-    tabs.update((v) => {
-      const newTabs = v.filter(tab => tab.id !== id)
-      if (newTabs.length === 0) {
-        goto('/')
-      }
-      return newTabs
+    const plan = computeTabDeletionPlan({
+      tabs: tabsSnapshot,
+      selectedIndex,
+      deleteId: id,
+      registry: ROUTE_REGISTRY,
     })
 
-    if (isRightestTab && getTabs().length === 0) {
+    if (!plan.shouldDelete)
       return
+
+    tabs.update(v => v.filter(t => t.id !== id))
+
+    if (plan.selectedIndexAfterDelete != null) {
+      selected.set(plan.selectedIndexAfterDelete)
     }
 
-    const { nextIndex } = decideNextAfterDelete(getTabs(), deleteIndex, currentIndex)
-    if (nextIndex === null)
-      return
-    const nextTab = getTabs()[nextIndex]
-    const descriptor = ROUTE_REGISTRY.find(d => d.kind === nextTab.type)
-    if (descriptor) {
-      goto(buildPath(descriptor, nextTab.workId))
-    }
-    else {
-      goto('/')
+    if (plan.navigateToPath) {
+      goto(plan.navigateToPath)
     }
   }
   const initialize = () => {
