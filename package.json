@@ -18,6 +18,7 @@
     "@mateothegreat/svelte5-router": "^2.16.7",
     "@sentry/svelte": "^9.38.0",
     "@skyway-sdk/room": "1.13.2",
+    "@tanstack/svelte-query": "^5.85.5",
     "@tauri-apps/api": "2.6.0",
     "@tauri-apps/plugin-clipboard-manager": "2.3.0",
     "@tauri-apps/plugin-dialog": "2.3.0",

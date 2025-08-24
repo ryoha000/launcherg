@@ -1,14 +1,16 @@
 <script lang='ts'>
   import type { Props as TippyOption } from 'tippy.js'
   import type { StoreMappedElementVm } from '@/lib/command'
-  import { convertFileSrc, invoke } from '@tauri-apps/api/core'
+  import { convertFileSrc } from '@tauri-apps/api/core'
   import { onMount } from 'svelte'
+  import { get } from 'svelte/store'
   import tippy from 'tippy.js'
   import APopover from '@/components/UI/APopover.svelte'
   import Button from '@/components/UI/Button.svelte'
   import Checkbox from '@/components/UI/Checkbox.svelte'
   import Modal from '@/components/UI/Modal.svelte'
-  import { commandDenyListAdd, commandDenyListAll, commandDenyListRemove, commandGetStoreMappedElements } from '@/lib/command'
+  import { commandDmmPackAdd, commandDmmPackAll, commandDmmPackRemove, commandGetStoreMappedElements } from '@/lib/command'
+  import { useAddDenyListMutation, useDenyListQuery, useRemoveDenyListMutation } from '@/lib/data/queries/denyList'
   import { showErrorToast, showInfoToast } from '@/lib/toast'
   import { createWritable } from '@/lib/utils'
   import { sidebarCollectionElements } from '@/store/sidebarCollectionElements'
@@ -71,33 +73,47 @@
     }
   }
 
+  // DenyList / DMM Pack の総件数
+  let dmmPackTotal = $state(0)
+
+  const denyListQuery = useDenyListQuery()
+  const denyListTotal = $derived<number | undefined>($denyListQuery.data?.length)
+
+  const addDenyMutation = useAddDenyListMutation()
+  const removeDenyMutation = useRemoveDenyListMutation()
+
   const refetch = async () => {
-    set(await commandGetStoreMappedElements())
+    const [base, deny, packs] = await Promise.all([
+      commandGetStoreMappedElements(),
+      (async () => (get(denyListQuery).data ?? (await get(denyListQuery).refetch()).data ?? []))(),
+      commandDmmPackAll(),
+    ])
+    const denySet = new Set(deny.map((d: { storeType: number, storeId: string }) => `${d.storeType}:${d.storeId}`))
+    const packSet = new Set(packs)
+    const merged = base.map(it => ({
+      ...it,
+      alreadyDenied: denySet.has(`${it.storeType}:${it.storeId}`),
+      isDmmPack: it.storeType === 1 ? packSet.has(it.storeId) : false,
+    }))
+    set(merged)
+    // 選択状態の維持
     if (selected) {
-      const exists = value().find(v => v.collectionElementId === selected!.collectionElementId)
+      const exists = merged.find(v => v.collectionElementId === selected!.collectionElementId)
       selected = exists || null
     }
+    dmmPackTotal = packs.length
   }
-
-  // DenyList / DMM Pack の総件数
-  let denyListTotal = $state(0)
-  let dmmPackTotal = $state(0)
 
   const refetchTotals = async () => {
     try {
-      const deny = await commandDenyListAll()
-      denyListTotal = deny.length
-    }
-    catch {}
-    try {
-      const packs = await invoke<Array<{ id: number, storeId: string }>>('dmm_pack_all')
+      const packs = await commandDmmPackAll()
       dmmPackTotal = packs.length
     }
     catch {}
   }
 
   onMount(async () => {
-    await Promise.all([refetch(), refetchTotals()])
+    await refetch()
   })
 
   const tooltipAction = (node: HTMLElement, tooltip?: Partial<TippyOption>) => {
@@ -130,25 +146,25 @@
     set(value().map(v => v.collectionElementId === collectionElementId ? { ...v, alreadyDenied: nextValue } : v))
     try {
       if (nextValue) {
-        await commandDenyListAdd(storeType, storeId, title)
+        await get(addDenyMutation).mutateAsync({ storeType, storeId, name: title })
       }
       else {
-        await commandDenyListRemove(storeType, storeId)
+        await get(removeDenyMutation).mutateAsync({ storeType, storeId })
       }
-      showInfoToast('更新しました')
+      const storeLabel = storeType === 1 ? 'DMM' : 'DLsite'
+      showInfoToast(nextValue
+        ? `「連携除外」設定: ${title}（${storeLabel} / ${storeId}）`
+        : `「連携除外」解除: ${title}（${storeLabel} / ${storeId}）`,
+      )
       await refetchTotals()
     }
     catch (e) {
       console.error(e)
       // ロールバック
       set(value().map(v => v.collectionElementId === collectionElementId ? { ...v, alreadyDenied: prev } : v))
-      showErrorToast('更新に失敗しました')
+      showErrorToast(`「連携除外」の${nextValue ? '設定' : '解除'}に失敗しました: ${title}`)
     }
   }
-
-  // なし
-
-  // なし
 
   const updateDmmPack = async (
     collectionElementId: number,
@@ -162,21 +178,23 @@
     // 楽観的更新
     set(value().map(v => v.collectionElementId === collectionElementId ? { ...v, isDmmPack: nextValue } : v))
     try {
-      const { commandDmmPackAdd, commandDmmPackRemove } = await import('@/lib/command')
       if (nextValue) {
         await commandDmmPackAdd(storeId, title)
       }
       else {
         await commandDmmPackRemove(storeId)
       }
-      showInfoToast('更新しました')
+      showInfoToast(nextValue
+        ? `「パック作品」設定: ${title}（DMM / ${storeId}）`
+        : `「パック作品」解除: ${title}（DMM / ${storeId}）`,
+      )
       await refetchTotals()
     }
     catch (e) {
       console.error(e)
       // ロールバック
       set(value().map(v => v.collectionElementId === collectionElementId ? { ...v, isDmmPack: prev } : v))
-      showErrorToast('更新に失敗しました')
+      showErrorToast(`「パック作品」の${nextValue ? '設定' : '解除'}に失敗しました: ${title}`)
     }
   }
 
@@ -201,13 +219,13 @@
   const dlsiteCount = $derived.by(() => filteredItems.filter(v => v.storeType === 2).length)
 </script>
 
-<div class='grid grid-(rows-[auto_auto_auto_1fr]) h-full w-full p-4'>
+<div class='grid grid-(rows-[auto_auto_auto_auto_1fr]) h-full w-full p-4'>
   <div class='mb-2 text-(h3 text-primary)'>ダウンロード購入作品の管理</div>
   <div class='mb-3 text-(sm text-secondary) -mt-1'>
     取り込み内容を随時見直し、不要な項目やパック親項目を適切に整理できます。<br />
     設定した除外は今後の連携にも反映され、再取り込みを防止します。
   </div>
-  <div class='mb-2 flex items-center gap-3'>
+  <div class='mb-1 flex items-center gap-3'>
     <div class='text-(sm text-secondary)'>絞り込み:</div>
     <APopover panelClass='right-0 min-w-56'>
       {#snippet button()}
@@ -240,13 +258,6 @@
       placeholder='キーワード検索（タイトル/ブランド/ID）'
       bind:value={keyword}
     />
-    <Button text='再取得' onclick={refetch} />
-    <Button
-      text='除外・パック指定を一括削除'
-      tooltip={{ content: '連携除外/パック作品にチェックが入っている要素を全て削除します', placement: 'bottom', theme: 'default' }}
-      variant='error'
-      onclick={openDeleteModal}
-    />
     <div class='ml-auto text-(sm text-secondary)'>
       全 {totalCount} 件
       <span class='ml-3'>DMM {dmmCount} 件</span>
@@ -254,6 +265,15 @@
       <span class='ml-2'>除外 {denyListTotal} 件</span>
       <span class='ml-2'>パック {dmmPackTotal} 件</span>
     </div>
+  </div>
+  <div class='mb-2 flex items-center justify-end gap-2'>
+    <Button text='再取得' onclick={refetch} />
+    <Button
+      text='除外・パック指定を一括削除'
+      tooltip={{ content: '連携除外/パック作品にチェックが入っている要素を全て削除します', placement: 'bottom', theme: 'default' }}
+      variant='error'
+      onclick={openDeleteModal}
+    />
   </div>
   <div class='overflow-hidden border-(1px border-primary solid) rounded'>
     <div class='max-h-full overflow-auto'>

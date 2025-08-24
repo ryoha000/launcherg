@@ -1,47 +1,45 @@
 <script lang='ts'>
   import type { DenyListItemVm } from '@/lib/command'
-  import { onMount } from 'svelte'
+  import { get } from 'svelte/store'
   import Button from '@/components/UI/Button.svelte'
-  import { commandDenyListAdd, commandDenyListAll, commandDenyListRemove } from '@/lib/command'
+  import { useAddDenyListMutation, useDenyListQuery, useRemoveDenyListMutation } from '@/lib/data/queries/denyList'
 
   const STORE_TYPES = [
     { value: 1, label: 'DMM' },
     { value: 2, label: 'DLsite' },
   ]
 
+  const denyListQuery = useDenyListQuery()
+  const addMutation = useAddDenyListMutation()
+  const removeMutation = useRemoveDenyListMutation()
   let items = $state<DenyListItemVm[]>([])
+  $effect(() => {
+    const q = get(denyListQuery)
+    items = q.data ?? []
+  })
   let storeType = $state(1)
   let storeId = $state('')
   let name = $state('')
-  let loading = $state(false)
-
-  const reload = async () => {
-    loading = true
-    try {
-      items = await commandDenyListAll()
-    }
-    finally {
-      loading = false
-    }
-  }
+  let loading = $derived.by(() => {
+    const q = get(denyListQuery)
+    const a = get(addMutation)
+    const r = get(removeMutation)
+    return !!(q.isLoading || a.isPending || r.isPending)
+  })
 
   const add = async () => {
     const id = storeId.trim()
     const nm = name.trim()
     if (!id || !nm)
       return
-    await commandDenyListAdd(storeType, id, nm)
+    await get(addMutation).mutateAsync({ storeType, storeId: id, name: nm })
     storeId = ''
     name = ''
-    await reload()
   }
 
   const remove = async (it: DenyListItemVm) => {
-    await commandDenyListRemove(it.storeType, it.storeId)
-    await reload()
+    await get(removeMutation).mutateAsync({ storeType: it.storeType, storeId: it.storeId })
   }
-
-  onMount(reload)
 </script>
 
 <div class='mx-auto h-full max-w-3xl overflow-y-auto p-6'>
