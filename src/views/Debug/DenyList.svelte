@@ -1,25 +1,21 @@
 <script lang='ts'>
-  import type { DenyListItemVm } from '@/lib/command'
+  // 統合後: workId のみを扱う
+  type WorkOmitItemVm = number
   import { get } from 'svelte/store'
   import Button from '@/components/UI/Button.svelte'
-  import { useAddDenyListMutation, useDenyListQuery, useRemoveDenyListMutation } from '@/lib/data/queries/denyList'
+  import { useAddWorkOmitMutation, useRemoveWorkOmitMutation, useWorkOmitQuery } from '@/lib/data/queries/workOmit'
 
-  const STORE_TYPES = [
-    { value: 1, label: 'DMM' },
-    { value: 2, label: 'DLsite' },
-  ]
+  // 旧UIのストア種別は廃止
 
-  const denyListQuery = useDenyListQuery()
-  const addMutation = useAddDenyListMutation()
-  const removeMutation = useRemoveDenyListMutation()
-  let items = $state<DenyListItemVm[]>([])
+  const denyListQuery = useWorkOmitQuery()
+  const addMutation = useAddWorkOmitMutation()
+  const removeMutation = useRemoveWorkOmitMutation()
+  let items = $state<WorkOmitItemVm[]>([])
   $effect(() => {
     const q = get(denyListQuery)
     items = q.data ?? []
   })
-  let storeType = $state(1)
-  let storeId = $state('')
-  let name = $state('')
+  let workIdInput = $state('')
   let loading = $derived.by(() => {
     const q = get(denyListQuery)
     const a = get(addMutation)
@@ -28,37 +24,23 @@
   })
 
   const add = async () => {
-    const id = storeId.trim()
-    const nm = name.trim()
-    if (!id || !nm)
+    const wid = Number(workIdInput.trim())
+    if (!wid || Number.isNaN(wid))
       return
-    await get(addMutation).mutateAsync({ storeType, storeId: id, name: nm })
-    storeId = ''
-    name = ''
+    await get(addMutation).mutateAsync({ workId: wid })
+    workIdInput = ''
   }
 
-  const remove = async (it: DenyListItemVm) => {
-    await get(removeMutation).mutateAsync({ storeType: it.storeType, storeId: it.storeId })
+  const remove = async (it: WorkOmitItemVm) => {
+    await get(removeMutation).mutateAsync({ workId: it })
   }
 </script>
 
 <div class='mx-auto h-full max-w-3xl overflow-y-auto p-6'>
   <div class='mb-4 flex items-end gap-3'>
-    <div>
-      <div class='mb-1 text-(sm text-secondary)'>ストア</div>
-      <select bind:value={storeType} class='border border-(border-primary) rounded bg-(bg-primary) p-2 text-(text-primary)'>
-        {#each STORE_TYPES as st}
-          <option value={st.value}>{st.label}</option>
-        {/each}
-      </select>
-    </div>
     <div class='flex-1'>
-      <div class='mb-1 text-(sm text-secondary)'>Store ID</div>
-      <input bind:value={storeId} class='w-full border border-(border-primary) rounded bg-(bg-primary) p-2 text-(text-primary)' placeholder='例: dmm: product id / dlsite: RJxxxxxx など' />
-    </div>
-    <div class='flex-1'>
-      <div class='mb-1 text-(sm text-secondary)'>Name</div>
-      <input bind:value={name} class='w-full border border-(border-primary) rounded bg-(bg-primary) p-2 text-(text-primary)' placeholder='例: ゲームタイトル' />
+      <div class='mb-1 text-(sm text-secondary)'>Work ID</div>
+      <input bind:value={workIdInput} class='w-full border border-(border-primary) rounded bg-(bg-primary) p-2 text-(text-primary)' placeholder='works.id を入力' />
     </div>
     <Button text='追加' onclick={add} disabled={loading} />
   </div>
@@ -70,7 +52,7 @@
       <div class='divide-(y border-primary)'>
         {#each items as it}
           <div class='flex items-center justify-between p-3'>
-            <div class='text-(sm text-primary) font-mono'>[{it.storeType === 1 ? 'DMM' : 'DLsite'}] {it.storeId} — {it.name}</div>
+            <div class='text-(sm text-primary) font-mono'>workId: {it}</div>
             <Button text='削除' onclick={() => remove(it)} />
           </div>
         {/each}

@@ -10,7 +10,6 @@ use crate::{
 };
 use anyhow::Result;
 use chrono::{DateTime, Local};
-use crate::collection::StoreMappedElement;
 
 #[trait_variant::make(Send)]
 #[mockall::automock]
@@ -32,8 +31,7 @@ pub trait CollectionRepository {
     ) -> Result<Option<CollectionElementInfo>>;
     async fn get_not_registered_info_element_ids(&self) -> Result<Vec<Id<CollectionElement>>>;
 
-    // 新規: DMM / DLsite マッピングが存在する要素の一覧
-    async fn list_store_mapped_elements(&self) -> Result<Vec<StoreMappedElement>>;
+    // 旧: ストアマッピング一覧（廃止）
 
     // CollectionElementPaths操作
     async fn upsert_collection_element_paths(
@@ -132,24 +130,16 @@ pub trait CollectionRepository {
         subcategory: &str,
     ) -> Result<Option<Id<CollectionElement>>>;
 
-    async fn upsert_dmm_mapping(
-        &self,
-        collection_element_id: &Id<CollectionElement>,
-        store_id: &str,
-        category: &str,
-        subcategory: &str,
-    ) -> Result<()>;
-
     async fn get_collection_id_by_dlsite_mapping(
         &self,
         store_id: &str,
         category: &str,
     ) -> Result<Option<Id<CollectionElement>>>;
 
-    async fn upsert_dlsite_mapping(
+    // 共通マッピング操作
+    async fn upsert_work_mapping(
         &self,
         collection_element_id: &Id<CollectionElement>,
-        store_id: &str,
-        category: &str,
+        work_id: i32,
     ) -> Result<()>;
 }

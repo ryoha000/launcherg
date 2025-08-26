@@ -6,8 +6,9 @@ pub mod models;
 pub mod repository;
 pub mod save_image_queue;
 pub mod native_host_log;
-pub mod deny_list;
-pub mod dmm_pack;
+pub mod dmm_work_pack;
+pub mod works;
+pub mod work_omit;
 
 #[cfg(test)]
 pub mod tests;

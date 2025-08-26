@@ -1,0 +1,76 @@
+#[derive(sqlx::FromRow, Clone)]
+pub struct DmmWorkTable {
+    pub id: i64,
+    pub title: String,
+    pub store_id: String,
+    pub category: String,
+    pub subcategory: String,
+    pub work_id: i64,
+}
+
+#[derive(sqlx::FromRow, Clone)]
+pub struct DlsiteWorkTable {
+    pub id: i64,
+    pub title: String,
+    pub store_id: String,
+    pub category: String,
+    pub work_id: i64,
+}
+
+#[derive(sqlx::FromRow, Clone)]
+pub struct WorkTable {
+    pub id: i64,
+    pub title: String,
+}
+
+#[derive(sqlx::FromRow, Clone)]
+pub struct WorkDetailsRow {
+    pub work_id: i64,
+    pub work_title: String,
+    pub dmm_id: Option<i64>,
+    pub dmm_store_id: Option<String>,
+    pub dmm_category: Option<String>,
+    pub dmm_subcategory: Option<String>,
+    pub ce_id: Option<i64>,
+    pub dmm_omit_id: Option<i64>,
+    pub dmm_pack_id: Option<i64>,
+    pub dlsite_id: Option<i64>,
+    pub dlsite_store_id: Option<String>,
+    pub dlsite_category: Option<String>,
+    pub dlsite_omit_id: Option<i64>,
+}
+
+// Conversions to domain models
+impl TryFrom<crate::repositoryimpl::models::works::DmmWorkTable> for domain::works::DmmWork {
+    type Error = anyhow::Error;
+    fn try_from(v: crate::repositoryimpl::models::works::DmmWorkTable) -> Result<Self, Self::Error> {
+        Ok(domain::works::DmmWork {
+            id: domain::Id::new(v.id as i32),
+            title: v.title,
+            store_id: v.store_id,
+            category: v.category,
+            subcategory: v.subcategory,
+        })
+    }
+}
+
+impl TryFrom<crate::repositoryimpl::models::works::DlsiteWorkTable> for domain::works::DlsiteWork {
+    type Error = anyhow::Error;
+    fn try_from(v: crate::repositoryimpl::models::works::DlsiteWorkTable) -> Result<Self, Self::Error> {
+        Ok(domain::works::DlsiteWork {
+            id: domain::Id::new(v.id as i32),
+            title: v.title,
+            store_id: v.store_id,
+            category: v.category,
+        })
+    }
+}
+
+impl TryFrom<crate::repositoryimpl::models::works::WorkTable> for domain::works::Work {
+    type Error = anyhow::Error;
+    fn try_from(v: crate::repositoryimpl::models::works::WorkTable) -> Result<Self, Self::Error> {
+        Ok(domain::works::Work { id: domain::Id::new(v.id as i32), title: v.title })
+    }
+}
+
+

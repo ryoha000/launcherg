@@ -75,6 +75,7 @@ pub mod collection_test;
 pub mod explored_cache_test;
 pub mod save_image_queue_test;
 pub mod native_host_log_test;
+pub mod works_test;
 
 #[cfg(test)]
 mod tests {

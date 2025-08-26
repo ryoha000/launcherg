@@ -1,7 +1,5 @@
 <script lang='ts'>
   import type { Props as TippyOption } from 'tippy.js'
-  import type { StoreMappedElementVm } from '@/lib/command'
-  import { convertFileSrc } from '@tauri-apps/api/core'
   import { onMount } from 'svelte'
   import { get } from 'svelte/store'
   import tippy from 'tippy.js'
@@ -9,20 +7,16 @@
   import APopover from '@/components/UI/APopover.svelte'
   import Button from '@/components/UI/Button.svelte'
   import Checkbox from '@/components/UI/Checkbox.svelte'
-  import { commandDeleteCollectionElement, commandGetStoreMappedElements } from '@/lib/command'
-  import { useAddDenyListMutation, useDenyListQuery, useRemoveDenyListMutation } from '@/lib/data/queries/denyList'
+  import { commandDeleteCollectionElement } from '@/lib/command'
   import { useAddDmmPackMutation, useDmmPackQuery, useRemoveDmmPackMutation } from '@/lib/data/queries/dmmPack'
+  import { useWorkDetailsAllQuery } from '@/lib/data/queries/workDetails'
+  import { useAddWorkOmitMutation, useRemoveWorkOmitMutation } from '@/lib/data/queries/workOmit'
   import { showErrorToast, showInfoToast } from '@/lib/toast'
-  import { createWritable } from '@/lib/utils'
   import { settings } from '@/store/settings'
   import { sidebarCollectionElements } from '@/store/sidebarCollectionElements'
 
-  const [{ subscribe, set }, value] = createWritable<StoreMappedElementVm[]>([])
-  export const items = { subscribe, value }
+  const workDetailsQuery = useWorkDetailsAllQuery()
 
-  let selected: StoreMappedElementVm | null = null
-  // ボタンのdisabled等に使っていないため削除
-  // let loading = $state(false)
   // ストア種別のマルチセレクト（1: DMM, 2: DLsite）
   let storeFilter: number[] = $state([1, 2])
   const storeFilterLabel = $derived.by(() => {
@@ -33,7 +27,6 @@
     return '未選択'
   })
   let keyword = $state('')
-  // 行操作はトグルのみ（削除ボタンは列から撤去）
 
   // チェック時の単体削除確認（今後表示しない設定付き）
   const getAutoDeletePref = () => get(settings).storeMapped.autoDeleteOnCheck
@@ -49,8 +42,8 @@
   const performDeleteElement = async (id: number, _title?: string) => {
     try {
       await commandDeleteCollectionElement(id)
-      set(await commandGetStoreMappedElements())
       await sidebarCollectionElements.refetch()
+      await get(workDetailsQuery).refetch()
       showInfoToast('削除しました')
     }
     catch (e) {
@@ -92,41 +85,39 @@
     await onConfirmDeleteModal()
   }
 
-  const denyListQuery = useDenyListQuery()
-  const denyListTotal = $derived<number | undefined>($denyListQuery.data?.length)
-
-  const addDenyMutation = useAddDenyListMutation()
-  const removeDenyMutation = useRemoveDenyListMutation()
-
-  const disabledDenyList = $derived($denyListQuery.isLoading || $addDenyMutation.isPending || $removeDenyMutation.isPending)
+  const addDenyMutation = useAddWorkOmitMutation()
+  const removeDenyMutation = useRemoveWorkOmitMutation()
+  const disabledDenyList = $derived($addDenyMutation.isPending || $removeDenyMutation.isPending)
 
   const dmmPackQuery = useDmmPackQuery()
-  const dmmPackTotal = $derived<number | undefined>($dmmPackQuery.data?.length)
-
   const addDmmPackMutation = useAddDmmPackMutation()
   const removeDmmPackMutation = useRemoveDmmPackMutation()
-
   const disabledDmmPack = $derived($dmmPackQuery.isLoading || $addDmmPackMutation.isPending || $removeDmmPackMutation.isPending)
 
-  const refetch = async () => {
-    const newElements = await commandGetStoreMappedElements()
-    set(newElements)
-    // 選択状態の維持
-    if (selected) {
-      const exists = newElements.find(v => v.collectionElementId === selected!.collectionElementId)
-      selected = exists || null
-    }
-  }
+  // 表示件数系（WorkDetails を直接参照）
+  const items = $derived.by(() => ($workDetailsQuery.data ?? []))
+  const totalCount = $derived.by(() => (items.length))
+  const dmmCount = $derived.by(() => (items.filter(w => !!w.dmm).length))
+  const dlsiteCount = $derived.by(() => (items.filter(w => !!w.dlsite).length))
+  const denyListTotal = $derived.by(() => (items.reduce((acc, w) => acc + (w.isDmmOmitted ? 1 : 0) + (w.isDlsiteOmitted ? 1 : 0), 0)))
+  const dmmPackTotal = $derived.by(() => (items.filter(w => w.isDmmPack).length))
 
-  const checkIsDenied = (storeType: number, storeId: string) => {
-    return !!$denyListQuery.data?.some(v => v.storeType === storeType && v.storeId === storeId)
-  }
-  const checkIsDmmPack = (storeId: string) => {
-    return !!$dmmPackQuery.data?.some(v => v.storeId === storeId)
-  }
-
-  onMount(async () => {
-    await refetch()
+  const filteredItems = $derived.by(() => {
+    const q = keyword.trim().toLowerCase()
+    return items.filter((w) => {
+      if (storeFilter.length > 0) {
+        const matchDmm = storeFilter.includes(1) && !!w.dmm
+        const matchDl = storeFilter.includes(2) && !!w.dlsite
+        if (!matchDmm && !matchDl)
+          return false
+      }
+      if (!q)
+        return true
+      const inTitle = w.title.toLowerCase().includes(q)
+      const inDmm = w.dmm ? w.dmm.storeId.toLowerCase().includes(q) : false
+      const inDl = w.dlsite ? w.dlsite.storeId.toLowerCase().includes(q) : false
+      return inTitle || inDmm || inDl
+    })
   })
 
   const tooltipAction = (node: HTMLElement, tooltip?: Partial<TippyOption>) => {
@@ -151,21 +142,34 @@
     storeId: string
     title: string
     nextValue: boolean
+    prevValue: boolean
+    isDmmPackCurrent?: boolean
+    workId: number
   }) => {
-    const { collectionElementId, storeType, storeId, title, nextValue } = arg
-    const prev = checkIsDenied(storeType, storeId)
-    if (nextValue === prev)
+    const { collectionElementId, storeType, storeId, title, nextValue, prevValue, isDmmPackCurrent, workId } = arg
+    if (nextValue === prevValue)
       return
-    if (!collectionElementId && !nextValue && !checkIsDmmPack(storeId)) {
-      showErrorToast('未登録のゲームでは『連携除外』または『セット商品』のいずれかを選択してください。両方を未選択にはできません。')
-      return
+    if (!collectionElementId && !nextValue) {
+      // 未登録で両方オフになるケースを防ぐ（DMMはパック、DLsiteはomitのみ）
+      if (storeType === 1) {
+        if (!isDmmPackCurrent) {
+          showErrorToast('未登録のゲームでは『連携除外』または『セット商品』のいずれかを選択してください。両方を未選択にはできません。')
+          return
+        }
+      }
+      else {
+        // DLsite 側は omit のみ
+        showErrorToast('未登録のゲームでは『連携除外』は解除できません。')
+        return
+      }
     }
     try {
       if (nextValue) {
-        await get(addDenyMutation).mutateAsync({ storeType, storeId, name: title })
+        // 統合後: workId ベースで登録
+        await get(addDenyMutation).mutateAsync({ workId })
       }
       else {
-        await get(removeDenyMutation).mutateAsync({ storeType, storeId })
+        await get(removeDenyMutation).mutateAsync({ workId })
       }
       const storeLabel = storeType === 1 ? 'DMM' : 'DLsite'
       showInfoToast(nextValue
@@ -187,21 +191,27 @@
     storeId: string
     title: string
     nextValue: boolean
+    prevValue: boolean
+    isDeniedCurrent: boolean
   }) => {
-    const { collectionElementId, storeId, title, nextValue } = arg
-    const prev = checkIsDmmPack(storeId)
-    if (nextValue === prev)
+    const { collectionElementId, storeId, title, nextValue, prevValue, isDeniedCurrent } = arg
+    if (nextValue === prevValue)
       return
-    if (!collectionElementId && !nextValue && !checkIsDenied(1, storeId)) {
-      showErrorToast('未登録のゲームでは『連携除外』または『セット商品』のいずれかを選択してください。両方を未選択にはできません。')
-      return
+    if (!collectionElementId && !nextValue) {
+      if (!isDeniedCurrent) {
+        showErrorToast('未登録のゲームでは『連携除外』または『セット商品』のいずれかを選択してください。両方を未選択にはできません。')
+        return
+      }
     }
     try {
+      const workId = itemWorkIdResolver(storeId)
+      if (workId == null)
+        throw new Error('workId resolve failed')
       if (nextValue) {
-        await get(addDmmPackMutation).mutateAsync({ storeId, name: title })
+        await get(addDmmPackMutation).mutateAsync({ workId })
       }
       else {
-        await get(removeDmmPackMutation).mutateAsync({ storeId })
+        await get(removeDmmPackMutation).mutateAsync({ workId })
       }
       showInfoToast(nextValue
         ? `「セット商品」設定: ${title}（DMM / ${storeId}）`
@@ -210,6 +220,7 @@
       if (nextValue) {
         await maybeDeleteOnFlagSet(collectionElementId, title)
       }
+      await get(workDetailsQuery).refetch()
     }
     catch (e) {
       console.error(e)
@@ -217,89 +228,14 @@
     }
   }
 
-  // 表示件数系の派生値
-  const filteredItems = $derived.by(() => {
-    interface ResultContent {
-      storeType: number
-      storeId: string
-      title: string
-      collectionElementId?: number
-      thumbnail?: string
-      alreadyDenied: boolean
-      isDmmPack: boolean
-    }
-    const resultMap = new Map<string, ResultContent>()
-    const keyFn = (storeType: number, storeId: string) => `${storeType}:${storeId}`
-    const update = (content: ResultContent) => {
-      const key = keyFn(content.storeType, content.storeId)
-      const existing = resultMap.get(key)
-      if (existing) {
-        resultMap.set(key, {
-          ...existing,
-          ...content,
-        })
-      }
-      else {
-        resultMap.set(key, content)
-      }
-    }
-    const q = keyword.trim().toLowerCase()
+  function itemWorkIdResolver(storeId: string): number | null {
+    const it = items.find(w => w.dmm?.storeId === storeId)
+    return it ? it.id : null
+  }
 
-    $denyListQuery.data?.filter((v) => {
-      if (!q)
-        return true
-      return v.name.toLowerCase().includes(q)
-    }).forEach((v) => {
-      update({
-        storeType: v.storeType,
-        storeId: v.storeId,
-        title: v.name,
-        thumbnail: undefined,
-        alreadyDenied: true,
-        isDmmPack: false,
-      })
-    })
-    $dmmPackQuery.data?.filter((v) => {
-      if (!q)
-        return true
-      return v.name.toLowerCase().includes(q)
-    }).forEach((v) => {
-      update({
-        storeType: 1,
-        storeId: v.storeId,
-        title: v.name,
-        thumbnail: undefined,
-        alreadyDenied: false,
-        isDmmPack: true,
-      })
-    })
-    $items.filter((v) => {
-      if (storeFilter.length > 0 && !storeFilter.includes(v.storeType))
-        return false
-      if (!q)
-        return true
-      return v.title.toLowerCase().includes(q)
-    }).forEach((v) => {
-      update({
-        storeType: v.storeType,
-        storeId: v.storeId,
-        title: v.title,
-        collectionElementId: v.collectionElementId,
-        thumbnail: v.thumbnail,
-        alreadyDenied: v.alreadyDenied,
-        isDmmPack: v.isDmmPack,
-      })
-    })
-
-    return Array.from(resultMap.entries()).map(([key, content]) => ({
-      ...content,
-      key,
-    }))
+  onMount(async () => {
+    await get(workDetailsQuery).refetch()
   })
-
-  const totalCount = $derived.by(() => $items.length)
-  const dmmCount = $derived.by(() => $items.filter(v => v.storeType === 1).length)
-  const dlsiteCount = $derived.by(() => $items.filter(v => v.storeType === 2).length)
 </script>
 
 <div class='grid grid-(rows-[auto_auto_auto_auto_1fr]) h-full w-full p-4'>
@@ -355,7 +291,7 @@
       <table class='w-full border-separate border-spacing-0 table-fixed whitespace-nowrap text-(left text-primary)'>
         <thead class='sticky top-0 z-20 bg-bg-primary'>
           <tr>
-            <th class='w-16 border-(b border-primary) px-2 py-2'></th>
+            <th class='w-24 border-(b border-primary) px-2 py-2'></th>
             <th class='w-18 border-(b border-primary) px-2 py-2'></th>
             <th class='w-36 border-(b border-primary) px-2 py-2'>タイトル</th>
             <th class='w-32 border-(b border-primary) px-2 py-2'>
@@ -382,31 +318,42 @@
           {#each filteredItems as item}
             <tr class='border-(b border-primary solid)'>
               <td class='px-2 py-1'>
-                <span class='inline-flex items-center border-(1px border-primary solid) rounded-full px-2 py-(0.5) text-(xs text-secondary)'>
-                  {item.storeType === 1 ? 'DMM' : 'DLsite'}
-                </span>
+                <div class='flex gap-1'>
+                  {#if item.dmm}
+                    <span class='inline-flex items-center border-(1px border-primary solid) rounded-full px-2 py-(0.5) text-(xs text-secondary)'>DMM</span>
+                  {/if}
+                  {#if item.dlsite}
+                    <span class='inline-flex items-center border-(1px border-primary solid) rounded-full px-2 py-(0.5) text-(xs text-secondary)'>DLsite</span>
+                  {/if}
+                </div>
               </td>
               <td class='px-2 py-1'>
                 <div class='h-12 w-20 overflow-hidden rounded bg-bg-secondary'>
-                  {#if item.thumbnail}
-                    <img src={convertFileSrc(item.thumbnail)} alt='' class='h-full w-full object-cover' loading='lazy' decoding='async' />
-                  {:else}
-                    <div class='h-full w-full'></div>
-                  {/if}
+                  <div class='h-full w-full'></div>
                 </div>
               </td>
               <td class='w-36 overflow-hidden text-ellipsis whitespace-nowrap px-2 py-1'>{item.title}</td>
               <td class='px-2 py-1'>
-                <label class='flex items-center gap-2'>
-                  <Checkbox value={checkIsDenied(item.storeType, item.storeId)} on:update={e => updateDenied({ ...item, nextValue: e.detail.value })} disabled={disabledDenyList} />
-                  <span>{checkIsDenied(item.storeType, item.storeId) ? '除外対象' : '未設定'}</span>
-                </label>
+                <div class='flex gap-4'>
+                  {#if item.dmm}
+                    <label class='flex items-center gap-2'>
+                      <Checkbox value={item.isDmmOmitted} on:update={e => updateDenied({ collectionElementId: item.collectionElementId ?? undefined, storeType: 1, storeId: item.dmm!.storeId, title: item.title, nextValue: e.detail.value, prevValue: item.isDmmOmitted, isDmmPackCurrent: item.isDmmPack, workId: item.id })} disabled={disabledDenyList} />
+                      <span>DMM: {item.isDmmOmitted ? '除外' : '未設定'}</span>
+                    </label>
+                  {/if}
+                  {#if item.dlsite}
+                    <label class='flex items-center gap-2'>
+                      <Checkbox value={item.isDlsiteOmitted} on:update={e => updateDenied({ collectionElementId: item.collectionElementId ?? undefined, storeType: 2, storeId: item.dlsite!.storeId, title: item.title, nextValue: e.detail.value, prevValue: item.isDlsiteOmitted, workId: item.id })} disabled={disabledDenyList} />
+                      <span>DLsite: {item.isDlsiteOmitted ? '除外' : '未設定'}</span>
+                    </label>
+                  {/if}
+                </div>
               </td>
               <td class='px-2 py-1'>
-                {#if item.storeType === 1}
+                {#if item.dmm}
                   <label class='flex items-center gap-2'>
-                    <Checkbox value={checkIsDmmPack(item.storeId)} on:update={e => updateDmmPack({ ...item, nextValue: e.detail.value })} disabled={disabledDmmPack} />
-                    <span>{checkIsDmmPack(item.storeId) ? 'セット' : '未設定'}</span>
+                    <Checkbox value={item.isDmmPack} on:update={e => updateDmmPack({ collectionElementId: item.collectionElementId ?? undefined, storeId: item.dmm!.storeId, title: item.title, nextValue: e.detail.value, prevValue: item.isDmmPack, isDeniedCurrent: item.isDmmOmitted })} disabled={disabledDmmPack} />
+                    <span>{item.isDmmPack ? 'セット' : '未設定'}</span>
                   </label>
                 {:else}
                   <span class='opacity-50'>対象外</span>

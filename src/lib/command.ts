@@ -316,44 +316,30 @@ export async function commandRemoveRegistryKeys() {
   return await invoke<string[]>('remove_registry_keys')
 }
 
-// Deny List Commands
-export interface DenyListItemVm { id: number, storeType: number, storeId: string, name: string }
-export async function commandDenyListAdd(storeType: number, storeId: string, name: string) {
-  return await invoke<void>('deny_list_add', { storeType, storeId, name })
+// Work Omit Commands
+export async function commandWorkOmitAdd(workId: number) {
+  return await invoke<void>('work_omit_add', { workId })
 }
-export async function commandDenyListRemove(storeType: number, storeId: string) {
-  return await invoke<void>('deny_list_remove', { storeType, storeId })
+export async function commandWorkOmitRemove(workId: number) {
+  return await invoke<void>('work_omit_remove', { workId })
 }
-export async function commandDenyListAll() {
-  return await invoke<DenyListItemVm[]>('deny_list_all')
-}
-
-// Store Mapped Elements
-export interface StoreMappedElementVm {
-  collectionElementId: number
-  storeType: number // 1=DMM, 2=DLsite
-  storeId: string
-  title: string
-  brand: string
-  dmmCategory?: string
-  dmmSubcategory?: string
-  dlsiteCategory?: string
-  alreadyDenied: boolean
-  isDmmPack: boolean
-  thumbnail: string
-}
-export async function commandGetStoreMappedElements() {
-  return await invoke<StoreMappedElementVm[]>('get_store_mapped_elements')
+export async function commandWorkOmitAll() {
+  return await invoke<number[]>('work_omit_all')
 }
 
-// DMM Pack Marks wrappers
-export interface DmmPackMarkVm { id: number, storeId: string, name: string }
-export async function commandDmmPackAll() {
-  return await invoke<DmmPackMarkVm[]>('dmm_pack_all')
+// WorkDetails
+export interface WorkDetailsVm { id: number, title: string, dmm?: { id: number, storeId: string, category: string, subcategory: string }, dlsite?: { id: number, storeId: string, category: string }, collectionElementId?: number | null, isDmmOmitted: boolean, isDlsiteOmitted: boolean, isDmmPack: boolean }
+export async function commandGetWorkDetailsAll() {
+  return await invoke<WorkDetailsVm[]>('get_work_details_all')
 }
-export async function commandDmmPackAdd(storeId: string, name: string) {
-  return await invoke<void>('dmm_pack_add', { storeId, name })
+
+// DMM Work Packs wrappers
+export async function commandWorkPackAll() {
+  return await invoke<number[]>('work_pack_all')
 }
-export async function commandDmmPackRemove(storeId: string) {
-  return await invoke<void>('dmm_pack_remove', { storeId })
+export async function commandWorkPackAdd(workId: number) {
+  return await invoke<void>('work_pack_add', { workId })
+}
+export async function commandWorkPackRemove(workId: number) {
+  return await invoke<void>('work_pack_remove', { workId })
 }

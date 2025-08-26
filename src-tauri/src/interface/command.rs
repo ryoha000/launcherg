@@ -8,9 +8,8 @@ use super::{
     error::CommandError,
     models::{
         collection::CollectionElement,
-        deny_list::DenyListItemVm,
-        dmm_pack::DmmPackMarkVm,
-        store_mapped::StoreMappedElementVm,
+        work_details::WorkDetailsVm,
+        work_omit::WorkOmitItemVm,
     },
     module::{Modules, ModulesExt},
 };
@@ -20,7 +19,6 @@ use domain::windows::proctail::{
     HealthCheckResult, ProcTailEvent, ServiceStatus, WatchTarget,
 };
 use domain::windows::proctail_manager::{ProcTailManagerStatus, ProcTailVersion};
-use domain::service::save_path_resolver::SavePathResolver;
 use crate::{
     domain::{
         collection::{ScannedGameElement},
@@ -31,8 +29,8 @@ use crate::{
     },
     usecase::models::collection::CreateCollectionElementDetail,
 };
-use domain::{native_host_log::{HostLogLevel, HostLogType}, repository::{RepositoriesExt, native_host_log::NativeHostLogRepository}, deny_list::StoreType};
-use domain::repository::{dmm_pack::DmmPackRepository, collection::CollectionRepository};
+use domain::{native_host_log::{HostLogLevel, HostLogType}, repository::{RepositoriesExt, native_host_log::NativeHostLogRepository}};
+use domain::repository::{dmm_work_pack::DmmPackRepository, works::WorkRepository};
 
 #[tauri::command]
 pub async fn create_elements_in_pc(
@@ -1002,96 +1000,50 @@ pub async fn remove_registry_keys(
     Ok(result)
 }
 
-// ========== Deny List ==========
+// ========== Work Omit ==========
 
 #[tauri::command]
-pub async fn deny_list_add(
-    modules: State<'_, Arc<Modules>>,
-    store_type: i32,
-    store_id: String,
-    name: String,
-) -> anyhow::Result<(), CommandError> {
-    let st = StoreType::try_from(store_type).map_err(|_| anyhow::anyhow!("invalid store type"))?;
-    modules.deny_list_use_case().add(st, &store_id, &name).await?;
+pub async fn work_omit_add(modules: State<'_, Arc<Modules>>, work_id: i32) -> anyhow::Result<(), CommandError> {
+    modules.work_omit_use_case().add(domain::Id::new(work_id)).await?;
     Ok(())
 }
 
 #[tauri::command]
-pub async fn deny_list_remove(
-    modules: State<'_, Arc<Modules>>,
-    store_type: i32,
-    store_id: String,
-) -> anyhow::Result<(), CommandError> {
-    let st = StoreType::try_from(store_type).map_err(|_| anyhow::anyhow!("invalid store type"))?;
-    modules.deny_list_use_case().remove(st, &store_id).await?;
+pub async fn work_omit_remove(modules: State<'_, Arc<Modules>>, work_id: i32) -> anyhow::Result<(), CommandError> {
+    modules.work_omit_use_case().remove(domain::Id::new(work_id)).await?;
     Ok(())
 }
 
 #[tauri::command]
-pub async fn deny_list_all(
-    modules: State<'_, Arc<Modules>>,
-) -> anyhow::Result<Vec<DenyListItemVm>, CommandError> {
-    let list = modules.deny_list_use_case().list().await?;
+pub async fn work_omit_all(modules: State<'_, Arc<Modules>>) -> anyhow::Result<Vec<WorkOmitItemVm>, CommandError> {
+    let list = modules.work_omit_use_case().list().await?;
     Ok(list.into_iter().map(|e| e.into()).collect())
 }
 
-// ========== Store Mapped Elements (DMM / DLsite) ==========
-#[tauri::command]
-pub async fn get_store_mapped_elements(
-    modules: State<'_, Arc<Modules>>,
-) -> anyhow::Result<Vec<StoreMappedElementVm>, CommandError> {
-    let list = modules
-        .repositories()
-        .collection_repository()
-        .list_store_mapped_elements()
-        .await?;
-    // build VMs with thumbnail path resolved via service (if necessary)
-    let resolver = domain::service::save_path_resolver::DirsSavePathResolver::default();
-    let vms: Vec<StoreMappedElementVm> = list
-        .into_iter()
-        .map(|e| StoreMappedElementVm {
-            collection_element_id: e.collection_element_id.value,
-            store_type: i32::from(e.store_type),
-            store_id: e.store_id,
-            title: e.title,
-            brand: e.brand,
-            dmm_category: e.dmm_category,
-            dmm_subcategory: e.dmm_subcategory,
-            dlsite_category: e.dlsite_category,
-            already_denied: e.already_denied,
-            is_dmm_pack: e.is_dmm_pack,
-            thumbnail: resolver.thumbnail_png_path(e.collection_element_id.value),
-        })
-        .collect();
-    Ok(vms)
-}
-
-// ========== DMM Pack Marks ==========
+// ========== DMM Work Pack ==========
 
 #[tauri::command]
-pub async fn dmm_pack_add(
-    modules: State<'_, Arc<Modules>>,
-    store_id: String,
-    name: String,
-) -> anyhow::Result<(), CommandError> {
-    modules.repositories().dmm_pack_repository().add(&store_id, &name).await?;
+pub async fn work_pack_add(modules: State<'_, Arc<Modules>>, work_id: i32) -> anyhow::Result<(), CommandError> {
+    modules.repositories().dmm_pack_repository().add(domain::Id::new(work_id)).await?;
     Ok(())
 }
 
 #[tauri::command]
-pub async fn dmm_pack_remove(
-    modules: State<'_, Arc<Modules>>,
-    store_id: String,
-) -> anyhow::Result<(), CommandError> {
-    modules.repositories().dmm_pack_repository().remove(&store_id).await?;
+pub async fn work_pack_remove(modules: State<'_, Arc<Modules>>, work_id: i32) -> anyhow::Result<(), CommandError> {
+    modules.repositories().dmm_pack_repository().remove(domain::Id::new(work_id)).await?;
     Ok(())
 }
 
 #[tauri::command]
-pub async fn dmm_pack_all(
-    modules: State<'_, Arc<Modules>>,
-) -> anyhow::Result<Vec<DmmPackMarkVm>, CommandError> {
+pub async fn work_pack_all(modules: State<'_, Arc<Modules>>) -> anyhow::Result<Vec<i32>, CommandError> {
     let list = modules.repositories().dmm_pack_repository().list().await?;
-    Ok(list.into_iter().map(|e| e.into()).collect())
+    Ok(list.into_iter().map(|e| e.work_id.value).collect())
+}
+
+// ========== WorkDetails ==========
+#[tauri::command]
+pub async fn get_work_details_all(modules: State<'_, Arc<Modules>>) -> anyhow::Result<Vec<WorkDetailsVm>, CommandError> {
+    let rows = modules.repositories().work_repository().list_all_details().await?;
+    Ok(rows.into_iter().map(|w| w.into()).collect())
 }
 

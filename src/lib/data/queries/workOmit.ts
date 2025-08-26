@@ -1,22 +1,23 @@
 import { createMutation, createQuery } from '@tanstack/svelte-query'
-import { commandWorkPackAdd, commandWorkPackAll, commandWorkPackRemove } from '@/lib/command'
+import { commandWorkOmitAdd, commandWorkOmitAll, commandWorkOmitRemove } from '@/lib/command'
 import { queryClient } from '@/lib/data/queryClient'
 import { queryKeys } from '@/lib/data/queryKeys'
 
-export function useDmmPackQuery() {
-  return createQuery<number[], Error>({
-    queryKey: queryKeys.dmmPack.all(),
-    queryFn: () => commandWorkPackAll(),
+export function useWorkOmitQuery() {
+  return createQuery({
+    queryKey: queryKeys.denyList.all(),
+    // workId の配列を返す
+    queryFn: () => commandWorkOmitAll(),
   })
 }
 
-export function useAddDmmPackMutation() {
+export function useAddWorkOmitMutation() {
   return createMutation<unknown, Error, { workId: number }>(
     {
-      mutationFn: input => commandWorkPackAdd(input.workId),
+      mutationFn: input => commandWorkOmitAdd(input.workId),
       onSuccess: async () => {
         await Promise.all([
-          queryClient.invalidateQueries({ queryKey: queryKeys.dmmPack.all() }),
+          queryClient.invalidateQueries({ queryKey: queryKeys.denyList.all() }),
           queryClient.invalidateQueries({ queryKey: queryKeys.workDetails.all() }),
         ])
       },
@@ -24,13 +25,13 @@ export function useAddDmmPackMutation() {
   )
 }
 
-export function useRemoveDmmPackMutation() {
+export function useRemoveWorkOmitMutation() {
   return createMutation<unknown, Error, { workId: number }>(
     {
-      mutationFn: input => commandWorkPackRemove(input.workId),
+      mutationFn: input => commandWorkOmitRemove(input.workId),
       onSuccess: async () => {
         await Promise.all([
-          queryClient.invalidateQueries({ queryKey: queryKeys.dmmPack.all() }),
+          queryClient.invalidateQueries({ queryKey: queryKeys.denyList.all() }),
           queryClient.invalidateQueries({ queryKey: queryKeys.workDetails.all() }),
         ])
       },

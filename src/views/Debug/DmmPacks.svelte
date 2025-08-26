@@ -1,5 +1,4 @@
 <script lang='ts'>
-  import type { DmmPackMarkVm } from '@/lib/command'
   import { get } from 'svelte/store'
   import Button from '@/components/UI/Button.svelte'
   import { useAddDmmPackMutation, useDmmPackQuery, useRemoveDmmPackMutation } from '@/lib/data/queries/dmmPack'
@@ -16,7 +15,7 @@
   const removeMutation = useRemoveDmmPackMutation()
   let newStoreId = $state('')
   let loading = $state(false)
-  let packs: DmmPackMarkVm[] = $derived($dmmPackQuery.data ?? [])
+  let packs: number[] = $derived($dmmPackQuery.data ?? [])
 
   async function load() {
     loading = true
@@ -36,14 +35,17 @@
     const sid = newStoreId.trim()
     if (!sid)
       return
-    // name はデバッグ画面では storeId をそのまま入れておく
-    await get(addMutation).mutateAsync({ storeId: sid, name: sid })
+    // 暫定: workId を直接入力（デバッグ用途）
+    const workId = Number(sid)
+    if (!Number.isFinite(workId))
+      return
+    await get(addMutation).mutateAsync({ workId })
     newStoreId = ''
     await load()
   }
 
-  async function removePack(id: number, storeId: string) {
-    await get(removeMutation).mutateAsync({ storeId })
+  async function removePack(id: number, workId: number) {
+    await get(removeMutation).mutateAsync({ workId })
     await load()
   }
 
@@ -94,10 +96,10 @@
           <div class='divide-(y border-primary)'>
             {#each packs as p}
               <div class='flex items-center justify-between p-3'>
-                <div class='border border-(border-primary) rounded bg-(bg-primary) px-1 py-0.5 text-(sm text-primary) font-mono'>
-                  {p.storeId}
+                <div class='flex items-center gap-2'>
+                  <div class='border border-(border-primary) rounded bg-(bg-primary) px-1 py-0.5 text-(sm text-primary) font-mono'>work_id: {p}</div>
                 </div>
-                <Button text='削除' onclick={() => removePack(p.id, p.storeId)} />
+                <Button text='削除' onclick={() => removePack(p, p)} />
               </div>
             {/each}
           </div>

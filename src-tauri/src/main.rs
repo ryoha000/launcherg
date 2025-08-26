@@ -113,13 +113,13 @@ fn main() {
             command::check_registry_keys,
             command::remove_registry_keys,
             command::get_native_host_logs,
-            command::deny_list_add,
-            command::deny_list_remove,
-            command::deny_list_all,
-            command::get_store_mapped_elements,
-            command::dmm_pack_add,
-            command::dmm_pack_remove,
-            command::dmm_pack_all,
+            command::work_omit_add,
+            command::work_omit_remove,
+            command::work_omit_all,
+            command::get_work_details_all,
+            command::work_pack_add,
+            command::work_pack_remove,
+            command::work_pack_all,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

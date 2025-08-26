@@ -5,4 +5,7 @@ export const queryKeys = {
   dmmPack: {
     all: () => ['dmmPack'] as const,
   },
+  workDetails: {
+    all: () => ['workDetails'] as const,
+  },
 }
