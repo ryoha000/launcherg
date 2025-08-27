@@ -58,7 +58,7 @@ export function extractGameDataFromImage(img: HTMLImageElement): DmmExtractedGam
 
 export function extractAllGames(): DmmExtractedGame[] {
   const scope = document.querySelector('#mylibrary') || document
-  const images = Array.from(scope.querySelectorAll('img'))
+  const images = Array.from(scope.querySelectorAll('img')).filter(img => !img.closest('section'))
   const games: DmmExtractedGame[] = []
   images.forEach((img, idx) => {
     const g = extractGameDataFromImage(img)

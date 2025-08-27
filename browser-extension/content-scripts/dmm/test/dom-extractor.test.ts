@@ -64,4 +64,26 @@ describe('dmm dom-extractor', () => {
 
     document.body.innerHTML = ''
   })
+
+  it('section 配下の画像はレコメンドのため除外される', () => {
+    const root = document.createElement('div')
+    root.id = 'mylibrary'
+    root.innerHTML = `
+      <ul>
+        <li>
+          <img src="https://pics.dmm.co.jp/digital/pcgame/a_1/a_1ps.jpg" alt="A" />
+        </li>
+      </ul>
+      <section>
+        <img src="https://pics.dmm.co.jp/digital/pcgame/b_2/b_2ps.jpg" alt="B" />
+      </section>
+    `
+    document.body.appendChild(root)
+
+    const games = extractAllGames()
+    expect(games.length).toBe(1)
+    expect(games[0].storeId).toBe('a_1')
+
+    document.body.innerHTML = ''
+  })
 })
