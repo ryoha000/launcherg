@@ -6,6 +6,11 @@ use crate::{works::{DmmWork, DlsiteWork, NewDmmWork, NewDlsiteWork, Work, NewWor
 pub trait DmmWorkRepository {
     async fn upsert(&self, new_work: &NewDmmWork) -> Result<Id<DmmWork>>;
     async fn find_by_store_key(&self, store_id: &str, category: &str, subcategory: &str) -> Result<Option<DmmWork>>;
+    /// バルク取得: 複数の (store_id, category, subcategory) から DMM Work をまとめて取得する
+    async fn find_by_store_keys(
+        &self,
+        keys: &[(String, String, String)],
+    ) -> Result<Vec<DmmWork>>;
 }
 
 #[trait_variant::make(Send)]

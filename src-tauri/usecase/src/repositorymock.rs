@@ -55,6 +55,26 @@ impl MockRepositoriesExtMock {
                     }))
                 })
             });
+        dmm_repo
+            .expect_find_by_store_keys()
+            .with(always())
+            .returning(|keys| {
+                let mut id_counter = 1000i32;
+                let list: Vec<domain::works::DmmWork> = keys
+                    .iter()
+                    .map(|(sid, cat, sub)| {
+                        id_counter += 1;
+                        domain::works::DmmWork {
+                            id: domain::Id::new(id_counter),
+                            title: format!("{}-{}-{}", sid, cat, sub),
+                            store_id: sid.clone(),
+                            category: cat.clone(),
+                            subcategory: sub.clone(),
+                        }
+                    })
+                    .collect();
+                Box::pin(async move { Ok::<_, anyhow::Error>(list) })
+            });
         self.expect_dmm_work_repository().return_const(dmm_repo);
 
         let mut dl_repo = MockDlsiteWorkRepository::new();

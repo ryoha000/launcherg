@@ -605,6 +605,51 @@ impl CollectionRepository for RepositoryImpl<CollectionElement> {
         Ok(row.map(|v| Id::new(v.0)))
     }
 
+    async fn get_collection_ids_by_erogamescape_ids(
+        &self,
+        erogamescape_ids: &[i32],
+    ) -> anyhow::Result<Vec<(i32, Id<CollectionElement>)>> {
+        use sqlx::QueryBuilder;
+        let pool = self.pool.0.clone();
+        if erogamescape_ids.is_empty() { return Ok(Vec::new()); }
+
+        let mut qb = QueryBuilder::new(
+            r#"
+            SELECT erogamescape_id, collection_element_id
+            FROM collection_element_erogamescape_map
+            WHERE erogamescape_id IN (
+            "#,
+        );
+        {
+            let mut separated = qb.separated(", ");
+            for _ in erogamescape_ids.iter() {
+                separated.push_bind(0);
+            }
+        }
+        qb.push(")");
+
+        let mut qb = QueryBuilder::new(
+            r#"
+            SELECT erogamescape_id, collection_element_id
+            FROM collection_element_erogamescape_map
+            WHERE erogamescape_id IN (
+            "#,
+        );
+        {
+            let mut separated = qb.separated(", ");
+            for id in erogamescape_ids.iter() {
+                separated.push_bind(*id);
+            }
+        }
+        qb.push(")");
+
+        let rows: Vec<(i32, i32)> = qb
+            .build_query_as()
+            .fetch_all(&*pool)
+            .await?;
+        Ok(rows.into_iter().map(|(egs, ce)| (egs, Id::new(ce))).collect())
+    }
+
     async fn upsert_erogamescape_map(
         &self,
         collection_element_id: &Id<CollectionElement>,
@@ -675,6 +720,110 @@ impl CollectionRepository for RepositoryImpl<CollectionElement> {
         .fetch_optional(&*pool)
         .await?;
         Ok(row.map(|v| Id::new(v.0)))
+    }
+
+    async fn get_collection_ids_by_dmm_mappings(
+        &self,
+        keys: &[(String, String, String)],
+    ) -> anyhow::Result<Vec<(String, String, String, Id<CollectionElement>)>> {
+        use sqlx::QueryBuilder;
+        let pool = self.pool.0.clone();
+        if keys.is_empty() { return Ok(Vec::new()); }
+
+        let mut qb = QueryBuilder::new(
+            r#"
+            SELECT w.store_id, w.category, COALESCE(w.subcategory, '') as subcategory, m.collection_element_id
+            FROM dmm_works w
+            JOIN work_collection_elements m ON m.work_id = w.work_id
+            WHERE (w.store_id, w.category, COALESCE(w.subcategory, '')) IN (
+            "#,
+        );
+        {
+            let mut separated = qb.separated(", ");
+            for _ in keys.iter() {
+                separated.push_unseparated("(");
+                separated.push_bind("");
+                separated.push_unseparated(", ");
+                separated.push_bind("");
+                separated.push_unseparated(", ");
+                separated.push_bind("");
+                separated.push_unseparated(")");
+            }
+        }
+        qb.push(")");
+
+        let mut qb = QueryBuilder::new(
+            r#"
+            SELECT w.store_id, w.category, COALESCE(w.subcategory, '') as subcategory, m.collection_element_id
+            FROM dmm_works w
+            JOIN work_collection_elements m ON m.work_id = w.work_id
+            WHERE (w.store_id, w.category, COALESCE(w.subcategory, '')) IN (
+            "#,
+        );
+        {
+            let mut separated = qb.separated(", ");
+            for (store_id, category, subcategory) in keys.iter() {
+                separated.push_unseparated("(");
+                separated.push_bind(store_id);
+                separated.push_unseparated(", ");
+                separated.push_bind(category);
+                separated.push_unseparated(", ");
+                separated.push_bind(subcategory);
+                separated.push_unseparated(")");
+            }
+        }
+        qb.push(")");
+
+        let rows: Vec<(String, String, String, i32)> = qb
+            .build_query_as()
+            .fetch_all(&*pool)
+            .await?;
+        Ok(rows.into_iter().map(|(sid, cat, sub, ce)| (sid, cat, sub, Id::new(ce))).collect())
+    }
+
+    async fn get_collection_ids_by_work_ids(
+        &self,
+        work_ids: &[i32],
+    ) -> anyhow::Result<Vec<(i32, Id<CollectionElement>)>> {
+        use sqlx::QueryBuilder;
+        let pool = self.pool.0.clone();
+        if work_ids.is_empty() { return Ok(Vec::new()); }
+
+        let mut qb = QueryBuilder::new(
+            r#"
+            SELECT m.work_id, m.collection_element_id
+            FROM work_collection_elements m
+            WHERE m.work_id IN (
+            "#,
+        );
+        {
+            let mut separated = qb.separated(", ");
+            for _ in work_ids.iter() {
+                separated.push_bind(0);
+            }
+        }
+        qb.push(")");
+
+        let mut qb = QueryBuilder::new(
+            r#"
+            SELECT m.work_id, m.collection_element_id
+            FROM work_collection_elements m
+            WHERE m.work_id IN (
+            "#,
+        );
+        {
+            let mut separated = qb.separated(", ");
+            for wid in work_ids.iter() {
+                separated.push_bind(*wid);
+            }
+        }
+        qb.push(")");
+
+        let rows: Vec<(i32, i32)> = qb
+            .build_query_as()
+            .fetch_all(&*pool)
+            .await?;
+        Ok(rows.into_iter().map(|(wid, ce)| (wid, Id::new(ce))).collect())
     }
 
     async fn upsert_work_mapping(

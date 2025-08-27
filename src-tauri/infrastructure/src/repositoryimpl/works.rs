@@ -85,6 +85,59 @@ impl DmmWorkRepository for RepositoryImpl<DmmWork> {
         .await?;
         Ok(row.map(|t| t.try_into()).transpose()?)
     }
+
+    async fn find_by_store_keys(&self, keys: &[(String, String, String)]) -> anyhow::Result<Vec<DmmWork>> {
+        use sqlx::QueryBuilder;
+        let pool = self.pool.0.clone();
+        if keys.is_empty() { return Ok(Vec::new()); }
+
+        let mut qb = QueryBuilder::new(
+            r#"SELECT w.id as id, ws.title as title, w.store_id, w.category, w.subcategory, w.work_id
+                FROM dmm_works w
+                JOIN works ws ON ws.id = w.work_id
+                WHERE (w.store_id, w.category, w.subcategory) IN ("#,
+        );
+        {
+            let mut separated = qb.separated(", ");
+            for _ in keys.iter() {
+                separated.push_unseparated("(");
+                separated.push_bind(""); // placeholder, will be replaced below
+                separated.push_unseparated(", ");
+                separated.push_bind("");
+                separated.push_unseparated(", ");
+                separated.push_bind("");
+                separated.push_unseparated(")");
+            }
+        }
+        qb.push(")");
+
+        // Rebuild with actual binds (QueryBuilder doesn't allow editing binds afterward; rebuild cleanly)
+        let mut qb = QueryBuilder::new(
+            r#"SELECT w.id as id, ws.title as title, w.store_id, w.category, w.subcategory, w.work_id
+                FROM dmm_works w
+                JOIN works ws ON ws.id = w.work_id
+                WHERE (w.store_id, w.category, w.subcategory) IN ("#,
+        );
+        {
+            let mut separated = qb.separated(", ");
+            for (store_id, category, subcategory) in keys.iter() {
+                separated.push_unseparated("(");
+                separated.push_bind(store_id);
+                separated.push_unseparated(", ");
+                separated.push_bind(category);
+                separated.push_unseparated(", ");
+                separated.push_bind(subcategory);
+                separated.push_unseparated(")");
+            }
+        }
+        qb.push(")");
+
+        let rows: Vec<DmmWorkTable> = qb
+            .build_query_as()
+            .fetch_all(&*pool)
+            .await?;
+        Ok(rows.into_iter().map(|t| t.try_into()).collect::<anyhow::Result<Vec<_>>>()?)
+    }
 }
 
 impl DlsiteWorkRepository for RepositoryImpl<DlsiteWork> {

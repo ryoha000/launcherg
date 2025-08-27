@@ -108,6 +108,11 @@ pub trait CollectionRepository {
         &self,
         erogamescape_id: i32,
     ) -> Result<Option<Id<CollectionElement>>>;
+    /// バルク取得: 複数の EGS ID に対する collection_element_id をまとめて取得
+    async fn get_collection_ids_by_erogamescape_ids(
+        &self,
+        erogamescape_ids: &[i32],
+    ) -> Result<Vec<(i32, Id<CollectionElement>)>>;
     async fn upsert_erogamescape_map(
         &self,
         collection_element_id: &Id<CollectionElement>,
@@ -129,6 +134,18 @@ pub trait CollectionRepository {
         category: &str,
         subcategory: &str,
     ) -> Result<Option<Id<CollectionElement>>>;
+
+    /// バルク取得: 複数の (store_id, category, subcategory) に対するマッピングをまとめて取得
+    async fn get_collection_ids_by_dmm_mappings(
+        &self,
+        keys: &[(String, String, String)],
+    ) -> Result<Vec<(String, String, String, Id<CollectionElement>)>>;
+
+    /// バルク取得: 複数の work_id に対するマッピングをまとめて取得（work_collection_elements 直引き）
+    async fn get_collection_ids_by_work_ids(
+        &self,
+        work_ids: &[i32],
+    ) -> Result<Vec<(i32, Id<CollectionElement>)>>;
 
     async fn get_collection_id_by_dlsite_mapping(
         &self,
