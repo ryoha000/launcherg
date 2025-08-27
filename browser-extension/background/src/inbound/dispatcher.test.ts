@@ -1,4 +1,5 @@
 import type { ExtensionRequest } from '@launcherg/shared'
+import type { NativeResponseTs } from '@launcherg/shared/typeshare/native-messaging'
 import type { HandlerContext } from '../shared/types'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { buildTestContext } from '../../test/helpers/context'
@@ -9,7 +10,7 @@ describe('メッセージディスパッチャ', () => {
 
   beforeEach(() => {
     context = buildTestContext({
-      nativeMessenger: { sendJson: vi.fn(async () => ({ success: true, error: '', request_id: 'rid-1', response: { case: 'StatusResult', value: { total_synced: 0, connected_extensions: 1, is_running: true, connection_status: 'connected', error_message: '' } } })) },
+      nativeMessenger: { sendJson: vi.fn(async () => ({ success: true, error: '', request_id: 'rid-1', response: { case: 'StatusResult', value: { total_synced: 0, connected_extensions: 1, is_running: true, connection_status: 'connected', error_message: '' } } } satisfies NativeResponseTs)) },
       egsResolver: {
         resolveForDmm: vi.fn(async () => null),
         resolveForDlsite: vi.fn(async () => null),

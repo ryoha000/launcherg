@@ -1,3 +1,4 @@
+import type { NativeResponseTs } from '@launcherg/shared/typeshare/native-messaging'
 import { describe, expect, it, vi } from 'vitest'
 import { buildTestContext } from '../../test/helpers/context'
 import { syncGame } from './syncGameScheduler'
@@ -39,7 +40,7 @@ describe('ゲーム同期スケジューラ（syncGameScheduler）', () => {
       error: '',
       request_id: 'res-1',
       response: { case: 'SyncGamesResult', value: { success_count: 1, error_count: 0, errors: [], synced_games: [] } },
-    }))
+    } satisfies NativeResponseTs))
 
     const context = buildTestContext({
       syncPool: {
@@ -92,7 +93,7 @@ describe('ゲーム同期スケジューラ（syncGameScheduler）', () => {
       error: '',
       request_id: 'res-2',
       response: { case: 'SyncGamesResult', value: { success_count: 1, error_count: 0, errors: [], synced_games: [] } },
-    }))
+    } satisfies NativeResponseTs))
 
     const context = buildTestContext({
       syncPool: {
