@@ -36,6 +36,7 @@ export interface DmmGameTs {
 	title: string;
 	image_url: string;
 	egs_info?: EgsInfoTs;
+	parent_pack_work_id?: number;
 }
 
 export interface DmmOmitDmmPartTs {

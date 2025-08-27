@@ -13,6 +13,7 @@ mockall::mock! {
         type DmmWorkRepo = domain::repository::works::MockDmmWorkRepository;
         type DlsiteWorkRepo = domain::repository::works::MockDlsiteWorkRepository;
         type WorkRepo = domain::repository::works::MockWorkRepository;
+        type WorkParentPacksRepo = domain::repository::work_parent_packs::MockWorkParentPacksRepository;
 
         fn collection_repository(&self) -> &domain::repository::collection::MockCollectionRepository;
         fn explored_cache_repository(&self) -> &domain::repository::explored_cache::MockExploredCacheRepository;
@@ -24,6 +25,7 @@ mockall::mock! {
         fn dmm_work_repository(&self) -> &domain::repository::works::MockDmmWorkRepository;
         fn dlsite_work_repository(&self) -> &domain::repository::works::MockDlsiteWorkRepository;
         fn work_repository(&self) -> &domain::repository::works::MockWorkRepository;
+        fn work_parent_packs_repository(&self) -> &domain::repository::work_parent_packs::MockWorkParentPacksRepository;
     }
 }
 
@@ -72,6 +74,13 @@ impl MockRepositoriesExtMock {
                 })
             });
         self.expect_dlsite_work_repository().return_const(dl_repo);
+
+        // WorkParentPacksRepository: デフォルトはno-opのモックを返す
+        use domain::repository::work_parent_packs::MockWorkParentPacksRepository;
+        let mut wpp = MockWorkParentPacksRepository::new();
+        wpp.expect_add().returning(|_, _| Box::pin(async { Ok::<_, anyhow::Error>(()) }));
+        wpp.expect_exists().returning(|_, _| Box::pin(async { Ok::<_, anyhow::Error>(false) }));
+        self.expect_work_parent_packs_repository().return_const(wpp);
 
         self
     }

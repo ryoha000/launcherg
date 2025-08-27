@@ -8,6 +8,7 @@ use domain::repository::works::{DmmWorkRepository, DlsiteWorkRepository};
 use derive_new::new;
 use domain::repository::{collection::CollectionRepository, RepositoriesExt};
 use domain::repository::works::WorkRepository;
+use domain::repository::work_parent_packs::WorkParentPacksRepository;
 use domain::save_image_queue::{ImageSrcType, ImagePreprocess};
 use domain::repository::save_image_queue::ImageSaveQueueRepository;
 use domain::service::save_path_resolver::{SavePathResolver, DirsSavePathResolver};
@@ -47,6 +48,7 @@ pub struct DmmSyncGameParam {
 	pub gamename: String,
 	pub egs: Option<EgsInfo>,
 	pub image_url: String,
+    pub parent_pack_work_id: Option<i32>,
 }
 
 #[derive(Clone, Debug)]
@@ -156,7 +158,7 @@ impl<R: RepositoriesExt> NativeHostSyncUseCase<R> {
 	) -> anyhow::Result<u32> {
 		let mut success: u32 = 0;
 		// omit は都度 exists 判定（work_id ベース）
-		for DmmSyncGameParam { store_id, category, subcategory, gamename, egs, image_url } in games {
+		for DmmSyncGameParam { store_id, category, subcategory, gamename, egs, image_url, parent_pack_work_id } in games {
 			if let Some(work) = self.repositories.dmm_work_repository().find_by_store_key(&store_id, &category, &subcategory).await? {
 				if self.repositories.work_omit_repository().exists(domain::Id::new(work.id.value)).await? { continue; }
 			}
@@ -178,6 +180,8 @@ impl<R: RepositoriesExt> NativeHostSyncUseCase<R> {
 							.collection_repository()
 							.upsert_work_mapping(&collection_element_id, work.id.value)
 							.await?;
+						// 親子リンク
+						if let Some(pid) = parent_pack_work_id { let _ = self.repositories.work_parent_packs_repository().add(domain::Id::new(work.id.value), domain::Id::new(pid)).await; }
 					}
 				}
 				None => {
@@ -187,6 +191,8 @@ impl<R: RepositoriesExt> NativeHostSyncUseCase<R> {
 							.collection_repository()
 							.upsert_work_mapping(&collection_element_id, work.id.value)
 							.await?;
+						// 親子リンク
+						if let Some(pid) = parent_pack_work_id { let _ = self.repositories.work_parent_packs_repository().add(domain::Id::new(work.id.value), domain::Id::new(pid)).await; }
 					}
 				}
 			}

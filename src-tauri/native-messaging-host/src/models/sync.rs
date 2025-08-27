@@ -9,6 +9,7 @@ pub struct DmmGameTs {
     pub title: String,
     pub image_url: String,
     pub egs_info: Option<EgsInfoTs>,
+    pub parent_pack_work_id: Option<i32>,
 }
 
 #[typeshare]

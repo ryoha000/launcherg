@@ -279,6 +279,7 @@ fn to_dmm_params(request: &DmmSyncGamesRequestTs) -> (Vec<String>, Vec<DmmSyncGa
             gamename: g.title.clone(),
             image_url: g.image_url.clone(),
             egs: g.egs_info.as_ref().map(map_egs_ts),
+            parent_pack_work_id: g.parent_pack_work_id,
         })
         .collect();
     (input_ids, params)

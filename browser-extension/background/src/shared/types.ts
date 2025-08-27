@@ -1,7 +1,8 @@
 import type { DlsiteGame, DmmGame, EgsInfo } from '@launcherg/shared'
+import type { NativeResponseTs } from '@launcherg/shared/typeshare/native-messaging'
 
 export interface NativeMessenger {
-  sendJson: (message: object) => Promise<unknown | null>
+  sendJson: (message: object) => Promise<NativeResponseTs | null>
 }
 
 export interface EgsResolver {

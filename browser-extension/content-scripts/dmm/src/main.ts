@@ -6,11 +6,7 @@ import {
   waitForPageLoad,
 } from '@launcherg/shared'
 import { extractAllGames, shouldExtract } from './dom-extractor'
-import {
-  fetchPackIds,
-  processPacks,
-  syncDmmGames,
-} from './orchestrator'
+import { fetchPackIds, fetchPackParentMap, processPacks, syncDmmGames } from './orchestrator'
 
 let isExtracting = false
 let currentUrl = window.location.href
@@ -37,8 +33,10 @@ async function extractAndSync(): Promise<void> {
     const packOnly = games.filter(g => packSet.has(g.storeId))
     const normalGames = games.filter(g => !packSet.has(g.storeId))
     let packGames: DmmExtractedGame[] = []
-    if (packOnly.length > 0)
-      packGames = await processPacks(new Set(packOnly.map(g => g.storeId)))
+    if (packOnly.length > 0) {
+      const parentMap = await fetchPackParentMap()
+      packGames = await processPacks(new Set(packOnly.map(g => g.storeId)), parentMap)
+    }
 
     // 3) パック配下ゲームと通常ゲームを結合し、一度だけ同期
     const allGames: DmmExtractedGame[] = [...normalGames, ...packGames]

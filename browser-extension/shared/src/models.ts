@@ -19,6 +19,7 @@ export interface DmmGame {
   egsInfo?: EgsInfo
   title: string
   imageUrl: string
+  parentPackWorkId?: number
 }
 
 export interface DlsiteGame {
@@ -65,7 +66,7 @@ export interface DebugNativeMessageResponse {
   timestamp: string
 }
 
-export interface GetDmmOmitWorksResponse { storeIds: string[] }
+export interface GetDmmOmitWorksResponse { items: { workId: number, dmm: { storeId: string, category: string, subcategory: string } }[] }
 
 // Extension Request / Response (oneof 相当を discriminated union 的に表現)
 export interface ExtensionRequest {

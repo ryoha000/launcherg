@@ -10,6 +10,7 @@ pub mod explored_cache;
 pub mod extension;
 pub mod file;
 pub mod dmm_work_pack;
+pub mod work_parent_pack;
 pub mod work_omit;
 pub mod works;
 pub mod game_matcher;

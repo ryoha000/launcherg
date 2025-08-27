@@ -1,3 +1,4 @@
+import type { NativeResponseTs } from '@launcherg/shared/typeshare/native-messaging'
 import { describe, expect, it, vi } from 'vitest'
 import { buildTestContext } from '../../test/helpers/context'
 import { handleGetStatus } from './getStatus'
@@ -7,7 +8,7 @@ describe('ステータス取得（getStatus）ユースケース', () => {
     const context = buildTestContext({
       idGenerator: { generate: () => 'rid' },
       nativeMessenger: {
-        sendJson: vi.fn(async () => ({
+        sendJson: vi.fn(async (): Promise<NativeResponseTs> => ({
           success: true,
           error: '',
           request_id: 'rid',
@@ -25,8 +26,8 @@ describe('ステータス取得（getStatus）ユースケース', () => {
         })),
       },
     })
-    const res = await handleGetStatus(context, 'req-1', {} as any)
-    expect((context.nativeMessenger as any).sendJson).toHaveBeenCalled()
+    const res = await handleGetStatus(context, 'req-1', {})
+    expect(context.nativeMessenger.sendJson).toHaveBeenCalled()
     expect(res.success).toBe(true)
     expect(res.response?.case).toBe('statusResult')
   })

@@ -8,6 +8,7 @@ use domain::{
     explored_cache::ExploredCache,
     work_omit::{WorkOmit},
     dmm_work_pack::DmmWorkPack,
+    repository::work_parent_packs::WorkParentPacksRepository,
 };
 
 use super::driver::Db;
@@ -25,6 +26,7 @@ pub struct Repositories {
     image_queue_repository: RepositoryImpl<ImageSaveQueueRow>,
     host_log_repository: RepositoryImpl<NativeHostLogRow>,
     work_omit_repository: RepositoryImpl<WorkOmit>,
+    work_parent_packs_repository: RepositoryImpl<Work>,
     dmm_pack_repository: RepositoryImpl<DmmWorkPack>,
     dmm_work_repository: RepositoryImpl<DmmWork>,
     dlsite_work_repository: RepositoryImpl<DlsiteWork>,
@@ -38,6 +40,7 @@ impl RepositoriesExt for Repositories {
     type ImageQueueRepo = RepositoryImpl<ImageSaveQueueRow>;
     type HostLogRepo = RepositoryImpl<NativeHostLogRow>;
     type WorkOmitRepo = RepositoryImpl<WorkOmit>;
+    type WorkParentPacksRepo = RepositoryImpl<Work>;
     type DmmPackRepo = RepositoryImpl<DmmWorkPack>;
     type DmmWorkRepo = RepositoryImpl<DmmWork>;
     type DlsiteWorkRepo = RepositoryImpl<DlsiteWork>;
@@ -55,6 +58,7 @@ impl RepositoriesExt for Repositories {
     fn image_queue_repository(&self) -> &Self::ImageQueueRepo { &self.image_queue_repository }
     fn host_log_repository(&self) -> &Self::HostLogRepo { &self.host_log_repository }
     fn work_omit_repository(&self) -> &Self::WorkOmitRepo { &self.work_omit_repository }
+    fn work_parent_packs_repository(&self) -> &Self::WorkParentPacksRepo { &self.work_parent_packs_repository }
     fn dmm_pack_repository(&self) -> &Self::DmmPackRepo { &self.dmm_pack_repository }
     fn dmm_work_repository(&self) -> &Self::DmmWorkRepo { &self.dmm_work_repository }
     fn dlsite_work_repository(&self) -> &Self::DlsiteWorkRepo { &self.dlsite_work_repository }
@@ -73,6 +77,7 @@ impl Repositories {
         let dmm_work_repository = RepositoryImpl::new(db.clone());
         let dlsite_work_repository = RepositoryImpl::new(db.clone());
         let work_repository = RepositoryImpl::new(db.clone());
+        let work_parent_packs_repository = RepositoryImpl::new(db.clone());
 
         Self {
             collection_repository,
@@ -81,6 +86,7 @@ impl Repositories {
             image_queue_repository,
             host_log_repository,
             work_omit_repository,
+            work_parent_packs_repository,
             dmm_pack_repository,
             dmm_work_repository,
             dlsite_work_repository,

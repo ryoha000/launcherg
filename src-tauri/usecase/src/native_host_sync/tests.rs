@@ -116,6 +116,7 @@ async fn dmm_既存ならスキップ() {
         gamename: "Name".into(),
         egs: None,
         image_url: String::new(),
+        parent_pack_work_id: None,
     }];
 
     let res = usecase.sync_dmm_games(params).await.unwrap();
@@ -171,6 +172,7 @@ async fn dmm_egsあり_新規作成とサムネイル保存() {
             is_nukige: false,
         }),
         image_url: "https://pics.dmm.co.jp/digital/game/AAA/BBBps.jpg".into(),
+        parent_pack_work_id: None,
     }];
 
     let res = usecase.sync_dmm_games(params).await.unwrap();
@@ -207,6 +209,7 @@ async fn dmm_egsなし_新規作成のみ() {
         gamename: "Game Name".into(),
         egs: None,
         image_url: "https://pics.dmm.co.jp/digital/game/AAA/CCCps.jpg".into(),
+        parent_pack_work_id: None,
     }];
 
     let res = usecase.sync_dmm_games(params).await.unwrap();

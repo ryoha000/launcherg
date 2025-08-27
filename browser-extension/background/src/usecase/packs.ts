@@ -1,5 +1,5 @@
 import type { ExtensionResponse, GetDmmOmitWorksRequest as ExtGetOmitReq } from '@launcherg/shared'
-import type { DmmOmitWorkItemTs, NativeMessageTs } from '@launcherg/shared/typeshare/native-messaging'
+import type { NativeMessageTs } from '@launcherg/shared/typeshare/native-messaging'
 import type { HandlerContext } from '../shared/types'
 
 export async function handleGetDmmOmitWorks(
@@ -11,14 +11,15 @@ export async function handleGetDmmOmitWorks(
     request_id: context.idGenerator.generate(),
     message: { case: 'GetDmmOmitWorks', value: { extension_id: context.extensionId } },
   }
-  const nmRes = await (context.nativeMessenger as any).sendJson(nativeMessage)
-  const storeIds = nmRes && nmRes.response?.case === 'DmmOmitWorks'
-    ? (nmRes.response.value as DmmOmitWorkItemTs[]).map(i => i.dmm.store_id)
-    : []
+  const nmRes = await context.nativeMessenger.sendJson(nativeMessage)
+  const items = (nmRes && nmRes.response?.case === 'DmmOmitWorks'
+    ? (nmRes.response.value)
+    : [])
+    .map(i => ({ workId: i.work_id, dmm: { storeId: i.dmm.store_id, category: i.dmm.category, subcategory: i.dmm.subcategory } }))
   return {
     requestId,
     success: true,
     error: '',
-    response: { case: 'getDmmOmitWorksResult', value: { storeIds } },
+    response: { case: 'getDmmOmitWorksResult', value: { items } },
   }
 }

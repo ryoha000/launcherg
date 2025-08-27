@@ -8,7 +8,6 @@
   import Button from '@/components/UI/Button.svelte'
   import Checkbox from '@/components/UI/Checkbox.svelte'
   import { commandDeleteCollectionElement } from '@/lib/command'
-  import { useAddDmmPackMutation, useDmmPackQuery, useRemoveDmmPackMutation } from '@/lib/data/queries/dmmPack'
   import { useWorkDetailsAllQuery } from '@/lib/data/queries/workDetails'
   import { useAddWorkOmitMutation, useRemoveWorkOmitMutation } from '@/lib/data/queries/workOmit'
   import { showErrorToast, showInfoToast } from '@/lib/toast'
@@ -89,18 +88,12 @@
   const removeDenyMutation = useRemoveWorkOmitMutation()
   const disabledDenyList = $derived($addDenyMutation.isPending || $removeDenyMutation.isPending)
 
-  const dmmPackQuery = useDmmPackQuery()
-  const addDmmPackMutation = useAddDmmPackMutation()
-  const removeDmmPackMutation = useRemoveDmmPackMutation()
-  const disabledDmmPack = $derived($dmmPackQuery.isLoading || $addDmmPackMutation.isPending || $removeDmmPackMutation.isPending)
-
   // 表示件数系（WorkDetails を直接参照）
   const items = $derived.by(() => ($workDetailsQuery.data ?? []))
   const totalCount = $derived.by(() => (items.length))
   const dmmCount = $derived.by(() => (items.filter(w => !!w.dmm).length))
   const dlsiteCount = $derived.by(() => (items.filter(w => !!w.dlsite).length))
   const denyListTotal = $derived.by(() => (items.reduce((acc, w) => acc + (w.isDmmOmitted ? 1 : 0) + (w.isDlsiteOmitted ? 1 : 0), 0)))
-  const dmmPackTotal = $derived.by(() => (items.filter(w => w.isDmmPack).length))
 
   const filteredItems = $derived.by(() => {
     const q = keyword.trim().toLowerCase()
@@ -143,25 +136,15 @@
     title: string
     nextValue: boolean
     prevValue: boolean
-    isDmmPackCurrent?: boolean
     workId: number
   }) => {
-    const { collectionElementId, storeType, storeId, title, nextValue, prevValue, isDmmPackCurrent, workId } = arg
+    const { collectionElementId, storeType, storeId, title, nextValue, prevValue, workId } = arg
     if (nextValue === prevValue)
       return
     if (!collectionElementId && !nextValue) {
-      // 未登録で両方オフになるケースを防ぐ（DMMはパック、DLsiteはomitのみ）
-      if (storeType === 1) {
-        if (!isDmmPackCurrent) {
-          showErrorToast('未登録のゲームでは『連携除外』または『セット商品』のいずれかを選択してください。両方を未選択にはできません。')
-          return
-        }
-      }
-      else {
-        // DLsite 側は omit のみ
-        showErrorToast('未登録のゲームでは『連携除外』は解除できません。')
-        return
-      }
+      // omit のみ運用: 未登録のゲームでは『連携除外』は解除できません
+      showErrorToast('未登録のゲームでは『連携除外』は解除できません。')
+      return
     }
     try {
       if (nextValue) {
@@ -186,53 +169,6 @@
     }
   }
 
-  const updateDmmPack = async (arg: {
-    collectionElementId?: number
-    storeId: string
-    title: string
-    nextValue: boolean
-    prevValue: boolean
-    isDeniedCurrent: boolean
-  }) => {
-    const { collectionElementId, storeId, title, nextValue, prevValue, isDeniedCurrent } = arg
-    if (nextValue === prevValue)
-      return
-    if (!collectionElementId && !nextValue) {
-      if (!isDeniedCurrent) {
-        showErrorToast('未登録のゲームでは『連携除外』または『セット商品』のいずれかを選択してください。両方を未選択にはできません。')
-        return
-      }
-    }
-    try {
-      const workId = itemWorkIdResolver(storeId)
-      if (workId == null)
-        throw new Error('workId resolve failed')
-      if (nextValue) {
-        await get(addDmmPackMutation).mutateAsync({ workId })
-      }
-      else {
-        await get(removeDmmPackMutation).mutateAsync({ workId })
-      }
-      showInfoToast(nextValue
-        ? `「セット商品」設定: ${title}（DMM / ${storeId}）`
-        : `「セット商品」解除: ${title}（DMM / ${storeId}）`,
-      )
-      if (nextValue) {
-        await maybeDeleteOnFlagSet(collectionElementId, title)
-      }
-      await get(workDetailsQuery).refetch()
-    }
-    catch (e) {
-      console.error(e)
-      showErrorToast(`「セット商品」の${nextValue ? '設定' : '解除'}に失敗しました: ${title}`)
-    }
-  }
-
-  function itemWorkIdResolver(storeId: string): number | null {
-    const it = items.find(w => w.dmm?.storeId === storeId)
-    return it ? it.id : null
-  }
-
   onMount(async () => {
     await get(workDetailsQuery).refetch()
   })
@@ -241,7 +177,7 @@
 <div class='grid grid-(rows-[auto_auto_auto_auto_1fr]) h-full w-full p-4'>
   <div class='mb-2 text-(h3 text-primary)'>ダウンロード購入作品の管理</div>
   <div class='mb-3 text-(sm text-secondary) -mt-1'>
-    取り込み内容を随時見直し、不要な項目やパック親項目を適切に整理できます。<br />
+    取り込み内容を随時見直し、不要な項目を適切に整理できます。<br />
     設定した除外は今後の連携にも反映され、再取り込みを防止します。
   </div>
   <div class='mb-1 flex items-center gap-3'>
@@ -281,7 +217,6 @@
       <span class='ml-3'>DMM {dmmCount} 件</span>
       <span class='ml-2'>DLsite {dlsiteCount} 件</span>
       <span class='ml-2'>除外 {denyListTotal} 件</span>
-      <span class='ml-2'>セット {dmmPackTotal} 件</span>
     </div>
   </div>
   <div class='mb-2 flex items-center justify-end gap-2'>
@@ -303,15 +238,7 @@
                 ></span>
               </div>
             </th>
-            <th class='w-36 border-(b border-primary) px-2 py-2'>
-              <div class='flex items-center gap-1'>
-                セット商品
-                <span
-                  use:tooltipAction={{ content: 'DMMのセット商品（複数作品を含む）として扱います。含まれる個別作品を取得するための特別処理を有効にします。DMM以外には適用されません。', placement: 'top', theme: 'default' }}
-                  class='i-material-symbols-help-outline-rounded h-4 w-4 color-text-tertiary'
-                ></span>
-              </div>
-            </th>
+
           </tr>
         </thead>
         <tbody>
@@ -337,7 +264,7 @@
                 <div class='flex gap-4'>
                   {#if item.dmm}
                     <label class='flex items-center gap-2'>
-                      <Checkbox value={item.isDmmOmitted} on:update={e => updateDenied({ collectionElementId: item.collectionElementId ?? undefined, storeType: 1, storeId: item.dmm!.storeId, title: item.title, nextValue: e.detail.value, prevValue: item.isDmmOmitted, isDmmPackCurrent: item.isDmmPack, workId: item.id })} disabled={disabledDenyList} />
+                      <Checkbox value={item.isDmmOmitted} on:update={e => updateDenied({ collectionElementId: item.collectionElementId ?? undefined, storeType: 1, storeId: item.dmm!.storeId, title: item.title, nextValue: e.detail.value, prevValue: item.isDmmOmitted, workId: item.id })} disabled={disabledDenyList} />
                       <span>DMM: {item.isDmmOmitted ? '除外' : '未設定'}</span>
                     </label>
                   {/if}
@@ -349,16 +276,7 @@
                   {/if}
                 </div>
               </td>
-              <td class='px-2 py-1'>
-                {#if item.dmm}
-                  <label class='flex items-center gap-2'>
-                    <Checkbox value={item.isDmmPack} on:update={e => updateDmmPack({ collectionElementId: item.collectionElementId ?? undefined, storeId: item.dmm!.storeId, title: item.title, nextValue: e.detail.value, prevValue: item.isDmmPack, isDeniedCurrent: item.isDmmOmitted })} disabled={disabledDmmPack} />
-                    <span>{item.isDmmPack ? 'セット' : '未設定'}</span>
-                  </label>
-                {:else}
-                  <span class='opacity-50'>対象外</span>
-                {/if}
-              </td>
+
             </tr>
           {/each}
         </tbody>
