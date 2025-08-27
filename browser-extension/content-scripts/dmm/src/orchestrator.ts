@@ -1,4 +1,4 @@
-import type { DmmGame, DmmSyncGamesRequest, ExtensionRequest, GetDmmPackIdsRequest } from '@launcherg/shared'
+import type { DmmGame, DmmSyncGamesRequest, ExtensionRequest, GetDmmOmitWorksRequest } from '@launcherg/shared'
 import type { DmmExtractedGame } from './types'
 
 import { sendExtensionRequest } from '@launcherg/shared'
@@ -8,15 +8,15 @@ import { parsePackModal } from './pack-parser'
 export async function fetchPackIds(): Promise<Set<string>> {
   const packReq: ExtensionRequest = {
     requestId: Date.now().toString(36) + Math.random().toString(36).slice(2),
-    request: { case: 'getDmmPackIds', value: {} as GetDmmPackIdsRequest },
+    request: { case: 'getDmmOmitWorks', value: {} as GetDmmOmitWorksRequest },
   }
   const packResJson = await sendExtensionRequest(packReq)
   const dmmPackIds: string[] = []
-  if (packResJson?.response?.case === 'getDmmPackIdsResult') {
+  if (packResJson?.response?.case === 'getDmmOmitWorksResult') {
     dmmPackIds.push(...packResJson.response.value.storeIds)
   }
   else {
-    throw new Error('Unexpected response from getDmmPackIds')
+    throw new Error('Unexpected response from getDmmOmitWorks')
   }
   return new Set<string>(dmmPackIds)
 }

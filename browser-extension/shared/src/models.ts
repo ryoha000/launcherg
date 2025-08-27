@@ -34,7 +34,7 @@ export interface DmmSyncGamesRequest { games: DmmGame[] }
 export interface DlsiteSyncGamesRequest { games: DlsiteGame[] }
 export interface GetStatusRequest {}
 export interface DebugNativeMessageRequest { payloadJson: string }
-export interface GetDmmPackIdsRequest {}
+export interface GetDmmOmitWorksRequest {}
 
 // レスポンス系
 export interface SyncResult {
@@ -65,7 +65,7 @@ export interface DebugNativeMessageResponse {
   timestamp: string
 }
 
-export interface GetDmmPackIdsResponse { storeIds: string[] }
+export interface GetDmmOmitWorksResponse { storeIds: string[] }
 
 // Extension Request / Response (oneof 相当を discriminated union 的に表現)
 export interface ExtensionRequest {
@@ -75,7 +75,7 @@ export interface ExtensionRequest {
     | { case: 'syncDlsiteGames', value: DlsiteSyncGamesRequest }
     | { case: 'getStatus', value: GetStatusRequest }
     | { case: 'debugNativeMessage', value: DebugNativeMessageRequest }
-    | { case: 'getDmmPackIds', value: GetDmmPackIdsRequest }
+    | { case: 'getDmmOmitWorks', value: GetDmmOmitWorksRequest }
     | { case: undefined }
 }
 
@@ -87,6 +87,6 @@ export interface ExtensionResponse {
     | { case: 'syncGamesResult', value: SyncGamesResponse }
     | { case: 'statusResult', value: GetStatusResponse }
     | { case: 'debugResult', value: DebugNativeMessageResponse }
-    | { case: 'getDmmPackIdsResult', value: GetDmmPackIdsResponse }
+    | { case: 'getDmmOmitWorksResult', value: GetDmmOmitWorksResponse }
     | { case: undefined }
 }

@@ -12,7 +12,7 @@ use domain::{
     Id,
 };
 use crate::repositorymock::MockRepositoriesExtMock;
-use domain::repository::deny_list::MockDenyListRepository;
+use domain::repository::work_omit::MockWorkOmitRepository;
 
 #[derive(Clone, Default)]
 struct TestThumbnailService {
@@ -48,12 +48,12 @@ fn new_usecase_with(
     mock_repo: MockCollectionRepository,
     expected_image_queue_calls: usize,
 ) -> (NativeHostSyncUseCase<MockRepositoriesExtMock>, TestIconService) {
-    let mut mock_repositories = MockRepositoriesExtMock::new();
+    let mut mock_repositories = MockRepositoriesExtMock::new().with_default_work_repos();
     mock_repositories
         .expect_collection_repository()
         .return_const(mock_repo);
 
-    // image queue enqueue は2回呼ばれる想定（アイコン+サムネイル）
+    // image queue enqueue は2回（アイコン+サムネイル）+ 作品別名サムネイル(1回) = 最大3回
     let mut imgq = MockImageSaveQueueRepository::new();
     imgq.expect_enqueue().times(expected_image_queue_calls).returning(|_, _, _, _| Box::pin(async move { Ok::<_, anyhow::Error>(Id::new(1)) }));
     mock_repositories
@@ -66,12 +66,12 @@ fn new_usecase_with(
         .expect_host_log_repository()
         .return_const(hostlog);
 
-    // deny list は空を返すようにモック（全テストで共通仕様）
-    let mut deny = MockDenyListRepository::new();
-    deny.expect_list().returning(|| Box::pin(async { Ok::<_, anyhow::Error>(Vec::new()) }));
+    // omit は exists=false を返すようにモック（全テストで共通仕様）
+    let mut omit = MockWorkOmitRepository::new();
+    omit.expect_exists().returning(|_| Box::pin(async { Ok::<_, anyhow::Error>(false) }));
     mock_repositories
-        .expect_deny_list_repository()
-        .return_const(deny);
+        .expect_work_omit_repository()
+        .return_const(omit);
 
     let icons = TestIconService::default();
     (
@@ -148,13 +148,13 @@ async fn dmm_egsあり_新規作成とサムネイル保存() {
         .with(always())
         .times(1)
         .returning(|_| Box::pin(async move { Ok::<_, anyhow::Error>(()) }));
-    // DMM mapping upsert
-    repo.expect_upsert_dmm_mapping()
-        .with(eq(Id::new(100)), eq("sid"), eq("cat"), eq("sub"))
+    // DMM mapping upsert -> work_mapping に変更（work_id は dmm_work_repository 経由で取得されるためここでは期待しない）
+    repo.expect_upsert_work_mapping()
+        .with(eq(Id::new(100)), always())
         .times(1)
-        .returning(|_, _, _, _| Box::pin(async move { Ok::<_, anyhow::Error>(()) }));
+        .returning(|_, _| Box::pin(async move { Ok::<_, anyhow::Error>(()) }));
 
-    let (usecase, icons) = new_usecase_with(repo, 2);
+    let (usecase, icons) = new_usecase_with(repo, 3);
 
     let params = vec![DmmSyncGameParam {
         store_id: "sid".into(),
@@ -192,13 +192,13 @@ async fn dmm_egsなし_新規作成のみ() {
         .with(eq("Game Name"))
         .times(1)
         .returning(|_| Box::pin(async move { Ok::<_, anyhow::Error>(Id::new(200)) }));
-    // DMM mapping upsert
-    repo.expect_upsert_dmm_mapping()
-        .with(eq(Id::new(200)), eq("sid"), eq("cat"), eq("sub"))
+    // DMM mapping upsert -> work_mapping
+    repo.expect_upsert_work_mapping()
+        .with(eq(Id::new(200)), always())
         .times(1)
-        .returning(|_, _, _, _| Box::pin(async move { Ok::<_, anyhow::Error>(()) }));
+        .returning(|_, _| Box::pin(async move { Ok::<_, anyhow::Error>(()) }));
 
-    let (usecase, icons) = new_usecase_with(repo, 2);
+    let (usecase, icons) = new_usecase_with(repo, 3);
 
     let params = vec![DmmSyncGameParam {
         store_id: "sid".into(),
@@ -262,13 +262,13 @@ async fn dlsite_egsあり_新規作成とサムネイル保存() {
         .with(always())
         .times(1)
         .returning(|_| Box::pin(async move { Ok::<_, anyhow::Error>(()) }));
-    // DLsite mapping upsert
-    repo.expect_upsert_dlsite_mapping()
-        .with(eq(Id::new(300)), eq("sid"), eq("cat"))
+    // DLsite mapping upsert -> work_mapping
+    repo.expect_upsert_work_mapping()
+        .with(eq(Id::new(300)), always())
         .times(1)
-        .returning(|_, _, _| Box::pin(async move { Ok::<_, anyhow::Error>(()) }));
+        .returning(|_, _| Box::pin(async move { Ok::<_, anyhow::Error>(()) }));
 
-    let (usecase, icons) = new_usecase_with(repo, 2);
+    let (usecase, icons) = new_usecase_with(repo, 3);
 
     let params = vec![DlsiteSyncGameParam {
         store_id: "sid".into(),
@@ -305,13 +305,13 @@ async fn dlsite_egsなし_新規作成のみ() {
         .with(eq("Game DL"))
         .times(1)
         .returning(|_| Box::pin(async move { Ok::<_, anyhow::Error>(Id::new(400)) }));
-    // DLsite mapping upsert
-    repo.expect_upsert_dlsite_mapping()
-        .with(eq(Id::new(400)), eq("sid"), eq("cat"))
+    // DLsite mapping upsert -> work_mapping
+    repo.expect_upsert_work_mapping()
+        .with(eq(Id::new(400)), always())
         .times(1)
-        .returning(|_, _, _| Box::pin(async move { Ok::<_, anyhow::Error>(()) }));
+        .returning(|_, _| Box::pin(async move { Ok::<_, anyhow::Error>(()) }));
 
-    let (usecase, icons) = new_usecase_with(repo, 2);
+    let (usecase, icons) = new_usecase_with(repo, 3);
 
     let params = vec![DlsiteSyncGameParam {
         store_id: "sid".into(),

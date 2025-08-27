@@ -6,10 +6,10 @@ import { parsePackModal } from '../src/pack-parser'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
-const htmlPath = resolve(__dirname, './data/dmm_open_modal.html')
 
 describe('parsePackModal', () => {
   it('hTMLフィクスチャからパック内ゲームを抽出できる', () => {
+    const htmlPath = resolve(__dirname, './data/dmm_open_modal.html')
     const html = readFileSync(htmlPath, 'utf-8')
     const games = parsePackModal(html)
     expect(games).toHaveLength(3)
@@ -22,5 +22,11 @@ describe('parsePackModal', () => {
       storeId: 'views_0528',
       title: 'アマツツミ',
     })
+  })
+  it('hTMLフィクスチャがパックじゃないときにエラーなしにゲームが抽出されない', () => {
+    const htmlPath = resolve(__dirname, './data/dmm_open_modal_not_pack.html')
+    const html = readFileSync(htmlPath, 'utf-8')
+    const games = parsePackModal(html)
+    expect(games).toHaveLength(0)
   })
 })

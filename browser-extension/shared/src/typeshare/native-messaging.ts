@@ -38,8 +38,15 @@ export interface DmmGameTs {
 	egs_info?: EgsInfoTs;
 }
 
-export interface DmmPackIdsResponseTs {
-	store_ids: string[];
+export interface DmmOmitDmmPartTs {
+	store_id: string;
+	category: string;
+	subcategory: string;
+}
+
+export interface DmmOmitWorkItemTs {
+	work_id: number;
+	dmm: DmmOmitDmmPartTs;
 }
 
 export interface DmmSyncGamesRequestTs {
@@ -54,7 +61,7 @@ export interface ExtensionConfigTs {
 	debug_mode: boolean;
 }
 
-export interface GetDmmPackIdsRequestTs {
+export interface GetDmmOmitWorksRequestTs {
 	extension_id: string;
 }
 
@@ -75,7 +82,7 @@ export type NativeMessageCase =
 	| { case: "GetStatus", value: GetStatusRequestTs }
 	| { case: "SetConfig", value: ExtensionConfigTs }
 	| { case: "HealthCheck", value: HealthCheckRequestTs }
-	| { case: "GetDmmPackIds", value: GetDmmPackIdsRequestTs };
+	| { case: "GetDmmOmitWorks", value: GetDmmOmitWorksRequestTs };
 
 export interface NativeMessageTs {
 	request_id: string;
@@ -87,7 +94,7 @@ export type NativeResponseCase =
 	| { case: "StatusResult", value: SyncStatusTs }
 	| { case: "ConfigResult", value: ConfigUpdateResultTs }
 	| { case: "HealthCheckResult", value: HealthCheckResultTs }
-	| { case: "DmmPackIds", value: DmmPackIdsResponseTs };
+	| { case: "DmmOmitWorks", value: DmmOmitWorkItemTs[] };
 
 export interface NativeResponseTs {
 	success: boolean;

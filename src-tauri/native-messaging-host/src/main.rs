@@ -9,7 +9,7 @@ use thiserror::Error;
 use models::{
     common::{NativeMessageCase, NativeMessageTs, NativeResponseCase, NativeResponseTs, HealthCheckRequestTs, HealthCheckResultTs},
     sync::{DmmSyncGamesRequestTs, DlsiteSyncGamesRequestTs, SyncBatchResultTs},
-    packs::{GetDmmPackIdsRequestTs, DmmPackIdsResponseTs},
+    packs::{GetDmmOmitWorksRequestTs, DmmOmitWorkItemTs, DmmOmitDmmPartTs},
 };
 use infrastructure::{
     repositoryimpl::{driver::Db as RepoDb, repository::Repositories},
@@ -122,7 +122,7 @@ async fn handle_message(ctx: &AppCtx) -> HostResult<bool> {
     let response = match &message.message {
         NativeMessageCase::SyncDmmGames(req) => handle_sync_dmm_games(ctx, req, &message.request_id).await,
         NativeMessageCase::SyncDlsiteGames(req) => handle_sync_dlsite_games(ctx, req, &message.request_id).await,
-        NativeMessageCase::GetDmmPackIds(req) => handle_get_dmm_pack_ids(ctx, req, &message.request_id).await,
+        NativeMessageCase::GetDmmOmitWorks(req) => handle_get_dmm_omit_works(ctx, req, &message.request_id).await,
         NativeMessageCase::GetStatus(_) => NativeResponseTs { success: false, error: "GetStatus is not supported".to_string(), request_id: message.request_id.clone(), response: None },
         NativeMessageCase::SetConfig(_) => NativeResponseTs { success: false, error: "SetConfig is not supported".to_string(), request_id: message.request_id.clone(), response: None },
         NativeMessageCase::HealthCheck(_) => handle_health_check(&HealthCheckRequestTs {}, &message.request_id),
@@ -183,11 +183,14 @@ async fn handle_sync_dlsite_games(ctx: &AppCtx, request: &DlsiteSyncGamesRequest
     }
 }
 
-async fn handle_get_dmm_pack_ids(ctx: &AppCtx, _request: &GetDmmPackIdsRequestTs, request_id: &str) -> NativeResponseTs {
-    match ctx.sync_usecase.get_dmm_pack_store_ids().await {
-        Ok(store_ids) => {
-            let result = DmmPackIdsResponseTs { store_ids };
-            ok(request_id, NativeResponseCase::DmmPackIds(result))
+async fn handle_get_dmm_omit_works(ctx: &AppCtx, _request: &GetDmmOmitWorksRequestTs, request_id: &str) -> NativeResponseTs {
+    match ctx.sync_usecase.list_dmm_omit_works().await {
+        Ok(items) => {
+            let list: Vec<DmmOmitWorkItemTs> = items.into_iter().map(|it| DmmOmitWorkItemTs {
+                work_id: it.work_id,
+                dmm: DmmOmitDmmPartTs { store_id: it.store_id, category: it.category, subcategory: it.subcategory },
+            }).collect();
+            ok(request_id, NativeResponseCase::DmmOmitWorks(list))
         }
         Err(e) => {
             err(request_id, anyhow_chain_to_string(&e))

@@ -1,7 +1,7 @@
 import type { ExtensionRequest, ExtensionResponse } from '@launcherg/shared'
 import type { HandlerContext } from '../shared/types'
 import { logger } from '@launcherg/shared'
-import { handleDebugNativeMessage, handleGetDmmPackIds, handleGetStatus, handleSyncDlsiteGames, handleSyncDmmGames } from '../usecase'
+import { handleDebugNativeMessage, handleGetDmmOmitWorks, handleGetStatus, handleSyncDlsiteGames, handleSyncDmmGames } from '../usecase'
 
 const log = logger('background:dispatcher')
 
@@ -35,8 +35,8 @@ export function createMessageDispatcher(context: HandlerContext) {
             extensionRequest.requestId,
             extensionRequest.request.value,
           )
-        case 'getDmmPackIds':
-          return await handleGetDmmPackIds(
+        case 'getDmmOmitWorks':
+          return await handleGetDmmOmitWorks(
             context,
             extensionRequest.requestId,
             extensionRequest.request.value,

@@ -3,11 +3,11 @@
 //! - EGS 情報があれば名称/詳細も upsert し、EGS マップを作成/更新する
 
 use std::sync::Arc;
-use std::collections::HashSet;
+use domain::repository::work_omit::WorkOmitRepository;
+use domain::repository::works::{DmmWorkRepository, DlsiteWorkRepository};
 use derive_new::new;
-use domain::repository::{collection::CollectionRepository, RepositoriesExt, deny_list::DenyListRepository};
-use domain::repository::dmm_pack::DmmPackRepository;
-use domain::deny_list::StoreType;
+use domain::repository::{collection::CollectionRepository, RepositoriesExt};
+use domain::repository::works::WorkRepository;
 use domain::save_image_queue::{ImageSrcType, ImagePreprocess};
 use domain::repository::save_image_queue::ImageSaveQueueRepository;
 use domain::service::save_path_resolver::{SavePathResolver, DirsSavePathResolver};
@@ -155,17 +155,11 @@ impl<R: RepositoriesExt> NativeHostSyncUseCase<R> {
 		games: Vec<DmmSyncGameParam>,
 	) -> anyhow::Result<u32> {
 		let mut success: u32 = 0;
-		// 先にDMMのdeny listを取得してセット化
-		let denied: HashSet<String> = self.repositories
-			.deny_list_repository()
-			.list()
-			.await?
-			.into_iter()
-			.filter(|e| matches!(e.store_type, StoreType::Dmm))
-			.map(|e| e.store_id)
-			.collect();
+		// omit は都度 exists 判定（work_id ベース）
 		for DmmSyncGameParam { store_id, category, subcategory, gamename, egs, image_url } in games {
-			if denied.contains(&store_id) { continue; }
+			if let Some(work) = self.repositories.dmm_work_repository().find_by_store_key(&store_id, &category, &subcategory).await? {
+				if self.repositories.work_omit_repository().exists(domain::Id::new(work.id.value)).await? { continue; }
+			}
 			// 既存 (store_id, category, subcategory) がある場合はスキップ
 			let exists = self
 				.repositories
@@ -179,17 +173,21 @@ impl<R: RepositoriesExt> NativeHostSyncUseCase<R> {
 			match egs.as_ref() {
 				Some(egs) => {
 					collection_element_id = self.ensure_collection_for_egs(egs).await?;
-					self.repositories
-						.collection_repository()
-						.upsert_dmm_mapping(&collection_element_id, &store_id, &category, &subcategory)
-						.await?;
+					if let Some(work) = self.repositories.dmm_work_repository().find_by_store_key(&store_id, &category, &subcategory).await? {
+						self.repositories
+							.collection_repository()
+							.upsert_work_mapping(&collection_element_id, work.id.value)
+							.await?;
+					}
 				}
 				None => {
 					collection_element_id = self.create_collection_without_egs(&gamename).await?;
-					self.repositories
-						.collection_repository()
-						.upsert_dmm_mapping(&collection_element_id, &store_id, &category, &subcategory)
-						.await?;
+					if let Some(work) = self.repositories.dmm_work_repository().find_by_store_key(&store_id, &category, &subcategory).await? {
+						self.repositories
+							.collection_repository()
+							.upsert_work_mapping(&collection_element_id, work.id.value)
+							.await?;
+					}
 				}
 			}
 			if !image_url.is_empty() {
@@ -201,6 +199,11 @@ impl<R: RepositoriesExt> NativeHostSyncUseCase<R> {
 				let thumb_dst = self.resolver.thumbnail_png_path(collection_element_id.value);
 				let _ = self.repositories.image_queue_repository()
 					.enqueue(&normalized, ImageSrcType::Url, &thumb_dst, ImagePreprocess::ResizeForWidth400)
+					.await;
+				// DMM 作品の別名パスでも保存
+				let alias = self.resolver.thumbnail_alias_dmm_png_path(&category, &subcategory, &store_id);
+				let _ = self.repositories.image_queue_repository()
+					.enqueue(&normalized, ImageSrcType::Url, &alias, ImagePreprocess::ResizeForWidth400)
 					.await;
 			}
 			success += 1;
@@ -219,17 +222,11 @@ impl<R: RepositoriesExt> NativeHostSyncUseCase<R> {
 		games: Vec<DlsiteSyncGameParam>,
 	) -> anyhow::Result<u32> {
 		let mut success: u32 = 0;
-		// 先にDLsiteのdeny listを取得してセット化
-		let denied: HashSet<String> = self.repositories
-			.deny_list_repository()
-			.list()
-			.await?
-			.into_iter()
-			.filter(|e| matches!(e.store_type, StoreType::Dlsite))
-			.map(|e| e.store_id)
-			.collect();
+		// omit は都度 exists 判定（work_id ベース）
 		for DlsiteSyncGameParam { store_id, category, gamename, egs, image_url } in games {
-			if denied.contains(&store_id) { continue; }
+			if let Some(work) = self.repositories.dlsite_work_repository().find_by_store_key(&store_id, &category).await? {
+				if self.repositories.work_omit_repository().exists(domain::Id::new(work.id.value)).await? { continue; }
+			}
 			// 既存 (store_id, category) がある場合はスキップ
 			let exists = self
 				.repositories
@@ -243,17 +240,21 @@ impl<R: RepositoriesExt> NativeHostSyncUseCase<R> {
 			match egs.as_ref() {
 				Some(egs) => {
 					collection_element_id = self.ensure_collection_for_egs(egs).await?;
-					self.repositories
-						.collection_repository()
-						.upsert_dlsite_mapping(&collection_element_id, &store_id, &category)
-						.await?;
+					if let Some(work) = self.repositories.dlsite_work_repository().find_by_store_key(&store_id, &category).await? {
+						self.repositories
+							.collection_repository()
+							.upsert_work_mapping(&collection_element_id, work.id.value)
+							.await?;
+					}
 				}
 				None => {
 					collection_element_id = self.create_collection_without_egs(&gamename).await?;
-					self.repositories
-						.collection_repository()
-						.upsert_dlsite_mapping(&collection_element_id, &store_id, &category)
-						.await?;
+					if let Some(work) = self.repositories.dlsite_work_repository().find_by_store_key(&store_id, &category).await? {
+						self.repositories
+							.collection_repository()
+							.upsert_work_mapping(&collection_element_id, work.id.value)
+							.await?;
+					}
 				}
 			}
 			if !image_url.is_empty() {
@@ -266,20 +267,34 @@ impl<R: RepositoriesExt> NativeHostSyncUseCase<R> {
 				let _ = self.repositories.image_queue_repository()
 					.enqueue(&normalized, ImageSrcType::Url, &thumb_dst, ImagePreprocess::ResizeForWidth400)
 					.await;
+				// DLsite 作品の別名パスでも保存
+				let alias = self.resolver.thumbnail_alias_dlsite_png_path(&category, &store_id);
+				let _ = self.repositories.image_queue_repository()
+					.enqueue(&normalized, ImageSrcType::Url, &alias, ImagePreprocess::ResizeForWidth400)
+					.await;
 			}
 			success += 1;
 		}
 		Ok(success)
 	}
 
-	/// DMM のパック一覧を取得し、`store_id` の配列を返す。
-	pub async fn get_dmm_pack_store_ids(&self) -> anyhow::Result<Vec<String>> {
-		let list = self
-			.repositories
-			.dmm_pack_repository()
-			.list()
-			.await?;
-		Ok(list.into_iter().map(|m| m.store_id).collect())
+	/// DMM の omit が付与された作品の一覧を返す（DMM情報必須）。
+	pub async fn list_dmm_omit_works(&self) -> anyhow::Result<Vec<DmmOmitItem>> {
+		let all = self.repositories.work_repository().list_all_details().await?;
+		let mut out: Vec<DmmOmitItem> = Vec::new();
+		for w in all.into_iter() {
+			if w.is_dmm_omitted {
+				if let Some(dmm) = w.dmm {
+					out.push(DmmOmitItem {
+						work_id: w.work.id.value,
+						store_id: dmm.store_id,
+						category: dmm.category,
+						subcategory: dmm.subcategory,
+					});
+				}
+			}
+		}
+		Ok(out)
 	}
 }
 
@@ -305,6 +320,14 @@ pub struct HostStatusData {
 	pub last_sync_seconds: Option<i64>,
 	pub total_synced: u32,
 	pub connected_extensions: Vec<String>,
+}
+
+#[derive(Clone, Debug)]
+pub struct DmmOmitItem {
+	pub work_id: i32,
+	pub store_id: String,
+	pub category: String,
+	pub subcategory: String,
 }
 
 #[cfg(test)]
