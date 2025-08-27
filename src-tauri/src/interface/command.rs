@@ -863,9 +863,8 @@ pub async fn get_native_host_logs(
         _ => None,
     };
 
-    let repo = modules.repositories().host_log_repository();
-    let items = repo.list_logs(limit, offset, level, typ).await?;
-    let total = repo.count_logs(level, typ).await?;
+    let items = modules.host_log_use_case().list_logs(limit, offset, level, typ).await?;
+    let total = modules.host_log_use_case().count_logs(level, typ).await?;
 
     Ok(HostLogsResponse {
         items: items
@@ -1024,26 +1023,26 @@ pub async fn work_omit_all(modules: State<'_, Arc<Modules>>) -> anyhow::Result<V
 
 #[tauri::command]
 pub async fn work_pack_add(modules: State<'_, Arc<Modules>>, work_id: i32) -> anyhow::Result<(), CommandError> {
-    modules.repositories().dmm_pack_repository().add(domain::Id::new(work_id)).await?;
+    modules.dmm_pack_use_case().add(domain::Id::new(work_id)).await?;
     Ok(())
 }
 
 #[tauri::command]
 pub async fn work_pack_remove(modules: State<'_, Arc<Modules>>, work_id: i32) -> anyhow::Result<(), CommandError> {
-    modules.repositories().dmm_pack_repository().remove(domain::Id::new(work_id)).await?;
+    modules.dmm_pack_use_case().remove(domain::Id::new(work_id)).await?;
     Ok(())
 }
 
 #[tauri::command]
 pub async fn work_pack_all(modules: State<'_, Arc<Modules>>) -> anyhow::Result<Vec<i32>, CommandError> {
-    let list = modules.repositories().dmm_pack_repository().list().await?;
+    let list = modules.dmm_pack_use_case().list().await?;
     Ok(list.into_iter().map(|e| e.work_id.value).collect())
 }
 
 // ========== WorkDetails ==========
 #[tauri::command]
 pub async fn get_work_details_all(modules: State<'_, Arc<Modules>>) -> anyhow::Result<Vec<WorkDetailsVm>, CommandError> {
-    let rows = modules.repositories().work_repository().list_all_details().await?;
+    let rows = modules.work_use_case().list_all_details().await?;
     Ok(rows.into_iter().map(|w| w.into()).collect())
 }
 

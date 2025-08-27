@@ -22,6 +22,9 @@ use crate::{
         explored_cache::ExploredCacheUseCase, extension_manager::ExtensionManagerUseCase,
         file::FileUseCase, image::ImageUseCase, process::ProcessUseCase,
         work_omit::WorkOmitUseCase,
+        host_log::HostLogUseCase,
+        dmm_pack::DmmPackUseCase,
+        work::WorkUseCase,
     },
 };
 
@@ -35,6 +38,9 @@ pub struct Modules {
     process_use_case: ProcessUseCase<Windows>,
     image_use_case: ImageUseCase<ThumbnailServiceImpl, TauriIconServiceImpl>,
     work_omit_use_case: WorkOmitUseCase<Repositories>,
+    host_log_use_case: HostLogUseCase<Repositories>,
+    dmm_pack_use_case: DmmPackUseCase<Repositories>,
+    work_use_case: WorkUseCase<Repositories>,
     pubsub: PubSub,
 }
 pub trait ModulesExt {
@@ -51,6 +57,9 @@ pub trait ModulesExt {
     fn process_use_case(&self) -> &ProcessUseCase<Self::Windows>;
     fn image_use_case(&self) -> &ImageUseCase<ThumbnailServiceImpl, TauriIconServiceImpl>;
     fn work_omit_use_case(&self) -> &WorkOmitUseCase<Self::Repositories>;
+    fn host_log_use_case(&self) -> &HostLogUseCase<Self::Repositories>;
+    fn dmm_pack_use_case(&self) -> &DmmPackUseCase<Self::Repositories>;
+    fn work_use_case(&self) -> &WorkUseCase<Self::Repositories>;
     fn pubsub(&self) -> &Self::PubSub;
 }
 
@@ -84,6 +93,9 @@ impl ModulesExt for Modules {
         &self.image_use_case
     }
     fn work_omit_use_case(&self) -> &WorkOmitUseCase<Self::Repositories> { &self.work_omit_use_case }
+    fn host_log_use_case(&self) -> &HostLogUseCase<Self::Repositories> { &self.host_log_use_case }
+    fn dmm_pack_use_case(&self) -> &DmmPackUseCase<Self::Repositories> { &self.dmm_pack_use_case }
+    fn work_use_case(&self) -> &WorkUseCase<Self::Repositories> { &self.work_use_case }
     fn pubsub(&self) -> &Self::PubSub {
         &self.pubsub
     }
@@ -113,6 +125,9 @@ impl Modules {
 
         let image_use_case: ImageUseCase<ThumbnailServiceImpl, TauriIconServiceImpl> = ImageUseCase::new(thumbs.clone(), Arc::new(icons), resolver.clone());
         let work_omit_use_case: WorkOmitUseCase<Repositories> = WorkOmitUseCase::new(repositories.clone());
+        let host_log_use_case: HostLogUseCase<Repositories> = HostLogUseCase::new(repositories.clone());
+        let dmm_pack_use_case: DmmPackUseCase<Repositories> = DmmPackUseCase::new(repositories.clone());
+        let work_use_case: WorkUseCase<Repositories> = WorkUseCase::new(repositories.clone());
 
         Self {
             repositories,
@@ -124,6 +139,9 @@ impl Modules {
             process_use_case,
             image_use_case,
             work_omit_use_case,
+            host_log_use_case,
+            dmm_pack_use_case,
+            work_use_case,
             pubsub,
         }
     }

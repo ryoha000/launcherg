@@ -16,6 +16,9 @@ pub mod models;
 pub mod process;
 pub mod native_host_sync;
 pub mod work_omit;
+pub mod host_log;
+pub mod dmm_pack;
+pub mod work;
 #[cfg(test)]
 mod repositorymock;
 #[cfg(test)]
