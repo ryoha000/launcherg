@@ -51,6 +51,5 @@ CREATE TABLE IF NOT EXISTS work_collection_elements (
     FOREIGN KEY(collection_element_id) REFERENCES collection_elements(id) ON DELETE CASCADE
 );
 
--- 1作品→1CE を強制する場合に有効化
--- CREATE UNIQUE INDEX IF NOT EXISTS uq_work_single_map ON work_collection_elements(work_id);
+CREATE UNIQUE INDEX IF NOT EXISTS uq_work_single_map ON work_collection_elements(work_id);
 
