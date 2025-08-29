@@ -224,7 +224,6 @@ impl WorkRepository for RepositoryImpl<Work> {
         let pool = self.pool.0.clone();
         let (id,): (i64,) = query_as(
             r#"INSERT INTO works (title) VALUES (?)
-               ON CONFLICT(title) DO UPDATE SET updated_at=CURRENT_TIMESTAMP
                RETURNING id"#,
         )
         .bind(&new_work.title)

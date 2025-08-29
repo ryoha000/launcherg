@@ -37,6 +37,7 @@ winreg = { workspace = true }
 zip = { workspace = true }
 semver = { workspace = true }
 mockall = { workspace = true }
+futures = { workspace = true }
 
 [dev-dependencies]
 mockall = { workspace = true }

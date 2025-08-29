@@ -5,3 +5,4 @@ pub mod pubsubimpl;
 pub mod repositoryimpl;
 pub mod thumbnail;
 pub mod windowsimpl;
+pub mod sqliterepository;

@@ -198,7 +198,15 @@ impl<R: RepositoriesExt> NativeHostSyncUseCase<R> {
 		// 既存マッピングの一括取得（work_id 直引き）
 		let mut mapped_keys: HashMap<DmmKey, domain::Id<domain::collection::CollectionElement>> = HashMap::new();
 		{
-			let work_ids: Vec<i32> = work_id_by_key.values().filter_map(|v| *v).collect();
+			// HashMap の列挙順に依存しないよう、入力順 `keys` に基づいて work_ids を構築する
+			let work_ids: Vec<i32> = keys
+				.iter()
+				.filter_map(|(sid, cat, sub)| {
+					work_id_by_key
+						.get(&DmmKey { store_id: sid.clone(), category: cat.clone(), subcategory: sub.clone() })
+						.and_then(|v| *v)
+				})
+				.collect();
 			let existing = self.repositories.collection_repository().get_collection_ids_by_work_ids(&work_ids).await?;
 			// work_id -> CE を key へ戻す
 			let mut keys_by_work: HashMap<i32, Vec<DmmKey>> = HashMap::new();

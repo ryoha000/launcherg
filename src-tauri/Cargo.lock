@@ -2669,6 +2669,7 @@ dependencies = [
  "domain",
  "env_logger",
  "fast_image_resize",
+ "futures",
  "ico 0.3.0",
  "image 0.24.9",
  "log",
