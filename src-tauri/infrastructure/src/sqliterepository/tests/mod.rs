@@ -13,6 +13,7 @@ mod embedded {
 }
 
 mod transaction_test;
+mod works_test;
 
 pub struct TestDatabase {
     pub pool: Pool<Sqlite>,

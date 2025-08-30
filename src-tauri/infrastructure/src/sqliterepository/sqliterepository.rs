@@ -31,9 +31,29 @@ pub struct SqliteRepository<'a> {
 
 impl<'a> RepositoriesExt for SqliteRepository<'a> {
     type WorkRepo = SqliteRepository<'a>;
+    type DmmWorkRepo = SqliteRepository<'a>;
+    type DlsiteWorkRepo = SqliteRepository<'a>;
+    type AllGameCacheRepo = SqliteRepository<'a>;
+    type ExploredCacheRepo = SqliteRepository<'a>;
+    type ImageQueueRepo = SqliteRepository<'a>;
+    type HostLogRepo = SqliteRepository<'a>;
+    type WorkOmitRepo = SqliteRepository<'a>;
+    type WorkParentPacksRepo = SqliteRepository<'a>;
+    type DmmPackRepo = SqliteRepository<'a>;
+    type CollectionRepo = SqliteRepository<'a>;
     type TransactionRepo = SqliteRepository<'a>;
 
     fn work(&mut self) -> &mut Self::WorkRepo { self }
+    fn dmm_work(&mut self) -> &mut Self::DmmWorkRepo { self }
+    fn dlsite_work(&mut self) -> &mut Self::DlsiteWorkRepo { self }
+    fn all_game_cache(&mut self) -> &mut Self::AllGameCacheRepo { self }
+    fn explored_cache(&mut self) -> &mut Self::ExploredCacheRepo { self }
+    fn image_queue(&mut self) -> &mut Self::ImageQueueRepo { self }
+    fn host_log(&mut self) -> &mut Self::HostLogRepo { self }
+    fn work_omit(&mut self) -> &mut Self::WorkOmitRepo { self }
+    fn work_parent_packs(&mut self) -> &mut Self::WorkParentPacksRepo { self }
+    fn dmm_pack(&mut self) -> &mut Self::DmmPackRepo { self }
+    fn collection(&mut self) -> &mut Self::CollectionRepo { self }
     fn transaction(&mut self) -> &mut Self::TransactionRepo { self }
 }
 

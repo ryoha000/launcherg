@@ -1,9 +1,9 @@
 use std::collections::BTreeMap;
 
-use domain::{repositoryv2::works::WorkRepository, works::{DlsiteWork, DmmWork, NewWork, Work, WorkDetails}, Id};
+use domain::{repositoryv2::works::{WorkRepository, DmmWorkRepository, DlsiteWorkRepository}, works::{DlsiteWork, DmmWork, NewDlsiteWork, NewDmmWork, NewWork, Work, WorkDetails}, Id};
 use sqlx::query_as;
 
-use crate::{repositoryimpl::models::works::{WorkDetailsRow, WorkTable}, sqliterepository::sqliterepository::SqliteRepository};
+use crate::{sqliterepository::models::works::{WorkDetailsRow, WorkTable}, sqliterepository::sqliterepository::SqliteRepository};
 
 impl<'a> WorkRepository for SqliteRepository<'a> {
     async fn upsert(&mut self, new_work: &NewWork) -> anyhow::Result<Id<Work>> {
@@ -112,5 +112,215 @@ impl<'a> WorkRepository for SqliteRepository<'a> {
         }
 
         Ok(map.into_values().collect())
+    }
+}
+
+impl<'a> DmmWorkRepository for SqliteRepository<'a> {
+    async fn upsert(&mut self, new_work: &NewDmmWork) -> anyhow::Result<Id<DmmWork>> {
+        let new_work = new_work.clone();
+        let id = self.executor.with_conn(|conn| {
+            Box::pin(async move {
+                let mut tx = sqlx::Acquire::begin(conn).await?;
+
+                let existing: Option<(i64, i64)> = sqlx::query_as(
+                    r#"SELECT id, work_id FROM dmm_works WHERE store_id=? LIMIT 1"#,
+                )
+                .bind(&new_work.store_id)
+                .fetch_optional(&mut *tx)
+                .await?;
+
+                let work_id: i64 = if let Some((_id, work_id)) = existing {
+                    work_id
+                } else {
+                    let (wid,): (i64,) = sqlx::query_as(
+                        r#"INSERT INTO works (title) VALUES (?) RETURNING id"#,
+                    )
+                    .bind(&new_work.title)
+                    .fetch_one(&mut *tx)
+                    .await?;
+                    wid
+                };
+
+                let dmm_id: i64 = if let Some((id, existing_work_id)) = existing {
+                    let _: (i64,) = sqlx::query_as(
+                        r#"UPDATE works SET title=?, updated_at=CURRENT_TIMESTAMP WHERE id=? RETURNING id"#,
+                    )
+                    .bind(&new_work.title)
+                    .bind(existing_work_id)
+                    .fetch_one(&mut *tx)
+                    .await?;
+
+                    let (_row,): (i64,) = sqlx::query_as(
+                        r#"UPDATE dmm_works SET category=?, subcategory=?, work_id=?, updated_at=CURRENT_TIMESTAMP WHERE id=? RETURNING id"#,
+                    )
+                    .bind(&new_work.category)
+                    .bind(&new_work.subcategory)
+                    .bind(work_id)
+                    .bind(id)
+                    .fetch_one(&mut *tx)
+                    .await?;
+                    _row
+                } else {
+                    let (id,): (i64,) = sqlx::query_as(
+                        r#"INSERT INTO dmm_works (store_id, category, subcategory, work_id) VALUES (?, ?, ?, ?) RETURNING id"#,
+                    )
+                    .bind(&new_work.store_id)
+                    .bind(&new_work.category)
+                    .bind(&new_work.subcategory)
+                    .bind(work_id)
+                    .fetch_one(&mut *tx)
+                    .await?;
+                    id
+                };
+
+                tx.commit().await?;
+                Ok::<i64, anyhow::Error>(dmm_id)
+            })
+        }).await?;
+        Ok(Id::new(id as i32))
+    }
+
+    async fn find_by_store_key(&mut self, store_id: &str, category: &str, subcategory: &str) -> anyhow::Result<Option<DmmWork>> {
+        let store_id = store_id.to_string();
+        let category = category.to_string();
+        let subcategory = subcategory.to_string();
+        let row = self.executor.with_conn(|conn| {
+            Box::pin(async move {
+                let row: Option<crate::sqliterepository::models::works::DmmWorkTable> = sqlx::query_as(
+                    r#"SELECT w.id as id, ws.title as title, w.store_id, w.category, w.subcategory, w.work_id
+                       FROM dmm_works w
+                       JOIN works ws ON ws.id = w.work_id
+                       WHERE w.store_id=? AND w.category=? AND w.subcategory=?
+                       LIMIT 1"#,
+                )
+                .bind(store_id)
+                .bind(category)
+                .bind(subcategory)
+                .fetch_optional(conn)
+                .await?;
+                Ok(row)
+            })
+        }).await?;
+        Ok(row.map(|t| t.try_into()).transpose()?)
+    }
+
+    async fn find_by_store_keys(&mut self, keys: &[(String, String, String)]) -> anyhow::Result<Vec<DmmWork>> {
+        use sqlx::QueryBuilder;
+        if keys.is_empty() { return Ok(Vec::new()); }
+        let keys = keys.to_vec();
+        let rows = self.executor.with_conn(|conn| {
+            Box::pin(async move {
+                let mut qb = QueryBuilder::new(
+                    r#"SELECT w.id as id, ws.title as title, w.store_id, w.category, w.subcategory, w.work_id
+                        FROM dmm_works w
+                        JOIN works ws ON ws.id = w.work_id
+                        WHERE (w.store_id, w.category, w.subcategory) IN ("#,
+                );
+                {
+                    let mut separated = qb.separated(", ");
+                    for (store_id, category, subcategory) in keys.iter() {
+                        separated.push_unseparated("(");
+                        separated.push_bind(store_id);
+                        separated.push_unseparated(", ");
+                        separated.push_bind(category);
+                        separated.push_unseparated(", ");
+                        separated.push_bind(subcategory);
+                        separated.push_unseparated(")");
+                    }
+                }
+                qb.push(")");
+
+                let rows: Vec<crate::sqliterepository::models::works::DmmWorkTable> = qb
+                    .build_query_as()
+                    .fetch_all(conn)
+                    .await?;
+                Ok(rows)
+            })
+        }).await?;
+        Ok(rows.into_iter().map(|t| t.try_into()).collect::<anyhow::Result<Vec<_>>>()?)
+    }
+}
+
+impl<'a> DlsiteWorkRepository for SqliteRepository<'a> {
+    async fn upsert(&mut self, new_work: &NewDlsiteWork) -> anyhow::Result<Id<DlsiteWork>> {
+        let new_work = new_work.clone();
+        let id = self.executor.with_conn(|conn| {
+            Box::pin(async move {
+                let mut tx = sqlx::Acquire::begin(conn).await?;
+
+                let existing: Option<(i64, i64)> = sqlx::query_as(
+                    r#"SELECT id, work_id FROM dlsite_works WHERE store_id=? LIMIT 1"#,
+                )
+                .bind(&new_work.store_id)
+                .fetch_optional(&mut *tx)
+                .await?;
+
+                let work_id: i64 = if let Some((_id, work_id)) = existing { work_id } else {
+                    let (wid,): (i64,) = sqlx::query_as(
+                        r#"INSERT INTO works (title) VALUES (?) RETURNING id"#,
+                    )
+                    .bind(&new_work.title)
+                    .fetch_one(&mut *tx)
+                    .await?;
+                    wid
+                };
+
+                let dl_id: i64 = if let Some((id, existing_work_id)) = existing {
+                    let _: (i64,) = sqlx::query_as(
+                        r#"UPDATE works SET title=?, updated_at=CURRENT_TIMESTAMP WHERE id=? RETURNING id"#,
+                    )
+                    .bind(&new_work.title)
+                    .bind(existing_work_id)
+                    .fetch_one(&mut *tx)
+                    .await?;
+
+                    let (_row,): (i64,) = sqlx::query_as(
+                        r#"UPDATE dlsite_works SET category=?, work_id=?, updated_at=CURRENT_TIMESTAMP WHERE id=? RETURNING id"#,
+                    )
+                    .bind(&new_work.category)
+                    .bind(work_id)
+                    .bind(id)
+                    .fetch_one(&mut *tx)
+                    .await?;
+                    _row
+                } else {
+                    let (id,): (i64,) = sqlx::query_as(
+                        r#"INSERT INTO dlsite_works (store_id, category, work_id) VALUES (?, ?, ?) RETURNING id"#,
+                    )
+                    .bind(&new_work.store_id)
+                    .bind(&new_work.category)
+                    .bind(work_id)
+                    .fetch_one(&mut *tx)
+                    .await?;
+                    id
+                };
+
+                tx.commit().await?;
+                Ok::<i64, anyhow::Error>(dl_id)
+            })
+        }).await?;
+        Ok(Id::new(id as i32))
+    }
+
+    async fn find_by_store_key(&mut self, store_id: &str, category: &str) -> anyhow::Result<Option<DlsiteWork>> {
+        let store_id = store_id.to_string();
+        let category = category.to_string();
+        let row = self.executor.with_conn(|conn| {
+            Box::pin(async move {
+                let row: Option<crate::sqliterepository::models::works::DlsiteWorkTable> = sqlx::query_as(
+                    r#"SELECT w.id as id, ws.title as title, w.store_id, w.category, w.work_id
+                       FROM dlsite_works w
+                       JOIN works ws ON ws.id = w.work_id
+                       WHERE w.store_id=? AND w.category=?
+                       LIMIT 1"#,
+                )
+                .bind(store_id)
+                .bind(category)
+                .fetch_optional(conn)
+                .await?;
+                Ok(row)
+            })
+        }).await?;
+        Ok(row.map(|t| t.try_into()).transpose()?)
     }
 }
