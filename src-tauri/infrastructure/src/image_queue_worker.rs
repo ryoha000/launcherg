@@ -23,19 +23,19 @@ impl<R: RepositoriesExt> ImageQueueWorker<R> {
 
 	pub async fn drain_until_empty(&self) -> anyhow::Result<()> {
 		{
-			let mut repos = self.repositories.lock().await;
+			let repos = self.repositories.lock().await;
 			repos.host_log().insert_log(HostLogLevel::Info, HostLogType::ImageQueueWorkerStarted, "image_queue_worker started").await.ok();
 		}
 
 		loop {
 			let items = {
-				let mut repos = self.repositories.lock().await;
+				let repos = self.repositories.lock().await;
 				repos.image_queue().list_unfinished_oldest(50).await?
 			};
 			if items.is_empty() { break; }
 			for item in items {
 				{
-					let mut repos = self.repositories.lock().await;
+					let repos = self.repositories.lock().await;
 					repos.host_log().insert_log(HostLogLevel::Info, HostLogType::ImageQueueItemStarted, &format!("start id={} dst={} src={}", item.id.value, item.dst_path, item.src)).await.ok();
 				}
 				let result: anyhow::Result<()> = async {
@@ -78,7 +78,7 @@ impl<R: RepositoriesExt> ImageQueueWorker<R> {
 						let finished_id = item.id.clone();
 						let finished_id_value = finished_id.value;
 						{
-							let mut repos = self.repositories.lock().await;
+							let repos = self.repositories.lock().await;
 							repos.image_queue().mark_finished(finished_id).await.ok();
 							repos.host_log().insert_log(HostLogLevel::Info, HostLogType::ImageQueueItemSucceeded, &format!("done id={}", finished_id_value)).await.ok();
 						}
@@ -87,7 +87,7 @@ impl<R: RepositoriesExt> ImageQueueWorker<R> {
 						let failed_id = item.id.clone();
 						let failed_id_value = failed_id.value;
 						{
-							let mut repos = self.repositories.lock().await;
+							let repos = self.repositories.lock().await;
 							repos.image_queue().mark_failed(failed_id, &format!("{}", e)).await.ok();
 							repos.host_log().insert_log(HostLogLevel::Error, HostLogType::ImageQueueItemFailed, &format!("failed id={} err={}", failed_id_value, e)).await.ok();
 						}
@@ -97,7 +97,7 @@ impl<R: RepositoriesExt> ImageQueueWorker<R> {
 		}
 
 		{
-			let mut repos = self.repositories.lock().await;
+			let repos = self.repositories.lock().await;
 			repos.host_log().insert_log(HostLogLevel::Info, HostLogType::ImageQueueWorkerFinished, "image_queue_worker finished").await.ok();
 		}
 		Ok(())

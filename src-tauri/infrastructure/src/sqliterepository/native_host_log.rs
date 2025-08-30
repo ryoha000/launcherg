@@ -2,7 +2,6 @@ use domain::repository::native_host_log::NativeHostLogRepository;
 use domain::native_host_log::{HostLogLevel, HostLogType, NativeHostLogRow};
 use domain::Id;
 use crate::sqliterepository::models::native_host_log::NativeHostLogTable;
-use sqlx::Row;
 use chrono::TimeZone;
 use crate::sqliterepository::sqliterepository::RepositoryImpl;
 

@@ -10,7 +10,7 @@ use domain::{
     Id,
 };
 use domain::repository::collection::CollectionRepository;
-use sqlx::{query, query_as, Row, Acquire};
+use sqlx::{query, query_as, Row};
 
 use crate::sqliterepository::models::collection::{
     CollectionElementTable, CollectionElementInfoTable, CollectionElementInstallTable,

@@ -367,8 +367,11 @@ mod tests {
         // 実行と時間計測
         use std::time::Instant;
         let start = Instant::now();
+        println!("start sync");
         let synced = usecase.sync_dmm_games(params).await.unwrap();
         let elapsed = start.elapsed();
+        println!("synced: {}", synced);
+        println!("elapsed: {:?}", elapsed);
         assert_eq!(synced, 1000, "同期件数が一致すること");
         assert!(elapsed.as_secs_f64() < 20.0, "1000件同期が20秒未満で終わること。実測: {:?}", elapsed);
     }
