@@ -1,4 +1,4 @@
-use domain::{repositoryv2::dmm_work_pack::DmmPackRepository, dmm_work_pack::DmmWorkPack, works::Work, Id};
+use domain::{repository::dmm_work_pack::DmmPackRepository, dmm_work_pack::DmmWorkPack, works::Work, Id};
 use crate::sqliterepository::sqliterepository::SqliteRepository;
 
 impl<'a> DmmPackRepository for SqliteRepository<'a> {

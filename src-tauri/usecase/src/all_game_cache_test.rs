@@ -6,7 +6,7 @@ mod tests {
         all_game_cache::{
             AllGameCacheOne, AllGameCacheOneWithThumbnailUrl, NewAllGameCacheOne,
         },
-        repositoryv2::all_game_cache::MockAllGameCacheRepository,
+        repository::all_game_cache::MockAllGameCacheRepository,
     };
     use crate::repositorymock::TestRepositories;
     use crate::all_game_cache::AllGameCacheUseCase;

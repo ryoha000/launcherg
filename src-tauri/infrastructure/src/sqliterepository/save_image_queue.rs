@@ -1,4 +1,4 @@
-use domain::{repositoryv2::save_image_queue::ImageSaveQueueRepository, save_image_queue::{ImageSaveQueueRow, ImageSrcType, ImagePreprocess}, Id};
+use domain::{repository::save_image_queue::ImageSaveQueueRepository, save_image_queue::{ImageSaveQueueRow, ImageSrcType, ImagePreprocess}, Id};
 use crate::sqliterepository::models::save_image_queue::SaveImageQueueTable;
 use crate::sqliterepository::sqliterepository::SqliteRepository;
 

@@ -1,6 +1,6 @@
 use std::collections::BTreeMap;
 
-use domain::{repositoryv2::works::{WorkRepository, DmmWorkRepository, DlsiteWorkRepository}, works::{DlsiteWork, DmmWork, NewDlsiteWork, NewDmmWork, NewWork, Work, WorkDetails}, Id};
+use domain::{repository::works::{WorkRepository, DmmWorkRepository, DlsiteWorkRepository}, works::{DlsiteWork, DmmWork, NewDlsiteWork, NewDmmWork, NewWork, Work, WorkDetails}, Id};
 use sqlx::query_as;
 
 use crate::{sqliterepository::models::works::{WorkDetailsRow, WorkTable}, sqliterepository::sqliterepository::SqliteRepository};

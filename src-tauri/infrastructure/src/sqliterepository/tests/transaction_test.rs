@@ -1,6 +1,6 @@
 use super::TestDatabase;
 use futures::{FutureExt, future::BoxFuture};
-use domain::repositoryv2::{RepositoriesExt, works::WorkRepository, transaction::TransactionRepository};
+use domain::repository::{RepositoriesExt, works::WorkRepository, transaction::TransactionRepository};
 use domain::works::NewWork;
 
 #[tokio::test]

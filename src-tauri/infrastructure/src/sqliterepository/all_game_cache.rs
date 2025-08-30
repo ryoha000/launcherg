@@ -1,6 +1,6 @@
 use chrono::{DateTime, Local};
 use sqlx::Row;
-use domain::{all_game_cache::{AllGameCache, AllGameCacheOneWithThumbnailUrl, NewAllGameCacheOne}, repositoryv2::all_game_cache::AllGameCacheRepository};
+use domain::{all_game_cache::{AllGameCache, AllGameCacheOneWithThumbnailUrl, NewAllGameCacheOne}, repository::all_game_cache::AllGameCacheRepository};
 
 use crate::sqliterepository::models::all_game_cache::AllGameCacheTable;
 use crate::sqliterepository::sqliterepository::SqliteRepository;

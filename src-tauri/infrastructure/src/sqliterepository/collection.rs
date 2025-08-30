@@ -9,7 +9,7 @@ use domain::{
     },
     Id,
 };
-use domain::repositoryv2::collection::CollectionRepository;
+use domain::repository::collection::CollectionRepository;
 use sqlx::{query, query_as, Row, Acquire};
 
 use crate::sqliterepository::models::collection::{

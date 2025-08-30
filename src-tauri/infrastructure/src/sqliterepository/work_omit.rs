@@ -1,4 +1,4 @@
-use domain::{repositoryv2::work_omit::WorkOmitRepository, work_omit::WorkOmit, works::Work, Id};
+use domain::{repository::work_omit::WorkOmitRepository, work_omit::WorkOmit, works::Work, Id};
 use crate::sqliterepository::sqliterepository::SqliteRepository;
 
 impl<'a> WorkOmitRepository for SqliteRepository<'a> {

@@ -6,7 +6,7 @@ use domain::{
     works::Work,
     Id,
 };
-use domain::repositoryv2::{RepositoriesExt, work_omit::WorkOmitRepository};
+use domain::repository::{RepositoriesExt, work_omit::WorkOmitRepository};
 
 #[derive(new)]
 pub struct WorkOmitUseCase<R: RepositoriesExt> {

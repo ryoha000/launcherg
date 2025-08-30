@@ -11,7 +11,7 @@ use domain::{
     },
     Id,
 };
-use domain::repositoryv2::{RepositoriesExt, collection::CollectionRepository};
+use domain::repository::{RepositoriesExt, collection::CollectionRepository};
 
 #[derive(new)]
 pub struct CollectionUseCase<R: RepositoriesExt, TS: ThumbnailService> {

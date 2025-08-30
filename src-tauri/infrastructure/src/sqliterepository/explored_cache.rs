@@ -1,4 +1,4 @@
-use domain::{explored_cache::ExploredCache, repositoryv2::explored_cache::ExploredCacheRepository};
+use domain::{explored_cache::ExploredCache, repository::explored_cache::ExploredCacheRepository};
 use crate::sqliterepository::sqliterepository::SqliteRepository;
 
 impl<'a> ExploredCacheRepository for SqliteRepository<'a> {

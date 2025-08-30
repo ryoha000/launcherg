@@ -6,7 +6,7 @@ use derive_new::new;
 use domain::{
     all_game_cache::{AllGameCache, AllGameCacheOneWithThumbnailUrl, NewAllGameCacheOne},
 };
-use domain::repositoryv2::{RepositoriesExt, all_game_cache::AllGameCacheRepository};
+use domain::repository::{RepositoriesExt, all_game_cache::AllGameCacheRepository};
 
 #[derive(new)]
 pub struct AllGameCacheUseCase<R: RepositoriesExt> {

@@ -1,4 +1,4 @@
-use domain::repositoryv2::native_host_log::NativeHostLogRepository;
+use domain::repository::native_host_log::NativeHostLogRepository;
 use domain::native_host_log::{HostLogLevel, HostLogType, NativeHostLogRow};
 use domain::Id;
 use crate::sqliterepository::models::native_host_log::NativeHostLogTable;

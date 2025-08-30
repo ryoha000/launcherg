@@ -6,13 +6,13 @@ use std::sync::{Arc, Mutex};
 
 use domain::{
     collection::CollectionElement,
-    repositoryv2::collection::MockCollectionRepository,
-    repositoryv2::save_image_queue::MockImageSaveQueueRepository,
-    repositoryv2::native_host_log::MockNativeHostLogRepository,
+    repository::collection::MockCollectionRepository,
+    repository::save_image_queue::MockImageSaveQueueRepository,
+    repository::native_host_log::MockNativeHostLogRepository,
     Id,
 };
 use crate::repositorymock::TestRepositories;
-use domain::repositoryv2::work_omit::MockWorkOmitRepository;
+use domain::repository::work_omit::MockWorkOmitRepository;
 
 #[derive(Clone, Default)]
 struct TestThumbnailService {

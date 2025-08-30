@@ -4,7 +4,7 @@ mod tests {
     use std::sync::Arc;
 
     use domain::{
-        explored_cache::ExploredCache, repositoryv2::explored_cache::MockExploredCacheRepository,
+        explored_cache::ExploredCache, repository::explored_cache::MockExploredCacheRepository,
     };
     use crate::repositorymock::TestRepositories;
     use crate::explored_cache::ExploredCacheUseCase;

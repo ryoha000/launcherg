@@ -1,5 +1,5 @@
 use super::TestDatabase;
-use domain::repositoryv2::{RepositoriesExt, works::{DmmWorkRepository, DlsiteWorkRepository, WorkRepository}};
+use domain::repository::{RepositoriesExt, works::{DmmWorkRepository, DlsiteWorkRepository, WorkRepository}};
 use domain::works::{NewDmmWork, NewDlsiteWork};
 
 #[tokio::test]

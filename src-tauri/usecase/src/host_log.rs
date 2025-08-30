@@ -4,7 +4,7 @@ use derive_new::new;
 use domain::{
     native_host_log::{HostLogLevel, HostLogType, NativeHostLogRow},
 };
-use domain::repositoryv2::{native_host_log::NativeHostLogRepository, RepositoriesExt};
+use domain::repository::{native_host_log::NativeHostLogRepository, RepositoriesExt};
 
 #[derive(new)]
 pub struct HostLogUseCase<R: RepositoriesExt> {

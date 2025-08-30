@@ -1,4 +1,4 @@
-use domain::repositoryv2::{RepositoriesExt};
+use domain::repository::{RepositoriesExt};
 use sqlx::{Pool, Sqlite};
 use sqlx::pool::PoolConnection;
 use futures::future::BoxFuture;

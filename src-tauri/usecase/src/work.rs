@@ -4,7 +4,7 @@ use derive_new::new;
 use domain::{
     works::WorkDetails,
 };
-use domain::repositoryv2::{works::WorkRepository, RepositoriesExt};
+use domain::repository::{works::WorkRepository, RepositoriesExt};
 
 #[derive(new)]
 pub struct WorkUseCase<R: RepositoriesExt> {

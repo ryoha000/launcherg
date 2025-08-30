@@ -1,4 +1,4 @@
-use domain::{repositoryv2::work_parent_packs::WorkParentPacksRepository, works::Work, Id};
+use domain::{repository::work_parent_packs::WorkParentPacksRepository, works::Work, Id};
 use crate::sqliterepository::sqliterepository::SqliteRepository;
 
 impl<'a> WorkParentPacksRepository for SqliteRepository<'a> {

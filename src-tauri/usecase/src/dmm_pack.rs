@@ -6,7 +6,7 @@ use domain::{
     works::Work,
     Id,
 };
-use domain::repositoryv2::{dmm_work_pack::DmmPackRepository, RepositoriesExt};
+use domain::repository::{dmm_work_pack::DmmPackRepository, RepositoriesExt};
 
 #[derive(new)]
 pub struct DmmPackUseCase<R: RepositoriesExt> {

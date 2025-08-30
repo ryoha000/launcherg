@@ -3,7 +3,7 @@ use std::sync::Arc;
 use tauri::AppHandle;
 
 use crate::{
-    domain::{pubsub::PubSubService, repositoryv2::RepositoriesExt},
+    domain::{pubsub::PubSubService, repository::RepositoriesExt},
     domain::service::save_path_resolver::{DirsSavePathResolver},
     domain::windows::WindowsExt,
     infrastructure::{

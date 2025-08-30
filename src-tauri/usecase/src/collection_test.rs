@@ -7,7 +7,7 @@ mod tests {
     use domain::{
         collection::{
             CollectionElement, CollectionElementInfo, CollectionElementInstall, CollectionElementPaths, CollectionElementThumbnail, NewCollectionElement, NewCollectionElementInfo, ScannedGameElement
-        }, repositoryv2::collection::MockCollectionRepository, service::save_path_resolver::DirsSavePathResolver,
+        }, repository::collection::MockCollectionRepository, service::save_path_resolver::DirsSavePathResolver,
         thumbnail::MockThumbnailService,
         Id
     };

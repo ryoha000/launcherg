@@ -4,14 +4,14 @@
 
 use std::sync::Arc;
 use std::collections::{HashMap, HashSet};
-use domain::repositoryv2::work_omit::WorkOmitRepository;
-use domain::repositoryv2::works::{DmmWorkRepository, DlsiteWorkRepository};
+use domain::repository::work_omit::WorkOmitRepository;
+use domain::repository::works::{DmmWorkRepository, DlsiteWorkRepository};
 use derive_new::new;
-use domain::repositoryv2::{collection::CollectionRepository, RepositoriesExt};
-use domain::repositoryv2::works::WorkRepository;
-use domain::repositoryv2::work_parent_packs::WorkParentPacksRepository;
+use domain::repository::{collection::CollectionRepository, RepositoriesExt};
+use domain::repository::works::WorkRepository;
+use domain::repository::work_parent_packs::WorkParentPacksRepository;
 use domain::save_image_queue::{ImageSrcType, ImagePreprocess};
-use domain::repositoryv2::save_image_queue::ImageSaveQueueRepository;
+use domain::repository::save_image_queue::ImageSaveQueueRepository;
 use domain::service::save_path_resolver::{SavePathResolver, DirsSavePathResolver};
 
 /// 拡張から渡された image_url/thumbnail_url を保存に適したサムネイルURLへ正規化する
