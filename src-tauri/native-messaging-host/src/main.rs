@@ -12,15 +12,15 @@ use models::{
     packs::{GetDmmOmitWorksRequestTs, DmmOmitWorkItemTs, DmmOmitDmmPartTs},
 };
 use infrastructure::{
-    repositoryimpl::{driver::Db as RepoDb, repository::Repositories},
+    sqliterepository::{driver::Db as RepoDb, sqliterepository::{SqliteRepository, RepositoryExecutor}},
     image_queue_worker::ImageQueueWorker,
 };
 use usecase::native_host_sync::{NativeHostSyncUseCase, DmmSyncGameParam, DlsiteSyncGameParam, EgsInfo};
 use domain::service::save_path_resolver::{SavePathResolver, DirsSavePathResolver};
 
 struct AppCtx {
-    repositories: Arc<Repositories>,
-    sync_usecase: NativeHostSyncUseCase<Repositories>,
+    repositories: Arc<tokio::sync::Mutex<SqliteRepository<'static>>>,
+    sync_usecase: NativeHostSyncUseCase<SqliteRepository<'static>>,
     resolver: Arc<dyn SavePathResolver>,
 }
 
@@ -71,7 +71,8 @@ async fn main() {
 
     let db_path = usecase::native_host_sync::db_file_path();
     let repo_db = RepoDb::from_path(&db_path).await;
-    let repositories = Arc::new(Repositories::new(repo_db));
+    let repo = SqliteRepository::new(RepositoryExecutor::OwnedPool(repo_db.pool_arc()));
+    let repositories = Arc::new(tokio::sync::Mutex::new(repo));
     let resolver = Arc::new(DirsSavePathResolver::default());
     let sync_usecase = NativeHostSyncUseCase::new(repositories.clone(), resolver.clone());
     let ctx = AppCtx { repositories, sync_usecase, resolver };

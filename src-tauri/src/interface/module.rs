@@ -3,14 +3,14 @@ use std::sync::Arc;
 use tauri::AppHandle;
 
 use crate::{
-    domain::{pubsub::PubSubService, repository::RepositoriesExt},
+    domain::{pubsub::PubSubService, repositoryv2::RepositoriesExt},
     domain::service::save_path_resolver::{DirsSavePathResolver},
     domain::windows::WindowsExt,
     infrastructure::{
         pubsubimpl::pubsub::{PubSub, PubSubExt},
-        repositoryimpl::{
+        sqliterepository::{
             driver::Db,
-            repository::Repositories,
+            sqliterepository::{SqliteRepository, RepositoryExecutor},
         },
         windowsimpl::windows::Windows,
         thumbnail::ThumbnailServiceImpl,
@@ -29,18 +29,18 @@ use crate::{
 };
 
 pub struct Modules {
-    repositories: Arc<Repositories>,
-    collection_use_case: CollectionUseCase<Repositories, ThumbnailServiceImpl>,
-    explored_cache_use_case: ExploredCacheUseCase<Repositories>,
+    repositories: Arc<tokio::sync::Mutex<SqliteRepository<'static>>>,
+    collection_use_case: CollectionUseCase<SqliteRepository<'static>, ThumbnailServiceImpl>,
+    explored_cache_use_case: ExploredCacheUseCase<SqliteRepository<'static>>,
     extension_manager_use_case: ExtensionManagerUseCase<PubSub, NativeMessagingHostClientFactoryImpl>,
     file_use_case: FileUseCase,
-    all_game_cache_use_case: AllGameCacheUseCase<Repositories>,
+    all_game_cache_use_case: AllGameCacheUseCase<SqliteRepository<'static>>,
     process_use_case: ProcessUseCase<Windows>,
     image_use_case: ImageUseCase<ThumbnailServiceImpl, TauriIconServiceImpl>,
-    work_omit_use_case: WorkOmitUseCase<Repositories>,
-    host_log_use_case: HostLogUseCase<Repositories>,
-    dmm_pack_use_case: DmmPackUseCase<Repositories>,
-    work_use_case: WorkUseCase<Repositories>,
+    work_omit_use_case: WorkOmitUseCase<SqliteRepository<'static>>,
+    host_log_use_case: HostLogUseCase<SqliteRepository<'static>>,
+    dmm_pack_use_case: DmmPackUseCase<SqliteRepository<'static>>,
+    work_use_case: WorkUseCase<SqliteRepository<'static>>,
     pubsub: PubSub,
 }
 pub trait ModulesExt {
@@ -64,12 +64,13 @@ pub trait ModulesExt {
 }
 
 impl ModulesExt for Modules {
-    type Repositories = Repositories;
+    type Repositories = SqliteRepository<'static>;
     type Windows = Windows;
     type PubSub = PubSub;
 
     fn repositories(&self) -> &Self::Repositories {
-        &*self.repositories
+        // 注意: 実運用では &MutexGuard を返す設計にしないと参照がずれる。ここは未使用のため未実装にしておくか、インターフェースを見直す。
+        unimplemented!("Modules::repositories() is no longer used directly with Mutex-wrapped repos");
     }
     fn collection_use_case(&self) -> &CollectionUseCase<Self::Repositories, ThumbnailServiceImpl> {
         &self.collection_use_case
@@ -105,7 +106,8 @@ impl Modules {
     pub async fn new(handle: &AppHandle) -> Self {
         let db = Db::new(handle).await;
 
-        let repositories = Arc::new(Repositories::new(db.clone()));
+        let repo = SqliteRepository::new(RepositoryExecutor::OwnedPool(db.pool_arc()));
+        let repositories = Arc::new(tokio::sync::Mutex::new(repo));
         let windows = Arc::new(Windows::new(Arc::new(handle.clone())));
         let pubsub = PubSub::new(Arc::new(handle.clone()));
         let resolver = Arc::new(DirsSavePathResolver::default());
@@ -116,7 +118,7 @@ impl Modules {
         let collection_use_case = CollectionUseCase::new(repositories.clone(), resolver.clone(), thumbs.clone());
         let explored_cache_use_case = ExploredCacheUseCase::new(repositories.clone());
         let extension_manager_use_case = ExtensionManagerUseCase::new(pubsub.clone(), Arc::new(NativeMessagingHostClientFactoryImpl));
-        let all_game_cache_use_case: AllGameCacheUseCase<Repositories> =
+        let all_game_cache_use_case: AllGameCacheUseCase<SqliteRepository> =
             AllGameCacheUseCase::new(repositories.clone());
 
         let file_use_case: FileUseCase = FileUseCase::new(resolver.clone());
@@ -124,10 +126,10 @@ impl Modules {
         let process_use_case: ProcessUseCase<Windows> = ProcessUseCase::new(windows.clone());
 
         let image_use_case: ImageUseCase<ThumbnailServiceImpl, TauriIconServiceImpl> = ImageUseCase::new(thumbs.clone(), Arc::new(icons), resolver.clone());
-        let work_omit_use_case: WorkOmitUseCase<Repositories> = WorkOmitUseCase::new(repositories.clone());
-        let host_log_use_case: HostLogUseCase<Repositories> = HostLogUseCase::new(repositories.clone());
-        let dmm_pack_use_case: DmmPackUseCase<Repositories> = DmmPackUseCase::new(repositories.clone());
-        let work_use_case: WorkUseCase<Repositories> = WorkUseCase::new(repositories.clone());
+        let work_omit_use_case: WorkOmitUseCase<SqliteRepository> = WorkOmitUseCase::new(repositories.clone());
+        let host_log_use_case: HostLogUseCase<SqliteRepository> = HostLogUseCase::new(repositories.clone());
+        let dmm_pack_use_case: DmmPackUseCase<SqliteRepository> = DmmPackUseCase::new(repositories.clone());
+        let work_use_case: WorkUseCase<SqliteRepository> = WorkUseCase::new(repositories.clone());
 
         Self {
             repositories,

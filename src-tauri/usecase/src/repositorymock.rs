@@ -14,23 +14,106 @@ mockall::mock! {
         type DlsiteWorkRepo = domain::repositoryv2::works::MockDlsiteWorkRepository;
         type WorkRepo = domain::repositoryv2::works::MockWorkRepository;
         type WorkParentPacksRepo = domain::repositoryv2::work_parent_packs::MockWorkParentPacksRepository;
+        type TransactionRepo = Self;
 
-        fn collection_repository(&self) -> &domain::repositoryv2::collection::MockCollectionRepository;
-        fn explored_cache_repository(&self) -> &domain::repositoryv2::explored_cache::MockExploredCacheRepository;
-        fn all_game_cache_repository(&self) -> &domain::repositoryv2::all_game_cache::MockAllGameCacheRepository;
-        fn image_queue_repository(&self) -> &domain::repositoryv2::save_image_queue::MockImageSaveQueueRepository;
-        fn host_log_repository(&self) -> &domain::repositoryv2::native_host_log::MockNativeHostLogRepository;
-        fn work_omit_repository(&self) -> &domain::repositoryv2::work_omit::MockWorkOmitRepository;
-        fn dmm_pack_repository(&self) -> &domain::repositoryv2::dmm_work_pack::MockDmmPackRepository;
-        fn dmm_work_repository(&self) -> &domain::repositoryv2::works::MockDmmWorkRepository;
-        fn dlsite_work_repository(&self) -> &domain::repositoryv2::works::MockDlsiteWorkRepository;
-        fn work_repository(&self) -> &domain::repositoryv2::works::MockWorkRepository;
-        fn work_parent_packs_repository(&self) -> &domain::repositoryv2::work_parent_packs::MockWorkParentPacksRepository;
+        fn work(&mut self) -> &mut domain::repositoryv2::works::MockWorkRepository;
+        fn dmm_work(&mut self) -> &mut domain::repositoryv2::works::MockDmmWorkRepository;
+        fn dlsite_work(&mut self) -> &mut domain::repositoryv2::works::MockDlsiteWorkRepository;
+        fn all_game_cache(&mut self) -> &mut domain::repositoryv2::all_game_cache::MockAllGameCacheRepository;
+        fn explored_cache(&mut self) -> &mut domain::repositoryv2::explored_cache::MockExploredCacheRepository;
+        fn image_queue(&mut self) -> &mut domain::repositoryv2::save_image_queue::MockImageSaveQueueRepository;
+        fn host_log(&mut self) -> &mut domain::repositoryv2::native_host_log::MockNativeHostLogRepository;
+        fn work_omit(&mut self) -> &mut domain::repositoryv2::work_omit::MockWorkOmitRepository;
+        fn work_parent_packs(&mut self) -> &mut domain::repositoryv2::work_parent_packs::MockWorkParentPacksRepository;
+        fn dmm_pack(&mut self) -> &mut domain::repositoryv2::dmm_work_pack::MockDmmPackRepository;
+        fn collection(&mut self) -> &mut domain::repositoryv2::collection::MockCollectionRepository;
+        fn transaction(&mut self) -> &mut Self;
+    }
+}
+
+#[cfg(test)]
+impl domain::repositoryv2::transaction::TransactionRepository for MockRepositoriesExtMock {
+    async fn with_transaction<F, R>(&mut self, f: F) -> anyhow::Result<R>
+    where
+        for<'cx> F: FnOnce(&'cx mut Self) -> futures::future::BoxFuture<'cx, anyhow::Result<R>> + Send,
+        R: Send,
+    {
+        f(self).await
     }
 }
 
 #[cfg(test)]
 impl MockRepositoriesExtMock {
+    pub fn with_default_work_repos(mut self) -> Self {
+        self
+    }
+}
+
+#[cfg(test)]
+pub struct TestRepositories {
+    pub collection: domain::repositoryv2::collection::MockCollectionRepository,
+    pub explored_cache: domain::repositoryv2::explored_cache::MockExploredCacheRepository,
+    pub all_game_cache: domain::repositoryv2::all_game_cache::MockAllGameCacheRepository,
+    pub image_queue: domain::repositoryv2::save_image_queue::MockImageSaveQueueRepository,
+    pub host_log: domain::repositoryv2::native_host_log::MockNativeHostLogRepository,
+    pub work_omit: domain::repositoryv2::work_omit::MockWorkOmitRepository,
+    pub dmm_pack: domain::repositoryv2::dmm_work_pack::MockDmmPackRepository,
+    pub dmm_work: domain::repositoryv2::works::MockDmmWorkRepository,
+    pub dlsite_work: domain::repositoryv2::works::MockDlsiteWorkRepository,
+    pub work: domain::repositoryv2::works::MockWorkRepository,
+    pub work_parent_packs: domain::repositoryv2::work_parent_packs::MockWorkParentPacksRepository,
+}
+
+#[cfg(test)]
+impl Default for TestRepositories {
+    fn default() -> Self {
+        Self {
+            collection: Default::default(),
+            explored_cache: Default::default(),
+            all_game_cache: Default::default(),
+            image_queue: Default::default(),
+            host_log: Default::default(),
+            work_omit: Default::default(),
+            dmm_pack: Default::default(),
+            dmm_work: Default::default(),
+            dlsite_work: Default::default(),
+            work: Default::default(),
+            work_parent_packs: Default::default(),
+        }
+    }
+}
+
+#[cfg(test)]
+impl domain::repositoryv2::RepositoriesExt for TestRepositories {
+    type WorkRepo = domain::repositoryv2::works::MockWorkRepository;
+    type DmmWorkRepo = domain::repositoryv2::works::MockDmmWorkRepository;
+    type DlsiteWorkRepo = domain::repositoryv2::works::MockDlsiteWorkRepository;
+    type AllGameCacheRepo = domain::repositoryv2::all_game_cache::MockAllGameCacheRepository;
+    type ExploredCacheRepo = domain::repositoryv2::explored_cache::MockExploredCacheRepository;
+    type ImageQueueRepo = domain::repositoryv2::save_image_queue::MockImageSaveQueueRepository;
+    type HostLogRepo = domain::repositoryv2::native_host_log::MockNativeHostLogRepository;
+    type WorkOmitRepo = domain::repositoryv2::work_omit::MockWorkOmitRepository;
+    type WorkParentPacksRepo = domain::repositoryv2::work_parent_packs::MockWorkParentPacksRepository;
+    type DmmPackRepo = domain::repositoryv2::dmm_work_pack::MockDmmPackRepository;
+    type CollectionRepo = domain::repositoryv2::collection::MockCollectionRepository;
+    type TransactionRepo = MockRepositoriesExtMock; // 未使用だが型を満たすため
+
+    fn work(&mut self) -> &mut Self::WorkRepo { &mut self.work }
+    fn dmm_work(&mut self) -> &mut Self::DmmWorkRepo { &mut self.dmm_work }
+    fn dlsite_work(&mut self) -> &mut Self::DlsiteWorkRepo { &mut self.dlsite_work }
+    fn all_game_cache(&mut self) -> &mut Self::AllGameCacheRepo { &mut self.all_game_cache }
+    fn explored_cache(&mut self) -> &mut Self::ExploredCacheRepo { &mut self.explored_cache }
+    fn image_queue(&mut self) -> &mut Self::ImageQueueRepo { &mut self.image_queue }
+    fn host_log(&mut self) -> &mut Self::HostLogRepo { &mut self.host_log }
+    fn work_omit(&mut self) -> &mut Self::WorkOmitRepo { &mut self.work_omit }
+    fn work_parent_packs(&mut self) -> &mut Self::WorkParentPacksRepo { &mut self.work_parent_packs }
+    fn dmm_pack(&mut self) -> &mut Self::DmmPackRepo { &mut self.dmm_pack }
+    fn collection(&mut self) -> &mut Self::CollectionRepo { &mut self.collection }
+    fn transaction(&mut self) -> &mut Self::TransactionRepo { unimplemented!("Transaction mock not used in these tests") }
+}
+
+#[cfg(test)]
+impl TestRepositories {
     pub fn with_default_work_repos(mut self) -> Self {
         use domain::repositoryv2::works::{MockDmmWorkRepository, MockDlsiteWorkRepository};
         use domain::works::{DmmWork, DlsiteWork};
@@ -75,7 +158,7 @@ impl MockRepositoriesExtMock {
                     .collect();
                 Box::pin(async move { Ok::<_, anyhow::Error>(list) })
             });
-        self.expect_dmm_work().return_const(dmm_repo);
+        self.dmm_work = dmm_repo;
 
         let mut dl_repo = MockDlsiteWorkRepository::new();
         dl_repo
@@ -93,16 +176,19 @@ impl MockRepositoriesExtMock {
                     }))
                 })
             });
-        self.expect_dlsite_work().return_const(dl_repo);
+        self.dlsite_work = dl_repo;
 
-        // WorkParentPacksRepository: デフォルトはno-opのモックを返す
         use domain::repositoryv2::work_parent_packs::MockWorkParentPacksRepository;
         let mut wpp = MockWorkParentPacksRepository::new();
         wpp.expect_add().returning(|_, _| Box::pin(async { Ok::<_, anyhow::Error>(()) }));
         wpp.expect_exists().returning(|_, _| Box::pin(async { Ok::<_, anyhow::Error>(false) }));
-        self.expect_work_parent_packs().return_const(wpp);
+        self.work_parent_packs = wpp;
 
         self
+    }
+
+    pub fn set_all_game_cache(&mut self, repo: domain::repositoryv2::all_game_cache::MockAllGameCacheRepository) {
+        self.all_game_cache = repo;
     }
 }
 

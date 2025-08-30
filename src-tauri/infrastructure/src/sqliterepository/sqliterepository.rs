@@ -2,9 +2,11 @@ use domain::repositoryv2::{RepositoriesExt};
 use sqlx::{Pool, Sqlite};
 use sqlx::pool::PoolConnection;
 use futures::future::BoxFuture;
+use std::sync::Arc;
 
 pub enum RepositoryExecutor<'a> {
     Pool(&'a Pool<Sqlite>),
+    OwnedPool(Arc<Pool<Sqlite>>),
     OwnedConn(PoolConnection<Sqlite>),
 }
 
@@ -17,6 +19,10 @@ impl RepositoryExecutor<'_> {
     {
         match self {
             RepositoryExecutor::Pool(pool) => {
+                let mut conn = pool.acquire().await?;
+                f(&mut conn).await
+            }
+            RepositoryExecutor::OwnedPool(pool) => {
                 let mut conn = pool.acquire().await?;
                 f(&mut conn).await
             }

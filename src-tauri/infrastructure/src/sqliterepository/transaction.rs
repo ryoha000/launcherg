@@ -12,8 +12,9 @@ impl<'a> TransactionRepository for SqliteRepository<'a> {
         for<'cx> F: FnOnce(&'cx mut Self) -> BoxFuture<'cx, anyhow::Result<R>> + Send,
         R: Send,
     {
-        let pool = match self.executor {
-            RepositoryExecutor::Pool(p) => p,
+        let pool = match &self.executor {
+            RepositoryExecutor::Pool(p) => (*p).clone(),
+            RepositoryExecutor::OwnedPool(p) => (**p).clone(),
             RepositoryExecutor::OwnedConn(_) => {
                 anyhow::bail!("with_transaction は Pool 実行時のみ呼び出し可能です (Conn 内では unreachable) ");
             }

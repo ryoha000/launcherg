@@ -5,19 +5,18 @@ use derive_new::new;
 
 use domain::{
     all_game_cache::{AllGameCache, AllGameCacheOneWithThumbnailUrl, NewAllGameCacheOne},
-    repository::all_game_cache::AllGameCacheRepository,
 };
-use domain::repositoryv2::RepositoriesExt;
+use domain::repositoryv2::{RepositoriesExt, all_game_cache::AllGameCacheRepository};
 
 #[derive(new)]
 pub struct AllGameCacheUseCase<R: RepositoriesExt> {
-    repositories: Arc<R>,
+    repositories: Arc<tokio::sync::Mutex<R>>,
 }
 
 impl<R: RepositoriesExt> AllGameCacheUseCase<R> {
     pub async fn get(&self, id: i32) -> anyhow::Result<Option<AllGameCacheOneWithThumbnailUrl>> {
-        Ok(self
-            .repositories
+        let mut repos = self.repositories.lock().await;
+        Ok(repos
             .all_game_cache()
             .get_by_ids(vec![id])
             .await?
@@ -28,19 +27,22 @@ impl<R: RepositoriesExt> AllGameCacheUseCase<R> {
         &self,
         ids: Vec<i32>,
     ) -> anyhow::Result<Vec<AllGameCacheOneWithThumbnailUrl>> {
-        self.repositories
+        let mut repos = self.repositories.lock().await;
+        repos
             .all_game_cache()
             .get_by_ids(ids)
             .await
     }
     pub async fn get_all_game_cache(&self) -> anyhow::Result<AllGameCache> {
-        self.repositories
+        let mut repos = self.repositories.lock().await;
+        repos
             .all_game_cache()
             .get_all()
             .await
     }
     pub async fn get_cache_last_updated(&self) -> anyhow::Result<(i32, DateTime<Local>)> {
-        self.repositories
+        let mut repos = self.repositories.lock().await;
+        repos
             .all_game_cache()
             .get_last_updated()
             .await
@@ -52,11 +54,15 @@ impl<R: RepositoriesExt> AllGameCacheUseCase<R> {
         if cache.is_empty() {
             return Ok(());
         }
-        self.repositories
-            .all_game_cache()
-            .delete_by_ids(cache.iter().map(|v| v.id).collect())
-            .await?;
-        self.repositories
+        {
+            let mut repos = self.repositories.lock().await;
+            repos
+                .all_game_cache()
+                .delete_by_ids(cache.iter().map(|v| v.id).collect())
+                .await?;
+        }
+        let mut repos = self.repositories.lock().await;
+        repos
             .all_game_cache()
             .update(cache)
             .await
@@ -66,7 +72,8 @@ impl<R: RepositoriesExt> AllGameCacheUseCase<R> {
         &self,
         name: &str,
     ) -> anyhow::Result<Vec<AllGameCacheOneWithThumbnailUrl>> {
-        self.repositories
+        let mut repos = self.repositories.lock().await;
+        repos
             .all_game_cache()
             .search_by_name(name)
             .await

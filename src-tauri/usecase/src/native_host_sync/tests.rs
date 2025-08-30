@@ -6,12 +6,12 @@ use std::sync::{Arc, Mutex};
 
 use domain::{
     collection::CollectionElement,
-    repository::collection::MockCollectionRepository,
-    repository::save_image_queue::MockImageSaveQueueRepository,
-    repository::native_host_log::MockNativeHostLogRepository,
+    repositoryv2::collection::MockCollectionRepository,
+    repositoryv2::save_image_queue::MockImageSaveQueueRepository,
+    repositoryv2::native_host_log::MockNativeHostLogRepository,
     Id,
 };
-use crate::repositorymock::MockRepositoriesExtMock;
+use crate::repositorymock::TestRepositories;
 use domain::repositoryv2::work_omit::MockWorkOmitRepository;
 
 #[derive(Clone, Default)]
@@ -47,36 +47,28 @@ impl IconService for TestIconService {
 fn new_usecase_with(
     mock_repo: MockCollectionRepository,
     expected_image_queue_calls: usize,
-) -> (NativeHostSyncUseCase<MockRepositoriesExtMock>, TestIconService) {
-    let mut mock_repositories = MockRepositoriesExtMock::new().with_default_work_repos();
-    mock_repositories
-        .expect_collection()
-        .return_const(mock_repo);
+) -> (NativeHostSyncUseCase<TestRepositories>, TestIconService) {
+    let mut repos = TestRepositories::default().with_default_work_repos();
+    repos.collection = mock_repo;
 
     // image queue enqueue は2回（アイコン+サムネイル）+ 作品別名サムネイル(1回) = 最大3回
     let mut imgq = MockImageSaveQueueRepository::new();
     imgq.expect_enqueue().times(expected_image_queue_calls).returning(|_, _, _, _| Box::pin(async move { Ok::<_, anyhow::Error>(Id::new(1)) }));
-    mock_repositories
-        .expect_image_queue()
-        .return_const(imgq);
+    repos.image_queue = imgq;
 
     // host log は呼ばれないためダミーを返す
     let hostlog = MockNativeHostLogRepository::new();
-    mock_repositories
-        .expect_host_log()
-        .return_const(hostlog);
+    repos.host_log = hostlog;
 
     // omit は exists=false を返すようにモック（全テストで共通仕様）
     let mut omit = MockWorkOmitRepository::new();
     omit.expect_exists().returning(|_| Box::pin(async { Ok::<_, anyhow::Error>(false) }));
     omit.expect_list().returning(|| Box::pin(async { Ok::<_, anyhow::Error>(Vec::new()) }));
-    mock_repositories
-        .expect_work_omit()
-        .return_const(omit);
+    repos.work_omit = omit;
 
     let icons = TestIconService::default();
     (
-        NativeHostSyncUseCase::new(Arc::new(mock_repositories), Arc::new(DirsSavePathResolver::default())),
+        NativeHostSyncUseCase::new(Arc::new(tokio::sync::Mutex::new(repos)), Arc::new(DirsSavePathResolver::default())),
         icons,
     )
 }
@@ -112,8 +104,8 @@ async fn 計画_decide_for_game_既存マッピングなら_skipexists() {
     snapshot.mapped_keys.insert(key.clone(), Id::<CollectionElement>::new(1));
 
     // usecase を最小構成で生成
-    let mock_repositories = MockRepositoriesExtMock::new().with_default_work_repos();
-    let usecase = NativeHostSyncUseCase::new(Arc::new(mock_repositories), Arc::new(DirsSavePathResolver::default()));
+    let mock_repositories = TestRepositories::default().with_default_work_repos();
+    let usecase = NativeHostSyncUseCase::new(Arc::new(tokio::sync::Mutex::new(mock_repositories)), Arc::new(DirsSavePathResolver::default()));
 
     let param = DmmSyncGameParam { store_id: "sid".into(), category: "cat".into(), subcategory: "sub".into(), gamename: "n".into(), egs: None, image_url: String::new(), parent_pack_work_id: None };
     let decided = usecase.decide_for_game(&snapshot, param).await.unwrap();
@@ -132,11 +124,11 @@ async fn 計画_decide_for_game_omitがあれば_skipomitted() {
     snapshot.omitted_work_ids.insert(123);
 
     // omit リポジトリを exists=true に設定
-    let mut mock_repositories = MockRepositoriesExtMock::new().with_default_work_repos();
+    let mut mock_repositories = TestRepositories::default().with_default_work_repos();
     let mut omit = MockWorkOmitRepository::new();
     omit.expect_exists().returning(|_| Box::pin(async { Ok::<_, anyhow::Error>(true) }));
-    mock_repositories.expect_work_omit().return_const(omit);
-    let usecase = NativeHostSyncUseCase::new(Arc::new(mock_repositories), Arc::new(DirsSavePathResolver::default()));
+    mock_repositories.work_omit = omit;
+    let usecase = NativeHostSyncUseCase::new(Arc::new(tokio::sync::Mutex::new(mock_repositories)), Arc::new(DirsSavePathResolver::default()));
 
     let param = DmmSyncGameParam { store_id: "sid".into(), category: "cat".into(), subcategory: "sub".into(), gamename: "n".into(), egs: None, image_url: String::new(), parent_pack_work_id: None };
     let decided = usecase.decide_for_game(&snapshot, param).await.unwrap();
@@ -175,14 +167,14 @@ async fn 実行_execute_apply_egsあり_採番とマッピングと画像() {
         .returning(|_, _| Box::pin(async move { Ok::<_, anyhow::Error>(()) }));
 
     // リポジトリ束
-    let mut mock_repositories = MockRepositoriesExtMock::new().with_default_work_repos();
-    mock_repositories.expect_collection().return_const(repo);
+    let mut mock_repositories = TestRepositories::default().with_default_work_repos();
+    mock_repositories.collection = repo;
     // 画像キューは3回
     let mut imgq = MockImageSaveQueueRepository::new();
     imgq.expect_enqueue().times(3).returning(|_, _, _, _| Box::pin(async move { Ok::<_, anyhow::Error>(Id::new(1)) }));
-    mock_repositories.expect_image_queue().return_const(imgq);
+    mock_repositories.image_queue = imgq;
 
-    let usecase = NativeHostSyncUseCase::new(Arc::new(mock_repositories), Arc::new(DirsSavePathResolver::default()));
+    let usecase = NativeHostSyncUseCase::new(Arc::new(tokio::sync::Mutex::new(mock_repositories)), Arc::new(DirsSavePathResolver::default()));
 
     // 実行
     let apply = SyncApply {
@@ -200,15 +192,15 @@ async fn 実行_execute_apply_egsあり_採番とマッピングと画像() {
 #[tokio::test]
 async fn 画像_enqueue_images_for_dmm_3回投入される() {
     // 3回 enqueue 期待
-    let mut mock_repositories = MockRepositoriesExtMock::new().with_default_work_repos();
+    let mut mock_repositories = TestRepositories::default().with_default_work_repos();
     let mut imgq = MockImageSaveQueueRepository::new();
     imgq.expect_enqueue().times(3).returning(|_, _, _, _| Box::pin(async move { Ok::<_, anyhow::Error>(Id::new(1)) }));
-    mock_repositories.expect_image_queue().return_const(imgq);
+    mock_repositories.image_queue = imgq;
     // collection は未使用だが要求されるためダミーを返す
     let repo = MockCollectionRepository::new();
-    mock_repositories.expect_collection().return_const(repo);
+    mock_repositories.collection = repo;
 
-    let usecase = NativeHostSyncUseCase::new(Arc::new(mock_repositories), Arc::new(DirsSavePathResolver::default()));
+    let usecase = NativeHostSyncUseCase::new(Arc::new(tokio::sync::Mutex::new(mock_repositories)), Arc::new(DirsSavePathResolver::default()));
     let id = Id::<CollectionElement>::new(999);
     usecase.enqueue_images_for_dmm(&id, "cat", "sub", "sid", "https://pics.dmm.co.jp/digital/game/AAA/BBBps.jpg").await.unwrap();
 }
@@ -225,18 +217,18 @@ async fn スナップショット_build_dmm_batch_snapshot_既存と未存在が
             Box::pin(async move { Ok::<_, anyhow::Error>(out) })
         });
 
-    let mut mock_repositories = MockRepositoriesExtMock::new().with_default_work_repos();
-    mock_repositories.expect_collection().return_const(repo);
+    let mut mock_repositories = TestRepositories::default().with_default_work_repos();
+    mock_repositories.collection = repo;
     // omit リストは空
     let mut omit = MockWorkOmitRepository::new();
     omit.expect_list().returning(|| Box::pin(async { Ok::<_, anyhow::Error>(Vec::new()) }));
-    mock_repositories.expect_work_omit().return_const(omit);
+    mock_repositories.work_omit = omit;
     // image queue ダミー
     let mut imgq = MockImageSaveQueueRepository::new();
     imgq.expect_enqueue().times(0).returning(|_, _, _, _| Box::pin(async move { Ok::<_, anyhow::Error>(Id::new(1)) }));
-    mock_repositories.expect_image_queue().return_const(imgq);
+    mock_repositories.image_queue = imgq;
 
-    let usecase = NativeHostSyncUseCase::new(Arc::new(mock_repositories), Arc::new(DirsSavePathResolver::default()));
+    let usecase = NativeHostSyncUseCase::new(Arc::new(tokio::sync::Mutex::new(mock_repositories)), Arc::new(DirsSavePathResolver::default()));
     let params = vec![
         DmmSyncGameParam { store_id: "sid1".into(), category: "cat".into(), subcategory: "sub".into(), gamename: "n1".into(), egs: None, image_url: String::new(), parent_pack_work_id: None },
         DmmSyncGameParam { store_id: "sid2".into(), category: "cat".into(), subcategory: "sub".into(), gamename: "n2".into(), egs: None, image_url: String::new(), parent_pack_work_id: None },

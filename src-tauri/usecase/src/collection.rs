@@ -9,13 +9,13 @@ use domain::{
     collection::{
         CollectionElement, NewCollectionElement, NewCollectionElementPaths, ScannedGameElement,
     },
-    repository::{collection::CollectionRepository, RepositoriesExt},
     Id,
 };
+use domain::repositoryv2::{RepositoriesExt, collection::CollectionRepository};
 
 #[derive(new)]
 pub struct CollectionUseCase<R: RepositoriesExt, TS: ThumbnailService> {
-    repositories: Arc<R>,
+    repositories: Arc<tokio::sync::Mutex<R>>,
     resolver: Arc<dyn SavePathResolver>,
     thumbnail_service: Arc<TS>,
 }
@@ -25,7 +25,8 @@ impl<R: RepositoriesExt, TS: ThumbnailService> CollectionUseCase<R, TS> {
         &self,
         source: &NewCollectionElement,
     ) -> anyhow::Result<()> {
-        self.repositories
+        let mut repos = self.repositories.lock().await;
+        repos
             .collection()
             .upsert_collection_element(source)
             .await?;
@@ -37,7 +38,8 @@ impl<R: RepositoriesExt, TS: ThumbnailService> CollectionUseCase<R, TS> {
         &self,
         info: &domain::collection::NewCollectionElementInfo,
     ) -> anyhow::Result<()> {
-        self.repositories
+        let mut repos = self.repositories.lock().await;
+        repos
             .collection()
             .upsert_collection_element_info(info)
             .await?;
@@ -55,13 +57,15 @@ impl<R: RepositoriesExt, TS: ThumbnailService> CollectionUseCase<R, TS> {
 
         // 1. erogamescape_id から collection_element_id を解決/作成
         let resolved_id = {
-            let repo = self.repositories.collection();
+            let mut repos = self.repositories.lock().await;
+            let repo = repos.collection();
             // 1-1. マッピング解決
             if let Some(mapped) = repo
                 .get_collection_id_by_erogamescape_id(element.erogamescape_id)
                 .await?
             {
                 let new_element = NewCollectionElement::new(mapped.clone(), element.gamename.clone());
+                drop(repos);
                 self.upsert_collection_element(&new_element).await?;
                 mapped
             } else {
@@ -84,7 +88,8 @@ impl<R: RepositoriesExt, TS: ThumbnailService> CollectionUseCase<R, TS> {
                 element.exe_path.clone(),
                 element.lnk_path.clone(),
             );
-            self.repositories
+            let mut repos = self.repositories.lock().await;
+            repos
                 .collection()
                 .upsert_collection_element_paths(&new_paths)
                 .await?;
@@ -93,7 +98,8 @@ impl<R: RepositoriesExt, TS: ThumbnailService> CollectionUseCase<R, TS> {
         // 4. インストール情報を保存
         if let Some(install_time) = element.install_at {
             let new_install = NewCollectionElementInstall::new(resolved_id.clone(), install_time);
-            self.repositories
+            let mut repos = self.repositories.lock().await;
+            repos
                 .collection()
                 .upsert_collection_element_install(&new_install)
                 .await?;
@@ -108,7 +114,8 @@ impl<R: RepositoriesExt, TS: ThumbnailService> CollectionUseCase<R, TS> {
         let thumbnail_path = self.resolver.thumbnail_png_path(id.value);
         match image::image_dimensions(thumbnail_path) {
             Ok((width, height)) => {
-                self.repositories
+                let mut repos = self.repositories.lock().await;
+                repos
                     .collection()
                     .upsert_collection_element_thumbnail_size(id, width as i32, height as i32)
                     .await?;
@@ -159,8 +166,8 @@ impl<R: RepositoriesExt, TS: ThumbnailService> CollectionUseCase<R, TS> {
         &self,
         id: &Id<CollectionElement>,
     ) -> anyhow::Result<CollectionElement> {
-        Ok(self
-            .repositories
+        let mut repos = self.repositories.lock().await;
+        Ok(repos
             .collection()
             .get_element_by_element_id(id)
             .await?
@@ -181,11 +188,13 @@ impl<R: RepositoriesExt, TS: ThumbnailService> CollectionUseCase<R, TS> {
         &self,
         id: &Id<CollectionElement>,
     ) -> anyhow::Result<()> {
-        let paths = self
-            .repositories
-            .collection()
-            .get_element_paths_by_element_id(id)
-            .await?;
+        let paths = {
+            let mut repos = self.repositories.lock().await;
+            repos
+                .collection()
+                .get_element_paths_by_element_id(id)
+                .await?
+        };
 
         let _icon_path = if let Some(paths) = paths {
             if let Some(lnk_path) = paths.lnk_path {
@@ -248,15 +257,18 @@ impl<R: RepositoriesExt, TS: ThumbnailService> CollectionUseCase<R, TS> {
         &self,
         id: &Id<CollectionElement>,
     ) -> anyhow::Result<()> {
-        let existed = self
-            .repositories
-            .collection()
-            .get_element_by_element_id(id)
-            .await?;
+        let existed = {
+            let mut repos = self.repositories.lock().await;
+            repos
+                .collection()
+                .get_element_by_element_id(id)
+                .await?
+        };
         if existed.is_none() {
             return Err(UseCaseError::CollectionElementIsNotFound.into());
         }
-        self.repositories
+        let mut repos = self.repositories.lock().await;
+        repos
             .collection()
             .delete_collection_element(id)
             .await
@@ -265,7 +277,8 @@ impl<R: RepositoriesExt, TS: ThumbnailService> CollectionUseCase<R, TS> {
     pub async fn get_not_registered_detail_element_ids(
         &self,
     ) -> anyhow::Result<Vec<Id<CollectionElement>>> {
-        self.repositories
+        let mut repos = self.repositories.lock().await;
+        repos
             .collection()
             .get_not_registered_info_element_ids()
             .await
@@ -275,7 +288,8 @@ impl<R: RepositoriesExt, TS: ThumbnailService> CollectionUseCase<R, TS> {
         &self,
         id: &Id<CollectionElement>,
     ) -> anyhow::Result<()> {
-        self.repositories
+        let mut repos = self.repositories.lock().await;
+        repos
             .collection()
             .update_element_last_play_at_by_id(id, Local::now())
             .await?;
@@ -286,7 +300,8 @@ impl<R: RepositoriesExt, TS: ThumbnailService> CollectionUseCase<R, TS> {
         id: &Id<CollectionElement>,
         is_like: bool,
     ) -> anyhow::Result<()> {
-        self.repositories
+        let mut repos = self.repositories.lock().await;
+        repos
             .collection()
             .update_element_like_at_by_id(id, is_like.then_some(Local::now()))
             .await?;
@@ -295,15 +310,18 @@ impl<R: RepositoriesExt, TS: ThumbnailService> CollectionUseCase<R, TS> {
     pub async fn get_all_elements(
         &self,
     ) -> anyhow::Result<Vec<CollectionElement>> {
-        let null_size_ids = self
-            .repositories
-            .collection()
-            .get_null_thumbnail_size_element_ids()
-            .await?;
+        let null_size_ids = {
+            let mut repos = self.repositories.lock().await;
+            repos
+                .collection()
+                .get_null_thumbnail_size_element_ids()
+                .await?
+        };
         self.concurency_upsert_collection_element_thumbnail_size(null_size_ids)
             .await?;
 
-        self.repositories
+        let mut repos = self.repositories.lock().await;
+        repos
             .collection()
             .get_all_elements()
             .await
@@ -320,7 +338,8 @@ impl<R: RepositoriesExt, TS: ThumbnailService> CollectionUseCase<R, TS> {
             None, // lnk_path
         );
 
-        self.repositories
+        let mut repos = self.repositories.lock().await;
+        repos
             .collection()
             .upsert_collection_element_paths(&paths)
             .await?;
@@ -333,7 +352,8 @@ impl<R: RepositoriesExt, TS: ThumbnailService> CollectionUseCase<R, TS> {
         &self,
         erogamescape_ids: Vec<i32>,
     ) -> anyhow::Result<Vec<Id<CollectionElement>>> {
-        let repo = self.repositories.collection();
+        let mut repos = self.repositories.lock().await;
+        let repo = repos.collection();
         let mut ids = Vec::with_capacity(erogamescape_ids.len());
         for egs_id in erogamescape_ids {
             if let Some(id) = repo.get_collection_id_by_erogamescape_id(egs_id).await? {
@@ -348,7 +368,8 @@ impl<R: RepositoriesExt, TS: ThumbnailService> CollectionUseCase<R, TS> {
         &self,
         id: &Id<CollectionElement>,
     ) -> anyhow::Result<Option<i32>> {
-        self.repositories
+        let mut repos = self.repositories.lock().await;
+        repos
             .collection()
             .get_erogamescape_id_by_collection_id(id)
             .await

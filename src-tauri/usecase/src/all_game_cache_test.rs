@@ -6,9 +6,9 @@ mod tests {
         all_game_cache::{
             AllGameCacheOne, AllGameCacheOneWithThumbnailUrl, NewAllGameCacheOne,
         },
-        repository::all_game_cache::MockAllGameCacheRepository,
+        repositoryv2::all_game_cache::MockAllGameCacheRepository,
     };
-    use crate::repositorymock::MockRepositoriesExtMock;
+    use crate::repositorymock::TestRepositories;
     use crate::all_game_cache::AllGameCacheUseCase;
 
     fn create_test_new_cache_one(id: i32) -> NewAllGameCacheOne {
@@ -37,13 +37,10 @@ mod tests {
                 })
             });
 
-        let mut mock_repositories = MockRepositoriesExtMock::new();
-        mock_repositories
-            .expect_all_game_cache()
-            .times(1)
-            .return_const(mock_repo);
+        let mut repos = TestRepositories::default();
+        repos.set_all_game_cache(mock_repo);
 
-        let use_case = AllGameCacheUseCase::new(Arc::new(mock_repositories));
+        let use_case = AllGameCacheUseCase::new(Arc::new(tokio::sync::Mutex::new(repos)));
 
         let result = use_case.get(1).await;
         assert!(result.is_ok());
@@ -62,13 +59,10 @@ mod tests {
             .times(1)
             .returning(|_| Box::pin(async move { Ok::<_, anyhow::Error>(vec![]) }));
 
-        let mut mock_repositories = MockRepositoriesExtMock::new();
-        mock_repositories
-            .expect_all_game_cache()
-            .times(1)
-            .return_const(mock_repo);
+        let mut repos = TestRepositories::default();
+        repos.set_all_game_cache(mock_repo);
 
-        let use_case = AllGameCacheUseCase::new(Arc::new(mock_repositories));
+        let use_case = AllGameCacheUseCase::new(Arc::new(tokio::sync::Mutex::new(repos)));
 
         let result = use_case.get(999).await;
         assert!(result.is_ok());
@@ -101,13 +95,10 @@ mod tests {
                 })
             });
 
-        let mut mock_repositories = MockRepositoriesExtMock::new();
-        mock_repositories
-            .expect_all_game_cache()
-            .times(1)
-            .return_const(mock_repo);
+        let mut repos = TestRepositories::default();
+        repos.set_all_game_cache(mock_repo);
 
-        let use_case = AllGameCacheUseCase::new(Arc::new(mock_repositories));
+        let use_case = AllGameCacheUseCase::new(Arc::new(tokio::sync::Mutex::new(repos)));
 
         let result = use_case.get_by_ids(vec![1, 2]).await;
         assert!(result.is_ok());
@@ -122,18 +113,16 @@ mod tests {
         use std::sync::Arc;
 
         let mut mock_repo = MockAllGameCacheRepository::new();
-        mock_repo.expect_get_by_ids()
+        mock_repo
+            .expect_get_by_ids()
             .with(eq(vec![]))
             .times(1)
-            .returning(|_| Box::pin(async move { Ok::<_, anyhow::Error>(vec![]) }));
+            .returning(|_| Box::pin(async move { Ok::<_, anyhow::Error>(Vec::new()) }));
 
-        let mut mock_repositories = MockRepositoriesExtMock::new();
-        mock_repositories
-            .expect_all_game_cache()
-            .times(1)
-            .return_const(mock_repo);
+        let mut repos = TestRepositories::default();
+        repos.set_all_game_cache(mock_repo);
 
-        let use_case = AllGameCacheUseCase::new(Arc::new(mock_repositories));
+        let use_case = AllGameCacheUseCase::new(Arc::new(tokio::sync::Mutex::new(repos)));
 
         let result = use_case.get_by_ids(vec![]).await;
         assert!(result.is_ok());
@@ -161,13 +150,10 @@ mod tests {
             })
         });
 
-        let mut mock_repositories = MockRepositoriesExtMock::new();
-        mock_repositories
-            .expect_all_game_cache()
-            .times(1)
-            .return_const(mock_repo);
+        let mut repos = TestRepositories::default();
+        repos.set_all_game_cache(mock_repo);
 
-        let use_case = AllGameCacheUseCase::new(Arc::new(mock_repositories));
+        let use_case = AllGameCacheUseCase::new(Arc::new(tokio::sync::Mutex::new(repos)));
 
         let result = use_case.get_all_game_cache().await;
         assert!(result.is_ok());
@@ -180,7 +166,7 @@ mod tests {
         use chrono::Local;
         use std::sync::Arc;
 
-        let mock_repo = {
+        let mut mock_repo = {
             let mut repo = MockAllGameCacheRepository::new();
             let expected_time = Local::now();
             repo.expect_get_last_updated()
@@ -189,13 +175,10 @@ mod tests {
             repo
         };
 
-        let mut mock_repositories = MockRepositoriesExtMock::new();
-        mock_repositories
-            .expect_all_game_cache()
-            .times(1)
-            .return_const(mock_repo);
+        let mut repos = TestRepositories::default();
+        repos.set_all_game_cache(mock_repo);
 
-        let use_case = AllGameCacheUseCase::new(Arc::new(mock_repositories));
+        let use_case = AllGameCacheUseCase::new(Arc::new(tokio::sync::Mutex::new(repos)));
 
         let result = use_case.get_cache_last_updated().await;
         assert!(result.is_ok());
@@ -217,13 +200,10 @@ mod tests {
             .times(1)
             .returning(|_| Box::pin(async move { Ok::<_, anyhow::Error>(()) }));
 
-        let mut mock_repositories = MockRepositoriesExtMock::new();
-        mock_repositories
-            .expect_all_game_cache()
-            .times(2) // delete_by_ids and update
-            .return_const(mock_repo);
+        let mut repos = TestRepositories::default();
+        repos.set_all_game_cache(mock_repo);
 
-        let use_case = AllGameCacheUseCase::new(Arc::new(mock_repositories));
+        let use_case = AllGameCacheUseCase::new(Arc::new(tokio::sync::Mutex::new(repos)));
         let cache_data = vec![create_test_new_cache_one(1), create_test_new_cache_one(2)];
 
         let result = use_case.update_all_game_cache(cache_data).await;
@@ -234,16 +214,12 @@ mod tests {
     async fn test_update_all_game_cache_empty() {
         use std::sync::Arc;
 
-        let mock_repo = MockAllGameCacheRepository::new();
+        let mut mock_repo = MockAllGameCacheRepository::new();
         // empty cacheの場合、repositoryメソッドは呼ばれない
 
-        let mut mock_repositories = MockRepositoriesExtMock::new();
-        mock_repositories
-            .expect_all_game_cache()
-            .times(0) // empty cacheの場合は呼ばれない
-            .return_const(mock_repo);
+        let repos = TestRepositories::default();
 
-        let use_case = AllGameCacheUseCase::new(Arc::new(mock_repositories));
+        let use_case = AllGameCacheUseCase::new(Arc::new(tokio::sync::Mutex::new(repos)));
         let cache_data = vec![];
 
         let result = use_case.update_all_game_cache(cache_data).await;
@@ -260,13 +236,10 @@ mod tests {
             .times(1)
             .returning(|_| Box::pin(async move { Err::<_, anyhow::Error>(anyhow::anyhow!("Database error")) }));
 
-        let mut mock_repositories = MockRepositoriesExtMock::new();
-        mock_repositories
-            .expect_all_game_cache()
-            .times(1)
-            .return_const(mock_repo);
+        let mut repos = TestRepositories::default();
+        repos.set_all_game_cache(mock_repo);
 
-        let use_case = AllGameCacheUseCase::new(Arc::new(mock_repositories));
+        let use_case = AllGameCacheUseCase::new(Arc::new(tokio::sync::Mutex::new(repos)));
 
         let result = use_case.get(1).await;
         assert!(result.is_err());

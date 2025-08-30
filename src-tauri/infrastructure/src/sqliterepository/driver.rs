@@ -70,4 +70,6 @@ impl Db {
 
         Db(Arc::new(pool))
     }
+
+    pub fn pool_arc(&self) -> Arc<Pool<Sqlite>> { self.0.clone() }
 }

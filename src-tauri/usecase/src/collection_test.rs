@@ -7,11 +7,11 @@ mod tests {
     use domain::{
         collection::{
             CollectionElement, CollectionElementInfo, CollectionElementInstall, CollectionElementPaths, CollectionElementThumbnail, NewCollectionElement, NewCollectionElementInfo, ScannedGameElement
-        }, repository::collection::MockCollectionRepository, service::save_path_resolver::DirsSavePathResolver,
+        }, repositoryv2::collection::MockCollectionRepository, service::save_path_resolver::DirsSavePathResolver,
         thumbnail::MockThumbnailService,
         Id
     };
-    use crate::repositorymock::MockRepositoriesExtMock;
+    use crate::repositorymock::TestRepositories;
     use crate::{collection::CollectionUseCase, error::UseCaseError};
 
     fn create_test_element_id(id: i32) -> Id<CollectionElement> {
@@ -80,9 +80,9 @@ mod tests {
         }
     }
 
-    fn setup_use_case(mock_repositories: MockRepositoriesExtMock) -> CollectionUseCase<MockRepositoriesExtMock, MockThumbnailService> {
+    fn setup_use_case(mock_repositories: TestRepositories) -> CollectionUseCase<TestRepositories, MockThumbnailService> {
         let resolver = Arc::new(DirsSavePathResolver::default());
-        let use_case = CollectionUseCase::new(Arc::new(mock_repositories), resolver.clone(), Arc::new(MockThumbnailService::new()));
+        let use_case = CollectionUseCase::new(Arc::new(tokio::sync::Mutex::new(mock_repositories)), resolver.clone(), Arc::new(MockThumbnailService::new()));
         use_case
     }
 
@@ -95,10 +95,8 @@ mod tests {
             .times(1)
             .returning(|_| Box::pin(async move { Ok::<_, anyhow::Error>(()) }));
 
-        let mut mock_repositories = MockRepositoriesExtMock::new();
-        mock_repositories
-            .expect_collection()
-            .return_const(mock_repo);
+        let mut mock_repositories = TestRepositories::default();
+        mock_repositories.collection = mock_repo;
 
         let use_case = setup_use_case(mock_repositories);
         let element = create_test_new_element(1);
@@ -116,10 +114,8 @@ mod tests {
             .times(1)
             .returning(|_| Box::pin(async move { Ok::<_, anyhow::Error>(()) }));
 
-        let mut mock_repositories = MockRepositoriesExtMock::new();
-        mock_repositories
-            .expect_collection()
-            .return_const(mock_repo);
+        let mut mock_repositories = TestRepositories::default();
+        mock_repositories.collection = mock_repo;
 
         let use_case = setup_use_case(mock_repositories);
         let info = NewCollectionElementInfo::new(
@@ -162,10 +158,8 @@ mod tests {
             .times(1)
             .returning(|_| Box::pin(async move { Ok::<_, anyhow::Error>(()) }));
 
-        let mut mock_repositories = MockRepositoriesExtMock::new();
-        mock_repositories
-            .expect_collection()
-            .return_const(mock_repo);
+        let mut mock_repositories = TestRepositories::default();
+        mock_repositories.collection = mock_repo;
 
         let use_case = setup_use_case(mock_repositories);
         let element = create_test_scanned_game_element(1);
@@ -191,10 +185,8 @@ mod tests {
             .times(1)
             .returning(|_, _| Box::pin(async move { Ok::<_, anyhow::Error>(()) }));
 
-        let mut mock_repositories = MockRepositoriesExtMock::new();
-        mock_repositories
-            .expect_collection()
-            .return_const(mock_repo);
+        let mut mock_repositories = TestRepositories::default();
+        mock_repositories.collection = mock_repo;
 
         let use_case = setup_use_case(mock_repositories);
         let element = ScannedGameElement {
@@ -222,10 +214,8 @@ mod tests {
                 Box::pin(async move { Ok::<_, anyhow::Error>(Some(value)) })
             });
 
-        let mut mock_repositories = MockRepositoriesExtMock::new();
-        mock_repositories
-            .expect_collection()
-            .return_const(mock_repo);
+        let mut mock_repositories = TestRepositories::default();
+        mock_repositories.collection = mock_repo;
 
         let use_case = setup_use_case(mock_repositories);
         let id = create_test_element_id(1);
@@ -243,12 +233,10 @@ mod tests {
             .expect_get_element_by_element_id()
             .with(eq(create_test_element_id(1)))
             .times(1)
-            .returning(|_| Box::pin(async move { Ok::<_, anyhow::Error>(None) } ));
+            .returning(|_| Box::pin(async move { Ok::<_, anyhow::Error>(None) }));
 
-        let mut mock_repositories = MockRepositoriesExtMock::new();
-        mock_repositories
-            .expect_collection()
-            .return_const(mock_repo);
+        let mut mock_repositories = TestRepositories::default();
+        mock_repositories.collection = mock_repo;
 
         let use_case = setup_use_case(mock_repositories);
         let id = create_test_element_id(1);
@@ -270,10 +258,8 @@ mod tests {
             .times(1)
             .returning(|_, _| Box::pin(async move { Ok::<_, anyhow::Error>(()) }));
 
-        let mut mock_repositories = MockRepositoriesExtMock::new();
-        mock_repositories
-            .expect_collection()
-            .return_const(mock_repo);
+        let mut mock_repositories = TestRepositories::default();
+        mock_repositories.collection = mock_repo;
 
         let use_case = setup_use_case(mock_repositories);
         let id = create_test_element_id(1);
@@ -291,10 +277,8 @@ mod tests {
             .times(1)
             .returning(|_, _| Box::pin(async move { Ok::<_, anyhow::Error>(()) }));
 
-        let mut mock_repositories = MockRepositoriesExtMock::new();
-        mock_repositories
-            .expect_collection()
-            .return_const(mock_repo);
+        let mut mock_repositories = TestRepositories::default();
+        mock_repositories.collection = mock_repo;
 
         let use_case = setup_use_case(mock_repositories);
         let id = create_test_element_id(1);
@@ -315,10 +299,8 @@ mod tests {
             .times(1)
             .returning(|_, _| Box::pin(async move { Ok::<_, anyhow::Error>(()) }));
 
-        let mut mock_repositories = MockRepositoriesExtMock::new();
-        mock_repositories
-            .expect_collection()
-            .return_const(mock_repo);
+        let mut mock_repositories = TestRepositories::default();
+        mock_repositories.collection = mock_repo;
 
         let use_case = setup_use_case(mock_repositories);
         let id = create_test_element_id(1);
@@ -345,10 +327,8 @@ mod tests {
             .times(1)
             .returning(|_| Box::pin(async move { Ok::<_, anyhow::Error>(()) }));
 
-        let mut mock_repositories = MockRepositoriesExtMock::new();
-        mock_repositories
-            .expect_collection()
-            .return_const(mock_repo);
+        let mut mock_repositories = TestRepositories::default();
+        mock_repositories.collection = mock_repo;
 
         let use_case = setup_use_case(mock_repositories);
         let id = create_test_element_id(1);
@@ -366,10 +346,8 @@ mod tests {
             .times(1)
             .returning(|_| Box::pin(async move { Ok::<_, anyhow::Error>(None) }));
 
-        let mut mock_repositories = MockRepositoriesExtMock::new();
-        mock_repositories
-            .expect_collection()
-            .return_const(mock_repo);
+        let mut mock_repositories = TestRepositories::default();
+        mock_repositories.collection = mock_repo;
 
         let use_case = setup_use_case(mock_repositories);
         let id = create_test_element_id(1);
@@ -394,10 +372,8 @@ mod tests {
                 Box::pin(async move { Ok::<_, anyhow::Error>(value) })
             });
 
-        let mut mock_repositories = MockRepositoriesExtMock::new();
-        mock_repositories
-            .expect_collection()
-            .return_const(mock_repo);
+        let mut mock_repositories = TestRepositories::default();
+        mock_repositories.collection = mock_repo;
 
         let use_case = setup_use_case(mock_repositories);
 
@@ -432,10 +408,8 @@ mod tests {
             .times(2)
             .returning(|_| Box::pin(async move { Ok::<_, anyhow::Error>(()) }));
 
-        let mut mock_repositories = MockRepositoriesExtMock::new();
-        mock_repositories
-            .expect_collection()
-            .return_const(mock_repo);
+        let mut mock_repositories = TestRepositories::default();
+        mock_repositories.collection = mock_repo;
 
         let use_case = setup_use_case(mock_repositories);
         let elements = vec![

@@ -2,27 +2,30 @@ use std::sync::Arc;
 
 use derive_new::new;
 
-use domain::{explored_cache::ExploredCache, repository::{explored_cache::ExploredCacheRepository, RepositoriesExt}};
+use domain::explored_cache::ExploredCache;
+use domain::repositoryv2::{explored_cache::ExploredCacheRepository, RepositoriesExt};
 
 #[derive(new)]
 pub struct ExploredCacheUseCase<R: RepositoriesExt> {
-    repositories: Arc<R>,
+    repositories: Arc<tokio::sync::Mutex<R>>,
 }
 
 impl<R: RepositoriesExt> ExploredCacheUseCase<R> {
     pub async fn get_cache(&self) -> anyhow::Result<ExploredCache> {
-        Ok(self
-            .repositories
+        let mut repos = self.repositories.lock().await;
+        Ok(repos
             .explored_cache()
             .get_all()
             .await?)
     }
     pub async fn add_cache(&self, adding_path: Vec<String>) -> anyhow::Result<()> {
-        let before = self
-            .repositories
-            .explored_cache()
-            .get_all()
-            .await?;
+        let before = {
+            let mut repos = self.repositories.lock().await;
+            repos
+                .explored_cache()
+                .get_all()
+                .await?
+        };
         let adding = adding_path
             .into_iter()
             .filter_map(|v| match before.contains(&v) {
@@ -30,8 +33,8 @@ impl<R: RepositoriesExt> ExploredCacheUseCase<R> {
                 false => Some(v),
             })
             .collect();
-        Ok(self
-            .repositories
+        let mut repos = self.repositories.lock().await;
+        Ok(repos
             .explored_cache()
             .add(adding)
             .await?)

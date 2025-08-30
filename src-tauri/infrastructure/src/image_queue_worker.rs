@@ -10,28 +10,34 @@ use domain::repositoryv2::save_image_queue::ImageSaveQueueRepository;
 use domain::service::save_path_resolver::SavePathResolver;
 
 pub struct ImageQueueWorker<R: RepositoriesExt> {
-	repositories: std::sync::Arc<R>,
+	repositories: std::sync::Arc<tokio::sync::Mutex<R>>,
 	resolver: std::sync::Arc<dyn SavePathResolver>,
 }
 
 impl<R: RepositoriesExt> ImageQueueWorker<R> {
-	pub fn new(repositories: std::sync::Arc<R>, resolver: std::sync::Arc<dyn SavePathResolver>) -> Self { Self { repositories, resolver } }
+	pub fn new(repositories: std::sync::Arc<tokio::sync::Mutex<R>>, resolver: std::sync::Arc<dyn SavePathResolver>) -> Self { Self { repositories, resolver } }
 
 	fn ensure_tmp_file(&self, queue_id: i32, src_url: &str) -> anyhow::Result<String> {
 		Ok(self.resolver.tmp_download_path_for_queue(queue_id, src_url))
 	}
 
 	pub async fn drain_until_empty(&self) -> anyhow::Result<()> {
-		let log_repo = self.repositories.host_log();
-		let queue_repo = self.repositories.image_queue();
-
-		let _ = log_repo.insert_log(HostLogLevel::Info, HostLogType::ImageQueueWorkerStarted, "image_queue_worker started").await;
+		{
+			let mut repos = self.repositories.lock().await;
+			repos.host_log().insert_log(HostLogLevel::Info, HostLogType::ImageQueueWorkerStarted, "image_queue_worker started").await.ok();
+		}
 
 		loop {
-			let items = queue_repo.list_unfinished_oldest(50).await?;
+			let items = {
+				let mut repos = self.repositories.lock().await;
+				repos.image_queue().list_unfinished_oldest(50).await?
+			};
 			if items.is_empty() { break; }
 			for item in items {
-				let _ = log_repo.insert_log(HostLogLevel::Info, HostLogType::ImageQueueItemStarted, &format!("start id={} dst={} src={}", item.id.value, item.dst_path, item.src)).await;
+				{
+					let mut repos = self.repositories.lock().await;
+					repos.host_log().insert_log(HostLogLevel::Info, HostLogType::ImageQueueItemStarted, &format!("start id={} dst={} src={}", item.id.value, item.dst_path, item.src)).await.ok();
+				}
 				let result: anyhow::Result<()> = async {
 					// 既に出力が存在するならスキップ
 					if Path::new(&item.dst_path).exists() { return Ok(()); }
@@ -71,20 +77,29 @@ impl<R: RepositoriesExt> ImageQueueWorker<R> {
 					Ok(_) => {
 						let finished_id = item.id.clone();
 						let finished_id_value = finished_id.value;
-						let _ = queue_repo.mark_finished(finished_id).await;
-						let _ = log_repo.insert_log(HostLogLevel::Info, HostLogType::ImageQueueItemSucceeded, &format!("done id={}", finished_id_value)).await;
+						{
+							let mut repos = self.repositories.lock().await;
+							repos.image_queue().mark_finished(finished_id).await.ok();
+							repos.host_log().insert_log(HostLogLevel::Info, HostLogType::ImageQueueItemSucceeded, &format!("done id={}", finished_id_value)).await.ok();
+						}
 					}
 					Err(e) => {
 						let failed_id = item.id.clone();
 						let failed_id_value = failed_id.value;
-						let _ = queue_repo.mark_failed(failed_id, &format!("{}", e)).await;
-						let _ = log_repo.insert_log(HostLogLevel::Error, HostLogType::ImageQueueItemFailed, &format!("failed id={} err={}", failed_id_value, e)).await;
+						{
+							let mut repos = self.repositories.lock().await;
+							repos.image_queue().mark_failed(failed_id, &format!("{}", e)).await.ok();
+							repos.host_log().insert_log(HostLogLevel::Error, HostLogType::ImageQueueItemFailed, &format!("failed id={} err={}", failed_id_value, e)).await.ok();
+						}
 					}
 				}
 			}
 		}
 
-		let _ = log_repo.insert_log(HostLogLevel::Info, HostLogType::ImageQueueWorkerFinished, "image_queue_worker finished").await;
+		{
+			let mut repos = self.repositories.lock().await;
+			repos.host_log().insert_log(HostLogLevel::Info, HostLogType::ImageQueueWorkerFinished, "image_queue_worker finished").await.ok();
+		}
 		Ok(())
 	}
 }
