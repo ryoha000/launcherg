@@ -3,10 +3,10 @@ use std::path::Path;
 use domain::{save_image_queue::{ImageSrcType, ImagePreprocess}};
 use crate::icon::process_square_icon;
 use crate::thumbnail as thumb_infra;
-use domain::repository::RepositoriesExt;
+use domain::repositoryv2::RepositoriesExt;
 use domain::native_host_log::{HostLogLevel, HostLogType};
-use domain::repository::native_host_log::NativeHostLogRepository;
-use domain::repository::save_image_queue::ImageSaveQueueRepository;
+use domain::repositoryv2::native_host_log::NativeHostLogRepository;
+use domain::repositoryv2::save_image_queue::ImageSaveQueueRepository;
 use domain::service::save_path_resolver::SavePathResolver;
 
 pub struct ImageQueueWorker<R: RepositoriesExt> {
@@ -22,8 +22,8 @@ impl<R: RepositoriesExt> ImageQueueWorker<R> {
 	}
 
 	pub async fn drain_until_empty(&self) -> anyhow::Result<()> {
-		let log_repo = self.repositories.host_log_repository();
-		let queue_repo = self.repositories.image_queue_repository();
+		let log_repo = self.repositories.host_log();
+		let queue_repo = self.repositories.image_queue();
 
 		let _ = log_repo.insert_log(HostLogLevel::Info, HostLogType::ImageQueueWorkerStarted, "image_queue_worker started").await;
 

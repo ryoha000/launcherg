@@ -2,7 +2,7 @@ use chrono::{Local, TimeZone};
 use sqlx::{query, query_as};
 
 use super::repository::RepositoryImpl;
-use domain::repository::native_host_log::NativeHostLogRepository;
+use domain::repositoryv2::native_host_log::NativeHostLogRepository;
 use domain::native_host_log::{HostLogLevel, HostLogType, NativeHostLogRow};
 use super::models::native_host_log::NativeHostLogTable;
 

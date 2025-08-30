@@ -1,5 +1,5 @@
 use super::TestDatabase;
-use domain::repository::{
+use domain::repositoryv2::{
     collection::CollectionRepository,
     dmm_work_pack::DmmPackRepository,
     work_omit::WorkOmitRepository,

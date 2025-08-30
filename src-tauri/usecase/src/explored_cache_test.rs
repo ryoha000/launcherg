@@ -35,7 +35,7 @@ mod tests {
 
         let mut mock_repositories = MockRepositoriesExtMock::new();
         mock_repositories
-            .expect_explored_cache_repository()
+            .expect_explored_cache()
             .return_const(mock_repo);
 
         let use_case = ExploredCacheUseCase::new(Arc::new(mock_repositories));
@@ -63,7 +63,7 @@ mod tests {
 
         let mut mock_repositories = MockRepositoriesExtMock::new();
         mock_repositories
-            .expect_explored_cache_repository()
+            .expect_explored_cache()
             .return_const(mock_repo);
 
         let use_case = ExploredCacheUseCase::new(Arc::new(mock_repositories));
@@ -101,7 +101,7 @@ mod tests {
 
         let mut mock_repositories = MockRepositoriesExtMock::new();
         mock_repositories
-            .expect_explored_cache_repository()
+            .expect_explored_cache()
             .return_const(mock_repo);
 
         let use_case = ExploredCacheUseCase::new(Arc::new(mock_repositories));
@@ -139,7 +139,7 @@ mod tests {
 
         let mut mock_repositories = MockRepositoriesExtMock::new();
         mock_repositories
-            .expect_explored_cache_repository()
+            .expect_explored_cache()
             .return_const(mock_repo);
 
         let use_case = ExploredCacheUseCase::new(Arc::new(mock_repositories));
@@ -170,7 +170,7 @@ mod tests {
 
         let mut mock_repositories = MockRepositoriesExtMock::new();
         mock_repositories
-            .expect_explored_cache_repository()
+            .expect_explored_cache()
             .return_const(mock_repo);
 
         let use_case = ExploredCacheUseCase::new(Arc::new(mock_repositories));
@@ -206,7 +206,7 @@ mod tests {
 
         let mut mock_repositories = MockRepositoriesExtMock::new();
         mock_repositories
-            .expect_explored_cache_repository()
+            .expect_explored_cache()
             .return_const(mock_repo);
 
         let use_case = ExploredCacheUseCase::new(Arc::new(mock_repositories));
@@ -226,7 +226,7 @@ mod tests {
 
         let mut mock_repositories = MockRepositoriesExtMock::new();
         mock_repositories
-            .expect_explored_cache_repository()
+            .expect_explored_cache()
             .return_const(mock_repo);
 
         let use_case = ExploredCacheUseCase::new(Arc::new(mock_repositories));
@@ -256,7 +256,7 @@ mod tests {
 
         let mut mock_repositories = MockRepositoriesExtMock::new();
         mock_repositories
-            .expect_explored_cache_repository()
+            .expect_explored_cache()
             .return_const(mock_repo);
 
         let use_case = ExploredCacheUseCase::new(Arc::new(mock_repositories));

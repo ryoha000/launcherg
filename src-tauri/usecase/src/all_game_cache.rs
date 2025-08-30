@@ -7,7 +7,7 @@ use domain::{
     all_game_cache::{AllGameCache, AllGameCacheOneWithThumbnailUrl, NewAllGameCacheOne},
     repository::all_game_cache::AllGameCacheRepository,
 };
-use domain::repository::RepositoriesExt;
+use domain::repositoryv2::RepositoriesExt;
 
 #[derive(new)]
 pub struct AllGameCacheUseCase<R: RepositoriesExt> {
@@ -18,7 +18,7 @@ impl<R: RepositoriesExt> AllGameCacheUseCase<R> {
     pub async fn get(&self, id: i32) -> anyhow::Result<Option<AllGameCacheOneWithThumbnailUrl>> {
         Ok(self
             .repositories
-            .all_game_cache_repository()
+            .all_game_cache()
             .get_by_ids(vec![id])
             .await?
             .first()
@@ -29,19 +29,19 @@ impl<R: RepositoriesExt> AllGameCacheUseCase<R> {
         ids: Vec<i32>,
     ) -> anyhow::Result<Vec<AllGameCacheOneWithThumbnailUrl>> {
         self.repositories
-            .all_game_cache_repository()
+            .all_game_cache()
             .get_by_ids(ids)
             .await
     }
     pub async fn get_all_game_cache(&self) -> anyhow::Result<AllGameCache> {
         self.repositories
-            .all_game_cache_repository()
+            .all_game_cache()
             .get_all()
             .await
     }
     pub async fn get_cache_last_updated(&self) -> anyhow::Result<(i32, DateTime<Local>)> {
         self.repositories
-            .all_game_cache_repository()
+            .all_game_cache()
             .get_last_updated()
             .await
     }
@@ -53,11 +53,11 @@ impl<R: RepositoriesExt> AllGameCacheUseCase<R> {
             return Ok(());
         }
         self.repositories
-            .all_game_cache_repository()
+            .all_game_cache()
             .delete_by_ids(cache.iter().map(|v| v.id).collect())
             .await?;
         self.repositories
-            .all_game_cache_repository()
+            .all_game_cache()
             .update(cache)
             .await
     }
@@ -67,7 +67,7 @@ impl<R: RepositoriesExt> AllGameCacheUseCase<R> {
         name: &str,
     ) -> anyhow::Result<Vec<AllGameCacheOneWithThumbnailUrl>> {
         self.repositories
-            .all_game_cache_repository()
+            .all_game_cache()
             .search_by_name(name)
             .await
     }

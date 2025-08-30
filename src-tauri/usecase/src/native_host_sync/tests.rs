@@ -12,7 +12,7 @@ use domain::{
     Id,
 };
 use crate::repositorymock::MockRepositoriesExtMock;
-use domain::repository::work_omit::MockWorkOmitRepository;
+use domain::repositoryv2::work_omit::MockWorkOmitRepository;
 
 #[derive(Clone, Default)]
 struct TestThumbnailService {
@@ -50,20 +50,20 @@ fn new_usecase_with(
 ) -> (NativeHostSyncUseCase<MockRepositoriesExtMock>, TestIconService) {
     let mut mock_repositories = MockRepositoriesExtMock::new().with_default_work_repos();
     mock_repositories
-        .expect_collection_repository()
+        .expect_collection()
         .return_const(mock_repo);
 
     // image queue enqueue は2回（アイコン+サムネイル）+ 作品別名サムネイル(1回) = 最大3回
     let mut imgq = MockImageSaveQueueRepository::new();
     imgq.expect_enqueue().times(expected_image_queue_calls).returning(|_, _, _, _| Box::pin(async move { Ok::<_, anyhow::Error>(Id::new(1)) }));
     mock_repositories
-        .expect_image_queue_repository()
+        .expect_image_queue()
         .return_const(imgq);
 
     // host log は呼ばれないためダミーを返す
     let hostlog = MockNativeHostLogRepository::new();
     mock_repositories
-        .expect_host_log_repository()
+        .expect_host_log()
         .return_const(hostlog);
 
     // omit は exists=false を返すようにモック（全テストで共通仕様）
@@ -71,7 +71,7 @@ fn new_usecase_with(
     omit.expect_exists().returning(|_| Box::pin(async { Ok::<_, anyhow::Error>(false) }));
     omit.expect_list().returning(|| Box::pin(async { Ok::<_, anyhow::Error>(Vec::new()) }));
     mock_repositories
-        .expect_work_omit_repository()
+        .expect_work_omit()
         .return_const(omit);
 
     let icons = TestIconService::default();
@@ -135,7 +135,7 @@ async fn 計画_decide_for_game_omitがあれば_skipomitted() {
     let mut mock_repositories = MockRepositoriesExtMock::new().with_default_work_repos();
     let mut omit = MockWorkOmitRepository::new();
     omit.expect_exists().returning(|_| Box::pin(async { Ok::<_, anyhow::Error>(true) }));
-    mock_repositories.expect_work_omit_repository().return_const(omit);
+    mock_repositories.expect_work_omit().return_const(omit);
     let usecase = NativeHostSyncUseCase::new(Arc::new(mock_repositories), Arc::new(DirsSavePathResolver::default()));
 
     let param = DmmSyncGameParam { store_id: "sid".into(), category: "cat".into(), subcategory: "sub".into(), gamename: "n".into(), egs: None, image_url: String::new(), parent_pack_work_id: None };
@@ -176,11 +176,11 @@ async fn 実行_execute_apply_egsあり_採番とマッピングと画像() {
 
     // リポジトリ束
     let mut mock_repositories = MockRepositoriesExtMock::new().with_default_work_repos();
-    mock_repositories.expect_collection_repository().return_const(repo);
+    mock_repositories.expect_collection().return_const(repo);
     // 画像キューは3回
     let mut imgq = MockImageSaveQueueRepository::new();
     imgq.expect_enqueue().times(3).returning(|_, _, _, _| Box::pin(async move { Ok::<_, anyhow::Error>(Id::new(1)) }));
-    mock_repositories.expect_image_queue_repository().return_const(imgq);
+    mock_repositories.expect_image_queue().return_const(imgq);
 
     let usecase = NativeHostSyncUseCase::new(Arc::new(mock_repositories), Arc::new(DirsSavePathResolver::default()));
 
@@ -203,10 +203,10 @@ async fn 画像_enqueue_images_for_dmm_3回投入される() {
     let mut mock_repositories = MockRepositoriesExtMock::new().with_default_work_repos();
     let mut imgq = MockImageSaveQueueRepository::new();
     imgq.expect_enqueue().times(3).returning(|_, _, _, _| Box::pin(async move { Ok::<_, anyhow::Error>(Id::new(1)) }));
-    mock_repositories.expect_image_queue_repository().return_const(imgq);
+    mock_repositories.expect_image_queue().return_const(imgq);
     // collection は未使用だが要求されるためダミーを返す
     let repo = MockCollectionRepository::new();
-    mock_repositories.expect_collection_repository().return_const(repo);
+    mock_repositories.expect_collection().return_const(repo);
 
     let usecase = NativeHostSyncUseCase::new(Arc::new(mock_repositories), Arc::new(DirsSavePathResolver::default()));
     let id = Id::<CollectionElement>::new(999);
@@ -226,15 +226,15 @@ async fn スナップショット_build_dmm_batch_snapshot_既存と未存在が
         });
 
     let mut mock_repositories = MockRepositoriesExtMock::new().with_default_work_repos();
-    mock_repositories.expect_collection_repository().return_const(repo);
+    mock_repositories.expect_collection().return_const(repo);
     // omit リストは空
     let mut omit = MockWorkOmitRepository::new();
     omit.expect_list().returning(|| Box::pin(async { Ok::<_, anyhow::Error>(Vec::new()) }));
-    mock_repositories.expect_work_omit_repository().return_const(omit);
+    mock_repositories.expect_work_omit().return_const(omit);
     // image queue ダミー
     let mut imgq = MockImageSaveQueueRepository::new();
     imgq.expect_enqueue().times(0).returning(|_, _, _, _| Box::pin(async move { Ok::<_, anyhow::Error>(Id::new(1)) }));
-    mock_repositories.expect_image_queue_repository().return_const(imgq);
+    mock_repositories.expect_image_queue().return_const(imgq);
 
     let usecase = NativeHostSyncUseCase::new(Arc::new(mock_repositories), Arc::new(DirsSavePathResolver::default()));
     let params = vec![

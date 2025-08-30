@@ -1,6 +1,6 @@
-use domain::repository::native_host_log::NativeHostLogRepository;
+use domain::repositoryv2::native_host_log::NativeHostLogRepository;
 use domain::native_host_log::{HostLogLevel, HostLogType};
-use domain::repository::RepositoriesExt;
+use domain::repositoryv2::RepositoriesExt;
 use super::TestDatabase;
 
 #[tokio::test]

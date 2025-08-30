@@ -19,7 +19,7 @@ impl<R: RepositoriesExt> HostLogUseCase<R> {
         level: Option<HostLogLevel>,
         typ: Option<HostLogType>,
     ) -> anyhow::Result<Vec<NativeHostLogRow>> {
-        let repo = self.repositories.host_log_repository();
+        let repo = self.repositories.host_log();
         repo.list_logs(limit, offset, level, typ).await
     }
 
@@ -28,7 +28,7 @@ impl<R: RepositoriesExt> HostLogUseCase<R> {
         level: Option<HostLogLevel>,
         typ: Option<HostLogType>,
     ) -> anyhow::Result<i64> {
-        let repo = self.repositories.host_log_repository();
+        let repo = self.repositories.host_log();
         repo.count_logs(level, typ).await
     }
 }

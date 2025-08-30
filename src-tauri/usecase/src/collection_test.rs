@@ -97,7 +97,7 @@ mod tests {
 
         let mut mock_repositories = MockRepositoriesExtMock::new();
         mock_repositories
-            .expect_collection_repository()
+            .expect_collection()
             .return_const(mock_repo);
 
         let use_case = setup_use_case(mock_repositories);
@@ -118,7 +118,7 @@ mod tests {
 
         let mut mock_repositories = MockRepositoriesExtMock::new();
         mock_repositories
-            .expect_collection_repository()
+            .expect_collection()
             .return_const(mock_repo);
 
         let use_case = setup_use_case(mock_repositories);
@@ -164,7 +164,7 @@ mod tests {
 
         let mut mock_repositories = MockRepositoriesExtMock::new();
         mock_repositories
-            .expect_collection_repository()
+            .expect_collection()
             .return_const(mock_repo);
 
         let use_case = setup_use_case(mock_repositories);
@@ -193,7 +193,7 @@ mod tests {
 
         let mut mock_repositories = MockRepositoriesExtMock::new();
         mock_repositories
-            .expect_collection_repository()
+            .expect_collection()
             .return_const(mock_repo);
 
         let use_case = setup_use_case(mock_repositories);
@@ -224,7 +224,7 @@ mod tests {
 
         let mut mock_repositories = MockRepositoriesExtMock::new();
         mock_repositories
-            .expect_collection_repository()
+            .expect_collection()
             .return_const(mock_repo);
 
         let use_case = setup_use_case(mock_repositories);
@@ -247,7 +247,7 @@ mod tests {
 
         let mut mock_repositories = MockRepositoriesExtMock::new();
         mock_repositories
-            .expect_collection_repository()
+            .expect_collection()
             .return_const(mock_repo);
 
         let use_case = setup_use_case(mock_repositories);
@@ -272,7 +272,7 @@ mod tests {
 
         let mut mock_repositories = MockRepositoriesExtMock::new();
         mock_repositories
-            .expect_collection_repository()
+            .expect_collection()
             .return_const(mock_repo);
 
         let use_case = setup_use_case(mock_repositories);
@@ -293,7 +293,7 @@ mod tests {
 
         let mut mock_repositories = MockRepositoriesExtMock::new();
         mock_repositories
-            .expect_collection_repository()
+            .expect_collection()
             .return_const(mock_repo);
 
         let use_case = setup_use_case(mock_repositories);
@@ -317,7 +317,7 @@ mod tests {
 
         let mut mock_repositories = MockRepositoriesExtMock::new();
         mock_repositories
-            .expect_collection_repository()
+            .expect_collection()
             .return_const(mock_repo);
 
         let use_case = setup_use_case(mock_repositories);
@@ -347,7 +347,7 @@ mod tests {
 
         let mut mock_repositories = MockRepositoriesExtMock::new();
         mock_repositories
-            .expect_collection_repository()
+            .expect_collection()
             .return_const(mock_repo);
 
         let use_case = setup_use_case(mock_repositories);
@@ -368,7 +368,7 @@ mod tests {
 
         let mut mock_repositories = MockRepositoriesExtMock::new();
         mock_repositories
-            .expect_collection_repository()
+            .expect_collection()
             .return_const(mock_repo);
 
         let use_case = setup_use_case(mock_repositories);
@@ -396,7 +396,7 @@ mod tests {
 
         let mut mock_repositories = MockRepositoriesExtMock::new();
         mock_repositories
-            .expect_collection_repository()
+            .expect_collection()
             .return_const(mock_repo);
 
         let use_case = setup_use_case(mock_repositories);
@@ -434,7 +434,7 @@ mod tests {
 
         let mut mock_repositories = MockRepositoriesExtMock::new();
         mock_repositories
-            .expect_collection_repository()
+            .expect_collection()
             .return_const(mock_repo);
 
         let use_case = setup_use_case(mock_repositories);

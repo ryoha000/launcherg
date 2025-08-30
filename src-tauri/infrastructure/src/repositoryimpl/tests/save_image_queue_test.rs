@@ -1,6 +1,6 @@
-use domain::repository::save_image_queue::ImageSaveQueueRepository;
+use domain::repositoryv2::save_image_queue::ImageSaveQueueRepository;
 use domain::save_image_queue::{ImageSrcType, ImagePreprocess};
-use domain::repository::RepositoriesExt;
+use domain::repositoryv2::RepositoriesExt;
 use super::TestDatabase;
 
 #[tokio::test]

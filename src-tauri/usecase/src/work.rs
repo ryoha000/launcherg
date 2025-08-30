@@ -13,7 +13,7 @@ pub struct WorkUseCase<R: RepositoriesExt> {
 
 impl<R: RepositoriesExt> WorkUseCase<R> {
     pub async fn list_all_details(&self) -> anyhow::Result<Vec<WorkDetails>> {
-        self.repositories.work_repository().list_all_details().await
+        self.repositories.work().list_all_details().await
     }
 }
 

@@ -39,7 +39,7 @@ mod tests {
 
         let mut mock_repositories = MockRepositoriesExtMock::new();
         mock_repositories
-            .expect_all_game_cache_repository()
+            .expect_all_game_cache()
             .times(1)
             .return_const(mock_repo);
 
@@ -64,7 +64,7 @@ mod tests {
 
         let mut mock_repositories = MockRepositoriesExtMock::new();
         mock_repositories
-            .expect_all_game_cache_repository()
+            .expect_all_game_cache()
             .times(1)
             .return_const(mock_repo);
 
@@ -103,7 +103,7 @@ mod tests {
 
         let mut mock_repositories = MockRepositoriesExtMock::new();
         mock_repositories
-            .expect_all_game_cache_repository()
+            .expect_all_game_cache()
             .times(1)
             .return_const(mock_repo);
 
@@ -129,7 +129,7 @@ mod tests {
 
         let mut mock_repositories = MockRepositoriesExtMock::new();
         mock_repositories
-            .expect_all_game_cache_repository()
+            .expect_all_game_cache()
             .times(1)
             .return_const(mock_repo);
 
@@ -163,7 +163,7 @@ mod tests {
 
         let mut mock_repositories = MockRepositoriesExtMock::new();
         mock_repositories
-            .expect_all_game_cache_repository()
+            .expect_all_game_cache()
             .times(1)
             .return_const(mock_repo);
 
@@ -191,7 +191,7 @@ mod tests {
 
         let mut mock_repositories = MockRepositoriesExtMock::new();
         mock_repositories
-            .expect_all_game_cache_repository()
+            .expect_all_game_cache()
             .times(1)
             .return_const(mock_repo);
 
@@ -219,7 +219,7 @@ mod tests {
 
         let mut mock_repositories = MockRepositoriesExtMock::new();
         mock_repositories
-            .expect_all_game_cache_repository()
+            .expect_all_game_cache()
             .times(2) // delete_by_ids and update
             .return_const(mock_repo);
 
@@ -239,7 +239,7 @@ mod tests {
 
         let mut mock_repositories = MockRepositoriesExtMock::new();
         mock_repositories
-            .expect_all_game_cache_repository()
+            .expect_all_game_cache()
             .times(0) // empty cacheの場合は呼ばれない
             .return_const(mock_repo);
 
@@ -262,7 +262,7 @@ mod tests {
 
         let mut mock_repositories = MockRepositoriesExtMock::new();
         mock_repositories
-            .expect_all_game_cache_repository()
+            .expect_all_game_cache()
             .times(1)
             .return_const(mock_repo);
 

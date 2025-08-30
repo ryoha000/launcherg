@@ -2,7 +2,7 @@
 mod tests {
     use std::collections::HashSet;
 
-    use domain::repository::explored_cache::ExploredCacheRepository;
+    use domain::repositoryv2::explored_cache::ExploredCacheRepository;
     use crate::repositoryimpl::tests::TestDatabase;
 
     #[tokio::test]

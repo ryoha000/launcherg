@@ -15,15 +15,15 @@ pub struct DmmPackUseCase<R: RepositoriesExt> {
 
 impl<R: RepositoriesExt> DmmPackUseCase<R> {
     pub async fn add(&self, work_id: Id<Work>) -> anyhow::Result<()> {
-        self.repositories.dmm_pack_repository().add(work_id).await
+        self.repositories.dmm_pack().add(work_id).await
     }
 
     pub async fn remove(&self, work_id: Id<Work>) -> anyhow::Result<()> {
-        self.repositories.dmm_pack_repository().remove(work_id).await
+        self.repositories.dmm_pack().remove(work_id).await
     }
 
     pub async fn list(&self) -> anyhow::Result<Vec<DmmWorkPack>> {
-        self.repositories.dmm_pack_repository().list().await
+        self.repositories.dmm_pack().list().await
     }
 }
 

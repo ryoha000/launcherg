@@ -4,14 +4,14 @@
 
 use std::sync::Arc;
 use std::collections::{HashMap, HashSet};
-use domain::repository::work_omit::WorkOmitRepository;
-use domain::repository::works::{DmmWorkRepository, DlsiteWorkRepository};
+use domain::repositoryv2::work_omit::WorkOmitRepository;
+use domain::repositoryv2::works::{DmmWorkRepository, DlsiteWorkRepository};
 use derive_new::new;
-use domain::repository::{collection::CollectionRepository, RepositoriesExt};
-use domain::repository::works::WorkRepository;
-use domain::repository::work_parent_packs::WorkParentPacksRepository;
+use domain::repositoryv2::{collection::CollectionRepository, RepositoriesExt};
+use domain::repositoryv2::works::WorkRepository;
+use domain::repositoryv2::work_parent_packs::WorkParentPacksRepository;
 use domain::save_image_queue::{ImageSrcType, ImagePreprocess};
-use domain::repository::save_image_queue::ImageSaveQueueRepository;
+use domain::repositoryv2::save_image_queue::ImageSaveQueueRepository;
 use domain::service::save_path_resolver::{SavePathResolver, DirsSavePathResolver};
 
 /// 拡張から渡された image_url/thumbnail_url を保存に適したサムネイルURLへ正規化する
@@ -182,7 +182,7 @@ impl<R: RepositoriesExt> NativeHostSyncUseCase<R> {
 		// Work の一括取得
 		let mut work_id_by_key: HashMap<DmmKey, Option<i32>> = HashMap::new();
 		{
-			let works = self.repositories.dmm_work_repository().find_by_store_keys(&keys).await?;
+			let works = self.repositories.dmm_work().find_by_store_keys(&keys).await?;
 			for w in works.into_iter() {
 				work_id_by_key.insert(
 					DmmKey { store_id: w.store_id.clone(), category: w.category.clone(), subcategory: w.subcategory.clone() },
@@ -207,7 +207,7 @@ impl<R: RepositoriesExt> NativeHostSyncUseCase<R> {
 						.and_then(|v| *v)
 				})
 				.collect();
-			let existing = self.repositories.collection_repository().get_collection_ids_by_work_ids(&work_ids).await?;
+			let existing = self.repositories.collection().get_collection_ids_by_work_ids(&work_ids).await?;
 			// work_id -> CE を key へ戻す
 			let mut keys_by_work: HashMap<i32, Vec<DmmKey>> = HashMap::new();
 			for (k, v) in work_id_by_key.iter() {
@@ -222,7 +222,7 @@ impl<R: RepositoriesExt> NativeHostSyncUseCase<R> {
 
 		// omit 一括取得
 		let omitted_work_ids: HashSet<i32> = self.repositories
-			.work_omit_repository()
+			.work_omit()
 			.list()
 			.await?
 			.into_iter()
@@ -236,7 +236,7 @@ impl<R: RepositoriesExt> NativeHostSyncUseCase<R> {
 			.filter_map(|g| g.egs.as_ref().map(|e| e.erogamescape_id))
 			.collect();
 		if !egs_ids.is_empty() {
-			let rows = self.repositories.collection_repository().get_collection_ids_by_erogamescape_ids(&egs_ids).await?;
+			let rows = self.repositories.collection().get_collection_ids_by_erogamescape_ids(&egs_ids).await?;
 			for (egs_id, ceid) in rows.into_iter() { egs_id_to_collection_id.insert(egs_id, ceid); }
 		}
 
@@ -255,18 +255,18 @@ impl<R: RepositoriesExt> NativeHostSyncUseCase<R> {
 		if image_url.is_empty() { return Ok(()); }
 
 		let icon_dst = self.resolver.icon_png_path(collection_element_id.value);
-		let _ = self.repositories.image_queue_repository()
+		let _ = self.repositories.image_queue()
 			.enqueue(image_url, ImageSrcType::Url, &icon_dst, ImagePreprocess::ResizeAndCropSquare256)
 			.await;
 
 		let normalized = normalize_thumbnail_url(image_url);
 		let thumb_dst = self.resolver.thumbnail_png_path(collection_element_id.value);
-		let _ = self.repositories.image_queue_repository()
+		let _ = self.repositories.image_queue()
 			.enqueue(&normalized, ImageSrcType::Url, &thumb_dst, ImagePreprocess::ResizeForWidth400)
 			.await;
 
 		let alias = self.resolver.thumbnail_alias_dmm_png_path(category, subcategory, store_id);
-		let _ = self.repositories.image_queue_repository()
+		let _ = self.repositories.image_queue()
 			.enqueue(&normalized, ImageSrcType::Url, &alias, ImagePreprocess::ResizeForWidth400)
 			.await;
 
@@ -296,11 +296,11 @@ impl<R: RepositoriesExt> NativeHostSyncUseCase<R> {
 		// Work があればマッピング/親子リンク
 		if let Some(work_id) = work_id_opt {
 			self.repositories
-				.collection_repository()
+				.collection()
 				.upsert_work_mapping(&collection_element_id, work_id)
 				.await?;
 			if let Some(pid) = parent_pack_work_id {
-				let _ = self.repositories.work_parent_packs_repository().add(domain::Id::new(work_id), domain::Id::new(pid)).await;
+				let _ = self.repositories.work_parent_packs().add(domain::Id::new(work_id), domain::Id::new(pid)).await;
 			}
 		}
 
@@ -321,7 +321,7 @@ impl<R: RepositoriesExt> NativeHostSyncUseCase<R> {
 		let collection_element_id;
 		if let Some(cid) = self
 			.repositories
-			.collection_repository()
+			.collection()
 			.get_collection_id_by_erogamescape_id(egs.erogamescape_id)
 			.await?
 		{
@@ -330,11 +330,11 @@ impl<R: RepositoriesExt> NativeHostSyncUseCase<R> {
 			// 新規採番し、EGSマップを作成
 			let cid = self
 				.repositories
-				.collection_repository()
+				.collection()
 				.allocate_new_collection_element_id(&egs.gamename)
 				.await?;
 			self.repositories
-				.collection_repository()
+				.collection()
 				.upsert_erogamescape_map(&cid, egs.erogamescape_id)
 				.await?;
 			collection_element_id = cid;
@@ -351,7 +351,7 @@ impl<R: RepositoriesExt> NativeHostSyncUseCase<R> {
 		);
 		self
 			.repositories
-			.collection_repository()
+			.collection()
 			.upsert_collection_element_info(&info)
 			.await?;
 
@@ -367,7 +367,7 @@ impl<R: RepositoriesExt> NativeHostSyncUseCase<R> {
 	) -> anyhow::Result<domain::Id<domain::collection::CollectionElement>> {
 		self
 			.repositories
-			.collection_repository()
+			.collection()
 			.allocate_new_collection_element_id(gamename)
 			.await
 	}
@@ -412,13 +412,13 @@ impl<R: RepositoriesExt> NativeHostSyncUseCase<R> {
 		let mut success: u32 = 0;
 		// omit は都度 exists 判定（work_id ベース）
 		for DlsiteSyncGameParam { store_id, category, gamename, egs, image_url } in games {
-			if let Some(work) = self.repositories.dlsite_work_repository().find_by_store_key(&store_id, &category).await? {
-				if self.repositories.work_omit_repository().exists(domain::Id::new(work.id.value)).await? { continue; }
+			if let Some(work) = self.repositories.dlsite_work().find_by_store_key(&store_id, &category).await? {
+				if self.repositories.work_omit().exists(domain::Id::new(work.id.value)).await? { continue; }
 			}
 			// 既存 (store_id, category) がある場合はスキップ
 			let exists = self
 				.repositories
-				.collection_repository()
+				.collection()
 				.get_collection_id_by_dlsite_mapping(&store_id, &category)
 				.await?;
 			if let Some(_) = exists {
@@ -428,18 +428,18 @@ impl<R: RepositoriesExt> NativeHostSyncUseCase<R> {
 			match egs.as_ref() {
 				Some(egs) => {
 					collection_element_id = self.ensure_collection_for_egs(egs).await?;
-					if let Some(work) = self.repositories.dlsite_work_repository().find_by_store_key(&store_id, &category).await? {
+					if let Some(work) = self.repositories.dlsite_work().find_by_store_key(&store_id, &category).await? {
 						self.repositories
-							.collection_repository()
+							.collection()
 							.upsert_work_mapping(&collection_element_id, work.id.value)
 							.await?;
 					}
 				}
 				None => {
 					collection_element_id = self.create_collection_without_egs(&gamename).await?;
-					if let Some(work) = self.repositories.dlsite_work_repository().find_by_store_key(&store_id, &category).await? {
+					if let Some(work) = self.repositories.dlsite_work().find_by_store_key(&store_id, &category).await? {
 						self.repositories
-							.collection_repository()
+							.collection()
 							.upsert_work_mapping(&collection_element_id, work.id.value)
 							.await?;
 					}
@@ -447,17 +447,17 @@ impl<R: RepositoriesExt> NativeHostSyncUseCase<R> {
 			}
 			if !image_url.is_empty() {
 				let icon_dst = self.resolver.icon_png_path(collection_element_id.value);
-				let _ = self.repositories.image_queue_repository()
+				let _ = self.repositories.image_queue()
 					.enqueue(&image_url, ImageSrcType::Url, &icon_dst, ImagePreprocess::ResizeAndCropSquare256)
 					.await;
 				let normalized = normalize_thumbnail_url(&image_url);
 				let thumb_dst = self.resolver.thumbnail_png_path(collection_element_id.value);
-				let _ = self.repositories.image_queue_repository()
+				let _ = self.repositories.image_queue()
 					.enqueue(&normalized, ImageSrcType::Url, &thumb_dst, ImagePreprocess::ResizeForWidth400)
 					.await;
 				// DLsite 作品の別名パスでも保存
 				let alias = self.resolver.thumbnail_alias_dlsite_png_path(&category, &store_id);
-				let _ = self.repositories.image_queue_repository()
+				let _ = self.repositories.image_queue()
 					.enqueue(&normalized, ImageSrcType::Url, &alias, ImagePreprocess::ResizeForWidth400)
 					.await;
 			}
@@ -468,7 +468,7 @@ impl<R: RepositoriesExt> NativeHostSyncUseCase<R> {
 
 	/// DMM の omit が付与された作品の一覧を返す（DMM情報必須）。
 	pub async fn list_dmm_omit_works(&self) -> anyhow::Result<Vec<DmmOmitItem>> {
-		let all = self.repositories.work_repository().list_all_details().await?;
+		let all = self.repositories.work().list_all_details().await?;
 		let mut out: Vec<DmmOmitItem> = Vec::new();
 		for w in all.into_iter() {
 			if w.is_dmm_omitted {
