@@ -1199,6 +1199,7 @@ dependencies = [
  "chrono",
  "derive-new",
  "dirs 5.0.1",
+ "futures",
  "ico 0.3.0",
  "log",
  "mockall",

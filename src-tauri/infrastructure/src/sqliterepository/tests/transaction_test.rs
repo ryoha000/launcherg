@@ -1,6 +1,6 @@
 use super::TestDatabase;
 use futures::{FutureExt, future::BoxFuture};
-use domain::repositoryv2::{RepositoriesExt, works::WorkRepository};
+use domain::repositoryv2::{RepositoriesExt, works::WorkRepository, transaction::TransactionRepository};
 use domain::works::NewWork;
 
 #[tokio::test]
@@ -10,6 +10,7 @@ async fn トランザクション成功時にコミットされる() -> anyhow::
 
     let title = "work_tx_ok".to_string();
     let _ = repos
+        .transaction()
         .with_transaction(|r| -> BoxFuture<'_, anyhow::Result<()>> { async move {
             r.work().upsert(&NewWork { title: title.clone() }).await?;
             Ok(())
@@ -28,6 +29,7 @@ async fn トランザクション失敗時にロールバックされる() -> an
     let mut repos = test_db.sqlite_repository();
 
     let _err = repos
+        .transaction()
         .with_transaction(|r| -> BoxFuture<'_, anyhow::Result<()>> { async move {
             r.work().upsert(&NewWork { title: "work_tx_ng".to_string() }).await?;
             anyhow::bail!("force rollback")

@@ -1,11 +1,11 @@
 use std::collections::BTreeMap;
 
 use domain::{repositoryv2::works::WorkRepository, works::{DlsiteWork, DmmWork, NewWork, Work, WorkDetails}, Id};
-use sqlx::{query_as, SqliteConnection};
+use sqlx::query_as;
 
-use crate::{repositoryimpl::models::works::{WorkDetailsRow, WorkTable}, sqliterepository::sqliterepository::RepositoryImpl};
+use crate::{repositoryimpl::models::works::{WorkDetailsRow, WorkTable}, sqliterepository::sqliterepository::SqliteRepository};
 
-impl<'a> WorkRepository for RepositoryImpl<'a, domain::works::Work> {
+impl<'a> WorkRepository for SqliteRepository<'a> {
     async fn upsert(&mut self, new_work: &NewWork) -> anyhow::Result<Id<Work>> {
         let title = new_work.title.clone();
         let id = self.executor.with_conn(|conn| {

@@ -25,6 +25,7 @@ pbjson-types = { workspace = true }
 log = { workspace = true }
 dirs = { workspace = true }
 mockall = { workspace = true }
+futures = { workspace = true }
 trait-variant = "0.1"
 
 [dev-dependencies]
