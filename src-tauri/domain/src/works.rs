@@ -29,17 +29,17 @@ pub struct DlsiteWork {
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct NewDmmWork {
-    pub title: String,
     pub store_id: String,
     pub category: String,
     pub subcategory: String,
+    pub work_id: Id<Work>,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct NewDlsiteWork {
-    pub title: String,
     pub store_id: String,
     pub category: String,
+    pub work_id: Id<Work>,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]

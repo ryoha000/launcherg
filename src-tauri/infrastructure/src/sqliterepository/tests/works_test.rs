@@ -1,17 +1,21 @@
 use super::TestDatabase;
 use domain::repository::{RepositoriesExt, works::{DmmWorkRepository, DlsiteWorkRepository, WorkRepository}};
-use domain::works::{NewDmmWork, NewDlsiteWork};
+use domain::works::{NewDmmWork, NewDlsiteWork, NewWork};
 
 #[tokio::test]
 async fn dmm_works_upsert_and_find_by_store_key() {
     let test_db = TestDatabase::new().await.unwrap();
     let mut repo = test_db.sqlite_repository();
 
+    // work を作成
+    let work_id = repo.work().upsert(&NewWork { title: "Title A".into() }).await.unwrap();
+    let work_id_for_update = work_id.clone();
+
     let id = repo.dmm_work().upsert(&NewDmmWork {
-        title: "Title A".into(),
         store_id: "SID-1".into(),
         category: "software".into(),
         subcategory: "game".into(),
+        work_id,
     }).await.unwrap();
     assert!(id.value > 0);
 
@@ -22,18 +26,19 @@ async fn dmm_works_upsert_and_find_by_store_key() {
     assert_eq!(w.category, "software");
     assert_eq!(w.subcategory, "game");
 
+    // 同一 store_id を別 subcategory で更新（work は同じを想定）
     let id2 = repo.dmm_work().upsert(&NewDmmWork {
-        title: "Title A2".into(),
         store_id: "SID-1".into(),
         category: "software".into(),
         subcategory: "utility".into(),
+        work_id: work_id_for_update,
     }).await.unwrap();
     assert_eq!(id.value, id2.value);
 
     let updated = repo.dmm_work().find_by_store_key("SID-1", "software", "utility").await.unwrap();
     assert!(updated.is_some());
     let w2 = updated.unwrap();
-    assert_eq!(w2.title, "Title A2");
+    assert_eq!(w2.title, "Title A");
     assert_eq!(w2.subcategory, "utility");
 }
 
@@ -42,10 +47,14 @@ async fn dlsite_works_upsert_and_find_by_store_key() {
     let test_db = TestDatabase::new().await.unwrap();
     let mut repo = test_db.sqlite_repository();
 
+    // work を作成
+    let work_id = repo.work().upsert(&NewWork { title: "DL Title".into() }).await.unwrap();
+    let work_id_for_update = work_id.clone();
+
     let id = repo.dlsite_work().upsert(&NewDlsiteWork {
-        title: "DL Title".into(),
         store_id: "RJ123".into(),
         category: "software".into(),
+        work_id,
     }).await.unwrap();
     assert!(id.value > 0);
 
@@ -55,17 +64,18 @@ async fn dlsite_works_upsert_and_find_by_store_key() {
     assert_eq!(w.store_id, "RJ123");
     assert_eq!(w.category, "software");
 
+    // 同一 store_id を別 category で更新（work は同じを想定）
     let id2 = repo.dlsite_work().upsert(&NewDlsiteWork {
-        title: "DL Title 2".into(),
         store_id: "RJ123".into(),
         category: "doujin".into(),
+        work_id: work_id_for_update,
     }).await.unwrap();
     assert_eq!(id.value, id2.value);
 
     let updated = repo.dlsite_work().find_by_store_key("RJ123", "doujin").await.unwrap();
     assert!(updated.is_some());
     let w2 = updated.unwrap();
-    assert_eq!(w2.title, "DL Title 2");
+    assert_eq!(w2.title, "DL Title");
     assert_eq!(w2.category, "doujin");
 }
 
@@ -75,11 +85,13 @@ async fn list_all_details_dmm_only() {
     let mut repo = test_db.sqlite_repository();
     {
         let mut dmm_repo = repo.dmm_work();
+        // work を作成
+        let work_id = repo.work().upsert(&NewWork { title: "Title A".into() }).await.unwrap();
         let _ = dmm_repo.upsert(&NewDmmWork {
-            title: "Title A".into(),
             store_id: "SID-1".into(),
             category: "software".into(),
             subcategory: "game".into(),
+            work_id,
         }).await.unwrap();
     }
     let list = {

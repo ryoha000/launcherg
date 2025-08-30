@@ -118,66 +118,31 @@ impl WorkRepository for RepositoryImpl<Work> {
 impl DmmWorkRepository for RepositoryImpl<domain::works::DmmWork> {
     async fn upsert(&mut self, new_work: &NewDmmWork) -> anyhow::Result<Id<DmmWork>> {
         let new_work = new_work.clone();
-        let id = self.executor.with_conn(|conn| {
+        let dmm_id: i64 = self.executor.with_conn(|conn| {
             Box::pin(async move {
-                let mut tx = sqlx::Acquire::begin(conn).await?;
-
-                let existing: Option<(i64, i64)> = sqlx::query_as(
-                    r#"SELECT id, work_id FROM dmm_works WHERE store_id=? LIMIT 1"#,
+                // dmm_works を UPSERT。RETURNING で常に行を返す
+                let (id,): (i64,) = query_as(
+                    r#"INSERT INTO dmm_works (store_id, category, subcategory, work_id)
+                        VALUES (?, ?, ?, ?)
+                        ON CONFLICT(store_id) DO UPDATE SET
+                            category = excluded.category,
+                            subcategory = excluded.subcategory,
+                            work_id = excluded.work_id,
+                            updated_at = CURRENT_TIMESTAMP
+                        RETURNING id"#,
                 )
                 .bind(&new_work.store_id)
-                .fetch_optional(&mut *tx)
+                .bind(&new_work.category)
+                .bind(&new_work.subcategory)
+                .bind(new_work.work_id.value as i64)
+                .fetch_one(&mut *conn)
                 .await?;
 
-                let work_id: i64 = if let Some((_id, work_id)) = existing {
-                    work_id
-                } else {
-                    let (wid,): (i64,) = sqlx::query_as(
-                        r#"INSERT INTO works (title) VALUES (?) RETURNING id"#,
-                    )
-                    .bind(&new_work.title)
-                    .fetch_one(&mut *tx)
-                    .await?;
-                    wid
-                };
-
-                let dmm_id: i64 = if let Some((id, existing_work_id)) = existing {
-                    let _: (i64,) = sqlx::query_as(
-                        r#"UPDATE works SET title=?, updated_at=CURRENT_TIMESTAMP WHERE id=? RETURNING id"#,
-                    )
-                    .bind(&new_work.title)
-                    .bind(existing_work_id)
-                    .fetch_one(&mut *tx)
-                    .await?;
-
-                    let (_row,): (i64,) = sqlx::query_as(
-                        r#"UPDATE dmm_works SET category=?, subcategory=?, work_id=?, updated_at=CURRENT_TIMESTAMP WHERE id=? RETURNING id"#,
-                    )
-                    .bind(&new_work.category)
-                    .bind(&new_work.subcategory)
-                    .bind(work_id)
-                    .bind(id)
-                    .fetch_one(&mut *tx)
-                    .await?;
-                    _row
-                } else {
-                    let (id,): (i64,) = sqlx::query_as(
-                        r#"INSERT INTO dmm_works (store_id, category, subcategory, work_id) VALUES (?, ?, ?, ?) RETURNING id"#,
-                    )
-                    .bind(&new_work.store_id)
-                    .bind(&new_work.category)
-                    .bind(&new_work.subcategory)
-                    .bind(work_id)
-                    .fetch_one(&mut *tx)
-                    .await?;
-                    id
-                };
-
-                tx.commit().await?;
-                Ok::<i64, anyhow::Error>(dmm_id)
+                Ok::<i64, anyhow::Error>(id)
             })
         }).await?;
-        Ok(Id::new(id as i32))
+
+        Ok(Id::new(dmm_id as i32))
     }
 
     async fn find_by_store_key(&mut self, store_id: &str, category: &str, subcategory: &str) -> anyhow::Result<Option<DmmWork>> {
@@ -244,62 +209,29 @@ impl DmmWorkRepository for RepositoryImpl<domain::works::DmmWork> {
 impl DlsiteWorkRepository for RepositoryImpl<domain::works::DlsiteWork> {
     async fn upsert(&mut self, new_work: &NewDlsiteWork) -> anyhow::Result<Id<DlsiteWork>> {
         let new_work = new_work.clone();
-        let id = self.executor.with_conn(|conn| {
+        let dl_id: i64 = self.executor.with_conn(|conn| {
             Box::pin(async move {
-                let mut tx = sqlx::Acquire::begin(conn).await?;
-
-                let existing: Option<(i64, i64)> = sqlx::query_as(
-                    r#"SELECT id, work_id FROM dlsite_works WHERE store_id=? LIMIT 1"#,
+                // dlsite_works を UPSERT。RETURNING で常に行を返す
+                let (id,): (i64,) = query_as(
+                    r#"INSERT INTO dlsite_works (store_id, category, work_id)
+                        VALUES (?, ?, ?)
+                        ON CONFLICT(store_id) DO UPDATE SET
+                            category = excluded.category,
+                            work_id = excluded.work_id,
+                            updated_at = CURRENT_TIMESTAMP
+                        RETURNING id"#,
                 )
                 .bind(&new_work.store_id)
-                .fetch_optional(&mut *tx)
+                .bind(&new_work.category)
+                .bind(new_work.work_id.value as i64)
+                .fetch_one(&mut *conn)
                 .await?;
 
-                let work_id: i64 = if let Some((_id, work_id)) = existing { work_id } else {
-                    let (wid,): (i64,) = sqlx::query_as(
-                        r#"INSERT INTO works (title) VALUES (?) RETURNING id"#,
-                    )
-                    .bind(&new_work.title)
-                    .fetch_one(&mut *tx)
-                    .await?;
-                    wid
-                };
-
-                let dl_id: i64 = if let Some((id, existing_work_id)) = existing {
-                    let _: (i64,) = sqlx::query_as(
-                        r#"UPDATE works SET title=?, updated_at=CURRENT_TIMESTAMP WHERE id=? RETURNING id"#,
-                    )
-                    .bind(&new_work.title)
-                    .bind(existing_work_id)
-                    .fetch_one(&mut *tx)
-                    .await?;
-
-                    let (_row,): (i64,) = sqlx::query_as(
-                        r#"UPDATE dlsite_works SET category=?, work_id=?, updated_at=CURRENT_TIMESTAMP WHERE id=? RETURNING id"#,
-                    )
-                    .bind(&new_work.category)
-                    .bind(work_id)
-                    .bind(id)
-                    .fetch_one(&mut *tx)
-                    .await?;
-                    _row
-                } else {
-                    let (id,): (i64,) = sqlx::query_as(
-                        r#"INSERT INTO dlsite_works (store_id, category, work_id) VALUES (?, ?, ?) RETURNING id"#,
-                    )
-                    .bind(&new_work.store_id)
-                    .bind(&new_work.category)
-                    .bind(work_id)
-                    .fetch_one(&mut *tx)
-                    .await?;
-                    id
-                };
-
-                tx.commit().await?;
-                Ok::<i64, anyhow::Error>(dl_id)
+                Ok::<i64, anyhow::Error>(id)
             })
         }).await?;
-        Ok(Id::new(id as i32))
+
+        Ok(Id::new(dl_id as i32))
     }
 
     async fn find_by_store_key(&mut self, store_id: &str, category: &str) -> anyhow::Result<Option<DlsiteWork>> {
