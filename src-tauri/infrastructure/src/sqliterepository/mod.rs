@@ -9,7 +9,6 @@ pub mod work_parent_packs;
 pub mod dmm_work_pack;
 pub mod collection;
 pub mod driver;
-pub mod transaction;
 pub mod models;
 
 #[cfg(test)]

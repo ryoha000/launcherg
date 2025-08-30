@@ -13,7 +13,6 @@ mod embedded {
     embed_migrations!("./src/migrations");
 }
 
-mod transaction_test;
 mod works_test;
 mod all_game_cache_test;
 mod explored_cache_test;

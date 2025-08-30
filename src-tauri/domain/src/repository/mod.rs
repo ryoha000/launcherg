@@ -1,4 +1,3 @@
-pub mod transaction;
 pub mod works;
 pub mod all_game_cache;
 pub mod explored_cache;
