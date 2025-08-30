@@ -84,7 +84,16 @@ impl AllGameCacheRepository for RepositoryImpl<domain::all_game_cache::AllGameCa
             Box::pin(async move {
                 let search_pattern = format!("%{}%", name);
                 let rows = sqlx::query(
-                    "SELECT id, gamename, thumbnail_url FROM all_game_caches \\n+             WHERE gamename LIKE ? \\n+             ORDER BY \\n+                CASE \\n+                    WHEN gamename = ? THEN 1 \\n+                    WHEN gamename LIKE ? THEN 2 \\n+                    ELSE 3 \\n+                END, \\n+                LENGTH(gamename) \\n+             LIMIT 50"
+                    r#"SELECT id, gamename, thumbnail_url FROM all_game_caches
+             WHERE gamename LIKE ?
+             ORDER BY
+                CASE
+                    WHEN gamename = ? THEN 1
+                    WHEN gamename LIKE ? THEN 2
+                    ELSE 3
+                END,
+                LENGTH(gamename)
+             LIMIT 50"#
                 )
                 .bind(&search_pattern)
                 .bind(&name)
