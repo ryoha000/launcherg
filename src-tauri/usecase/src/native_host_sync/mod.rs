@@ -7,10 +7,9 @@ use std::collections::{HashMap, HashSet};
 use domain::repository::work_omit::WorkOmitRepository;
 use domain::repository::works::{DmmWorkRepository, DlsiteWorkRepository};
 use derive_new::new;
-use domain::repository::{collection::CollectionRepository, RepositoriesExt, manager::RepositoryManager};
+use domain::repository::{collection::CollectionRepository, RepositoriesExt, manager::RepositoryManager, work_parent_packs::WorkParentPacksRepository};
 use std::marker::PhantomData;
 use domain::repository::works::WorkRepository;
-use domain::repository::work_parent_packs::WorkParentPacksRepository;
 use domain::save_image_queue::{ImageSrcType, ImagePreprocess};
 use domain::repository::save_image_queue::ImageSaveQueueRepository;
 use domain::service::save_path_resolver::{SavePathResolver, DirsSavePathResolver};
@@ -193,20 +192,23 @@ where
 			.map(|g| (g.store_id.clone(), g.category.clone(), g.subcategory.clone()))
 			.collect();
 
-		// Work の一括取得
+		// Work の取得（1キーずつ lookup して対応関係を構築）
 		let mut work_id_by_key: HashMap<DmmKey, Option<i32>> = HashMap::new();
-		let works = self.manager.run(|repos| {
+		let found_map: HashMap<(String, String, String), i32> = self.manager.run(|repos| {
 			let keys = keys.clone();
 			Box::pin(async move {
 				let mut repo = repos.dmm_work();
-				repo.find_by_store_keys(&keys).await
+				let mut out: HashMap<(String, String, String), i32> = HashMap::new();
+				for (sid, cat, sub) in keys.into_iter() {
+					if let Some(w) = repo.find_by_store_key(&sid, &cat, &sub).await? {
+						out.insert((sid, cat, sub), w.id.value);
+					}
+				}
+				Ok::<_, anyhow::Error>(out)
 			})
 		}).await?;
-		for w in works.into_iter() {
-			work_id_by_key.insert(
-				DmmKey { store_id: w.store_id.clone(), category: w.category.clone(), subcategory: w.subcategory.clone() },
-				Some(w.id.value),
-			);
+		for ((sid, cat, sub), wid) in found_map.into_iter() {
+			work_id_by_key.insert(DmmKey { store_id: sid, category: cat, subcategory: sub }, Some(wid));
 		}
 		// 入力に対して必ずキーを用意（未取得は None）
 		for (sid, cat, sub) in keys.iter() {
@@ -224,13 +226,23 @@ where
 					.and_then(|v| *v)
 			})
 			.collect();
-		let existing = self.manager.run(|repos| {
-			let work_ids = work_ids.clone();
-			Box::pin(async move {
-				let mut repo = repos.collection();
-				repo.get_collection_ids_by_work_ids(&work_ids).await
-			})
-		}).await?;
+		// work_ids は多くなる可能性があるためチャンクして問い合わせ
+		let mut existing: Vec<(i32, domain::Id<domain::collection::CollectionElement>)> = Vec::new();
+		let mut woff = 0usize;
+		let wchunk = 200usize; // パラメータ上限を考慮
+		while woff < work_ids.len() {
+			let wend = (woff + wchunk).min(work_ids.len());
+			let sub = work_ids[woff..wend].to_vec();
+			let rows = self.manager.run(|repos| {
+				let sub = sub.clone();
+				Box::pin(async move {
+					let mut repo = repos.collection();
+					repo.get_collection_ids_by_work_ids(&sub).await
+				})
+			}).await?;
+			existing.extend(rows.into_iter());
+			woff = wend;
+		}
 		// work_id -> CE を key へ戻す
 		let mut keys_by_work: HashMap<i32, Vec<DmmKey>> = HashMap::new();
 		for (k, v) in work_id_by_key.iter() {
@@ -319,6 +331,40 @@ where
 		Ok(())
 	}
 
+	/// 作品画像をキュー投入する（トランザクション内で repos を直接使用）
+	async fn enqueue_images_for_dmm_with_repos<Rx: RepositoriesExt + Send + Sync + 'static>(
+		repos: &Rx,
+		resolver: &dyn SavePathResolver,
+		collection_element_id: &domain::Id<domain::collection::CollectionElement>,
+		category: &str,
+		subcategory: &str,
+		store_id: &str,
+		image_url: &str,
+	) -> anyhow::Result<()> {
+		if image_url.is_empty() { return Ok(()); }
+
+		let icon_dst = resolver.icon_png_path(collection_element_id.value);
+		{
+			let mut repo = repos.image_queue();
+			let _ = repo.enqueue(image_url, ImageSrcType::Url, &icon_dst, ImagePreprocess::ResizeAndCropSquare256).await;
+		}
+
+		let normalized = normalize_thumbnail_url(image_url);
+		let thumb_dst = resolver.thumbnail_png_path(collection_element_id.value);
+		{
+			let mut repo = repos.image_queue();
+			let _ = repo.enqueue(&normalized, ImageSrcType::Url, &thumb_dst, ImagePreprocess::ResizeForWidth400).await;
+		}
+
+		let alias = resolver.thumbnail_alias_dmm_png_path(category, subcategory, store_id);
+		{
+			let mut repo = repos.image_queue();
+			let _ = repo.enqueue(&normalized, ImageSrcType::Url, &alias, ImagePreprocess::ResizeForWidth400).await;
+		}
+
+		Ok(())
+	}
+
 	/// 計画にもとづき副作用を実行（要素用意→マッピング→親子リンク→画像投入）
 	async fn execute_apply(&self, apply: SyncApply, caches: &mut Caches) -> anyhow::Result<()> {
 		let SyncApply { key, work_id_opt, gamename, image_url, parent_pack_work_id, egs } = apply;
@@ -354,6 +400,47 @@ where
 
 		// 画像投入（失敗は握りつぶして継続する実装方針を踏襲）
 		let _ = self.enqueue_images_for_dmm(&collection_element_id, &key.category, &key.subcategory, &key.store_id, &image_url).await;
+
+		Ok(())
+	}
+
+	/// 計画にもとづき副作用を実行（トランザクション内のリポジトリを使用）
+	async fn execute_apply_with_repos<Rx: RepositoriesExt + Send + Sync + 'static>(
+		repos: &Rx,
+		apply: SyncApply,
+		caches: &mut Caches,
+		resolver: &dyn SavePathResolver,
+	) -> anyhow::Result<()> {
+		let SyncApply { key, work_id_opt, gamename, image_url, parent_pack_work_id, egs } = apply;
+
+		// Collection Element を用意
+		let collection_element_id = match egs.as_ref() {
+			Some(egs_info) => {
+				if let Some(cid) = caches.egs_id_to_collection_id.get(&egs_info.erogamescape_id) {
+					cid.clone()
+				} else {
+					let cid = Self::ensure_collection_for_egs_with_repos(repos, egs_info).await?;
+					caches.egs_id_to_collection_id.insert(egs_info.erogamescape_id, cid.clone());
+					cid
+				}
+			}
+			None => {
+				Self::create_collection_without_egs_with_repos(repos, &gamename).await?
+			}
+		};
+
+		// Work があればマッピング/親子リンク
+		if let Some(work_id) = work_id_opt {
+			let mut col = repos.collection();
+			col.upsert_work_mapping(&collection_element_id, work_id).await?;
+			if let Some(pid) = parent_pack_work_id {
+				let mut pprepo = repos.work_parent_packs();
+				let _ = pprepo.add(domain::Id::new(work_id), domain::Id::new(pid)).await;
+			}
+		}
+
+		// 画像投入（失敗は握りつぶして継続）
+		let _ = Self::enqueue_images_for_dmm_with_repos(repos, resolver, &collection_element_id, &key.category, &key.subcategory, &key.store_id, &image_url).await;
 
 		Ok(())
 	}
@@ -415,6 +502,45 @@ where
 		Ok(collection_element_id)
 	}
 
+	/// 指定 EGS に対応するコレクション要素を確実に用意する（トランザクション内で repos を直接使用）
+	async fn ensure_collection_for_egs_with_repos<Rx: RepositoriesExt + Send + Sync + 'static>(
+		repos: &Rx,
+		egs: &EgsInfo,
+	) -> anyhow::Result<domain::Id<domain::collection::CollectionElement>> {
+		let collection_element_id;
+		if let Some(cid) = {
+			let mut repo = repos.collection();
+			repo.get_collection_id_by_erogamescape_id(egs.erogamescape_id).await?
+		} {
+			collection_element_id = cid;
+		} else {
+			let cid = {
+				let mut repo = repos.collection();
+				repo.allocate_new_collection_element_id(&egs.gamename).await?
+			};
+			{
+				let mut repo = repos.collection();
+				repo.upsert_erogamescape_map(&cid, egs.erogamescape_id).await?;
+			}
+			collection_element_id = cid;
+		}
+
+		let info: domain::collection::NewCollectionElementInfo = domain::collection::NewCollectionElementInfo::new(
+			collection_element_id.clone(),
+			egs.gamename_ruby.clone(),
+			egs.brandname.clone(),
+			egs.brandname_ruby.clone(),
+			egs.sellday.clone(),
+			egs.is_nukige,
+		);
+		{
+			let mut repo = repos.collection();
+			repo.upsert_collection_element_info(&info).await?;
+		}
+
+		Ok(collection_element_id)
+	}
+
 	/// EGS 不明用の要素を採番して作成する。
 	/// - 与えられた `gamename` をそのまま `collection_elements` に登録する
 	/// 戻り値: コレクション要素 ID
@@ -431,6 +557,15 @@ where
 		}).await
 	}
 
+	/// EGS 不明用の要素を採番して作成（トランザクション内で repos を直接使用）
+	async fn create_collection_without_egs_with_repos<Rx: RepositoriesExt + Send + Sync + 'static>(
+		repos: &Rx,
+		gamename: &str,
+	) -> anyhow::Result<domain::Id<domain::collection::CollectionElement>> {
+		let mut repo = repos.collection();
+		repo.allocate_new_collection_element_id(gamename).await
+	}
+
 	/// DMM のゲーム情報を同期する。
 	/// - 既存チェック: `(store_id, category, subcategory)` が存在すればスキップ（冪等）
 	/// - `egs: Some` の場合、EGS に紐づく要素を用意・更新した上で DMM マッピングを upsert
@@ -441,21 +576,104 @@ where
 		&self,
 		games: Vec<DmmSyncGameParam>,
 	) -> anyhow::Result<u32> {
-		let mut success: u32 = 0;
 		let snapshot = self.build_dmm_batch_snapshot(&games).await?;
-		let mut caches = Caches { egs_id_to_collection_id: snapshot.egs_id_to_collection_id.clone() };
+		let mut plans: Vec<PlanDecision> = Vec::with_capacity(games.len());
+		for param in games.into_iter() { plans.push(self.decide_for_game(&snapshot, param).await?); }
+		let resolver = self.resolver.clone();
+		self.manager.run_in_transaction(move |repos| {
+			let mut caches = Caches { egs_id_to_collection_id: snapshot.egs_id_to_collection_id.clone() };
+			let plans = plans.clone();
+			let resolver = resolver.clone();
+			Box::pin(async move {
+				let mut success: u32 = 0;
+				for plan in plans.into_iter() {
+					match plan {
+						PlanDecision::SkipExists => {}
+						PlanDecision::SkipOmitted => {}
+						PlanDecision::Apply(apply) => {
+							let SyncApply { key, work_id_opt, gamename, image_url, parent_pack_work_id, egs } = apply;
+							// ensure collection element
+							let collection_element_id = match egs.as_ref() {
+								Some(egs_info) => {
+									if let Some(cid) = caches.egs_id_to_collection_id.get(&egs_info.erogamescape_id) {
+										cid.clone()
+									} else {
+										let maybe = {
+											let mut col = repos.collection();
+											col.get_collection_id_by_erogamescape_id(egs_info.erogamescape_id).await?
+										};
+										let cid = if let Some(x) = maybe { x } else {
+											let cid = {
+												let mut col = repos.collection();
+												col.allocate_new_collection_element_id(&egs_info.gamename).await?
+											};
+											{
+												let mut col = repos.collection();
+												col.upsert_erogamescape_map(&cid, egs_info.erogamescape_id).await?;
+											}
+											cid
+										};
+										let info: domain::collection::NewCollectionElementInfo = domain::collection::NewCollectionElementInfo::new(
+											cid.clone(),
+											egs_info.gamename_ruby.clone(),
+											egs_info.brandname.clone(),
+											egs_info.brandname_ruby.clone(),
+											egs_info.sellday.clone(),
+											egs_info.is_nukige,
+										);
+										{
+											let mut col = repos.collection();
+											col.upsert_collection_element_info(&info).await?;
+										}
+										caches.egs_id_to_collection_id.insert(egs_info.erogamescape_id, cid.clone());
+										cid
+									}
+								}
+								None => {
+									let mut col = repos.collection();
+									col.allocate_new_collection_element_id(&gamename).await?
+								}
+							};
 
-		for param in games.into_iter() {
-			match self.decide_for_game(&snapshot, param).await? {
-				PlanDecision::SkipExists => {}
-				PlanDecision::SkipOmitted => {}
-				PlanDecision::Apply(apply) => {
-					self.execute_apply(apply, &mut caches).await?;
-					success += 1;
+							// work mapping and parent pack
+							if let Some(work_id) = work_id_opt {
+								{
+									let mut col = repos.collection();
+									col.upsert_work_mapping(&collection_element_id, work_id).await?;
+								}
+								if let Some(pid) = parent_pack_work_id {
+									let mut wp = repos.work_parent_packs();
+									let _ = wp.add(domain::Id::new(work_id), domain::Id::new(pid)).await;
+								}
+							}
+
+							// images enqueue (best effort)
+							if !image_url.is_empty() {
+								let icon_dst = resolver.icon_png_path(collection_element_id.value);
+								{
+									let mut iq = repos.image_queue();
+									let _ = iq.enqueue(&image_url, ImageSrcType::Url, &icon_dst, ImagePreprocess::ResizeAndCropSquare256).await;
+								}
+								let normalized = normalize_thumbnail_url(&image_url);
+								let thumb_dst = resolver.thumbnail_png_path(collection_element_id.value);
+								{
+									let mut iq = repos.image_queue();
+									let _ = iq.enqueue(&normalized, ImageSrcType::Url, &thumb_dst, ImagePreprocess::ResizeForWidth400).await;
+								}
+								let alias = resolver.thumbnail_alias_dmm_png_path(&key.category, &key.subcategory, &key.store_id);
+								{
+									let mut iq = repos.image_queue();
+									let _ = iq.enqueue(&normalized, ImageSrcType::Url, &alias, ImagePreprocess::ResizeForWidth400).await;
+								}
+							}
+
+							success += 1;
+						}
+					}
 				}
-			}
-		}
-		Ok(success)
+				Ok(success)
+			})
+		}).await
 	}
 
 	/// DLsite のゲーム情報を同期する。

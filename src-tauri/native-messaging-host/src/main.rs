@@ -302,3 +302,75 @@ fn to_dlsite_params(request: &DlsiteSyncGamesRequestTs) -> (Vec<String>, Vec<Dls
     (input_ids, params)
 }
 
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::sync::Arc as StdArc;
+    use domain::repository::RepositoriesExt;
+    use domain::repository::works::{DmmWorkRepository, WorkRepository};
+    use domain::works::{NewDmmWork, NewWork};
+    use domain::repository::manager::RepositoryManager;
+
+    #[tokio::test]
+    async fn 統合_dmm_1000件_20秒以内_半数egs_10件parent() {
+        // 一時DBを用意してRepoDb経由で接続（自動マイグレーション）
+        let tmp = std::env::temp_dir().join(format!("launcherg-int-{}.db3", std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_millis()));
+        let tmp_str = tmp.to_string_lossy().to_string().replace("\\", "/");
+        let db = RepoDb::from_path(&tmp_str).await;
+        let repo_manager = StdArc::new(SqliteRepositoryManager::new(db.pool_arc()));
+        let resolver = Arc::new(DirsSavePathResolver::default());
+        let usecase = NativeHostSyncUseCase::new(repo_manager.clone(), resolver.clone());
+
+        // まず parent 用の work を1件作成し、その work_id を後続で参照
+        let parent_work_id: i32 = repo_manager.run(|repos| {
+            Box::pin(async move {
+                // work を先に作成
+                let mut work_repo = repos.work();
+                let work_id = work_repo.upsert(&NewWork { title: "Parent Pack".into() }).await?.value;
+                // dmm_work を紐付け
+                let mut dmm = repos.dmm_work();
+                let id = dmm.upsert(&NewDmmWork { store_id: "PARENT_SID".to_string(), category: "game".to_string(), subcategory: "pack".to_string(), work_id: domain::Id::new(work_id) }).await?;
+                Ok::<i32, anyhow::Error>(id.value)
+            })
+        }).await.unwrap();
+
+        // 1000件のDMM Workを事前投入
+        let categories = ["game", "doujin"]; // 適当
+        let subcategories = ["pc", "rpg", "adv", "act"]; // 適当
+        repo_manager.run(|repos| {
+            Box::pin(async move {
+                let mut dmm = repos.dmm_work();
+                for i in 0..1000 {
+                    let store_id = format!("SID{:04}", i);
+                    let category = categories[(i as usize) % categories.len()].to_string();
+                    let subcategory = subcategories[(i as usize) % subcategories.len()].to_string();
+                    // work を先に用意
+                    let mut work_repo = repos.work();
+                    let work_id = work_repo.upsert(&NewWork { title: format!("Game {:04}", i) }).await?.value;
+                    let _ = dmm.upsert(&NewDmmWork { store_id, category, subcategory, work_id: domain::Id::new(work_id) }).await?;
+                }
+                Ok::<(), anyhow::Error>(())
+            })
+        }).await.unwrap();
+
+        // 入力生成: 半分はEGSあり、うち10件はparent_pack_work_idを設定
+        let mut params: Vec<DmmSyncGameParam> = Vec::with_capacity(1000);
+        for i in 0..1000 {
+            let store_id = format!("SID{:04}", i);
+            let category = categories[(i as usize) % categories.len()].to_string();
+            let subcategory = subcategories[(i as usize) % subcategories.len()].to_string();
+            let egs = if i % 2 == 0 { Some(EgsInfo { erogamescape_id: 100000 + i, gamename: format!("EGS Name {:04}", i), gamename_ruby: "r".into(), brandname: "b".into(), brandname_ruby: "br".into(), sellday: "2024".into(), is_nukige: false }) } else { None };
+            let parent = if i < 10 { Some(parent_work_id) } else { None };
+            params.push(DmmSyncGameParam { store_id, category, subcategory, gamename: format!("Game {:04}", i), egs, image_url: String::new(), parent_pack_work_id: parent });
+        }
+
+        // 実行と時間計測
+        use std::time::Instant;
+        let start = Instant::now();
+        let synced = usecase.sync_dmm_games(params).await.unwrap();
+        let elapsed = start.elapsed();
+        assert_eq!(synced, 1000, "同期件数が一致すること");
+        assert!(elapsed.as_secs_f64() < 20.0, "1000件同期が20秒未満で終わること。実測: {:?}", elapsed);
+    }
+}
+

@@ -23,9 +23,11 @@ impl Db {
         let pool = SqlitePoolOptions::new()
             .max_connections(256)
             .connect_with(
-                SqliteConnectOptions::from_str(&format!("sqlite://{}?mode=rwc&journal_mode=WAL&busy_timeout=5000", db_filename))
+                SqliteConnectOptions::from_str(&format!("sqlite://{}?mode=rwc", db_filename))
                     .unwrap()
-                    .foreign_keys(true),
+                    .foreign_keys(true)
+                    .journal_mode(sqlx::sqlite::SqliteJournalMode::Wal)
+                    .busy_timeout(std::time::Duration::from_millis(5000)),
             )
             .await
             .map_err(|err| format!("{}\nfile: {}", err.to_string(), db_filename))
@@ -51,9 +53,11 @@ impl Db {
         let pool = SqlitePoolOptions::new()
             .max_connections(256)
             .connect_with(
-                SqliteConnectOptions::from_str(&format!("sqlite://{}?mode=rwc&journal_mode=WAL&busy_timeout=5000", db_filename))
+                SqliteConnectOptions::from_str(&format!("sqlite://{}?mode=rwc", db_filename))
                     .unwrap()
-                    .foreign_keys(true),
+                    .foreign_keys(true)
+                    .journal_mode(sqlx::sqlite::SqliteJournalMode::Wal)
+                    .busy_timeout(std::time::Duration::from_millis(5000)),
             )
             .await
             .map_err(|err| format!("{}\nfile: {}", err.to_string(), db_filename))

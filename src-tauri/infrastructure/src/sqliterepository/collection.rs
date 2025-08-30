@@ -498,18 +498,21 @@ impl CollectionRepository for RepositoryImpl<domain::collection::CollectionEleme
         let gamename = gamename.to_string();
         let id = self.executor.with_conn(|conn| {
             Box::pin(async move {
-                let mut tx = Acquire::begin(conn).await?;
                 let max_id: Option<(i32,)> = sqlx::query_as("SELECT COALESCE(MAX(id), 0) FROM collection_elements")
-                    .fetch_optional(&mut *tx)
+                    .fetch_optional(conn)
                     .await?;
                 let next_id = max_id.map(|v| v.0).unwrap_or(0) + 1;
-                query("INSERT INTO collection_elements (id, gamename) VALUES (?, ?)")
-                    .bind(next_id)
-                    .bind(gamename)
-                    .execute(&mut *tx)
-                    .await?;
-                tx.commit().await?;
                 Ok::<i32, anyhow::Error>(next_id)
+            })
+        }).await?;
+        self.executor.with_conn(|conn| {
+            Box::pin(async move {
+                query("INSERT INTO collection_elements (id, gamename) VALUES (?, ?)")
+                    .bind(id)
+                    .bind(gamename)
+                    .execute(conn)
+                    .await?;
+                Ok::<i32, anyhow::Error>(id)
             })
         }).await?;
         Ok(Id::new(id))
@@ -634,7 +637,6 @@ impl CollectionRepository for RepositoryImpl<domain::collection::CollectionEleme
         let ce = collection_element_id.value;
         self.executor.with_conn(|conn| {
             Box::pin(async move {
-                let mut tx = Acquire::begin(conn).await?;
                 sqlx::query(
                     r#"
             INSERT OR IGNORE INTO work_collection_elements (work_id, collection_element_id)
@@ -643,9 +645,8 @@ impl CollectionRepository for RepositoryImpl<domain::collection::CollectionEleme
                 )
                 .bind(work_id as i64)
                 .bind(ce)
-                .execute(&mut *tx)
+                .execute(conn)
                 .await?;
-                tx.commit().await?;
                 Ok::<(), anyhow::Error>(())
             })
         }).await?;
