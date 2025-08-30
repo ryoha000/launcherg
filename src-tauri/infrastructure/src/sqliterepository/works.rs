@@ -3,9 +3,9 @@ use std::collections::BTreeMap;
 use domain::{repository::works::{WorkRepository, DmmWorkRepository, DlsiteWorkRepository}, works::{DlsiteWork, DmmWork, NewDlsiteWork, NewDmmWork, NewWork, Work, WorkDetails}, Id};
 use sqlx::query_as;
 
-use crate::{sqliterepository::models::works::{WorkDetailsRow, WorkTable}, sqliterepository::sqliterepository::SqliteRepository};
+use crate::sqliterepository::{models::works::{WorkDetailsRow, WorkTable}, sqliterepository::RepositoryImpl};
 
-impl<'a> WorkRepository for SqliteRepository<'a> {
+impl WorkRepository for RepositoryImpl<Work> {
     async fn upsert(&mut self, new_work: &NewWork) -> anyhow::Result<Id<Work>> {
         let title = new_work.title.clone();
         let id = self.executor.with_conn(|conn| {
@@ -115,7 +115,7 @@ impl<'a> WorkRepository for SqliteRepository<'a> {
     }
 }
 
-impl<'a> DmmWorkRepository for SqliteRepository<'a> {
+impl DmmWorkRepository for RepositoryImpl<domain::works::DmmWork> {
     async fn upsert(&mut self, new_work: &NewDmmWork) -> anyhow::Result<Id<DmmWork>> {
         let new_work = new_work.clone();
         let id = self.executor.with_conn(|conn| {
@@ -241,7 +241,7 @@ impl<'a> DmmWorkRepository for SqliteRepository<'a> {
     }
 }
 
-impl<'a> DlsiteWorkRepository for SqliteRepository<'a> {
+impl DlsiteWorkRepository for RepositoryImpl<domain::works::DlsiteWork> {
     async fn upsert(&mut self, new_work: &NewDlsiteWork) -> anyhow::Result<Id<DlsiteWork>> {
         let new_work = new_work.clone();
         let id = self.executor.with_conn(|conn| {

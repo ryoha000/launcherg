@@ -6,18 +6,28 @@ use domain::{
     works::Work,
     Id,
 };
-use domain::repository::{RepositoriesExt, work_omit::WorkOmitRepository};
+use domain::repository::{RepositoriesExt, work_omit::WorkOmitRepository, manager::RepositoryManager};
+use std::marker::PhantomData;
 
 #[derive(new)]
-pub struct WorkOmitUseCase<R: RepositoriesExt> {
-    repositories: Arc<tokio::sync::Mutex<R>>,
+pub struct WorkOmitUseCase<M, R>
+where
+    M: RepositoryManager<R>,
+    R: RepositoriesExt + Send + Sync + 'static,
+{
+    manager: Arc<M>,
+    _marker: PhantomData<R>,
 }
 
-impl<R: RepositoriesExt> WorkOmitUseCase<R> {
-    pub async fn add(&self, work_id: Id<Work>) -> anyhow::Result<()> { let mut repos = self.repositories.lock().await; repos.work_omit().add(work_id).await }
-    pub async fn remove(&self, work_id: Id<Work>) -> anyhow::Result<()> { let mut repos = self.repositories.lock().await; repos.work_omit().remove(work_id).await }
-    pub async fn list(&self) -> anyhow::Result<Vec<WorkOmit>> { let mut repos = self.repositories.lock().await; repos.work_omit().list().await }
-    pub async fn exists(&self, work_id: Id<Work>) -> anyhow::Result<bool> { let mut repos = self.repositories.lock().await; repos.work_omit().exists(work_id).await }
+impl<M, R> WorkOmitUseCase<M, R>
+where
+    M: RepositoryManager<R>,
+    R: RepositoriesExt + Send + Sync + 'static,
+{
+    pub async fn add(&self, work_id: Id<Work>) -> anyhow::Result<()> { self.manager.run(move |repos| Box::pin(async move { repos.work_omit().add(work_id).await })).await }
+    pub async fn remove(&self, work_id: Id<Work>) -> anyhow::Result<()> { self.manager.run(move |repos| Box::pin(async move { repos.work_omit().remove(work_id).await })).await }
+    pub async fn list(&self) -> anyhow::Result<Vec<WorkOmit>> { self.manager.run(|repos| Box::pin(async move { repos.work_omit().list().await })).await }
+    pub async fn exists(&self, work_id: Id<Work>) -> anyhow::Result<bool> { self.manager.run(move |repos| Box::pin(async move { repos.work_omit().exists(work_id).await })).await }
 }
 
 

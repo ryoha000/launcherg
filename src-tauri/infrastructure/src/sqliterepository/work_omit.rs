@@ -1,7 +1,7 @@
 use domain::{repository::work_omit::WorkOmitRepository, work_omit::WorkOmit, works::Work, Id};
-use crate::sqliterepository::sqliterepository::SqliteRepository;
+use crate::sqliterepository::sqliterepository::RepositoryImpl;
 
-impl<'a> WorkOmitRepository for SqliteRepository<'a> {
+impl WorkOmitRepository for RepositoryImpl<domain::work_omit::WorkOmit> {
     async fn add(&mut self, work_id: Id<Work>) -> anyhow::Result<()> {
         self.executor.with_conn(|conn| {
             Box::pin(async move {

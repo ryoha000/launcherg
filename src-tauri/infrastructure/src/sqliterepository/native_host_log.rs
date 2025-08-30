@@ -4,9 +4,9 @@ use domain::Id;
 use crate::sqliterepository::models::native_host_log::NativeHostLogTable;
 use sqlx::Row;
 use chrono::TimeZone;
-use crate::sqliterepository::sqliterepository::SqliteRepository;
+use crate::sqliterepository::sqliterepository::RepositoryImpl;
 
-impl<'a> NativeHostLogRepository for SqliteRepository<'a> {
+impl NativeHostLogRepository for RepositoryImpl<domain::native_host_log::NativeHostLogRow> {
     async fn insert_log(&mut self, level: HostLogLevel, typ: HostLogType, message: &str) -> anyhow::Result<()> {
         let message = message.to_string();
         self.executor.with_conn(|conn| {

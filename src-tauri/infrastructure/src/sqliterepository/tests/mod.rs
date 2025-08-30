@@ -5,7 +5,8 @@ use sqlx::{
 };
 use tempfile::NamedTempFile;
 
-use super::sqliterepository::{RepositoryExecutor, SqliteRepository};
+use super::sqliterepository::SqliteRepositories;
+use std::sync::Arc;
 
 mod embedded {
     use refinery::embed_migrations;
@@ -43,8 +44,8 @@ impl TestDatabase {
         Ok(Self { pool, _temp_file: temp_file })
     }
 
-    pub fn sqlite_repository(&self) -> SqliteRepository<'_> {
-        SqliteRepository::new(RepositoryExecutor::Pool(&self.pool))
+    pub fn sqlite_repository(&self) -> SqliteRepositories {
+        SqliteRepositories::new_from_pool(Arc::new(self.pool.clone()))
     }
 }
 

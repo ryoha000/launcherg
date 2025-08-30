@@ -80,9 +80,9 @@ mod tests {
         }
     }
 
-    fn setup_use_case(mock_repositories: TestRepositories) -> CollectionUseCase<TestRepositories, MockThumbnailService> {
+    fn setup_use_case(mock_repositories: TestRepositories) -> CollectionUseCase<crate::repositorymock::TestRepositoryManager, TestRepositories, MockThumbnailService> {
         let resolver = Arc::new(DirsSavePathResolver::default());
-        let use_case = CollectionUseCase::new(Arc::new(tokio::sync::Mutex::new(mock_repositories)), resolver.clone(), Arc::new(MockThumbnailService::new()));
+        let use_case = CollectionUseCase::new(Arc::new(crate::repositorymock::TestRepositoryManager::new(mock_repositories)), resolver.clone(), Arc::new(MockThumbnailService::new()));
         use_case
     }
 
@@ -96,7 +96,7 @@ mod tests {
             .returning(|_| Box::pin(async move { Ok::<_, anyhow::Error>(()) }));
 
         let mut mock_repositories = TestRepositories::default();
-        mock_repositories.collection = mock_repo;
+        mock_repositories.collection = Arc::new(tauri::async_runtime::Mutex::new(mock_repo));
 
         let use_case = setup_use_case(mock_repositories);
         let element = create_test_new_element(1);
@@ -115,7 +115,7 @@ mod tests {
             .returning(|_| Box::pin(async move { Ok::<_, anyhow::Error>(()) }));
 
         let mut mock_repositories = TestRepositories::default();
-        mock_repositories.collection = mock_repo;
+        mock_repositories.collection = Arc::new(tauri::async_runtime::Mutex::new(mock_repo));
 
         let use_case = setup_use_case(mock_repositories);
         let info = NewCollectionElementInfo::new(
@@ -159,7 +159,7 @@ mod tests {
             .returning(|_| Box::pin(async move { Ok::<_, anyhow::Error>(()) }));
 
         let mut mock_repositories = TestRepositories::default();
-        mock_repositories.collection = mock_repo;
+        mock_repositories.collection = Arc::new(tauri::async_runtime::Mutex::new(mock_repo));
 
         let use_case = setup_use_case(mock_repositories);
         let element = create_test_scanned_game_element(1);
@@ -186,7 +186,7 @@ mod tests {
             .returning(|_, _| Box::pin(async move { Ok::<_, anyhow::Error>(()) }));
 
         let mut mock_repositories = TestRepositories::default();
-        mock_repositories.collection = mock_repo;
+        mock_repositories.collection = Arc::new(tauri::async_runtime::Mutex::new(mock_repo));
 
         let use_case = setup_use_case(mock_repositories);
         let element = ScannedGameElement {
@@ -215,7 +215,7 @@ mod tests {
             });
 
         let mut mock_repositories = TestRepositories::default();
-        mock_repositories.collection = mock_repo;
+        mock_repositories.collection = Arc::new(tauri::async_runtime::Mutex::new(mock_repo));
 
         let use_case = setup_use_case(mock_repositories);
         let id = create_test_element_id(1);
@@ -236,7 +236,7 @@ mod tests {
             .returning(|_| Box::pin(async move { Ok::<_, anyhow::Error>(None) }));
 
         let mut mock_repositories = TestRepositories::default();
-        mock_repositories.collection = mock_repo;
+        mock_repositories.collection = Arc::new(tauri::async_runtime::Mutex::new(mock_repo));
 
         let use_case = setup_use_case(mock_repositories);
         let id = create_test_element_id(1);
@@ -259,7 +259,7 @@ mod tests {
             .returning(|_, _| Box::pin(async move { Ok::<_, anyhow::Error>(()) }));
 
         let mut mock_repositories = TestRepositories::default();
-        mock_repositories.collection = mock_repo;
+        mock_repositories.collection = Arc::new(tauri::async_runtime::Mutex::new(mock_repo));
 
         let use_case = setup_use_case(mock_repositories);
         let id = create_test_element_id(1);
@@ -278,7 +278,7 @@ mod tests {
             .returning(|_, _| Box::pin(async move { Ok::<_, anyhow::Error>(()) }));
 
         let mut mock_repositories = TestRepositories::default();
-        mock_repositories.collection = mock_repo;
+        mock_repositories.collection = Arc::new(tauri::async_runtime::Mutex::new(mock_repo));
 
         let use_case = setup_use_case(mock_repositories);
         let id = create_test_element_id(1);
@@ -300,7 +300,7 @@ mod tests {
             .returning(|_, _| Box::pin(async move { Ok::<_, anyhow::Error>(()) }));
 
         let mut mock_repositories = TestRepositories::default();
-        mock_repositories.collection = mock_repo;
+        mock_repositories.collection = Arc::new(tauri::async_runtime::Mutex::new(mock_repo));
 
         let use_case = setup_use_case(mock_repositories);
         let id = create_test_element_id(1);
@@ -328,7 +328,7 @@ mod tests {
             .returning(|_| Box::pin(async move { Ok::<_, anyhow::Error>(()) }));
 
         let mut mock_repositories = TestRepositories::default();
-        mock_repositories.collection = mock_repo;
+        mock_repositories.collection = Arc::new(tauri::async_runtime::Mutex::new(mock_repo));
 
         let use_case = setup_use_case(mock_repositories);
         let id = create_test_element_id(1);
@@ -347,7 +347,7 @@ mod tests {
             .returning(|_| Box::pin(async move { Ok::<_, anyhow::Error>(None) }));
 
         let mut mock_repositories = TestRepositories::default();
-        mock_repositories.collection = mock_repo;
+        mock_repositories.collection = Arc::new(tauri::async_runtime::Mutex::new(mock_repo));
 
         let use_case = setup_use_case(mock_repositories);
         let id = create_test_element_id(1);
@@ -373,7 +373,7 @@ mod tests {
             });
 
         let mut mock_repositories = TestRepositories::default();
-        mock_repositories.collection = mock_repo;
+        mock_repositories.collection = Arc::new(tauri::async_runtime::Mutex::new(mock_repo));
 
         let use_case = setup_use_case(mock_repositories);
 
@@ -409,7 +409,7 @@ mod tests {
             .returning(|_| Box::pin(async move { Ok::<_, anyhow::Error>(()) }));
 
         let mut mock_repositories = TestRepositories::default();
-        mock_repositories.collection = mock_repo;
+        mock_repositories.collection = Arc::new(tauri::async_runtime::Mutex::new(mock_repo));
 
         let use_case = setup_use_case(mock_repositories);
         let elements = vec![

@@ -4,14 +4,24 @@ use derive_new::new;
 use domain::{
     native_host_log::{HostLogLevel, HostLogType, NativeHostLogRow},
 };
-use domain::repository::{native_host_log::NativeHostLogRepository, RepositoriesExt};
+use domain::repository::{native_host_log::NativeHostLogRepository, RepositoriesExt, manager::RepositoryManager};
+use std::marker::PhantomData;
 
 #[derive(new)]
-pub struct HostLogUseCase<R: RepositoriesExt> {
-    repositories: Arc<tokio::sync::Mutex<R>>,
+pub struct HostLogUseCase<M, R>
+where
+    M: RepositoryManager<R>,
+    R: RepositoriesExt + Send + Sync + 'static,
+{
+    manager: Arc<M>,
+    _marker: PhantomData<R>,
 }
 
-impl<R: RepositoriesExt> HostLogUseCase<R> {
+impl<M, R> HostLogUseCase<M, R>
+where
+    M: RepositoryManager<R>,
+    R: RepositoriesExt + Send + Sync + 'static,
+{
     pub async fn list_logs(
         &self,
         limit: i64,
@@ -19,9 +29,7 @@ impl<R: RepositoriesExt> HostLogUseCase<R> {
         level: Option<HostLogLevel>,
         typ: Option<HostLogType>,
     ) -> anyhow::Result<Vec<NativeHostLogRow>> {
-        let mut repos = self.repositories.lock().await;
-        let repo = repos.host_log();
-        repo.list_logs(limit, offset, level, typ).await
+        self.manager.run(move |repos| Box::pin(async move { repos.host_log().list_logs(limit, offset, level, typ).await })).await
     }
 
     pub async fn count_logs(
@@ -29,9 +37,7 @@ impl<R: RepositoriesExt> HostLogUseCase<R> {
         level: Option<HostLogLevel>,
         typ: Option<HostLogType>,
     ) -> anyhow::Result<i64> {
-        let mut repos = self.repositories.lock().await;
-        let repo = repos.host_log();
-        repo.count_logs(level, typ).await
+        self.manager.run(move |repos| Box::pin(async move { repos.host_log().count_logs(level, typ).await })).await
     }
 }
 

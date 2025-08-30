@@ -12,15 +12,15 @@ use models::{
     packs::{GetDmmOmitWorksRequestTs, DmmOmitWorkItemTs, DmmOmitDmmPartTs},
 };
 use infrastructure::{
-    sqliterepository::{driver::Db as RepoDb, sqliterepository::{SqliteRepository, RepositoryExecutor}},
+    sqliterepository::{driver::Db as RepoDb, sqliterepository::{SqliteRepositoryManager, SqliteRepositories}},
     image_queue_worker::ImageQueueWorker,
 };
 use usecase::native_host_sync::{NativeHostSyncUseCase, DmmSyncGameParam, DlsiteSyncGameParam, EgsInfo};
 use domain::service::save_path_resolver::{SavePathResolver, DirsSavePathResolver};
 
 struct AppCtx {
-    repositories: Arc<tokio::sync::Mutex<SqliteRepository<'static>>>,
-    sync_usecase: NativeHostSyncUseCase<SqliteRepository<'static>>,
+    repositories: Arc<tokio::sync::Mutex<SqliteRepositories>>,
+    sync_usecase: NativeHostSyncUseCase<SqliteRepositoryManager, SqliteRepositories>,
     resolver: Arc<dyn SavePathResolver>,
 }
 
@@ -71,10 +71,10 @@ async fn main() {
 
     let db_path = usecase::native_host_sync::db_file_path();
     let repo_db = RepoDb::from_path(&db_path).await;
-    let repo = SqliteRepository::new(RepositoryExecutor::OwnedPool(repo_db.pool_arc()));
-    let repositories = Arc::new(tokio::sync::Mutex::new(repo));
+    let repo_manager = SqliteRepositoryManager::new(repo_db.pool_arc());
+    let repositories = Arc::new(tokio::sync::Mutex::new(SqliteRepositories::new_from_pool(repo_db.pool_arc())));
     let resolver = Arc::new(DirsSavePathResolver::default());
-    let sync_usecase = NativeHostSyncUseCase::new(repositories.clone(), resolver.clone());
+    let sync_usecase = NativeHostSyncUseCase::new(Arc::new(repo_manager), resolver.clone());
     let ctx = AppCtx { repositories, sync_usecase, resolver };
 
     log::info!("Native Messaging Host started");

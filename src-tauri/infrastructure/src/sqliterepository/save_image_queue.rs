@@ -1,8 +1,8 @@
 use domain::{repository::save_image_queue::ImageSaveQueueRepository, save_image_queue::{ImageSaveQueueRow, ImageSrcType, ImagePreprocess}, Id};
 use crate::sqliterepository::models::save_image_queue::SaveImageQueueTable;
-use crate::sqliterepository::sqliterepository::SqliteRepository;
+use crate::sqliterepository::sqliterepository::RepositoryImpl;
 
-impl<'a> ImageSaveQueueRepository for SqliteRepository<'a> {
+impl ImageSaveQueueRepository for RepositoryImpl<domain::save_image_queue::ImageSaveQueueRow> {
     async fn enqueue(&mut self, src: &str, src_type: ImageSrcType, dst_path: &str, preprocess: ImagePreprocess) -> anyhow::Result<Id<ImageSaveQueueRow>> {
         let src = src.to_string();
         let dst_path = dst_path.to_string();

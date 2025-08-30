@@ -1,7 +1,7 @@
 use domain::{repository::work_parent_packs::WorkParentPacksRepository, works::Work, Id};
-use crate::sqliterepository::sqliterepository::SqliteRepository;
+use crate::sqliterepository::sqliterepository::RepositoryImpl;
 
-impl<'a> WorkParentPacksRepository for SqliteRepository<'a> {
+impl WorkParentPacksRepository for RepositoryImpl<domain::work_parent_pack::WorkParentPack> {
     async fn add(&mut self, work_id: Id<Work>, parent_pack_work_id: Id<Work>) -> anyhow::Result<()> {
         self.executor.with_conn(|conn| {
             Box::pin(async move {

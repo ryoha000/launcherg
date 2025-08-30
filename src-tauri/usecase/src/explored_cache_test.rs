@@ -34,9 +34,9 @@ mod tests {
             });
 
         let mut mock_repositories = TestRepositories::default();
-        mock_repositories.explored_cache = mock_repo;
+        mock_repositories.explored_cache = Arc::new(tauri::async_runtime::Mutex::new(mock_repo));
 
-        let use_case = ExploredCacheUseCase::new(Arc::new(tokio::sync::Mutex::new(mock_repositories)));
+        let use_case = ExploredCacheUseCase::new(Arc::new(crate::repositorymock::TestRepositoryManager::new(mock_repositories)));
 
         let result = use_case.get_cache().await;
         assert!(result.is_ok());
@@ -60,9 +60,9 @@ mod tests {
             });
 
         let mut mock_repositories = TestRepositories::default();
-        mock_repositories.explored_cache = mock_repo;
+        mock_repositories.explored_cache = Arc::new(tauri::async_runtime::Mutex::new(mock_repo));
 
-        let use_case = ExploredCacheUseCase::new(Arc::new(tokio::sync::Mutex::new(mock_repositories)));
+        let use_case = ExploredCacheUseCase::new(Arc::new(crate::repositorymock::TestRepositoryManager::new(mock_repositories)));
 
         let result = use_case.get_cache().await;
         assert!(result.is_ok());
@@ -96,9 +96,9 @@ mod tests {
             .returning(|_| Box::pin(async move { Ok::<_, anyhow::Error>(()) }));
 
         let mut mock_repositories = TestRepositories::default();
-        mock_repositories.explored_cache = mock_repo;
+        mock_repositories.explored_cache = Arc::new(tauri::async_runtime::Mutex::new(mock_repo));
 
-        let use_case = ExploredCacheUseCase::new(Arc::new(tokio::sync::Mutex::new(mock_repositories)));
+        let use_case = ExploredCacheUseCase::new(Arc::new(crate::repositorymock::TestRepositoryManager::new(mock_repositories)));
         let adding_paths = vec![
             "/path/to/game1".to_string(), // already exists, should be filtered out
             "/path/to/game2".to_string(),
@@ -132,9 +132,9 @@ mod tests {
             .returning(|_| Box::pin(async move { Ok::<_, anyhow::Error>(()) }));
 
         let mut mock_repositories = TestRepositories::default();
-        mock_repositories.explored_cache = mock_repo;
+        mock_repositories.explored_cache = Arc::new(tauri::async_runtime::Mutex::new(mock_repo));
 
-        let use_case = ExploredCacheUseCase::new(Arc::new(tokio::sync::Mutex::new(mock_repositories)));
+        let use_case = ExploredCacheUseCase::new(Arc::new(crate::repositorymock::TestRepositoryManager::new(mock_repositories)));
         let adding_paths = vec!["/path/to/game1".to_string(), "/path/to/game2".to_string()];
 
         let result = use_case.add_cache(adding_paths).await;
@@ -161,9 +161,9 @@ mod tests {
             .returning(|_| Box::pin(async move { Ok::<_, anyhow::Error>(()) }));
 
         let mut mock_repositories = TestRepositories::default();
-        mock_repositories.explored_cache = mock_repo;
+        mock_repositories.explored_cache = Arc::new(tauri::async_runtime::Mutex::new(mock_repo));
 
-        let use_case = ExploredCacheUseCase::new(Arc::new(tokio::sync::Mutex::new(mock_repositories)));
+        let use_case = ExploredCacheUseCase::new(Arc::new(crate::repositorymock::TestRepositoryManager::new(mock_repositories)));
         let adding_paths = vec![];
 
         let result = use_case.add_cache(adding_paths).await;
@@ -195,9 +195,9 @@ mod tests {
             .returning(|_| Box::pin(async move { Ok::<_, anyhow::Error>(()) }));
 
         let mut mock_repositories = TestRepositories::default();
-        mock_repositories.explored_cache = mock_repo;
+        mock_repositories.explored_cache = Arc::new(tauri::async_runtime::Mutex::new(mock_repo));
 
-        let use_case = ExploredCacheUseCase::new(Arc::new(tokio::sync::Mutex::new(mock_repositories)));
+        let use_case = ExploredCacheUseCase::new(Arc::new(crate::repositorymock::TestRepositoryManager::new(mock_repositories)));
         let adding_paths = vec!["/path/to/game1".to_string(), "/path/to/game2".to_string()];
 
         let result = use_case.add_cache(adding_paths).await;
@@ -213,9 +213,9 @@ mod tests {
             .returning(|| Box::pin(async move { Err::<_, anyhow::Error>(anyhow::anyhow!("Database error")) }));
 
         let mut mock_repositories = TestRepositories::default();
-        mock_repositories.explored_cache = mock_repo;
+        mock_repositories.explored_cache = Arc::new(tauri::async_runtime::Mutex::new(mock_repo));
 
-        let use_case = ExploredCacheUseCase::new(Arc::new(tokio::sync::Mutex::new(mock_repositories)));
+        let use_case = ExploredCacheUseCase::new(Arc::new(crate::repositorymock::TestRepositoryManager::new(mock_repositories)));
 
         let result = use_case.get_cache().await;
         assert!(result.is_err());
@@ -241,9 +241,9 @@ mod tests {
             .returning(|_| Box::pin(async move { Err::<_, anyhow::Error>(anyhow::anyhow!("Database error")) }));
 
         let mut mock_repositories = TestRepositories::default();
-        mock_repositories.explored_cache = mock_repo;
+        mock_repositories.explored_cache = Arc::new(tauri::async_runtime::Mutex::new(mock_repo));
 
-        let use_case = ExploredCacheUseCase::new(Arc::new(tokio::sync::Mutex::new(mock_repositories)));
+        let use_case = ExploredCacheUseCase::new(Arc::new(crate::repositorymock::TestRepositoryManager::new(mock_repositories)));
         let adding_paths = vec!["/path/to/game1".to_string()];
 
         let result = use_case.add_cache(adding_paths).await;

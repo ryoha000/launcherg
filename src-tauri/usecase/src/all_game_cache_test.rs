@@ -40,7 +40,7 @@ mod tests {
         let mut repos = TestRepositories::default();
         repos.set_all_game_cache(mock_repo);
 
-        let use_case = AllGameCacheUseCase::new(Arc::new(tokio::sync::Mutex::new(repos)));
+        let use_case = AllGameCacheUseCase::new(Arc::new(crate::repositorymock::TestRepositoryManager::new(repos)));
 
         let result = use_case.get(1).await;
         assert!(result.is_ok());
@@ -62,7 +62,7 @@ mod tests {
         let mut repos = TestRepositories::default();
         repos.set_all_game_cache(mock_repo);
 
-        let use_case = AllGameCacheUseCase::new(Arc::new(tokio::sync::Mutex::new(repos)));
+        let use_case = AllGameCacheUseCase::new(Arc::new(crate::repositorymock::TestRepositoryManager::new(repos)));
 
         let result = use_case.get(999).await;
         assert!(result.is_ok());
@@ -98,7 +98,7 @@ mod tests {
         let mut repos = TestRepositories::default();
         repos.set_all_game_cache(mock_repo);
 
-        let use_case = AllGameCacheUseCase::new(Arc::new(tokio::sync::Mutex::new(repos)));
+        let use_case = AllGameCacheUseCase::new(Arc::new(crate::repositorymock::TestRepositoryManager::new(repos)));
 
         let result = use_case.get_by_ids(vec![1, 2]).await;
         assert!(result.is_ok());
@@ -122,7 +122,7 @@ mod tests {
         let mut repos = TestRepositories::default();
         repos.set_all_game_cache(mock_repo);
 
-        let use_case = AllGameCacheUseCase::new(Arc::new(tokio::sync::Mutex::new(repos)));
+        let use_case = AllGameCacheUseCase::new(Arc::new(crate::repositorymock::TestRepositoryManager::new(repos)));
 
         let result = use_case.get_by_ids(vec![]).await;
         assert!(result.is_ok());
@@ -153,7 +153,7 @@ mod tests {
         let mut repos = TestRepositories::default();
         repos.set_all_game_cache(mock_repo);
 
-        let use_case = AllGameCacheUseCase::new(Arc::new(tokio::sync::Mutex::new(repos)));
+        let use_case = AllGameCacheUseCase::new(Arc::new(crate::repositorymock::TestRepositoryManager::new(repos)));
 
         let result = use_case.get_all_game_cache().await;
         assert!(result.is_ok());
@@ -178,7 +178,7 @@ mod tests {
         let mut repos = TestRepositories::default();
         repos.set_all_game_cache(mock_repo);
 
-        let use_case = AllGameCacheUseCase::new(Arc::new(tokio::sync::Mutex::new(repos)));
+        let use_case = AllGameCacheUseCase::new(Arc::new(crate::repositorymock::TestRepositoryManager::new(repos)));
 
         let result = use_case.get_cache_last_updated().await;
         assert!(result.is_ok());
@@ -203,7 +203,7 @@ mod tests {
         let mut repos = TestRepositories::default();
         repos.set_all_game_cache(mock_repo);
 
-        let use_case = AllGameCacheUseCase::new(Arc::new(tokio::sync::Mutex::new(repos)));
+        let use_case = AllGameCacheUseCase::new(Arc::new(crate::repositorymock::TestRepositoryManager::new(repos)));
         let cache_data = vec![create_test_new_cache_one(1), create_test_new_cache_one(2)];
 
         let result = use_case.update_all_game_cache(cache_data).await;
@@ -219,7 +219,7 @@ mod tests {
 
         let repos = TestRepositories::default();
 
-        let use_case = AllGameCacheUseCase::new(Arc::new(tokio::sync::Mutex::new(repos)));
+        let use_case = AllGameCacheUseCase::new(Arc::new(crate::repositorymock::TestRepositoryManager::new(repos)));
         let cache_data = vec![];
 
         let result = use_case.update_all_game_cache(cache_data).await;
@@ -239,7 +239,7 @@ mod tests {
         let mut repos = TestRepositories::default();
         repos.set_all_game_cache(mock_repo);
 
-        let use_case = AllGameCacheUseCase::new(Arc::new(tokio::sync::Mutex::new(repos)));
+        let use_case = AllGameCacheUseCase::new(Arc::new(crate::repositorymock::TestRepositoryManager::new(repos)));
 
         let result = use_case.get(1).await;
         assert!(result.is_err());

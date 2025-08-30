@@ -1,7 +1,7 @@
 use domain::{explored_cache::ExploredCache, repository::explored_cache::ExploredCacheRepository};
-use crate::sqliterepository::sqliterepository::SqliteRepository;
+use crate::sqliterepository::sqliterepository::RepositoryImpl;
 
-impl<'a> ExploredCacheRepository for SqliteRepository<'a> {
+impl ExploredCacheRepository for RepositoryImpl<domain::explored_cache::ExploredCache> {
     async fn get_all(&mut self) -> anyhow::Result<ExploredCache> {
         let paths: Vec<(String,)> = self.executor.with_conn(|conn| {
             Box::pin(async move { Ok(sqlx::query_as("SELECT path from explored_caches").fetch_all(conn).await?) })

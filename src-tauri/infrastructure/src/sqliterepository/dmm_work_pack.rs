@@ -1,7 +1,7 @@
 use domain::{repository::dmm_work_pack::DmmPackRepository, dmm_work_pack::DmmWorkPack, works::Work, Id};
-use crate::sqliterepository::sqliterepository::SqliteRepository;
+use crate::sqliterepository::sqliterepository::RepositoryImpl;
 
-impl<'a> DmmPackRepository for SqliteRepository<'a> {
+impl DmmPackRepository for RepositoryImpl<domain::dmm_work_pack::DmmWorkPack> {
     async fn add(&mut self, work_id: Id<Work>) -> anyhow::Result<()> {
         self.executor.with_conn(|conn| {
             Box::pin(async move {

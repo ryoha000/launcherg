@@ -23,7 +23,7 @@ impl Db {
         let pool = SqlitePoolOptions::new()
             .max_connections(256)
             .connect_with(
-                SqliteConnectOptions::from_str(&format!("sqlite://{}?mode=rwc", db_filename))
+                SqliteConnectOptions::from_str(&format!("sqlite://{}?mode=rwc&journal_mode=WAL&busy_timeout=5000", db_filename))
                     .unwrap()
                     .foreign_keys(true),
             )
@@ -51,7 +51,7 @@ impl Db {
         let pool = SqlitePoolOptions::new()
             .max_connections(256)
             .connect_with(
-                SqliteConnectOptions::from_str(&format!("sqlite://{}?mode=rwc", db_filename))
+                SqliteConnectOptions::from_str(&format!("sqlite://{}?mode=rwc&journal_mode=WAL&busy_timeout=5000", db_filename))
                     .unwrap()
                     .foreign_keys(true),
             )

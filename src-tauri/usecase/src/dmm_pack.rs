@@ -6,27 +6,49 @@ use domain::{
     works::Work,
     Id,
 };
-use domain::repository::{dmm_work_pack::DmmPackRepository, RepositoriesExt};
+use domain::repository::{dmm_work_pack::DmmPackRepository, RepositoriesExt, manager::RepositoryManager};
+use std::marker::PhantomData;
 
 #[derive(new)]
-pub struct DmmPackUseCase<R: RepositoriesExt> {
-    repositories: Arc<tokio::sync::Mutex<R>>,
+pub struct DmmPackUseCase<M, R>
+where
+    M: RepositoryManager<R>,
+    R: RepositoriesExt + Send + Sync + 'static,
+{
+    manager: Arc<M>,
+    #[new(default)] _marker: PhantomData<R>,
 }
 
-impl<R: RepositoriesExt> DmmPackUseCase<R> {
+impl<M, R> DmmPackUseCase<M, R>
+where
+    M: RepositoryManager<R>,
+    R: RepositoriesExt + Send + Sync + 'static,
+{
     pub async fn add(&self, work_id: Id<Work>) -> anyhow::Result<()> {
-        let mut repos = self.repositories.lock().await;
-        repos.dmm_pack().add(work_id).await
+        self.manager.run(move |repos| {
+            Box::pin(async move {
+                let mut repo = repos.dmm_pack();
+                repo.add(work_id).await
+            })
+        }).await
     }
 
     pub async fn remove(&self, work_id: Id<Work>) -> anyhow::Result<()> {
-        let mut repos = self.repositories.lock().await;
-        repos.dmm_pack().remove(work_id).await
+        self.manager.run(move |repos| {
+            Box::pin(async move {
+                let mut repo = repos.dmm_pack();
+                repo.remove(work_id).await
+            })
+        }).await
     }
 
     pub async fn list(&self) -> anyhow::Result<Vec<DmmWorkPack>> {
-        let mut repos = self.repositories.lock().await;
-        repos.dmm_pack().list().await
+        self.manager.run(|repos| {
+            Box::pin(async move {
+                let mut repo = repos.dmm_pack();
+                repo.list().await
+            })
+        }).await
     }
 }
 

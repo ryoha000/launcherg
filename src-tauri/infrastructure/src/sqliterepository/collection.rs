@@ -17,9 +17,9 @@ use crate::sqliterepository::models::collection::{
     CollectionElementLikeTable, CollectionElementPathsTable, CollectionElementPlayTable,
     CollectionElementThumbnailTable, CollectionElementErogamescapeTable,
 };
-use crate::sqliterepository::sqliterepository::SqliteRepository;
+use crate::sqliterepository::sqliterepository::RepositoryImpl;
 
-impl<'a> CollectionRepository for SqliteRepository<'a> {
+impl CollectionRepository for RepositoryImpl<domain::collection::CollectionElement> {
     async fn get_all_elements(&mut self) -> anyhow::Result<Vec<CollectionElement>> {
         // 旧実装はリッチ JOIN を各要素ごとに追っていた。まずは elements の一覧のみ取得し、詳細は既存 API で埋める。
         let rows: Vec<CollectionElementTable> = self.executor.with_conn(|conn| {

@@ -3,9 +3,9 @@ use sqlx::Row;
 use domain::{all_game_cache::{AllGameCache, AllGameCacheOneWithThumbnailUrl, NewAllGameCacheOne}, repository::all_game_cache::AllGameCacheRepository};
 
 use crate::sqliterepository::models::all_game_cache::AllGameCacheTable;
-use crate::sqliterepository::sqliterepository::SqliteRepository;
+use crate::sqliterepository::sqliterepository::RepositoryImpl;
 
-impl<'a> AllGameCacheRepository for SqliteRepository<'a> {
+impl AllGameCacheRepository for RepositoryImpl<domain::all_game_cache::AllGameCache> {
     async fn get_by_ids(&mut self, ids: Vec<i32>) -> anyhow::Result<Vec<AllGameCacheOneWithThumbnailUrl>> {
         let rows = self.executor.with_conn(|conn| {
             Box::pin(async move {
