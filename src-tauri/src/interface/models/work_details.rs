@@ -1,3 +1,5 @@
+use domain::service::save_path_resolver::{DirsSavePathResolver, SavePathResolver};
+
 use crate::domain::works::WorkDetails;
 
 #[derive(serde::Serialize)]
@@ -11,6 +13,7 @@ pub struct WorkDetailsVm {
     pub is_dmm_omitted: bool,
     pub is_dlsite_omitted: bool,
     pub is_dmm_pack: bool,
+    pub thumbnail: Option<String>,
 }
 
 #[derive(serde::Serialize)]
@@ -35,6 +38,16 @@ pub struct DlsiteSideVm {
 
 impl From<WorkDetails> for WorkDetailsVm {
     fn from(w: WorkDetails) -> Self {
+        let resolver = DirsSavePathResolver::default();
+        let thumbnail = if let Some(dmm) = w.dmm.as_ref() {
+            Some(resolver.thumbnail_alias_dmm_png_path(&dmm.category, &dmm.subcategory, &dmm.store_id))
+        } else if let Some(dlsite) = w.dlsite.as_ref() {
+            Some(resolver.thumbnail_alias_dlsite_png_path(&dlsite.category, &dlsite.store_id))
+        } else if let Some(collection_element_id) = w.collection_element_id.as_ref() {
+            Some(resolver.thumbnail_png_path(collection_element_id.value))
+        } else {
+            None
+        };
         WorkDetailsVm {
             id: w.work.id.value,
             title: w.work.title,
@@ -56,6 +69,7 @@ impl From<WorkDetails> for WorkDetailsVm {
             is_dmm_omitted: w.is_dmm_omitted,
             is_dlsite_omitted: w.is_dlsite_omitted,
             is_dmm_pack: w.is_dmm_pack,
+            thumbnail: thumbnail,
         }
     }
 }

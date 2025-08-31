@@ -1,5 +1,6 @@
 <script lang='ts'>
   import type { Props as TippyOption } from 'tippy.js'
+  import { convertFileSrc } from '@tauri-apps/api/core'
   import { onMount } from 'svelte'
   import { get } from 'svelte/store'
   import tippy from 'tippy.js'
@@ -107,9 +108,7 @@
       if (!q)
         return true
       const inTitle = w.title.toLowerCase().includes(q)
-      const inDmm = w.dmm ? w.dmm.storeId.toLowerCase().includes(q) : false
-      const inDl = w.dlsite ? w.dlsite.storeId.toLowerCase().includes(q) : false
-      return inTitle || inDmm || inDl
+      return inTitle
     })
   })
 
@@ -209,7 +208,7 @@
     </APopover>
     <input
       class='ml-2 max-w-xs w-full border border-(border-primary) rounded bg-(bg-primary) p-2 text-(text-primary)'
-      placeholder='キーワード検索（タイトル/ID）'
+      placeholder='タイトル検索'
       bind:value={keyword}
     />
     <div class='ml-auto text-(sm text-secondary)'>
@@ -255,9 +254,15 @@
                 </div>
               </td>
               <td class='px-2 py-1'>
-                <div class='h-12 w-20 overflow-hidden rounded bg-bg-secondary'>
-                  <div class='h-full w-full'></div>
-                </div>
+                {#if item.thumbnail}
+                  <div class='h-12 w-20 overflow-hidden rounded bg-bg-secondary'>
+                    <img src={convertFileSrc(item.thumbnail)} alt='thumbnail' class='h-full w-full object-cover' />
+                  </div>
+                {:else}
+                  <div class='h-full w-full'>
+                    <div class='h-full w-full'></div>
+                  </div>
+                {/if}
               </td>
               <td class='w-36 overflow-hidden text-ellipsis whitespace-nowrap px-2 py-1'>{item.title}</td>
               <td class='px-2 py-1'>
