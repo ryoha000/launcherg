@@ -7,6 +7,7 @@ use crate::{
         NewCollectionElementPlay, NewCollectionElementThumbnail,
     },
     Id,
+    works::Work,
 };
 use anyhow::Result;
 use chrono::{DateTime, Local};
@@ -54,11 +55,11 @@ pub trait CollectionRepository {
 
     async fn get_collection_id_by_dmm_mapping(&mut self, store_id: &str, category: &str, subcategory: &str) -> Result<Option<Id<CollectionElement>>>;
     async fn get_collection_ids_by_dmm_mappings(&mut self, keys: &[(String, String, String)]) -> Result<Vec<(String, String, String, Id<CollectionElement>)>>;
-    async fn get_collection_ids_by_work_ids(&mut self, work_ids: &[i32]) -> Result<Vec<(i32, Id<CollectionElement>)>>;
+    async fn get_collection_ids_by_work_ids(&mut self, work_ids: &[Id<Work>]) -> Result<Vec<(Id<Work>, Id<CollectionElement>)>>;
     async fn get_collection_id_by_dlsite_mapping(&mut self, store_id: &str, category: &str) -> Result<Option<Id<CollectionElement>>>;
-    async fn upsert_work_mapping(&mut self, collection_element_id: &Id<CollectionElement>, work_id: i32) -> Result<()>;
+    async fn upsert_work_mapping(&mut self, collection_element_id: &Id<CollectionElement>, work_id: Id<Work>) -> Result<()>;
 
-    async fn get_work_ids_by_collection_ids(&mut self, collection_element_ids: &[i32]) -> Result<Vec<(Id<CollectionElement>, i32)>>;
+    async fn get_work_ids_by_collection_ids(&mut self, collection_element_ids: &[i32]) -> Result<Vec<(Id<CollectionElement>, Id<Work>)>>;
 }
 
 

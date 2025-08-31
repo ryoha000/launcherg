@@ -26,9 +26,19 @@ pub mod repository;
 pub mod windows;
 pub mod service;
 
-#[derive(new, Debug, Clone, Copy, Serialize, Deserialize, PartialEq)]
+#[derive(new, Debug, Clone, Copy, Serialize, Deserialize)]
 pub struct Id<T> {
     pub value: i32,
     _marker: PhantomData<T>,
+}
+
+impl<T> core::cmp::PartialEq for Id<T> {
+    fn eq(&self, other: &Self) -> bool { self.value == other.value }
+}
+
+impl<T> core::cmp::Eq for Id<T> {}
+
+impl<T> core::hash::Hash for Id<T> {
+    fn hash<H: core::hash::Hasher>(&self, state: &mut H) { self.value.hash(state); }
 }
 

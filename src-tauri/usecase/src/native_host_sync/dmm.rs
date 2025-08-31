@@ -36,12 +36,12 @@ where
 		fn gamename(p: &DmmSyncGameParam) -> &str { &p.gamename }
 		fn image_url(p: &DmmSyncGameParam) -> &str { &p.image_url }
 		fn egs(p: &DmmSyncGameParam) -> Option<&EgsInfo> { p.egs.as_ref() }
-		fn parent_pack_work_id(p: &DmmSyncGameParam) -> Option<i32> { p.parent_pack_work_id }
+		fn parent_pack_work_id(p: &DmmSyncGameParam) -> Option<domain::Id<domain::works::Work>> { p.parent_pack_work_id.map(domain::Id::new) }
 
-		fn find_work_id_by_key<'a, Rx: RepositoriesExt + Send + Sync + 'static>(repos: &'a Rx, k: &'a DmmKey) -> futures::future::BoxFuture<'a, anyhow::Result<Option<i32>>> {
+		fn find_work_id_by_key<'a, Rx: RepositoriesExt + Send + Sync + 'static>(repos: &'a Rx, k: &'a DmmKey) -> futures::future::BoxFuture<'a, anyhow::Result<Option<domain::Id<domain::works::Work>>>> {
 			Box::pin(async move {
 				let mut repo = repos.dmm_work();
-				Ok(repo.find_by_store_key(&k.store_id, &k.category, &k.subcategory).await?.map(|w| w.id.value))
+				Ok(repo.find_by_store_key(&k.store_id, &k.category, &k.subcategory).await?.map(|w| w.work_id))
 			})
 		}
 		fn upsert_store_mapping<'a, Rx: RepositoriesExt + Send + Sync + 'static>(repos: &'a Rx, k: &'a DmmKey, work_id: domain::Id<domain::works::Work>) -> futures::future::BoxFuture<'a, anyhow::Result<()>> {
@@ -51,10 +51,10 @@ where
 				Ok(())
 			})
 		}
-		fn link_parent_pack_if_needed<'a, Rx: RepositoriesExt + Send + Sync + 'static>(repos: &'a Rx, work_id: domain::Id<domain::works::Work>, parent: Option<i32>) -> futures::future::BoxFuture<'a, anyhow::Result<()>> {
+		fn link_parent_pack_if_needed<'a, Rx: RepositoriesExt + Send + Sync + 'static>(repos: &'a Rx, work_id: domain::Id<domain::works::Work>, parent: Option<domain::Id<domain::works::Work>>) -> futures::future::BoxFuture<'a, anyhow::Result<()>> {
 			Box::pin(async move {
 				if let Some(pid) = parent {
-					repos.work_parent_packs().add(work_id, domain::Id::new(pid)).await?;
+					repos.work_parent_packs().add(work_id, pid).await?;
 				}
 				Ok(())
 			})

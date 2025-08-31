@@ -8,6 +8,7 @@ use domain::{
         NewCollectionElementPlay, NewCollectionElementThumbnail,
     },
     Id,
+    works::Work,
 };
 use domain::repository::collection::CollectionRepository;
 use sqlx::{query, query_as, Row};
@@ -585,10 +586,10 @@ impl CollectionRepository for RepositoryImpl<domain::collection::CollectionEleme
         Ok(rows.into_iter().map(|(sid, cat, sub, ce)| (sid, cat, sub, Id::new(ce))).collect())
     }
 
-    async fn get_collection_ids_by_work_ids(&mut self, work_ids: &[i32]) -> anyhow::Result<Vec<(i32, Id<CollectionElement>)>> {
+    async fn get_collection_ids_by_work_ids(&mut self, work_ids: &[Id<Work>]) -> anyhow::Result<Vec<(Id<Work>, Id<CollectionElement>)>> {
         use sqlx::QueryBuilder;
         if work_ids.is_empty() { return Ok(Vec::new()); }
-        let ids = work_ids.to_vec();
+        let ids: Vec<i32> = work_ids.iter().map(|id| id.value).collect();
         let rows: Vec<(i32, i32)> = self.executor.with_conn(|conn| {
             Box::pin(async move {
                 let mut qb = QueryBuilder::new(
@@ -607,7 +608,7 @@ impl CollectionRepository for RepositoryImpl<domain::collection::CollectionEleme
                 Ok(rows)
             })
         }).await?;
-        Ok(rows.into_iter().map(|(wid, ce)| (wid, Id::new(ce))).collect())
+        Ok(rows.into_iter().map(|(wid, ce)| (Id::new(wid), Id::new(ce))).collect())
     }
 
     async fn get_collection_id_by_dlsite_mapping(&mut self, store_id: &str, category: &str) -> anyhow::Result<Option<Id<CollectionElement>>> {
@@ -633,7 +634,7 @@ impl CollectionRepository for RepositoryImpl<domain::collection::CollectionEleme
         Ok(row.map(|v| Id::new(v.0)))
     }
 
-    async fn upsert_work_mapping(&mut self, collection_element_id: &Id<CollectionElement>, work_id: i32) -> anyhow::Result<()> {
+    async fn upsert_work_mapping(&mut self, collection_element_id: &Id<CollectionElement>, work_id: Id<Work>) -> anyhow::Result<()> {
         let ce = collection_element_id.value;
         self.executor.with_conn(|conn| {
             Box::pin(async move {
@@ -643,7 +644,7 @@ impl CollectionRepository for RepositoryImpl<domain::collection::CollectionEleme
             VALUES (?, ?)
             "#,
                 )
-                .bind(work_id as i64)
+                .bind(work_id.value as i64)
                 .bind(ce)
                 .execute(conn)
                 .await?;
@@ -653,7 +654,7 @@ impl CollectionRepository for RepositoryImpl<domain::collection::CollectionEleme
         Ok(())
     }
 
-    async fn get_work_ids_by_collection_ids(&mut self, collection_element_ids: &[i32]) -> anyhow::Result<Vec<(Id<CollectionElement>, i32)>> {
+    async fn get_work_ids_by_collection_ids(&mut self, collection_element_ids: &[i32]) -> anyhow::Result<Vec<(Id<CollectionElement>, Id<Work>)>> {
         use sqlx::QueryBuilder;
         if collection_element_ids.is_empty() { return Ok(Vec::new()); }
         let ids = collection_element_ids.to_vec();
@@ -675,7 +676,7 @@ impl CollectionRepository for RepositoryImpl<domain::collection::CollectionEleme
                 Ok(rows)
             })
         }).await?;
-        Ok(rows.into_iter().map(|(ce, wid)| (Id::new(ce), wid)).collect())
+        Ok(rows.into_iter().map(|(ce, wid)| (Id::new(ce), Id::new(wid))).collect())
     }
 }
 

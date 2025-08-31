@@ -15,32 +15,32 @@ where
     pub gamename: fn(&P) -> &str,
     pub image_url: fn(&P) -> &str,
     pub egs: fn(&P) -> Option<&EgsInfo>,
-    pub parent_pack_work_id: fn(&P) -> Option<i32>,
+    pub parent_pack_work_id: fn(&P) -> Option<Id<domain::works::Work>>,
 
-    pub find_work_id_by_key: for<'a> fn(&'a R, &'a K) -> Pin<Box<dyn Future<Output=anyhow::Result<Option<i32>>> + Send + 'a>>,
+    pub find_work_id_by_key: for<'a> fn(&'a R, &'a K) -> Pin<Box<dyn Future<Output=anyhow::Result<Option<Id<domain::works::Work>>>> + Send + 'a>>,
     pub upsert_store_mapping: for<'a> fn(&'a R, &'a K, Id<domain::works::Work>) -> Pin<Box<dyn Future<Output=anyhow::Result<()>> + Send + 'a>>,
     pub enqueue_images_with_repos: for<'a> fn(&'a R, &'a dyn SavePathResolver, &'a domain::Id<domain::collection::CollectionElement>, &'a K, &'a str) -> Pin<Box<dyn Future<Output=anyhow::Result<()>> + Send + 'a>>,
-    pub link_parent_pack_if_needed: for<'a> fn(&'a R, Id<domain::works::Work>, Option<i32>) -> Pin<Box<dyn Future<Output=anyhow::Result<()>> + Send + 'a>>,
+    pub link_parent_pack_if_needed: for<'a> fn(&'a R, Id<domain::works::Work>, Option<Id<domain::works::Work>>) -> Pin<Box<dyn Future<Output=anyhow::Result<()>> + Send + 'a>>,
 }
 
 #[derive(Clone, Debug)]
 pub struct BatchSnapshot<K> {
-    pub work_id_by_key: HashMap<K, Option<i32>>,
+    pub work_id_by_key: HashMap<K, Option<Id<domain::works::Work>>>,
     pub mapped_keys: HashMap<K, Id<domain::collection::CollectionElement>>,
-    pub omitted_work_ids: HashSet<i32>,
+    pub omitted_work_ids: HashSet<Id<domain::works::Work>>,
     pub egs_id_to_collection_id: HashMap<i32, Id<domain::collection::CollectionElement>>,
-    pub egs_id_to_work_id: HashMap<i32, i32>,
+    pub egs_id_to_work_id: HashMap<i32, Id<domain::works::Work>>,
 }
 
 #[derive(Clone, Debug)]
 pub struct SyncApplyGeneric<K> {
     pub key: K,
-    pub work_id_by_key: Option<i32>,
-    pub work_id_by_erogamescape: Option<i32>,
+    pub work_id_by_key: Option<Id<domain::works::Work>>,
+    pub work_id_by_erogamescape: Option<Id<domain::works::Work>>,
     pub collection_element_id_by_erogamescape: Option<Id<domain::collection::CollectionElement>>,
     pub gamename: String,
     pub image_url: String,
-    pub parent_pack_work_id: Option<i32>,
+    pub parent_pack_work_id: Option<Id<domain::works::Work>>,
     pub egs: Option<EgsInfo>,
 }
 
@@ -68,7 +68,7 @@ where
         let keys: Vec<K> = games.iter().map(|g| (ops.key_from_param)(g)).collect();
 
         // work_id_by_key
-        let mut work_id_by_key: HashMap<K, Option<i32>> = HashMap::new();
+        let mut work_id_by_key: HashMap<K, Option<Id<domain::works::Work>>> = HashMap::new();
         let found_map = self.manager.run(|repos| {
             let keys = keys.clone();
             let ops = ops;
@@ -78,14 +78,14 @@ where
                     let wid = (ops.find_work_id_by_key)(&repos, k).await?;
                     out.insert(k.clone(), wid);
                 }
-                Ok::<HashMap<K, Option<i32>>, anyhow::Error>(out)
+                Ok::<HashMap<K, Option<Id<domain::works::Work>>>, anyhow::Error>(out)
             })
         }).await?;
         for (k, v) in found_map.into_iter() { work_id_by_key.insert(k, v); }
         for k in keys.iter() { work_id_by_key.entry(k.clone()).or_insert(None); }
 
         // mapped_keys via work_ids
-        let work_ids: Vec<i32> = keys.iter().filter_map(|k| work_id_by_key.get(k).and_then(|v| *v)).collect();
+        let work_ids: Vec<Id<domain::works::Work>> = keys.iter().filter_map(|k| work_id_by_key.get(k).and_then(|v| v.clone())).collect();
         let mut mapped_keys: HashMap<K, Id<domain::collection::CollectionElement>> = HashMap::new();
         if !work_ids.is_empty() {
             let rows = self.manager.run(|repos| {
@@ -95,24 +95,24 @@ where
                     repo.get_collection_ids_by_work_ids(&work_ids).await
                 })
             }).await?;
-            let mut keys_by_work: HashMap<i32, Vec<K>> = HashMap::new();
-            for (k, v) in work_id_by_key.iter() { if let Some(wid) = v { keys_by_work.entry(*wid).or_default().push(k.clone()); } }
+            let mut keys_by_work: HashMap<Id<domain::works::Work>, Vec<K>> = HashMap::new();
+            for (k, v) in work_id_by_key.iter() { if let Some(wid) = v.clone() { keys_by_work.entry(wid).or_default().push(k.clone()); } }
             for (wid, ce) in rows.into_iter() { if let Some(kk) = keys_by_work.get(&wid) { for k in kk.iter() { mapped_keys.insert(k.clone(), ce.clone()); } } }
         }
 
         // omitted
-        let omitted_work_ids: HashSet<i32> = self.manager.run(|repos| {
+        let omitted_work_ids: HashSet<Id<domain::works::Work>> = self.manager.run(|repos| {
             Box::pin(async move {
                 let mut repo = repos.work_omit();
                 let list = repo.list().await?;
-                Ok(list.into_iter().map(|o| o.work_id.value).collect())
+                Ok(list.into_iter().map(|o| o.work_id).collect())
             })
         }).await?;
 
         // egs
         let egs_ids: Vec<i32> = games.iter().filter_map(|g| (ops.egs)(g).map(|e| e.erogamescape_id)).collect();
         let mut egs_id_to_collection_id: HashMap<i32, Id<domain::collection::CollectionElement>> = HashMap::new();
-        let mut egs_id_to_work_id: HashMap<i32, i32> = HashMap::new();
+        let mut egs_id_to_work_id: HashMap<i32, Id<domain::works::Work>> = HashMap::new();
         if !egs_ids.is_empty() {
             let rows = self.manager.run(|repos| {
                 let egs_ids = egs_ids.clone();
@@ -132,9 +132,9 @@ where
                         repo.get_work_ids_by_collection_ids(&ce_ids).await
                     })
                 }).await?;
-                let mut first_work_by_ce: HashMap<i32, i32> = HashMap::new();
+                let mut first_work_by_ce: HashMap<i32, Id<domain::works::Work>> = HashMap::new();
                 for (ceid, wid) in rows.into_iter() { first_work_by_ce.entry(ceid.value).or_insert(wid); }
-                for (egs_id, ceid) in egs_id_to_collection_id.iter() { if let Some(wid) = first_work_by_ce.get(&ceid.value) { egs_id_to_work_id.insert(*egs_id, *wid); } }
+                for (egs_id, ceid) in egs_id_to_collection_id.iter() { if let Some(wid) = first_work_by_ce.get(&ceid.value) { egs_id_to_work_id.insert(*egs_id, wid.clone()); } }
             }
         }
 
@@ -151,7 +151,7 @@ where
         if snapshot.mapped_keys.contains_key(&key) { return Ok(PlanDecisionGeneric::SkipExists); }
 
         let work_id = snapshot.work_id_by_key.get(&key).cloned().unwrap_or(None);
-        if let Some(work_id) = work_id { if snapshot.omitted_work_ids.contains(&work_id) { return Ok(PlanDecisionGeneric::SkipOmitted); } }
+        if let Some(ref work_id) = work_id { if snapshot.omitted_work_ids.contains(work_id) { return Ok(PlanDecisionGeneric::SkipOmitted); } }
 
         Ok(PlanDecisionGeneric::Apply(SyncApplyGeneric {
             key,
@@ -178,7 +178,7 @@ where
 
         // Work 確保
         let work_id = match work_id_by_key.or(work_id_by_erogamescape) {
-            Some(work_id) => Id::new(work_id),
+            Some(work_id) => work_id,
             None => repos.work().upsert(&domain::works::NewWork::new(gamename.clone())).await?,
         };
         // ストアキー upsert
@@ -198,7 +198,7 @@ where
         };
 
         // CE-Work マッピング
-        repos.collection().upsert_work_mapping(&collection_element_id, work_id.value).await?;
+        repos.collection().upsert_work_mapping(&collection_element_id, work_id.clone()).await?;
 
         // 親パック（DMMのみ有効）
         (ops.link_parent_pack_if_needed)(repos, work_id.clone(), parent_pack_work_id).await?;

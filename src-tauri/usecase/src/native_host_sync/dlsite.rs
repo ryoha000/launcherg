@@ -17,12 +17,12 @@ where
 		fn gamename(p: &DlsiteSyncGameParam) -> &str { &p.gamename }
 		fn image_url(p: &DlsiteSyncGameParam) -> &str { &p.image_url }
 		fn egs(p: &DlsiteSyncGameParam) -> Option<&EgsInfo> { p.egs.as_ref() }
-		fn parent_pack_work_id(_: &DlsiteSyncGameParam) -> Option<i32> { None }
+		fn parent_pack_work_id(_: &DlsiteSyncGameParam) -> Option<domain::Id<domain::works::Work>> { None }
 
-		fn find_work_id_by_key<'a, Rx: RepositoriesExt + Send + Sync + 'static>(repos: &'a Rx, k: &'a DlsiteKey) -> futures::future::BoxFuture<'a, anyhow::Result<Option<i32>>> {
+		fn find_work_id_by_key<'a, Rx: RepositoriesExt + Send + Sync + 'static>(repos: &'a Rx, k: &'a DlsiteKey) -> futures::future::BoxFuture<'a, anyhow::Result<Option<domain::Id<domain::works::Work>>>> {
 			Box::pin(async move {
 				let mut repo = repos.dlsite_work();
-				Ok(repo.find_by_store_key(&k.store_id, &k.category).await?.map(|w| w.id.value))
+				Ok(repo.find_by_store_key(&k.store_id, &k.category).await?.map(|w| w.work_id))
 			})
 		}
 		fn upsert_store_mapping<'a, Rx: RepositoriesExt + Send + Sync + 'static>(repos: &'a Rx, k: &'a DlsiteKey, work_id: domain::Id<domain::works::Work>) -> futures::future::BoxFuture<'a, anyhow::Result<()>> {
@@ -32,7 +32,7 @@ where
 				Ok(())
 			})
 		}
-		fn link_parent_pack_if_needed<'a, Rx: RepositoriesExt + Send + Sync + 'static>(_: &'a Rx, _: domain::Id<domain::works::Work>, _: Option<i32>) -> futures::future::BoxFuture<'a, anyhow::Result<()>> {
+		fn link_parent_pack_if_needed<'a, Rx: RepositoriesExt + Send + Sync + 'static>(_: &'a Rx, _: domain::Id<domain::works::Work>, _: Option<domain::Id<domain::works::Work>>) -> futures::future::BoxFuture<'a, anyhow::Result<()>> {
 			Box::pin(async move { Ok(()) })
 		}
 		fn enqueue_images_with_repos<'a, Rx: RepositoriesExt + Send + Sync + 'static>(repos: &'a Rx, resolver: &'a dyn SavePathResolver, ceid: &'a domain::Id<domain::collection::CollectionElement>, key: &'a DlsiteKey, image_url: &'a str) -> futures::future::BoxFuture<'a, anyhow::Result<()>> {
