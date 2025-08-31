@@ -41,14 +41,16 @@ export function createNativeMessenger(nativeHostName: string) {
         return reject(new Error('Encoded JSON message is not an object'))
 
       const requestId = (message as any).request_id ?? (message as any).requestId
-      log.debug('Sending native message(JSON)', { host: nativeHostName, requestId })
+      log.debug('Sending native message(JSON)', { host: nativeHostName, requestId, message })
 
+      const startTime = Date.now()
       chrome.runtime.sendNativeMessage(
         nativeHostName,
         message,
         (response) => {
           if (chrome.runtime.lastError)
             return reject(new Error(chrome.runtime.lastError.message))
+          log.debug('Received native message(JSON)', { ellapsed: Date.now() - startTime, host: nativeHostName, response })
           resolve(response as TRes)
         },
       )
