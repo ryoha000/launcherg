@@ -119,6 +119,14 @@ async fn handle_message(ctx: &AppCtx) -> HostResult<bool> {
         }
     };
 
+    let _ = ctx.manager.run(|repos| {
+        let log_message = format!("id: {}, request: {:?}", &message.request_id, &message.message);
+        Box::pin(async move {
+            repos.host_log().insert_log(HostLogLevel::Info, HostLogType::ReceiveRequest, log_message.as_str()).await?;
+            Ok::<(), anyhow::Error>(())
+        })
+    }).await;
+
     let response = match &message.message {
         NativeMessageCase::SyncDmmGames(req) => handle_sync_dmm_games(ctx, req, &message.request_id).await,
         NativeMessageCase::SyncDlsiteGames(req) => handle_sync_dlsite_games(ctx, req, &message.request_id).await,
@@ -130,6 +138,14 @@ async fn handle_message(ctx: &AppCtx) -> HostResult<bool> {
 
     send_response_json(&response).await?;
 
+    let _ = ctx.manager.run(|repos| {
+        let log_message = format!("id: {}, response: {:?}", &message.request_id, &response);
+        Box::pin(async move {
+            repos.host_log().insert_log(HostLogLevel::Info, HostLogType::Response, log_message.as_str()).await?;
+            Ok::<(), anyhow::Error>(())
+        })
+    }).await;
+
     // 画像キューの drain は同期時のみ
     match &message.message {
         NativeMessageCase::SyncDmmGames(_) | NativeMessageCase::SyncDlsiteGames(_) => {
@@ -139,6 +155,14 @@ async fn handle_message(ctx: &AppCtx) -> HostResult<bool> {
         }
         _ => {}
     }
+
+    let _ = ctx.manager.run(|repos| {
+        let log_message = format!("end process image queue. id: {}, message: {:?}", &message.request_id, &message.message);
+        Box::pin(async move {
+            repos.host_log().insert_log(HostLogLevel::Info, HostLogType::EndProcessImageQueue, log_message.as_str()).await?;
+            Ok::<(), anyhow::Error>(())
+        })
+    }).await;
 
     Ok(true)
 }
