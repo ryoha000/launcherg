@@ -12,14 +12,14 @@ use models::{
     packs::{GetDmmOmitWorksRequestTs, DmmOmitWorkItemTs, DmmOmitDmmPartTs},
 };
 use infrastructure::{
-    sqliterepository::{driver::Db as RepoDb, sqliterepository::{SqliteRepositoryManager, SqliteRepositories}},
+    sqliterepository::{driver::Db as RepoDb, sqliterepository::SqliteRepositoryManager, sqliterepository::SqliteRepositories},
     image_queue_worker::ImageQueueWorker,
 };
 use usecase::native_host_sync::{NativeHostSyncUseCase, DmmSyncGameParam, DlsiteSyncGameParam, EgsInfo};
 use domain::service::save_path_resolver::{SavePathResolver, DirsSavePathResolver};
 
 struct AppCtx {
-    repositories: Arc<tokio::sync::Mutex<SqliteRepositories>>,
+    manager: Arc<SqliteRepositoryManager>,
     sync_usecase: NativeHostSyncUseCase<SqliteRepositoryManager, SqliteRepositories>,
     resolver: Arc<dyn SavePathResolver>,
 }
@@ -69,13 +69,12 @@ async fn main() {
         .target(env_logger::Target::Stderr)
         .init();
 
-    let db_path = usecase::native_host_sync::db_file_path();
-    let repo_db = RepoDb::from_path(&db_path).await;
-    let repo_manager = SqliteRepositoryManager::new(repo_db.pool_arc());
-    let repositories = Arc::new(tokio::sync::Mutex::new(SqliteRepositories::new_from_pool(repo_db.pool_arc())));
     let resolver = Arc::new(DirsSavePathResolver::default());
-    let sync_usecase = NativeHostSyncUseCase::new(Arc::new(repo_manager), resolver.clone());
-    let ctx = AppCtx { repositories, sync_usecase, resolver };
+    let db_path = resolver.db_file_path();
+    let repo_db = RepoDb::from_path(&db_path).await;
+    let repo_manager = Arc::new(SqliteRepositoryManager::new(repo_db.pool_arc()));
+    let sync_usecase = NativeHostSyncUseCase::new(repo_manager.clone(), resolver.clone());
+    let ctx = AppCtx { manager: repo_manager, sync_usecase, resolver };
 
     log::info!("Native Messaging Host started");
 
@@ -134,7 +133,7 @@ async fn handle_message(ctx: &AppCtx) -> HostResult<bool> {
     // 画像キューの drain は同期時のみ
     match &message.message {
         NativeMessageCase::SyncDmmGames(_) | NativeMessageCase::SyncDlsiteGames(_) => {
-            let worker = ImageQueueWorker::new(ctx.repositories.clone(), ctx.resolver.clone());
+            let worker = ImageQueueWorker::new(ctx.manager.clone(), ctx.resolver.clone());
             let _ = worker.drain_until_empty().await;
             return Ok(false);
         }
@@ -374,6 +373,107 @@ mod tests {
         println!("elapsed: {:?}", elapsed);
         assert_eq!(synced, 1000, "同期件数が一致すること");
         assert!(elapsed.as_secs_f64() < 20.0, "1000件同期が20秒未満で終わること。実測: {:?}", elapsed);
+    }
+
+    #[test]
+    fn ヘルスチェック_OKが返る() {
+        let resp = handle_health_check(&HealthCheckRequestTs {}, "req1");
+        assert!(resp.success);
+        match resp.response {
+            Some(NativeResponseCase::HealthCheckResult(body)) => {
+                assert_eq!(body.message, "OK");
+                assert!(!body.version.is_empty());
+            }
+            _ => panic!("unexpected response"),
+        }
+    }
+
+    #[test]
+    fn ステータス未対応_エラー() {
+        let resp = NativeResponseTs { success: false, error: "GetStatus is not supported".into(), request_id: "x".into(), response: None };
+        assert!(!resp.success);
+        assert!(resp.error.contains("not supported"));
+    }
+
+    #[test]
+    fn セット未対応_エラー() {
+        let resp = NativeResponseTs { success: false, error: "SetConfig is not supported".into(), request_id: "x".into(), response: None };
+        assert!(!resp.success);
+        assert!(resp.error.contains("not supported"));
+    }
+
+    #[test]
+    fn dmmパラメータ変換_フィールド一致() {
+        let req = DmmSyncGamesRequestTs { games: vec![models::sync::DmmGameTs {
+            id: "SID1".into(), category: "game".into(), subcategory: "pc".into(), title: "T".into(),
+            image_url: "u".into(), egs_info: Some(models::sync::EgsInfoTs { erogamescape_id: 1, gamename: "G".into(), gamename_ruby: "r".into(), brandname: "b".into(), brandname_ruby: "br".into(), sellday: "s".into(), is_nukige: false }), parent_pack_work_id: Some(10)
+        }], extension_id: "ext".into() };
+        let (ids, params) = to_dmm_params(&req);
+        assert_eq!(ids, vec!["SID1".to_string()]);
+        assert_eq!(params[0].store_id, "SID1");
+        assert_eq!(params[0].category, "game");
+        assert_eq!(params[0].subcategory, "pc");
+        assert_eq!(params[0].gamename, "T");
+        assert!(params[0].egs.is_some());
+        assert_eq!(params[0].parent_pack_work_id, Some(10));
+    }
+
+    #[test]
+    fn dlsiteパラメータ変換_フィールド一致() {
+        let req = DlsiteSyncGamesRequestTs { games: vec![models::sync::DlsiteGameTs {
+            id: "RJ1".into(), category: "doujin".into(), title: "T".into(), image_url: "u".into(),
+            egs_info: None
+        }], extension_id: "ext".into() };
+        let (ids, params) = to_dlsite_params(&req);
+        assert_eq!(ids, vec!["RJ1".to_string()]);
+        assert_eq!(params[0].store_id, "RJ1");
+        assert_eq!(params[0].category, "doujin");
+        assert_eq!(params[0].gamename, "T");
+        assert!(params[0].egs.is_none());
+    }
+
+    #[tokio::test]
+    async fn 同期dmm_空入力_0件() {
+        let tmp = std::env::temp_dir().join(format!("launcherg-dmm-empty-{}.db3", std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_millis()));
+        let tmp_str = tmp.to_string_lossy().to_string().replace("\\", "/");
+        let db = RepoDb::from_path(&tmp_str).await;
+        let repo_manager = StdArc::new(SqliteRepositoryManager::new(db.pool_arc()));
+        let resolver = Arc::new(DirsSavePathResolver::default());
+        let usecase = NativeHostSyncUseCase::new(repo_manager.clone(), resolver.clone());
+        let ctx = AppCtx { manager: repo_manager, sync_usecase: usecase, resolver };
+        let req = DmmSyncGamesRequestTs { games: vec![], extension_id: "ext".into() };
+        let resp = handle_sync_dmm_games(&ctx, &req, "r1").await;
+        assert!(resp.success);
+        if let Some(NativeResponseCase::SyncGamesResult(r)) = resp.response { assert_eq!(r.success_count, 0); assert!(r.synced_games.is_empty()); } else { panic!("unexpected"); }
+    }
+
+    #[tokio::test]
+    async fn 同期dlsite_空入力_0件() {
+        let tmp = std::env::temp_dir().join(format!("launcherg-dl-empty-{}.db3", std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_millis()));
+        let tmp_str = tmp.to_string_lossy().to_string().replace("\\", "/");
+        let db = RepoDb::from_path(&tmp_str).await;
+        let repo_manager = StdArc::new(SqliteRepositoryManager::new(db.pool_arc()));
+        let resolver = Arc::new(DirsSavePathResolver::default());
+        let usecase = NativeHostSyncUseCase::new(repo_manager.clone(), resolver.clone());
+        let ctx = AppCtx { manager: repo_manager, sync_usecase: usecase, resolver };
+        let req = DlsiteSyncGamesRequestTs { games: vec![], extension_id: "ext".into() };
+        let resp = handle_sync_dlsite_games(&ctx, &req, "r1").await;
+        assert!(resp.success);
+        if let Some(NativeResponseCase::SyncGamesResult(r)) = resp.response { assert_eq!(r.success_count, 0); assert!(r.synced_games.is_empty()); } else { panic!("unexpected"); }
+    }
+
+    #[tokio::test]
+    async fn 省略作品一覧_空配列() {
+        let tmp = std::env::temp_dir().join(format!("launcherg-omit-empty-{}.db3", std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_millis()));
+        let tmp_str = tmp.to_string_lossy().to_string().replace("\\", "/");
+        let db = RepoDb::from_path(&tmp_str).await;
+        let repo_manager = StdArc::new(SqliteRepositoryManager::new(db.pool_arc()));
+        let resolver = Arc::new(DirsSavePathResolver::default());
+        let usecase = NativeHostSyncUseCase::new(repo_manager.clone(), resolver.clone());
+        let ctx = AppCtx { manager: repo_manager, sync_usecase: usecase, resolver };
+        let resp = handle_get_dmm_omit_works(&ctx, &GetDmmOmitWorksRequestTs { extension_id: "ext".into() }, "r2").await;
+        assert!(resp.success);
+        match resp.response { Some(NativeResponseCase::DmmOmitWorks(v)) => assert!(v.is_empty()), _ => panic!("unexpected") }
     }
 }
 
