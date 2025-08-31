@@ -1,5 +1,6 @@
 use super::*;
 use super::store::{StoreOps, PlanDecisionGeneric};
+use std::collections::HashSet;
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 struct DmmKey {
@@ -94,9 +95,19 @@ where
 			link_parent_pack_if_needed: link_parent_pack_if_needed::<R>,
 		};
 
-		let snapshot = self.build_batch_snapshot(&games, &ops).await?;
-		let mut plans: Vec<PlanDecisionGeneric<DmmKey>> = Vec::with_capacity(games.len());
-		for param in games.into_iter() { plans.push(self.decide_for_game_generic(&snapshot, param, &ops).await?); }
+		// key でユニーク化
+		let mut seen: HashSet<DmmKey> = HashSet::new();
+		let mut unique_games: Vec<DmmSyncGameParam> = Vec::with_capacity(games.len());
+		for g in games.into_iter() {
+			let k = DmmKey::from_param(&g);
+			if seen.insert(k) {
+				unique_games.push(g);
+			}
+		}
+
+		let snapshot = self.build_batch_snapshot(&unique_games, &ops).await?;
+		let mut plans: Vec<PlanDecisionGeneric<DmmKey>> = Vec::with_capacity(unique_games.len());
+		for param in unique_games.into_iter() { plans.push(self.decide_for_game_generic(&snapshot, param, &ops).await?); }
 		let resolver = self.resolver.clone();
 		self.manager.run_in_transaction(move |repos| {
 			let plans = plans.clone();
