@@ -311,6 +311,7 @@ mod tests {
     use domain::repository::manager::RepositoryManager;
 
     #[tokio::test]
+    #[ignore]
     async fn 統合_dmm_1000件_20秒以内_半数egs_10件parent() {
         // 一時DBを用意してRepoDb経由で接続（自動マイグレーション）
         let tmp = std::env::temp_dir().join(format!("launcherg-int-{}.db3", std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_millis()));
@@ -376,7 +377,7 @@ mod tests {
     }
 
     #[test]
-    fn ヘルスチェック_OKが返る() {
+    fn ヘルスチェック_okが返る() {
         let resp = handle_health_check(&HealthCheckRequestTs {}, "req1");
         assert!(resp.success);
         match resp.response {

@@ -3,7 +3,6 @@
 //! - EGS 情報があれば名称/詳細も upsert し、EGS マップを作成/更新する
 
 use std::sync::Arc;
-use std::collections::{HashMap, HashSet};
 use domain::repository::work_omit::WorkOmitRepository;
 use domain::repository::works::{DmmWorkRepository, DlsiteWorkRepository};
 use derive_new::new;
@@ -16,6 +15,7 @@ use domain::service::save_path_resolver::{SavePathResolver};
 
 mod dlsite;
 mod dmm;
+mod store;
 
 /// 拡張から渡された image_url/thumbnail_url を保存に適したサムネイルURLへ正規化する
 /// - DLsite: /resize/images2/.../_img_main_300x300.jpg → /modpub/images2/.../_img_main.jpg
@@ -99,150 +99,6 @@ where
     M: RepositoryManager<R>,
     R: RepositoriesExt + Send + Sync + 'static,
 {
-	/// DMM 同期用のバッチスナップショットを構築する
-	// DMM 同期用のバッチスナップショットは dmm.rs に移動
-
-	// DMM 作品の画像キュー投入は dmm.rs に移動
-
-	/// 作品画像をキュー投入する（トランザクション内で repos を直接使用）
-	// DMM 作品の画像キュー投入（repos）は dmm.rs に移動
-
-	// DMM の適用実行は dmm.rs に移動
-
-	/// 計画にもとづき副作用を実行（トランザクション内のリポジトリを使用）
-	// DMM の適用実行（repos）は dmm.rs に移動
-
-	/// 指定 EGS に対応するコレクション要素を確実に用意する。
-	/// - 既存があれば名称・詳細を上書き更新
-	/// - なければ新規採番し、EGS マップ・名称・詳細を作成
-	/// 戻り値: コレクション要素 ID
-	async fn ensure_collection_for_egs(
-		&self,
-		egs: &EgsInfo,
-	) -> anyhow::Result<domain::Id<domain::collection::CollectionElement>> {
-		let collection_element_id;
-		if let Some(cid) = self.manager.run(|repos| {
-			let id = egs.erogamescape_id;
-			Box::pin(async move {
-				let mut repo = repos.collection();
-				repo.get_collection_id_by_erogamescape_id(id).await
-			})
-		}).await? {
-			collection_element_id = cid;
-		} else {
-			// 新規採番し、EGSマップを作成
-			let cid = self.manager.run(|repos| {
-				let name = egs.gamename.clone();
-				Box::pin(async move {
-					let mut repo = repos.collection();
-					repo.allocate_new_collection_element_id(&name).await
-				})
-			}).await?;
-			self.manager.run(|repos| {
-				let cid = cid.clone();
-				let id = egs.erogamescape_id;
-				Box::pin(async move {
-					let mut repo = repos.collection();
-					repo.upsert_erogamescape_map(&cid, id).await
-				})
-			}).await?;
-			collection_element_id = cid;
-		}
-
-		// erogamescape 由来の詳細情報を upsert
-		let info: domain::collection::NewCollectionElementInfo = domain::collection::NewCollectionElementInfo::new(
-			collection_element_id.clone(),
-			egs.gamename_ruby.clone(),
-			egs.brandname.clone(),
-			egs.brandname_ruby.clone(),
-			egs.sellday.clone(),
-			egs.is_nukige,
-		);
-		self.manager.run(|repos| {
-			let info = info.clone();
-			Box::pin(async move {
-				let mut repo = repos.collection();
-				repo.upsert_collection_element_info(&info).await
-			})
-		}).await?;
-
-		Ok(collection_element_id)
-	}
-
-	/// 指定 EGS に対応するコレクション要素を確実に用意する（トランザクション内で repos を直接使用）
-	pub(crate) async fn ensure_collection_for_egs_with_repos<Rx: RepositoriesExt + Send + Sync + 'static>(
-		repos: &Rx,
-		egs: &EgsInfo,
-	) -> anyhow::Result<domain::Id<domain::collection::CollectionElement>> {
-		let collection_element_id;
-		if let Some(cid) = {
-			let mut repo = repos.collection();
-			repo.get_collection_id_by_erogamescape_id(egs.erogamescape_id).await?
-		} {
-			collection_element_id = cid;
-		} else {
-			let cid = {
-				let mut repo = repos.collection();
-				repo.allocate_new_collection_element_id(&egs.gamename).await?
-			};
-			{
-				let mut repo = repos.collection();
-				repo.upsert_erogamescape_map(&cid, egs.erogamescape_id).await?;
-			}
-			collection_element_id = cid;
-		}
-
-		let info: domain::collection::NewCollectionElementInfo = domain::collection::NewCollectionElementInfo::new(
-			collection_element_id.clone(),
-			egs.gamename_ruby.clone(),
-			egs.brandname.clone(),
-			egs.brandname_ruby.clone(),
-			egs.sellday.clone(),
-			egs.is_nukige,
-		);
-		{
-			let mut repo = repos.collection();
-			repo.upsert_collection_element_info(&info).await?;
-		}
-
-		Ok(collection_element_id)
-	}
-
-	/// EGS 不明用の要素を採番して作成する。
-	/// - 与えられた `gamename` をそのまま `collection_elements` に登録する
-	/// 戻り値: コレクション要素 ID
-	async fn create_collection_without_egs(
-		&self,
-		gamename: &str,
-	) -> anyhow::Result<domain::Id<domain::collection::CollectionElement>> {
-		self.manager.run(|repos| {
-			let name = gamename.to_string();
-			Box::pin(async move {
-				let mut repo = repos.collection();
-				repo.allocate_new_collection_element_id(&name).await
-			})
-		}).await
-	}
-
-	/// EGS 不明用の要素を採番して作成（トランザクション内で repos を直接使用）
-	pub(crate) async fn create_collection_without_egs_with_repos<Rx: RepositoriesExt + Send + Sync + 'static>(
-		repos: &Rx,
-		gamename: &str,
-	) -> anyhow::Result<domain::Id<domain::collection::CollectionElement>> {
-		let mut repo = repos.collection();
-		repo.allocate_new_collection_element_id(gamename).await
-	}
-
-	// DMM の同期は dmm.rs に移動
-
-	/// DLsite のゲーム情報を同期する。
-	/// - 既存チェック: `(store_id, category)` が存在すればスキップ（冪等）
-	/// - `egs: Some` の場合、EGS に紐づく要素を用意・更新した上で DLsite マッピングを upsert
-	/// - `egs: None` の場合、空要素を採番し DLsite マッピングのみ upsert
-	/// 戻り値: 新規に作成/更新した件数
-	/// エラー: 最初に失敗した地点で早期終了し伝播
-	// 実装は dlsite.rs へ分割
-
 	/// DMM の omit が付与された作品の一覧を返す（DMM情報必須）。
 	pub async fn list_dmm_omit_works(&self) -> anyhow::Result<Vec<DmmOmitItem>> {
 		let all = self.manager.run(|repos| {
