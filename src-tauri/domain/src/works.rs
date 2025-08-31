@@ -14,7 +14,7 @@ pub struct Work {
 #[derive(new, Clone, Debug, Serialize, Deserialize)]
 pub struct DmmWork {
     pub id: Id<DmmWork>,
-    pub title: String,
+    pub work_id: Id<Work>,
     pub store_id: String,
     pub category: String,
     pub subcategory: String,
@@ -23,7 +23,7 @@ pub struct DmmWork {
 #[derive(new, Clone, Debug, Serialize, Deserialize)]
 pub struct DlsiteWork {
     pub id: Id<DlsiteWork>,
-    pub title: String,
+    pub work_id: Id<Work>,
     pub store_id: String,
     pub category: String,
 }

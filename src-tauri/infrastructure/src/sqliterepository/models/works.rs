@@ -1,7 +1,6 @@
 #[derive(sqlx::FromRow, Clone)]
 pub struct DmmWorkTable {
     pub id: i64,
-    pub title: String,
     pub store_id: String,
     pub category: String,
     pub subcategory: String,
@@ -11,7 +10,6 @@ pub struct DmmWorkTable {
 #[derive(sqlx::FromRow, Clone)]
 pub struct DlsiteWorkTable {
     pub id: i64,
-    pub title: String,
     pub store_id: String,
     pub category: String,
     pub work_id: i64,
@@ -45,7 +43,7 @@ impl TryFrom<crate::sqliterepository::models::works::DmmWorkTable> for domain::w
     fn try_from(v: crate::sqliterepository::models::works::DmmWorkTable) -> Result<Self, Self::Error> {
         Ok(domain::works::DmmWork {
             id: domain::Id::new(v.id as i32),
-            title: v.title,
+            work_id: domain::Id::new(v.work_id as i32),
             store_id: v.store_id,
             category: v.category,
             subcategory: v.subcategory,
@@ -58,7 +56,7 @@ impl TryFrom<crate::sqliterepository::models::works::DlsiteWorkTable> for domain
     fn try_from(v: crate::sqliterepository::models::works::DlsiteWorkTable) -> Result<Self, Self::Error> {
         Ok(domain::works::DlsiteWork {
             id: domain::Id::new(v.id as i32),
-            title: v.title,
+            work_id: domain::Id::new(v.work_id as i32),
             store_id: v.store_id,
             category: v.category,
         })

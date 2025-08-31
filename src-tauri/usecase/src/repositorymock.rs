@@ -28,15 +28,6 @@ mockall::mock! {
     }
 }
 
-// Transaction は RepositoryManager へ移譲したため未使用
-
-#[cfg(test)]
-impl MockRepositoriesExtMock {
-    pub fn with_default_work_repos(mut self) -> Self {
-        self
-    }
-}
-
 #[cfg(test)]
 #[derive(Clone)]
 pub struct TestRepositories {
@@ -231,79 +222,6 @@ impl domain::repository::manager::RepositoryManager<TestRepositories> for TestRe
 
 #[cfg(test)]
 impl TestRepositories {
-    pub fn with_default_work_repos(mut self) -> Self {
-        use domain::repository::works::{MockDmmWorkRepository, MockDlsiteWorkRepository};
-        use domain::works::{DmmWork, DlsiteWork};
-        use domain::Id;
-        use mockall::predicate::*;
-
-        let mut dmm_repo = MockDmmWorkRepository::new();
-        dmm_repo
-            .expect_find_by_store_key()
-            .with(always(), always(), always())
-            .returning(|store_id, category, subcategory| {
-                let s = store_id.to_string();
-                let c = category.to_string();
-                let sub = subcategory.to_string();
-                Box::pin(async move {
-                    Ok::<_, anyhow::Error>(Some(DmmWork {
-                        id: Id::new(1000),
-                        title: format!("{}-{}-{}", s, c, sub),
-                        store_id: s,
-                        category: c,
-                        subcategory: sub,
-                    }))
-                })
-            });
-        dmm_repo
-            .expect_find_by_store_keys()
-            .with(always())
-            .returning(|keys| {
-                let mut id_counter = 1000i32;
-                let list: Vec<domain::works::DmmWork> = keys
-                    .iter()
-                    .map(|(sid, cat, sub)| {
-                        id_counter += 1;
-                        domain::works::DmmWork {
-                            id: domain::Id::new(id_counter),
-                            title: format!("{}-{}-{}", sid, cat, sub),
-                            store_id: sid.clone(),
-                            category: cat.clone(),
-                            subcategory: sub.clone(),
-                        }
-                    })
-                    .collect();
-                Box::pin(async move { Ok::<_, anyhow::Error>(list) })
-            });
-        self.dmm_work = std::sync::Arc::new(tokio::sync::Mutex::new(dmm_repo));
-
-        let mut dl_repo = MockDlsiteWorkRepository::new();
-        dl_repo
-            .expect_find_by_store_key()
-            .with(always(), always())
-            .returning(|store_id, category| {
-                let s = store_id.to_string();
-                let c = category.to_string();
-                Box::pin(async move {
-                    Ok::<_, anyhow::Error>(Some(DlsiteWork {
-                        id: Id::new(2000),
-                        title: format!("{}-{}", s, c),
-                        store_id: s,
-                        category: c,
-                    }))
-                })
-            });
-        self.dlsite_work = std::sync::Arc::new(tokio::sync::Mutex::new(dl_repo));
-
-        use domain::repository::work_parent_packs::MockWorkParentPacksRepository;
-        let mut wpp = MockWorkParentPacksRepository::new();
-        wpp.expect_add().returning(|_, _| Box::pin(async { Ok::<_, anyhow::Error>(()) }));
-        wpp.expect_exists().returning(|_, _| Box::pin(async { Ok::<_, anyhow::Error>(false) }));
-        self.work_parent_packs = std::sync::Arc::new(tokio::sync::Mutex::new(wpp));
-
-        self
-    }
-
     pub fn set_all_game_cache(&mut self, repo: domain::repository::all_game_cache::MockAllGameCacheRepository) {
         self.all_game_cache = std::sync::Arc::new(tokio::sync::Mutex::new(repo));
     }

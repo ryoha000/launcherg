@@ -92,7 +92,7 @@ impl WorkRepository for RepositoryImpl<Work> {
             if let Some(dmm_id) = r.dmm_id {
                 entry.dmm = Some(DmmWork {
                     id: Id::new(dmm_id as i32),
-                    title: entry.work.title.clone(),
+                    work_id: Id::new(r.work_id as i32),
                     store_id: r.dmm_store_id.unwrap_or_default(),
                     category: r.dmm_category.unwrap_or_default(),
                     subcategory: r.dmm_subcategory.unwrap_or_default(),
@@ -103,7 +103,7 @@ impl WorkRepository for RepositoryImpl<Work> {
             if let Some(dl_id) = r.dlsite_id {
                 entry.dlsite = Some(DlsiteWork {
                     id: Id::new(dl_id as i32),
-                    title: entry.work.title.clone(),
+                    work_id: Id::new(r.work_id as i32),
                     store_id: r.dlsite_store_id.unwrap_or_default(),
                     category: r.dlsite_category.unwrap_or_default(),
                 });
@@ -152,9 +152,8 @@ impl DmmWorkRepository for RepositoryImpl<domain::works::DmmWork> {
         let row = self.executor.with_conn(|conn| {
             Box::pin(async move {
                 let row: Option<crate::sqliterepository::models::works::DmmWorkTable> = sqlx::query_as(
-                    r#"SELECT w.id as id, ws.title as title, w.store_id, w.category, w.subcategory, w.work_id
+                    r#"SELECT w.id as id, w.store_id, w.category, w.subcategory, w.work_id
                        FROM dmm_works w
-                       JOIN works ws ON ws.id = w.work_id
                        WHERE w.store_id=? AND w.category=? AND w.subcategory=?
                        LIMIT 1"#,
                 )
@@ -176,9 +175,8 @@ impl DmmWorkRepository for RepositoryImpl<domain::works::DmmWork> {
         let rows = self.executor.with_conn(|conn| {
             Box::pin(async move {
                 let mut qb = QueryBuilder::new(
-                    r#"SELECT w.id as id, ws.title as title, w.store_id, w.category, w.subcategory, w.work_id
+                    r#"SELECT w.id as id, w.store_id, w.category, w.subcategory, w.work_id
                         FROM dmm_works w
-                        JOIN works ws ON ws.id = w.work_id
                         WHERE (w.store_id, w.category, w.subcategory) IN ("#,
                 );
                 {
@@ -240,9 +238,8 @@ impl DlsiteWorkRepository for RepositoryImpl<domain::works::DlsiteWork> {
         let row = self.executor.with_conn(|conn| {
             Box::pin(async move {
                 let row: Option<crate::sqliterepository::models::works::DlsiteWorkTable> = sqlx::query_as(
-                    r#"SELECT w.id as id, ws.title as title, w.store_id, w.category, w.work_id
+                    r#"SELECT w.id as id, w.store_id, w.category, w.work_id
                        FROM dlsite_works w
-                       JOIN works ws ON ws.id = w.work_id
                        WHERE w.store_id=? AND w.category=?
                        LIMIT 1"#,
                 )
