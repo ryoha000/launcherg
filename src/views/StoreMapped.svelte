@@ -4,10 +4,14 @@
   import { onMount } from 'svelte'
   import { get } from 'svelte/store'
   import tippy from 'tippy.js'
+  import dlsiteIconUrl from '@/assets/dlsite.ico'
+  import dmmIconUrl from '@/assets/dmm.ico'
+  import egsIconUrl from '@/assets/erogamescape.ico'
   import ConfirmDeleteOnCheckModal from '@/components/Setting/Download/ConfirmDeleteOnCheckModal.svelte'
   import APopover from '@/components/UI/APopover.svelte'
   import Button from '@/components/UI/Button.svelte'
   import Checkbox from '@/components/UI/Checkbox.svelte'
+  import LinkServiceFilter from '@/components/WorkList/LinkServiceFilter.svelte'
   import { commandDeleteCollectionElement } from '@/lib/command'
   import { useWorkDetailsAllQuery } from '@/lib/data/queries/workDetails'
   import { useAddWorkOmitMutation, useRemoveWorkOmitMutation } from '@/lib/data/queries/workOmit'
@@ -17,14 +21,23 @@
 
   const workDetailsQuery = useWorkDetailsAllQuery()
 
-  // ストア種別のマルチセレクト（1: DMM, 2: DLsite）
-  let storeFilter: number[] = $state([1, 2])
+  // ストア別三段階フィルタ（any / linked / unlinked）
+  type FilterMode = 'any' | 'linked' | 'unlinked'
+  type StoreFilter = { dmm: FilterMode, dlsite: FilterMode, egs: FilterMode }
+  let storeFilter: StoreFilter = $state({ dmm: 'any', dlsite: 'any', egs: 'any' })
+  const modeLabel = (m: FilterMode) => (m === 'linked' ? 'あり' : m === 'unlinked' ? 'なし' : '全て')
   const storeFilterLabel = $derived.by(() => {
-    if (storeFilter.length === 2)
-      return 'DMM, DLsite'
-    if (storeFilter.length === 1)
-      return storeFilter[0] === 1 ? 'DMM' : 'DLsite'
-    return '未選択'
+    const allAny = storeFilter.dmm === 'any' && storeFilter.dlsite === 'any' && storeFilter.egs === 'any'
+    if (allAny)
+      return 'すべて表示'
+    const parts: string[] = []
+    if (storeFilter.dmm !== 'any')
+      parts.push(`DMM:${modeLabel(storeFilter.dmm)}`)
+    if (storeFilter.dlsite !== 'any')
+      parts.push(`DLsite:${modeLabel(storeFilter.dlsite)}`)
+    if (storeFilter.egs !== 'any')
+      parts.push(`批評空間:${modeLabel(storeFilter.egs)}`)
+    return parts.length > 0 ? parts.join(', ') : 'すべて表示'
   })
   let keyword = $state('')
 
@@ -99,12 +112,11 @@
   const filteredItems = $derived.by(() => {
     const q = keyword.trim().toLowerCase()
     return items.filter((w) => {
-      if (storeFilter.length > 0) {
-        const matchDmm = storeFilter.includes(1) && !!w.dmm
-        const matchDl = storeFilter.includes(2) && !!w.dlsite
-        if (!matchDmm && !matchDl)
-          return false
-      }
+      const matchDmm = storeFilter.dmm === 'any' || (storeFilter.dmm === 'linked' ? !!w.dmm : !w.dmm)
+      const matchDl = storeFilter.dlsite === 'any' || (storeFilter.dlsite === 'linked' ? !!w.dlsite : !w.dlsite)
+      const matchEgs = storeFilter.egs === 'any' || (storeFilter.egs === 'linked' ? !!w.erogamescapeId : !w.erogamescapeId)
+      if (!(matchDmm && matchDl && matchEgs))
+        return false
       if (!q)
         return true
       const inTitle = w.title.toLowerCase().includes(q)
@@ -180,7 +192,7 @@
     設定した除外は今後の連携にも反映され、再取り込みを防止します。
   </div>
   <div class='mb-1 flex items-center gap-3'>
-    <APopover panelClass='right-0 min-w-56'>
+    <APopover panelClass='left-0 min-w-56'>
       {#snippet button()}
         <Button
           text={storeFilterLabel}
@@ -189,20 +201,7 @@
       {/snippet}
       {#snippet children()}
         <div class='p-2'>
-          <label class='mb-1 flex cursor-pointer select-none items-center gap-2'>
-            <Checkbox
-              value={storeFilter.includes(1)}
-              on:update={e => (storeFilter = e.detail.value ? Array.from(new Set([...storeFilter, 1])) : storeFilter.filter(v => v !== 1))}
-            />
-            <span class='border-(1px border-primary solid) rounded-full px-3 py-(0.5) text-(sm)'>DMM</span>
-          </label>
-          <label class='flex cursor-pointer select-none items-center gap-2'>
-            <Checkbox
-              value={storeFilter.includes(2)}
-              on:update={e => (storeFilter = e.detail.value ? Array.from(new Set([...storeFilter, 2])) : storeFilter.filter(v => v !== 2))}
-            />
-            <span class='border-(1px border-primary solid) rounded-full px-3 py-(0.5) text-(sm)'>DLsite</span>
-          </label>
+          <LinkServiceFilter bind:filter={storeFilter} />
         </div>
       {/snippet}
     </APopover>
@@ -225,10 +224,9 @@
       <table class='w-full border-separate border-spacing-0 table-fixed whitespace-nowrap text-(left text-primary)'>
         <thead class='sticky top-0 z-20 bg-bg-primary'>
           <tr>
-            <th class='w-24 border-(b border-primary) px-2 py-2'></th>
+            <th class='w-24 border-(b border-primary) px-2 py-2'>連携</th>
             <th class='w-18 border-(b border-primary) px-2 py-2'></th>
             <th class='w-36 border-(b border-primary) px-2 py-2'>タイトル</th>
-            <th class='w-28 border-(b border-primary) px-2 py-2'>EGS</th>
             <th class='w-32 border-(b border-primary) px-2 py-2'>
               <div class='flex items-center gap-1'>
                 連携除外
@@ -245,13 +243,22 @@
           {#each filteredItems as item}
             <tr class='border-(b border-primary solid)'>
               <td class='px-2 py-1'>
-                <div class='flex gap-1'>
-                  {#if item.dmm}
-                    <span class='inline-flex items-center border-(1px border-primary solid) rounded-full px-2 py-(0.5) text-(xs text-secondary)'>DMM</span>
-                  {/if}
-                  {#if item.dlsite}
-                    <span class='inline-flex items-center border-(1px border-primary solid) rounded-full px-2 py-(0.5) text-(xs text-secondary)'>DLsite</span>
-                  {/if}
+                <div class='flex items-center gap-2'>
+                  <div class='h-5 w-5'>
+                    {#if item.dmm}
+                      <img src={dmmIconUrl} alt='DMM' class='h-5 w-5 object-contain' />
+                    {/if}
+                  </div>
+                  <div class='h-5 w-5'>
+                    {#if item.dlsite}
+                      <img src={dlsiteIconUrl} alt='DLsite' class='h-5 w-5 object-contain' />
+                    {/if}
+                  </div>
+                  <div class='h-5 w-5'>
+                    {#if item.erogamescapeId}
+                      <img src={egsIconUrl} alt='EGS' class='h-5 w-5 object-contain' />
+                    {/if}
+                  </div>
                 </div>
               </td>
               <td class='px-2 py-1'>
@@ -266,18 +273,6 @@
                 {/if}
               </td>
               <td class='w-36 overflow-hidden text-ellipsis whitespace-nowrap px-2 py-1'>{item.title}</td>
-              <td class='px-2 py-1'>
-                {#if item.erogamescapeId}
-                  <a
-                    class='text-(sm text-link) underline'
-                    href={`https://erogamescape.dyndns.org/~ap2/ero/toukei_kaiseki/game.php?game=${item.erogamescapeId}`}
-                    target='_blank'
-                    rel='noreferrer noopener'
-                  >{item.erogamescapeId}</a>
-                {:else}
-                  <span class='text-(sm text-secondary)'>未連携</span>
-                {/if}
-              </td>
               <td class='px-2 py-1'>
                 <div class='flex gap-4'>
                   {#if item.dmm}
