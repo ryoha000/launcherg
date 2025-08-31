@@ -654,10 +654,10 @@ impl CollectionRepository for RepositoryImpl<domain::collection::CollectionEleme
         Ok(())
     }
 
-    async fn get_work_ids_by_collection_ids(&mut self, collection_element_ids: &[i32]) -> anyhow::Result<Vec<(Id<CollectionElement>, Id<Work>)>> {
+    async fn get_work_ids_by_collection_ids(&mut self, collection_element_ids: &[Id<CollectionElement>]) -> anyhow::Result<Vec<(Id<CollectionElement>, Id<Work>)>> {
         use sqlx::QueryBuilder;
         if collection_element_ids.is_empty() { return Ok(Vec::new()); }
-        let ids = collection_element_ids.to_vec();
+        let ids: Vec<i32> = collection_element_ids.iter().map(|id| id.value).collect();
         let rows: Vec<(i32, i32)> = self.executor.with_conn(|conn| {
             Box::pin(async move {
                 let mut qb = QueryBuilder::new(

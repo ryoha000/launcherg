@@ -123,7 +123,7 @@ where
             }).await?;
             for (egs_id, ceid) in rows.into_iter() { egs_id_to_collection_id.insert(egs_id, ceid); }
 
-            let ce_ids: Vec<i32> = egs_id_to_collection_id.values().map(|id| id.value).collect();
+            let ce_ids: Vec<Id<domain::collection::CollectionElement>> = egs_id_to_collection_id.values().cloned().collect();
             if !ce_ids.is_empty() {
                 let rows = self.manager.run(|repos| {
                     let ce_ids = ce_ids.clone();
@@ -132,9 +132,9 @@ where
                         repo.get_work_ids_by_collection_ids(&ce_ids).await
                     })
                 }).await?;
-                let mut first_work_by_ce: HashMap<i32, Id<domain::works::Work>> = HashMap::new();
-                for (ceid, wid) in rows.into_iter() { first_work_by_ce.entry(ceid.value).or_insert(wid); }
-                for (egs_id, ceid) in egs_id_to_collection_id.iter() { if let Some(wid) = first_work_by_ce.get(&ceid.value) { egs_id_to_work_id.insert(*egs_id, wid.clone()); } }
+                let mut first_work_by_ce: HashMap<Id<domain::collection::CollectionElement>, Id<domain::works::Work>> = HashMap::new();
+                for (ceid, wid) in rows.into_iter() { first_work_by_ce.entry(ceid).or_insert(wid); }
+                for (egs_id, ceid) in egs_id_to_collection_id.iter() { if let Some(wid) = first_work_by_ce.get(ceid) { egs_id_to_work_id.insert(*egs_id, wid.clone()); } }
             }
         }
 

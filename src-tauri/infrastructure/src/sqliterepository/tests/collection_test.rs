@@ -1,7 +1,8 @@
 use super::TestDatabase;
-use domain::repository::{RepositoriesExt, collection::CollectionRepository};
+use domain::repository::{RepositoriesExt, collection::CollectionRepository, works::WorkRepository};
 use domain::collection::{NewCollectionElement, NewCollectionElementInfo, NewCollectionElementInstall, NewCollectionElementLike, NewCollectionElementPaths, NewCollectionElementPlay, NewCollectionElementThumbnail};
 use domain::Id;
+use domain::works::NewWork;
 
 #[tokio::test]
 async fn collection_normal_flows() {
@@ -69,6 +70,48 @@ async fn collection_normal_flows() {
         r.delete_collection_element(&Id::new(1)).await.unwrap();
         assert!(r.get_element_by_element_id(&Id::new(1)).await.unwrap().is_none());
     }
+}
+
+#[tokio::test]
+async fn get_work_ids_by_collection_ids_returns_mapped_pairs() {
+    let test_db = TestDatabase::new().await.unwrap();
+    let repo = test_db.sqlite_repository();
+
+    // 準備: work と collection_element を作成し、マッピングを張る
+    let (work_id1, work_id2) = {
+        let mut w = repo.work();
+        let id1 = w.upsert(&NewWork { title: "W1".into() }).await.unwrap();
+        let id2 = w.upsert(&NewWork { title: "W2".into() }).await.unwrap();
+        (id1, id2)
+    };
+
+    // collection elements 作成 (IDは任意の整数)
+    {
+        let mut c = repo.collection();
+        c.upsert_collection_element(&NewCollectionElement::new(Id::new(100), "G100".into())).await.unwrap();
+        c.upsert_collection_element(&NewCollectionElement::new(Id::new(200), "G200".into())).await.unwrap();
+        // マッピング
+        c.upsert_work_mapping(&Id::new(100), work_id1.clone()).await.unwrap();
+        c.upsert_work_mapping(&Id::new(200), work_id2.clone()).await.unwrap();
+    }
+
+    // 実行: 既存/未存在混在の入力で問い合わせ
+    let got = {
+        let mut c = repo.collection();
+        c.get_work_ids_by_collection_ids(&[Id::new(100), Id::new(200), Id::new(300)]) // 300 は未マッピング
+            .await
+            .unwrap()
+    };
+
+    // 検証: 100,200 のみ返る。順序はクエリ結果順（IN句に準拠しない可能性）なので集合比較
+    let mut got_sorted = got.clone();
+    got_sorted.sort_by_key(|(ce, _)| ce.value);
+
+    assert_eq!(got_sorted.len(), 2);
+    assert_eq!(got_sorted[0].0.value, 100);
+    assert_eq!(got_sorted[0].1.value, work_id1.value);
+    assert_eq!(got_sorted[1].0.value, 200);
+    assert_eq!(got_sorted[1].1.value, work_id2.value);
 }
 
 

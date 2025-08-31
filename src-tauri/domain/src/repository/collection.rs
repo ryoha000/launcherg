@@ -59,7 +59,7 @@ pub trait CollectionRepository {
     async fn get_collection_id_by_dlsite_mapping(&mut self, store_id: &str, category: &str) -> Result<Option<Id<CollectionElement>>>;
     async fn upsert_work_mapping(&mut self, collection_element_id: &Id<CollectionElement>, work_id: Id<Work>) -> Result<()>;
 
-    async fn get_work_ids_by_collection_ids(&mut self, collection_element_ids: &[i32]) -> Result<Vec<(Id<CollectionElement>, Id<Work>)>>;
+    async fn get_work_ids_by_collection_ids(&mut self, collection_element_ids: &[Id<CollectionElement>]) -> Result<Vec<(Id<CollectionElement>, Id<Work>)>>;
 }
 
 
