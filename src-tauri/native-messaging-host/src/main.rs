@@ -6,6 +6,8 @@ use tokio::io::{self as tokio_io, AsyncReadExt, AsyncWriteExt};
 use serde_json;
 use thiserror::Error;
 
+use domain::repository::{manager::RepositoryManager, native_host_log::NativeHostLogRepository, RepositoriesExt};
+use domain::native_host_log::{HostLogLevel, HostLogType};
 use models::{
     common::{NativeMessageCase, NativeMessageTs, NativeResponseCase, NativeResponseTs, HealthCheckRequestTs, HealthCheckResultTs},
     sync::{DmmSyncGamesRequestTs, DlsiteSyncGamesRequestTs, SyncBatchResultTs},
@@ -328,19 +330,29 @@ fn to_dlsite_params(request: &DlsiteSyncGamesRequestTs) -> (Vec<String>, Vec<Dls
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::future::Future;
+    use std::pin::Pin;
     use std::sync::Arc as StdArc;
+    use domain::collection::NewCollectionElementInfo;
     use domain::repository::RepositoriesExt;
+    use domain::repository::collection::CollectionRepository;
     use domain::repository::works::{DmmWorkRepository, WorkRepository};
-    use domain::works::{NewDmmWork, NewWork};
+    use domain::works::{NewDmmWork, NewWork, WorkDetails};
     use domain::repository::manager::RepositoryManager;
+    use rand::Rng;
+
+    async fn setup_db() -> RepoDb {
+        let rng = rand::rng();
+        let suffix: String = rng.sample_iter(rand::distr::Alphanumeric).take(16).map(char::from).collect();
+        let tmp = std::env::temp_dir().join(format!("launcherg-int-{}.db3", suffix));
+        let tmp_str = tmp.to_string_lossy().to_string().replace("\\", "/");
+        RepoDb::from_path(&tmp_str).await
+    }
 
     #[tokio::test]
     #[ignore]
     async fn 統合_dmm_1000件_20秒以内_半数egs_10件parent() {
-        // 一時DBを用意してRepoDb経由で接続（自動マイグレーション）
-        let tmp = std::env::temp_dir().join(format!("launcherg-int-{}.db3", std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_millis()));
-        let tmp_str = tmp.to_string_lossy().to_string().replace("\\", "/");
-        let db = RepoDb::from_path(&tmp_str).await;
+        let db = setup_db().await;
         let repo_manager = StdArc::new(SqliteRepositoryManager::new(db.pool_arc()));
         let resolver = Arc::new(DirsSavePathResolver::default());
         let usecase = NativeHostSyncUseCase::new(repo_manager.clone(), resolver.clone());
@@ -398,6 +410,219 @@ mod tests {
         println!("elapsed: {:?}", elapsed);
         assert_eq!(synced, 1000, "同期件数が一致すること");
         assert!(elapsed.as_secs_f64() < 20.0, "1000件同期が20秒未満で終わること。実測: {:?}", elapsed);
+    }
+
+    #[tokio::test]
+    async fn 統合_dmm_dlsite() {
+        // 以下のケースについてテスト
+        // 1. DMM でのみ管理
+        // 2. DLsite でのみ管理
+        // 3. DMM と DLsite で同じものが管理されている(DMM が既存)
+        // 4. DMM と DLsite で同じものが管理されている(DLsite が既存)
+        // 5. collection_element に紐づいているときに DMM の登録(erogamescape_id が既存)
+        // 6. collection_element に紐づいているときに DLsite の登録(erogamescape_id が既存)
+
+        enum SyncGameParam {
+            Dmm(Vec<DmmSyncGameParam>),
+            Dlsite(Vec<DlsiteSyncGameParam>),
+        }
+
+        struct TestCase {
+            pub name: String,
+            pub params: Vec<SyncGameParam>,
+            pub setup: Box<dyn Fn(Arc<SqliteRepositoryManager>) -> Pin<Box<dyn Future<Output = ()> + Send>> + Send + Sync>,
+            pub assertions: Box<dyn Fn(Vec<WorkDetails>) -> bool + Send + Sync>,
+        }
+
+        let egs = EgsInfo { erogamescape_id: 1, gamename: "Game 1".to_string(), gamename_ruby: "ゲームイチ".to_string(), brandname: "りょはそふと".to_string(), brandname_ruby: "リョハソフト".to_string(), sellday: "2025-01-01".to_string(), is_nukige: false };
+
+        let dmm_param_egs = DmmSyncGameParam { store_id: "SID1".to_string(), category: "game".to_string(), subcategory: "pc".to_string(), gamename: "Game 1".to_string(), egs: Some(egs.clone()), image_url: "https://example.com/image1_ps.jpg".to_string(), parent_pack_work_id: None };
+        let dmm_param = DmmSyncGameParam { store_id: "SID2".to_string(), category: "game".to_string(), subcategory: "pc".to_string(), gamename: "Game 2".to_string(), egs: None, image_url: "https://example.com/image2_ps.jpg".to_string(), parent_pack_work_id: None };
+        
+        let dlsite_param_egs = DlsiteSyncGameParam { store_id: "RJ1".to_string(), category: "doujin".to_string(), gamename: "Game 1".to_string(), egs: Some(egs.clone()), image_url: "https://example.com/resize/images2/image1.jpg".to_string() };
+        let dlsite_param = DlsiteSyncGameParam { store_id: "RJ2".to_string(), category: "doujin".to_string(), gamename: "Game 2".to_string(), egs: None, image_url: "https://example.com/resize/images2/image2.jpg".to_string() };
+
+        let test_cases = vec![
+            TestCase {
+                name: "DMM でのみ管理".to_string(),
+                params: vec![
+                    SyncGameParam::Dmm(vec![dmm_param_egs.clone(), dmm_param.clone()]),
+                ],
+                setup: Box::new(|_| { Box::pin(async move { () }) }),
+                assertions: Box::new(|works| {
+                    // 2件存在し、両方 dmm に紐づく、SID1 は EGS が紐づいている、SID2 は EGS が紐づいていない
+                    assert_eq!(works.len(), 2);
+                    for work in works {
+                        assert!(work.dlsite.is_none());
+                        assert!(work.dmm.is_some());
+                        // TODO: egs を確認する
+                        // let dmm = work.dmm.unwrap();
+                        // if dmm.store_id == "SID1" {
+                        //     assert!(dmm.egs.is_some());
+                        // } else if dmm.store_id == "SID2" {
+                        //     assert!(dmm.egs.is_none());
+                        // } else {
+                        //     assert!(false, "unexpected store_id: {}", dmm.store_id);
+                        // }
+                    }
+                    true
+                }),
+            },
+            TestCase {
+                name: "DLsite でのみ管理".to_string(),
+                params: vec![
+                    SyncGameParam::Dlsite(vec![dlsite_param_egs.clone(), dlsite_param.clone()]),
+                ],
+                setup: Box::new(|_| { Box::pin(async move { () }) }),
+                assertions: Box::new(|works| {
+                    // 2件存在し、両方 dlsite に紐づく、RJ1 は EGS が紐づいている、RJ2 は EGS が紐づいていない
+                    assert_eq!(works.len(), 2);
+                    for work in works {
+                        assert!(work.dmm.is_none());
+                        assert!(work.dlsite.is_some());
+                        // TODO: egs を確認する
+                        // let dlsite = work.dlsite.unwrap();
+                        // if dlsite.store_id == "RJ1" {
+                        //     assert!(dlsite.egs.is_some());
+                        // } else if dlsite.store_id == "RJ2" {
+                        //     assert!(dlsite.egs.is_none());
+                        // } else {
+                        //     assert!(false, format!("unexpected store_id: {}", dlsite.store_id));
+                        // }
+                    }
+                    true
+                }),
+            },
+            TestCase {
+                name: "DMM と DLsite で同じものが管理されている(DMM が既存)".to_string(),
+                params: vec![
+                    SyncGameParam::Dmm(vec![dmm_param_egs.clone()]),
+                    SyncGameParam::Dlsite(vec![dlsite_param_egs.clone()]),
+                ],
+                setup: Box::new(|_| { Box::pin(async move { () }) }),
+                assertions: Box::new(|works| {
+                    // 1件存在し、dmm, dlsite, egs が紐づく
+                    assert_eq!(works.len(), 1);
+                    for work in works {
+                        assert!(work.dmm.is_some());
+                        assert!(work.dlsite.is_some());
+                        // TODO: collection_element_id ではなく EGS を確認する
+                        assert!(work.collection_element_id.is_some());
+                    }
+                    true
+                }),
+            },
+            TestCase {
+                name: "DMM と DLsite で同じものが管理されている(DLsite が既存)".to_string(),
+                params: vec![
+                    SyncGameParam::Dlsite(vec![dlsite_param_egs.clone()]),
+                    SyncGameParam::Dmm(vec![dmm_param_egs.clone()]),
+                ],
+                setup: Box::new(|_| { Box::pin(async move { () }) }),
+                assertions: Box::new(|works| {
+                    // 1件存在し、dmm, dlsite, egs が紐づく
+                    assert_eq!(works.len(), 1);
+                    for work in works {
+                        assert!(work.dmm.is_some());
+                        assert!(work.dlsite.is_some());
+                        // TODO: collection_element_id ではなく EGS を確認する
+                        assert!(work.collection_element_id.is_some());
+                    }
+                    true
+                }),
+            },
+            TestCase {
+                name: "collection_element に紐づいているときに DMM の登録(erogamescape_id が既存)".to_string(),
+                params: vec![
+                    SyncGameParam::Dmm(vec![dmm_param_egs.clone()]),
+                ],
+                setup: Box::new(|manager| { Box::pin(async move {
+                    manager.run(|repos| {
+                        Box::pin(async move {
+                            let cid = repos.collection().allocate_new_collection_element_id("Game 1").await?;
+                            repos.collection().upsert_erogamescape_map(&cid, 1).await?;
+                            repos.collection().upsert_collection_element_info(&NewCollectionElementInfo { collection_element_id: cid, gamename_ruby: "ゲームイチ".to_string(), brandname: "りょはそふと".to_string(), brandname_ruby: "リョハソフト".to_string(), sellday: "2025-01-01".to_string(), is_nukige: false }).await?;
+
+                            Ok(())
+                        })
+                    }).await.unwrap();
+                }) }),
+                assertions: Box::new(|works| {
+                    // 1件存在し、dmm, egs が紐づく
+                    assert_eq!(works.len(), 1);
+                    for work in works {
+                        assert!(work.dmm.is_some());
+                        assert!(work.dlsite.is_none());
+                        assert!(work.collection_element_id.is_some());
+                        // TODO: egs を確認する
+                        // assert!(work.egs.is_some());
+                    }
+                    true
+                }),
+            },
+            TestCase {
+                name: "collection_element に紐づいているときに DLsite の登録(erogamescape_id が既存)".to_string(),
+                params: vec![
+                    SyncGameParam::Dlsite(vec![dlsite_param_egs.clone()]),
+                ],
+                setup: Box::new(|manager| { Box::pin(async move {
+                    manager.run(|repos| {
+                        Box::pin(async move {
+                            let cid = repos.collection().allocate_new_collection_element_id("Game 1").await?;
+                            repos.collection().upsert_erogamescape_map(&cid, 1).await?;
+                            repos.collection().upsert_collection_element_info(&NewCollectionElementInfo { collection_element_id: cid, gamename_ruby: "ゲームイチ".to_string(), brandname: "りょはそふと".to_string(), brandname_ruby: "リョハソフト".to_string(), sellday: "2025-01-01".to_string(), is_nukige: false }).await?;
+
+                            Ok(())
+                        })
+                    }).await.unwrap();
+                }) }),
+                assertions: Box::new(|works| {
+                    // 1件存在し、dlsite, egs が紐づく
+                    assert_eq!(works.len(), 1);
+                    for work in works {
+                        assert!(work.dlsite.is_some());
+                        assert!(work.dmm.is_none());
+                        assert!(work.collection_element_id.is_some());
+                    }
+                    true
+                }),
+            },
+        ];
+
+        for test_case in test_cases {
+            let db = setup_db().await;
+            let repo_manager = StdArc::new(SqliteRepositoryManager::new(db.pool_arc()));
+            let resolver = Arc::new(DirsSavePathResolver::default());
+            let usecase = NativeHostSyncUseCase::new(repo_manager.clone(), resolver.clone());
+            (test_case.setup)(repo_manager.clone()).await;
+
+            // 同じDBを使いまわしていないか確認
+            let works = repo_manager.run(|repos| {
+                Box::pin(async move {
+                    let works = repos.work().list_all_details().await?;
+                    Ok::<Vec<WorkDetails>, anyhow::Error>(works)
+                })
+            }).await.unwrap();
+            assert!(works.is_empty());
+
+            for param in test_case.params {
+                match param {
+                    SyncGameParam::Dmm(params) => {
+                        usecase.sync_dmm_games(params).await.unwrap();
+                    }
+                    SyncGameParam::Dlsite(params) => {
+                        usecase.sync_dlsite_games(params).await.unwrap();
+                    }
+                }
+            }
+            let works = repo_manager.run(|repos| {
+                Box::pin(async move {
+                    let mut work_repo = repos.work();
+                    work_repo.list_all_details().await
+                })
+            }).await.unwrap();
+            assert!((test_case.assertions)(works), "{}", test_case.name);
+        }
     }
 
     #[test]

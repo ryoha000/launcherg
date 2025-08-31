@@ -17,5 +17,4 @@ log = { workspace = true }
 windows = { workspace = true }
 chrono = { workspace = true }
 typeshare = "1"
-
-[build-dependencies]
+rand = "0.9.2"
