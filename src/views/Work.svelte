@@ -1,7 +1,7 @@
 <script lang='ts'>
   import type { Work } from '@/lib/types'
   import WorkErogameScape from '@/components/Work/WorkErogameScape.svelte'
-  import { commandGetCollectionElement } from '@/lib/command'
+  import { commandGetCollectionElement, commandGetWorkDetailsByCollectionElement } from '@/lib/command'
   import { works } from '@/store/works'
 
   let { route }: { route?: { result: { path: { params: { id?: string } } } } } = $props()
@@ -10,12 +10,13 @@
   // ビューの責務: 表示ソース判定とデータ取得
   let viewPromise = $derived((async () => {
     const collectionElement = await commandGetCollectionElement(+idParam)
+    const workDetail = await commandGetWorkDetailsByCollectionElement(+idParam)
     const erogameScapeId = collectionElement.erogamescapeId ?? null
     let work: Work | null = null
     if (erogameScapeId) {
       work = (await works.get(erogameScapeId)) ?? null
     }
-    return { collectionElement, work }
+    return { collectionElement, work, workDetail }
   })())
 </script>
 
@@ -31,6 +32,7 @@
   {:else}
     <div class='h-full w-full p-4'>
       <div class='text-gray-500'>TODO: erogamescape id が紐づいていない。何らかの情報をソースに何かを書く {JSON.stringify(data.collectionElement)}</div>
+      <div class='mt-2 text-gray-500'>workDetail: {JSON.stringify(data.workDetail)}</div>
     </div>
   {/if}
 {:catch error}

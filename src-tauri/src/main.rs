@@ -117,6 +117,7 @@ fn main() {
             command::work_omit_remove,
             command::work_omit_all,
             command::get_work_details_all,
+            command::get_work_details_by_collection_element,
             command::work_pack_add,
             command::work_pack_remove,
             command::work_pack_all,

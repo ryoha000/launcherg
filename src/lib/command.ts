@@ -342,6 +342,10 @@ export async function commandGetWorkDetailsAll() {
   return await invoke<WorkDetailsVm[]>('get_work_details_all')
 }
 
+export async function commandGetWorkDetailsByCollectionElement(collectionElementId: number) {
+  return await invoke<WorkDetailsVm | null>('get_work_details_by_collection_element', { collectionElementId })
+}
+
 // DMM Work Packs wrappers
 export async function commandWorkPackAll() {
   return await invoke<number[]>('work_pack_all')
