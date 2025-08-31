@@ -5,7 +5,8 @@
   import { commandGetNativeHostLogs } from '@/lib/command'
 
   const LEVELS = [
-    { value: 0, label: 'すべて' },
+    { value: -1, label: 'すべて' },
+    { value: 0, label: 'Debug' },
     { value: 1, label: 'Info' },
     { value: 2, label: 'Warn' },
     { value: 3, label: 'Error' },
@@ -20,18 +21,22 @@
     { value: 20, label: 'ImageQueueItemStarted' },
     { value: 21, label: 'ImageQueueItemSucceeded' },
     { value: 22, label: 'ImageQueueItemFailed' },
+    { value: 30, label: 'ReceiveRequest' },
+    { value: 31, label: 'Response' },
+    { value: 32, label: 'EndProcessImageQueue' },
   ]
 
   let items = $state<HostLogItem[]>([])
   let total = $state(0)
   let limit = $state(50)
   let offset = $state(0)
-  let levelFilter = $state(0) // 0=All
+  let levelFilter = $state(-1) // -1=All
   let typeFilter = $state(-1) // -1=All
   let loading = $state(false)
 
   const levelBadgeClass = (lv: number) => {
     switch (lv) {
+      case 0: return 'text-gray-600'
       case 1: return 'text-blue-600'
       case 2: return 'text-yellow-600'
       case 3: return 'text-red-600'
@@ -49,7 +54,7 @@
       const res = await commandGetNativeHostLogs({
         limit,
         offset,
-        level: levelFilter === 0 ? undefined : levelFilter,
+        level: levelFilter === -1 ? undefined : levelFilter,
         typ: typeFilter === -1 ? undefined : typeFilter,
       })
       items = res.items
@@ -69,7 +74,7 @@
       const res = await commandGetNativeHostLogs({
         limit,
         offset: nextOffset,
-        level: levelFilter === 0 ? undefined : levelFilter,
+        level: levelFilter === -1 ? undefined : levelFilter,
         typ: typeFilter === -1 ? undefined : typeFilter,
       })
       items = [...items, ...res.items]

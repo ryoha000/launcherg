@@ -15,7 +15,16 @@ import type {
   ServiceStatus,
   WatchTarget,
 } from '@/lib/types/proctail'
-import { invoke } from '@tauri-apps/api/core'
+import { invoke as invokeCore } from '@tauri-apps/api/core'
+
+async function invoke<T>(command: Parameters<typeof invokeCore>[0], args?: Parameters<typeof invokeCore>[1]) {
+  // eslint-disable-next-line no-console
+  console.log('invoke', command, args)
+  const response = await invokeCore<T>(command, args)
+  // eslint-disable-next-line no-console
+  console.log('response', response)
+  return response
+}
 
 export async function commandCreateElementsInPc(exploreDirPaths: string[], useCache: boolean) {
   return await invoke<string[]>('create_elements_in_pc', {
@@ -328,7 +337,7 @@ export async function commandWorkOmitAll() {
 }
 
 // WorkDetails
-export interface WorkDetailsVm { id: number, title: string, dmm?: { id: number, storeId: string, category: string, subcategory: string }, dlsite?: { id: number, storeId: string, category: string }, collectionElementId?: number | null, isDmmOmitted: boolean, isDlsiteOmitted: boolean, isDmmPack: boolean }
+export interface WorkDetailsVm { id: number, title: string, dmm?: { id: number, storeId: string, category: string, subcategory: string }, dlsite?: { id: number, storeId: string, category: string }, collectionElementId?: number | null, isDmmOmitted: boolean, isDlsiteOmitted: boolean, isDmmPack: boolean, thumbnail?: string }
 export async function commandGetWorkDetailsAll() {
   return await invoke<WorkDetailsVm[]>('get_work_details_all')
 }

@@ -2,7 +2,7 @@ use crate::Id;
 use chrono::{DateTime, Local};
 
 #[derive(Debug, Clone, Copy)]
-pub enum HostLogLevel { Info = 1, Warn = 2, Error = 3 }
+pub enum HostLogLevel { Debug = 0, Info = 1, Warn = 2, Error = 3 }
 
 #[derive(Debug, Clone, Copy)]
 pub enum HostLogType {
@@ -14,6 +14,9 @@ pub enum HostLogType {
     ImageQueueItemStarted = 20,
     ImageQueueItemSucceeded = 21,
     ImageQueueItemFailed = 22,
+    ReceiveRequest = 30,
+    Response = 31,
+    EndProcessImageQueue = 32,
 }
 
 #[derive(Debug, Clone)]

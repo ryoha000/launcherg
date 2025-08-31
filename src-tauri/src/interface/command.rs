@@ -846,6 +846,7 @@ pub async fn get_native_host_logs(
     let limit = request.limit.unwrap_or(50) as i64;
     let offset = request.offset.unwrap_or(0) as i64;
     let level = match request.level {
+        Some(0) => Some(HostLogLevel::Debug),
         Some(1) => Some(HostLogLevel::Info),
         Some(2) => Some(HostLogLevel::Warn),
         Some(3) => Some(HostLogLevel::Error),

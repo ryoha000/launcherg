@@ -37,7 +37,7 @@ where
             let _ = self.manager.run(|repos| {
                 Box::pin(async move {
                     let mut log = repos.host_log();
-                    let _ = log.insert_log(HostLogLevel::Info, HostLogType::ImageQueueWorkerStarted, "image_queue_worker started").await;
+                    let _ = log.insert_log(HostLogLevel::Debug, HostLogType::ImageQueueWorkerStarted, "image_queue_worker started").await;
                     Ok::<(), anyhow::Error>(())
                 })
             }).await;
@@ -58,7 +58,7 @@ where
                         let msg = msg.clone();
                         Box::pin(async move {
                             let mut log = repos.host_log();
-                            let _ = log.insert_log(HostLogLevel::Info, HostLogType::ImageQueueItemStarted, &msg).await;
+                            let _ = log.insert_log(HostLogLevel::Debug, HostLogType::ImageQueueItemStarted, &msg).await;
                             Ok::<(), anyhow::Error>(())
                         })
                     }).await;
@@ -102,7 +102,7 @@ where
                                 let mut iq = repos.image_queue();
                                 let _ = iq.mark_finished(finished_id).await;
                                 let mut log = repos.host_log();
-                                let _ = log.insert_log(HostLogLevel::Info, HostLogType::ImageQueueItemSucceeded, &format!("done id={}", finished_id_value)).await;
+                                let _ = log.insert_log(HostLogLevel::Debug, HostLogType::ImageQueueItemSucceeded, &format!("done id={}", finished_id_value)).await;
                                 Ok::<(), anyhow::Error>(())
                             })
                         }).await;
@@ -130,7 +130,7 @@ where
             let _ = self.manager.run(|repos| {
                 Box::pin(async move {
                     let mut log = repos.host_log();
-                    let _ = log.insert_log(HostLogLevel::Info, HostLogType::ImageQueueWorkerFinished, "image_queue_worker finished").await;
+                    let _ = log.insert_log(HostLogLevel::Debug, HostLogType::ImageQueueWorkerFinished, "image_queue_worker finished").await;
                     Ok::<(), anyhow::Error>(())
                 })
             }).await;

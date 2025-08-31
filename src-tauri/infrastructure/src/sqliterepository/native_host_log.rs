@@ -40,7 +40,7 @@ impl NativeHostLogRepository for RepositoryImpl<domain::native_host_log::NativeH
         }).await?;
         Ok(rows.into_iter().map(|t| NativeHostLogRow {
             id: Id::new(t.id as i32),
-            level: match t.level { 1 => HostLogLevel::Info, 2 => HostLogLevel::Warn, 3 => HostLogLevel::Error, _ => HostLogLevel::Info },
+            level: match t.level { 0 => HostLogLevel::Debug, 1 => HostLogLevel::Info, 2 => HostLogLevel::Warn, 3 => HostLogLevel::Error, _ => HostLogLevel::Info },
             r#type: match t.r#type { 0 => HostLogType::Unknown, 1 => HostLogType::ReceiveDmmSyncGamesRequest, 2 => HostLogType::ReceiveDlsiteSyncGamesRequest, 10 => HostLogType::ImageQueueWorkerStarted, 11 => HostLogType::ImageQueueWorkerFinished, 20 => HostLogType::ImageQueueItemStarted, 21 => HostLogType::ImageQueueItemSucceeded, 22 => HostLogType::ImageQueueItemFailed, _ => HostLogType::Unknown },
             message: t.message,
             created_at: chrono::Local.from_utc_datetime(&t.created_at),

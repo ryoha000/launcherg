@@ -10,7 +10,7 @@ async fn native_host_log_normal_flows() {
     // insert
     {
         let mut r = repo.host_log();
-        r.insert_log(HostLogLevel::Info, HostLogType::Unknown, "hello").await.unwrap();
+        r.insert_log(HostLogLevel::Debug, HostLogType::Unknown, "hello").await.unwrap();
     }
 
     // list
