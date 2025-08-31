@@ -12,7 +12,7 @@ use std::marker::PhantomData;
 use domain::repository::works::WorkRepository;
 use domain::save_image_queue::{ImageSrcType, ImagePreprocess};
 use domain::repository::save_image_queue::ImageSaveQueueRepository;
-use domain::service::save_path_resolver::{SavePathResolver, DirsSavePathResolver};
+use domain::service::save_path_resolver::{SavePathResolver};
 
 mod dlsite;
 mod dmm;

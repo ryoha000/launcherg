@@ -30,7 +30,7 @@ pub struct CollectionElementInfo {
     pub brandname: String,
     pub brandname_ruby: String,
     pub sellday: String,
-    pub is_nukige: bool,
+    pub is_nukige: bool, 
     pub created_at: DateTime<Local>,
     pub updated_at: DateTime<Local>,
 }

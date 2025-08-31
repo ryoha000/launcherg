@@ -652,6 +652,31 @@ impl CollectionRepository for RepositoryImpl<domain::collection::CollectionEleme
         }).await?;
         Ok(())
     }
+
+    async fn get_work_ids_by_collection_ids(&mut self, collection_element_ids: &[i32]) -> anyhow::Result<Vec<(Id<CollectionElement>, i32)>> {
+        use sqlx::QueryBuilder;
+        if collection_element_ids.is_empty() { return Ok(Vec::new()); }
+        let ids = collection_element_ids.to_vec();
+        let rows: Vec<(i32, i32)> = self.executor.with_conn(|conn| {
+            Box::pin(async move {
+                let mut qb = QueryBuilder::new(
+                    r#"
+            SELECT m.collection_element_id, m.work_id
+            FROM work_collection_elements m
+            WHERE m.collection_element_id IN (
+            "#,
+                );
+                {
+                    let mut separated = qb.separated(", ");
+                    for id in ids.iter() { separated.push_bind(*id); }
+                }
+                qb.push(")");
+                let rows: Vec<(i32, i32)> = qb.build_query_as().fetch_all(conn).await?;
+                Ok(rows)
+            })
+        }).await?;
+        Ok(rows.into_iter().map(|(ce, wid)| (Id::new(ce), wid)).collect())
+    }
 }
 
 

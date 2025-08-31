@@ -1,4 +1,7 @@
+use domain::Id;
+
 use super::*;
+use domain::repository::{works::WorkRepository};
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 struct DmmKey {
@@ -13,21 +16,15 @@ struct DmmBatchSnapshot {
 	mapped_keys: HashMap<DmmKey, domain::Id<domain::collection::CollectionElement>>,
 	omitted_work_ids: HashSet<i32>,
 	egs_id_to_collection_id: HashMap<i32, domain::Id<domain::collection::CollectionElement>>,
-}
-
-#[derive(Clone, Debug)]
-struct Caches {
-	pub egs_id_to_collection_id: HashMap<i32, domain::Id<domain::collection::CollectionElement>>,
-}
-
-impl Default for Caches {
-	fn default() -> Self { Self { egs_id_to_collection_id: HashMap::new() } }
+	egs_id_to_work_id: HashMap<i32, i32>,
 }
 
 #[derive(Clone, Debug)]
 struct SyncApply {
 	key: DmmKey,
-	work_id_opt: Option<i32>,
+	work_id_by_key: Option<i32>,
+	work_id_by_erogamescape: Option<i32>,
+	collection_element_id_by_erogamescape: Option<domain::Id<domain::collection::CollectionElement>>,
 	gamename: String,
 	image_url: String,
 	parent_pack_work_id: Option<i32>,
@@ -71,7 +68,15 @@ where
 
 		Ok(PlanDecision::Apply(SyncApply {
 			key,
-			work_id_opt: work_id,
+			work_id_by_key: work_id,
+			work_id_by_erogamescape: param
+				.egs
+				.as_ref()
+				.and_then(|e| snapshot.egs_id_to_work_id.get(&e.erogamescape_id).cloned()),
+			collection_element_id_by_erogamescape: param
+				.egs
+				.as_ref()
+				.and_then(|e| snapshot.egs_id_to_collection_id.get(&e.erogamescape_id).cloned()),
 			gamename: param.gamename,
 			image_url: param.image_url,
 			parent_pack_work_id: param.parent_pack_work_id,
@@ -169,6 +174,7 @@ where
 
 		// EGS 一括取得
 		let mut egs_id_to_collection_id: HashMap<i32, domain::Id<domain::collection::CollectionElement>> = HashMap::new();
+		let mut egs_id_to_work_id: HashMap<i32, i32> = HashMap::new();
 		let egs_ids: Vec<i32> = games
 			.iter()
 			.filter_map(|g| g.egs.as_ref().map(|e| e.erogamescape_id))
@@ -182,57 +188,30 @@ where
 				})
 			}).await?;
 			for (egs_id, ceid) in rows.into_iter() { egs_id_to_collection_id.insert(egs_id, ceid); }
+
+			// CE -> Work の逆引きで EGS -> Work を用意
+			let ce_ids: Vec<i32> = egs_id_to_collection_id.values().map(|id| id.value).collect();
+			if !ce_ids.is_empty() {
+				let rows = self.manager.run(|repos| {
+					let ce_ids = ce_ids.clone();
+					Box::pin(async move {
+						let mut repo = repos.collection();
+						repo.get_work_ids_by_collection_ids(&ce_ids).await
+					})
+				}).await?;
+				let mut first_work_by_ce: HashMap<i32, i32> = HashMap::new();
+				for (ceid, wid) in rows.into_iter() {
+					first_work_by_ce.entry(ceid.value).or_insert(wid);
+				}
+				for (egs_id, ceid) in egs_id_to_collection_id.iter() {
+					if let Some(wid) = first_work_by_ce.get(&ceid.value) {
+						egs_id_to_work_id.insert(*egs_id, *wid);
+					}
+				}
+			}
 		}
 
-		Ok(DmmBatchSnapshot { work_id_by_key, mapped_keys, omitted_work_ids, egs_id_to_collection_id })
-	}
-
-	/// DMM 作品の画像をキュー投入する（アイコン/サムネ/別名パス）。
-	async fn enqueue_images_for_dmm(
-		&self,
-		collection_element_id: &domain::Id<domain::collection::CollectionElement>,
-		category: &str,
-		subcategory: &str,
-		store_id: &str,
-		image_url: &str,
-	) -> anyhow::Result<()> {
-		if image_url.is_empty() { return Ok(()); }
-
-		let icon_dst = self.resolver.icon_png_path(collection_element_id.value);
-		let _ = self.manager.run(|repos| {
-			let image_url = image_url.to_string();
-			let icon_dst = icon_dst.clone();
-			Box::pin(async move {
-				let mut repo = repos.image_queue();
-				let _ = repo.enqueue(&image_url, ImageSrcType::Url, &icon_dst, ImagePreprocess::ResizeAndCropSquare256).await;
-				Ok(())
-			})
-		}).await;
-
-		let normalized = normalize_thumbnail_url(image_url);
-		let thumb_dst = self.resolver.thumbnail_png_path(collection_element_id.value);
-		let _ = self.manager.run(|repos| {
-			let normalized = normalized.clone();
-			let thumb_dst = thumb_dst.clone();
-			Box::pin(async move {
-				let mut repo = repos.image_queue();
-				let _ = repo.enqueue(&normalized, ImageSrcType::Url, &thumb_dst, ImagePreprocess::ResizeForWidth400).await;
-				Ok(())
-			})
-		}).await;
-
-		let alias = self.resolver.thumbnail_alias_dmm_png_path(category, subcategory, store_id);
-		let _ = self.manager.run(|repos| {
-			let normalized = normalized.clone();
-			let alias = alias.clone();
-			Box::pin(async move {
-				let mut repo = repos.image_queue();
-				let _ = repo.enqueue(&normalized, ImageSrcType::Url, &alias, ImagePreprocess::ResizeForWidth400).await;
-				Ok(())
-			})
-		}).await;
-
-		Ok(())
+		Ok(DmmBatchSnapshot { work_id_by_key, mapped_keys, omitted_work_ids, egs_id_to_collection_id, egs_id_to_work_id })
 	}
 
 	/// 作品画像をキュー投入する（トランザクション内で repos を直接使用）
@@ -269,82 +248,48 @@ where
 		Ok(())
 	}
 
-	/// 計画にもとづき副作用を実行（要素用意→マッピング→親子リンク→画像投入）
-	async fn execute_apply(&self, apply: SyncApply, caches: &mut Caches) -> anyhow::Result<()> {
-		let SyncApply { key, work_id_opt, gamename, image_url, parent_pack_work_id, egs } = apply;
-
-		// Collection Element を用意
-		let collection_element_id = match egs.as_ref() {
-			Some(egs_info) => {
-				if let Some(cid) = caches.egs_id_to_collection_id.get(&egs_info.erogamescape_id) {
-					cid.clone()
-				} else {
-					let cid = self.ensure_collection_for_egs(egs_info).await?;
-					caches.egs_id_to_collection_id.insert(egs_info.erogamescape_id, cid.clone());
-					cid
-				}
-			}
-			None => {
-				self.create_collection_without_egs(&gamename).await?
-			}
-		};
-
-		// Work があればマッピング/親子リンク
-		if let Some(work_id) = work_id_opt {
-			let collection_element_id_cloned = collection_element_id.clone();
-			self.manager.run(|repos| Box::pin(async move {
-				let mut repo = repos.collection();
-				repo.upsert_work_mapping(&collection_element_id_cloned, work_id).await?;
-				if let Some(pid) = parent_pack_work_id {
-					let _ = repos.work_parent_packs().add(domain::Id::new(work_id), domain::Id::new(pid)).await;
-				}
-				Ok(())
-			})).await?;
-		}
-
-		// 画像投入（失敗は握りつぶして継続する実装方針を踏襲）
-		let _ = self.enqueue_images_for_dmm(&collection_element_id, &key.category, &key.subcategory, &key.store_id, &image_url).await;
-
-		Ok(())
-	}
-
 	/// 計画にもとづき副作用を実行（トランザクション内のリポジトリを使用）
 	async fn execute_apply_with_repos<Rx: RepositoriesExt + Send + Sync + 'static>(
 		repos: &Rx,
 		apply: SyncApply,
-		caches: &mut Caches,
 		resolver: &dyn SavePathResolver,
 	) -> anyhow::Result<()> {
-		let SyncApply { key, work_id_opt, gamename, image_url, parent_pack_work_id, egs } = apply;
+		let SyncApply { key, work_id_by_key, work_id_by_erogamescape, collection_element_id_by_erogamescape, gamename, image_url, parent_pack_work_id, egs } = apply;
+
+        // work を用意
+        let work_id = match work_id_by_key.or(work_id_by_erogamescape) {
+            Some(work_id) => Id::new(work_id),
+            None => {
+                repos.work().upsert(&domain::works::NewWork::new(gamename.clone())).await?
+            }
+        };
+
+        // key に work_id をマッピング
+        repos.dmm_work().upsert(&domain::works::NewDmmWork::new(key.store_id.clone(), key.category.clone(), key.subcategory.clone(), work_id.clone())).await?;
 
 		// Collection Element を用意
-		let collection_element_id = match egs.as_ref() {
-			Some(egs_info) => {
-				if let Some(cid) = caches.egs_id_to_collection_id.get(&egs_info.erogamescape_id) {
-					cid.clone()
-				} else {
-					let cid = Self::ensure_collection_for_egs_with_repos(repos, egs_info).await?;
-					caches.egs_id_to_collection_id.insert(egs_info.erogamescape_id, cid.clone());
-					cid
-				}
-			}
-			None => {
-				Self::create_collection_without_egs_with_repos(repos, &gamename).await?
-			}
-		};
+        let collection_element_id = match collection_element_id_by_erogamescape {
+            Some(ceid) => ceid,
+            None => {
+                let ceid = repos.collection().allocate_new_collection_element_id(&gamename).await?;
+                if let Some(egs_info) = egs.as_ref() {
+                    repos.collection().upsert_erogamescape_map(&ceid, egs_info.erogamescape_id).await?;
+                    repos.collection().upsert_collection_element_info(&domain::collection::NewCollectionElementInfo::new(ceid.clone(), gamename.clone(), egs_info.brandname.clone(), egs_info.brandname_ruby.clone(), egs_info.sellday.clone(), egs_info.is_nukige)).await?;
+                }
+                ceid
+            }
+        };
 
-		// Work があればマッピング/親子リンク
-		if let Some(work_id) = work_id_opt {
-			let mut col = repos.collection();
-			col.upsert_work_mapping(&collection_element_id, work_id).await?;
-			if let Some(pid) = parent_pack_work_id {
-				let mut pprepo = repos.work_parent_packs();
-				let _ = pprepo.add(domain::Id::new(work_id), domain::Id::new(pid)).await;
-			}
-		}
+        // collection_element に work_id をマッピング
+        repos.collection().upsert_work_mapping(&collection_element_id, work_id.value).await?;
 
-		// 画像投入（失敗は握りつぶして継続）
-		let _ = Self::enqueue_images_for_dmm_with_repos(repos, resolver, &collection_element_id, &key.category, &key.subcategory, &key.store_id, &image_url).await;
+		// pack の親が設定されていればマッピング
+		if let Some(pid) = parent_pack_work_id {
+            repos.work_parent_packs().add(work_id, domain::Id::new(pid)).await?;
+        }
+
+		// 画像投入
+		Self::enqueue_images_for_dmm_with_repos(repos, resolver, &collection_element_id, &key.category, &key.subcategory, &key.store_id, &image_url).await?;
 
 		Ok(())
 	}
@@ -366,7 +311,6 @@ where
 		for param in games.into_iter() { plans.push(self.decide_for_game(&snapshot, param).await?); }
 		let resolver = self.resolver.clone();
 		self.manager.run_in_transaction(move |repos| {
-			let mut caches = Caches { egs_id_to_collection_id: snapshot.egs_id_to_collection_id.clone() };
 			let plans = plans.clone();
 			let resolver = resolver.clone();
 			Box::pin(async move {
@@ -375,7 +319,7 @@ where
 					match plan {
 						PlanDecision::SkipExists | PlanDecision::SkipOmitted => {}
 						PlanDecision::Apply(apply) => {
-							Self::execute_apply_with_repos(&repos, apply, &mut caches, resolver.as_ref()).await?;
+							Self::execute_apply_with_repos(&repos, apply, resolver.as_ref()).await?;
 							success += 1;
 						}
 					}
