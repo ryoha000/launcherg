@@ -52,6 +52,7 @@ pub struct SqliteRepositories {
     work_parent_packs: RepositoryImpl<domain::work_parent_pack::WorkParentPack>,
     dmm_pack: RepositoryImpl<domain::dmm_work_pack::DmmWorkPack>,
     collection: RepositoryImpl<domain::collection::CollectionElement>,
+    work_download_path: RepositoryImpl<domain::work_download_path::WorkDownloadPath>,
 }
 
 impl RepositoriesExt for SqliteRepositories {
@@ -66,6 +67,7 @@ impl RepositoriesExt for SqliteRepositories {
     type WorkParentPacksRepo = RepositoryImpl<domain::work_parent_pack::WorkParentPack>;
     type DmmPackRepo = RepositoryImpl<domain::dmm_work_pack::DmmWorkPack>;
     type CollectionRepo = RepositoryImpl<domain::collection::CollectionElement>;
+    type WorkDownloadPathRepo = RepositoryImpl<domain::work_download_path::WorkDownloadPath>;
 
     fn work(&self) -> Self::WorkRepo { self.work.clone() }
     fn dmm_work(&self) -> Self::DmmWorkRepo { self.dmm_work.clone() }
@@ -78,6 +80,7 @@ impl RepositoriesExt for SqliteRepositories {
     fn work_parent_packs(&self) -> Self::WorkParentPacksRepo { self.work_parent_packs.clone() }
     fn dmm_pack(&self) -> Self::DmmPackRepo { self.dmm_pack.clone() }
     fn collection(&self) -> Self::CollectionRepo { self.collection.clone() }
+    fn work_download_path(&self) -> Self::WorkDownloadPathRepo { self.work_download_path.clone() }
 }
 
 impl SqliteRepositories {
@@ -108,6 +111,7 @@ impl SqliteRepositories {
             work_parent_packs: RepositoryImpl::new(executor.clone()),
             dmm_pack: RepositoryImpl::new(executor.clone()),
             collection: RepositoryImpl::new(executor.clone()),
+            work_download_path: RepositoryImpl::new(executor.clone()),
         }
     }
 }

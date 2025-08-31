@@ -7,6 +7,7 @@ pub mod work_omit;
 pub mod work_parent_packs;
 pub mod dmm_work_pack;
 pub mod collection;
+pub mod work_download_path;
 pub mod manager;
 
 pub trait RepositoriesExt {
@@ -21,6 +22,7 @@ pub trait RepositoriesExt {
     type WorkParentPacksRepo: work_parent_packs::WorkParentPacksRepository;
     type DmmPackRepo: dmm_work_pack::DmmPackRepository;
     type CollectionRepo: collection::CollectionRepository;
+    type WorkDownloadPathRepo: work_download_path::WorkDownloadPathRepository;
 
     fn work(&self) -> Self::WorkRepo;
     fn dmm_work(&self) -> Self::DmmWorkRepo;
@@ -33,4 +35,5 @@ pub trait RepositoriesExt {
     fn work_parent_packs(&self) -> Self::WorkParentPacksRepo;
     fn dmm_pack(&self) -> Self::DmmPackRepo;
     fn collection(&self) -> Self::CollectionRepo;
+    fn work_download_path(&self) -> Self::WorkDownloadPathRepo;
 }

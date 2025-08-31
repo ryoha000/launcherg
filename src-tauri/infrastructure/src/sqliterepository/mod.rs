@@ -8,6 +8,7 @@ pub mod work_omit;
 pub mod work_parent_packs;
 pub mod dmm_work_pack;
 pub mod collection;
+pub mod work_download_path;
 pub mod driver;
 pub mod models;
 

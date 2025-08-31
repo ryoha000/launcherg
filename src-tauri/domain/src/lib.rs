@@ -12,6 +12,7 @@ pub mod file;
 pub mod dmm_work_pack;
 pub mod work_parent_pack;
 pub mod work_omit;
+pub mod work_download_path;
 pub mod works;
 pub mod game_matcher;
 pub mod network;
