@@ -11,8 +11,7 @@ pub struct WorkDetailsVm {
     pub dlsite: Option<DlsiteSideVm>,
     pub collection_element_id: Option<i32>,
     pub erogamescape_id: Option<i32>,
-    pub is_dmm_omitted: bool,
-    pub is_dlsite_omitted: bool,
+    pub is_omitted: bool,
     pub is_dmm_pack: bool,
     pub thumbnail: Option<String>,
 }
@@ -68,8 +67,7 @@ impl From<WorkDetails> for WorkDetailsVm {
             }),
             collection_element_id: w.collection_element_id.map(|v| v.value),
             erogamescape_id: w.erogamescape.as_ref().map(|e| e.erogamescape_id),
-            is_dmm_omitted: w.is_dmm_omitted,
-            is_dlsite_omitted: w.is_dlsite_omitted,
+            is_omitted: w.is_omitted,
             is_dmm_pack: w.is_dmm_pack,
             thumbnail: thumbnail,
         }

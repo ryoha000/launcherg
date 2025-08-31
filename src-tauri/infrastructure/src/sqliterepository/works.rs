@@ -53,17 +53,17 @@ impl WorkRepository for RepositoryImpl<Work> {
                         dw.store_id as dmm_store_id,
                         dw.category as dmm_category,
                         dw.subcategory as dmm_subcategory,
-                        COALESCE(m1.collection_element_id, m2.collection_element_id) as ce_id,
-                        COALESCE(e.id, e2.id) as egs_id,
-                        COALESCE(e.erogamescape_id, e2.erogamescape_id) as egs_erogamescape_id,
-                        COALESCE(e.created_at, e2.created_at) as egs_created_at,
-                        COALESCE(e.updated_at, e2.updated_at) as egs_updated_at,
-                        oo.id as dmm_omit_id,
+                        m1.collection_element_id as ce_id,
+                        e.id as egs_id,
+                        e.erogamescape_id as egs_erogamescape_id,
+                        e.created_at as egs_created_at,
+                        e.updated_at as egs_updated_at,
+                        oo.id as omit_id,
                         pp.id as dmm_pack_id,
                         lw.id   as dlsite_id,
                         lw.store_id as dlsite_store_id,
                         lw.category as dlsite_category,
-                        oo2.id as dlsite_omit_id
+                        oo.id as dlsite_omit_id
                     FROM works w
                     LEFT JOIN dmm_works dw ON dw.work_id = w.id
                     LEFT JOIN work_collection_elements m1 ON m1.work_id = w.id
@@ -71,9 +71,6 @@ impl WorkRepository for RepositoryImpl<Work> {
                     LEFT JOIN work_omits oo ON oo.work_id = w.id
                     LEFT JOIN dmm_work_packs pp ON pp.work_id = w.id
                     LEFT JOIN dlsite_works lw ON lw.work_id = w.id
-                    LEFT JOIN work_collection_elements m2 ON m2.work_id = w.id
-                    LEFT JOIN collection_element_erogamescape_map e2 ON e2.collection_element_id = m2.collection_element_id
-                    LEFT JOIN work_omits oo2 ON oo2.work_id = w.id
                     ORDER BY w.id ASC
                     "#,
                 )
@@ -91,8 +88,7 @@ impl WorkRepository for RepositoryImpl<Work> {
                 dlsite: None,
                 collection_element_id: r.ce_id.map(|v| Id::new(v as i32)),
                 erogamescape: None,
-                is_dmm_omitted: false,
-                is_dlsite_omitted: false,
+                is_omitted: false,
                 is_dmm_pack: false,
             });
 
@@ -104,7 +100,6 @@ impl WorkRepository for RepositoryImpl<Work> {
                     category: r.dmm_category.unwrap_or_default(),
                     subcategory: r.dmm_subcategory.unwrap_or_default(),
                 });
-                entry.is_dmm_omitted = r.dmm_omit_id.is_some();
                 entry.is_dmm_pack = r.dmm_pack_id.is_some();
             }
             if let Some(dl_id) = r.dlsite_id {
@@ -114,7 +109,9 @@ impl WorkRepository for RepositoryImpl<Work> {
                     store_id: r.dlsite_store_id.unwrap_or_default(),
                     category: r.dlsite_category.unwrap_or_default(),
                 });
-                entry.is_dlsite_omitted = r.dlsite_omit_id.is_some();
+            }
+            if let Some(_) = r.omit_id {
+                entry.is_omitted = true;
             }
 
             if let Some(egs_row_id) = r.egs_id {

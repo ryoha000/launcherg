@@ -34,12 +34,11 @@ pub struct WorkDetailsRow {
     pub egs_erogamescape_id: Option<i32>,
     pub egs_created_at: Option<sqlx::types::chrono::NaiveDateTime>,
     pub egs_updated_at: Option<sqlx::types::chrono::NaiveDateTime>,
-    pub dmm_omit_id: Option<i64>,
+    pub omit_id: Option<i64>,
     pub dmm_pack_id: Option<i64>,
     pub dlsite_id: Option<i64>,
     pub dlsite_store_id: Option<String>,
     pub dlsite_category: Option<String>,
-    pub dlsite_omit_id: Option<i64>,
 }
 
 impl TryFrom<crate::sqliterepository::models::works::DmmWorkTable> for domain::works::DmmWork {

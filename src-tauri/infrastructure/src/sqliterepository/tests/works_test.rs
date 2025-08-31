@@ -107,8 +107,7 @@ async fn list_all_details_dmm_only() {
     assert_eq!(dmm.category, "software");
     assert_eq!(dmm.subcategory, "game");
     assert!(item.dlsite.is_none());
-    assert!(!item.is_dmm_omitted);
-    assert!(!item.is_dlsite_omitted);
+    assert!(!item.is_omitted);
     assert!(!item.is_dmm_pack);
     assert!(item.collection_element_id.is_none());
 }

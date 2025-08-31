@@ -107,7 +107,7 @@
   const totalCount = $derived.by(() => (items.length))
   const dmmCount = $derived.by(() => (items.filter(w => !!w.dmm).length))
   const dlsiteCount = $derived.by(() => (items.filter(w => !!w.dlsite).length))
-  const denyListTotal = $derived.by(() => (items.reduce((acc, w) => acc + (w.isDmmOmitted ? 1 : 0) + (w.isDlsiteOmitted ? 1 : 0), 0)))
+  const denyListTotal = $derived.by(() => (items.reduce((acc, w) => acc + (w.isOmitted ? 1 : 0), 0)))
 
   const filteredItems = $derived.by(() => {
     const q = keyword.trim().toLowerCase()
@@ -275,18 +275,10 @@
               <td class='w-36 overflow-hidden text-ellipsis whitespace-nowrap px-2 py-1'>{item.title}</td>
               <td class='px-2 py-1'>
                 <div class='flex gap-4'>
-                  {#if item.dmm}
-                    <label class='flex items-center gap-2'>
-                      <Checkbox value={item.isDmmOmitted} on:update={e => updateDenied({ collectionElementId: item.collectionElementId ?? undefined, storeType: 1, storeId: item.dmm!.storeId, title: item.title, nextValue: e.detail.value, prevValue: item.isDmmOmitted, workId: item.id })} disabled={disabledDenyList} />
-                      <span>DMM: {item.isDmmOmitted ? '除外' : '未設定'}</span>
-                    </label>
-                  {/if}
-                  {#if item.dlsite}
-                    <label class='flex items-center gap-2'>
-                      <Checkbox value={item.isDlsiteOmitted} on:update={e => updateDenied({ collectionElementId: item.collectionElementId ?? undefined, storeType: 2, storeId: item.dlsite!.storeId, title: item.title, nextValue: e.detail.value, prevValue: item.isDlsiteOmitted, workId: item.id })} disabled={disabledDenyList} />
-                      <span>DLsite: {item.isDlsiteOmitted ? '除外' : '未設定'}</span>
-                    </label>
-                  {/if}
+                  <label class='flex items-center gap-2'>
+                    <Checkbox value={item.isOmitted} on:update={e => updateDenied({ collectionElementId: item.collectionElementId ?? undefined, storeType: 1, storeId: item.dmm!.storeId, title: item.title, nextValue: e.detail.value, prevValue: item.isOmitted, workId: item.id })} disabled={disabledDenyList} />
+                    <span>{item.isOmitted ? '除外' : '未設定'}</span>
+                  </label>
                 </div>
               </td>
 

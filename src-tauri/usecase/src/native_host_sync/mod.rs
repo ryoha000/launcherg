@@ -109,7 +109,7 @@ where
 		}).await?;
 		let mut out: Vec<DmmOmitItem> = Vec::new();
 		for w in all.into_iter() {
-			if w.is_dmm_omitted {
+			if w.is_omitted {
 				if let Some(dmm) = w.dmm {
 					out.push(DmmOmitItem {
 						work_id: w.work.id.value,

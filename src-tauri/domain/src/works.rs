@@ -55,8 +55,7 @@ pub struct WorkDetails {
     pub dlsite: Option<DlsiteWork>,
     pub collection_element_id: Option<Id<CollectionElement>>,
     pub erogamescape: Option<CollectionElementErogamescape>,
-    pub is_dmm_omitted: bool,
-    pub is_dlsite_omitted: bool,
+    pub is_omitted: bool,
     pub is_dmm_pack: bool,
 }
 
