@@ -114,17 +114,18 @@ where
 			let resolver = resolver.clone();
 			let ops = ops;
 			Box::pin(async move {
-				let mut success: u32 = 0;
+				let mut new_work_count: u32 = 0;
 				for plan in plans.into_iter() {
 					match plan {
 						PlanDecisionGeneric::SkipExists | PlanDecisionGeneric::SkipOmitted => {}
 						PlanDecisionGeneric::Apply(apply) => {
+							let is_new_work = apply.work_id_by_key.is_none() && apply.work_id_by_erogamescape.is_none();
 							Self::execute_apply_with_repos_generic(&repos, apply, resolver.as_ref(), &ops).await?;
-							success += 1;
+							if is_new_work { new_work_count += 1; }
 						}
 					}
 				}
-				Ok(success)
+				Ok(new_work_count)
 			})
 		}).await
 	}

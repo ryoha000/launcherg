@@ -1,4 +1,5 @@
 import type { DlsiteGame as ExtDlsiteGame, DmmGame as ExtDmmGame, EgsInfo as ExtEgsInfo } from '@launcherg/shared'
+import type { NativeResponseTs } from '@launcherg/shared/typeshare/native-messaging'
 import type { HandlerContext } from '../shared/types'
 
 const SYNC_GAME_ALARM = 'sync_game'
@@ -26,7 +27,20 @@ export function syncGame(context: HandlerContext): Promise<void> {
   })
 
   const sendNative = async (payload: { request_id: string, message: any }) => {
-    await context.nativeMessenger.sendJson?.(payload)
+    const res = await context.nativeMessenger.sendJson?.(payload)
+    return res as NativeResponseTs | null
+  }
+
+  const notifyIfNew = async (count: number) => {
+    if (!count || count < 1)
+      return
+    const iconUrl = context.browser.runtime.getURL('icons/icon32.png')
+    await context.browser.notifications.create({
+      type: 'basic',
+      iconUrl,
+      title: 'Launcherg',
+      message: `新規に ${count} 件の作品を追加しました`,
+    })
   }
 
   const processDmmBatch = async (games: ExtDmmGame[]) => {
@@ -52,7 +66,9 @@ export function syncGame(context: HandlerContext): Promise<void> {
         extension_id: context.extensionId,
       },
     })
-    await sendNative(msg)
+    const res = await sendNative(msg)
+    const count = res && res.success && res.response?.case === 'SyncGamesResult' ? (res.response.value?.success_count ?? 0) : 0
+    await notifyIfNew(count)
   }
 
   const processDlsiteBatch = async (games: ExtDlsiteGame[]) => {
@@ -75,7 +91,9 @@ export function syncGame(context: HandlerContext): Promise<void> {
         extension_id: context.extensionId,
       },
     })
-    await sendNative(msg)
+    const res = await sendNative(msg)
+    const count = res && res.success && res.response?.case === 'SyncGamesResult' ? (res.response.value?.success_count ?? 0) : 0
+    await notifyIfNew(count)
   }
 
   return context.syncPool.sync(async (items) => {
