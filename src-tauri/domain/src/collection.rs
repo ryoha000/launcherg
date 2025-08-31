@@ -1,5 +1,6 @@
 use chrono::{DateTime, Local};
 use derive_new::new;
+use serde::{Serialize, Deserialize};
 
 use super::Id;
 
@@ -88,7 +89,7 @@ pub struct CollectionElementThumbnail {
 }
 
 // ErogameScape ID マッピング
-#[derive(new, Clone, Debug, PartialEq)]
+#[derive(new, Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct CollectionElementErogamescape {
     pub id: Id<CollectionElementErogamescape>,
     pub collection_element_id: Id<CollectionElement>,

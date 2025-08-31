@@ -54,6 +54,10 @@ impl WorkRepository for RepositoryImpl<Work> {
                         dw.category as dmm_category,
                         dw.subcategory as dmm_subcategory,
                         COALESCE(m1.collection_element_id, m2.collection_element_id) as ce_id,
+                        COALESCE(e.id, e2.id) as egs_id,
+                        COALESCE(e.erogamescape_id, e2.erogamescape_id) as egs_erogamescape_id,
+                        COALESCE(e.created_at, e2.created_at) as egs_created_at,
+                        COALESCE(e.updated_at, e2.updated_at) as egs_updated_at,
                         oo.id as dmm_omit_id,
                         pp.id as dmm_pack_id,
                         lw.id   as dlsite_id,
@@ -63,10 +67,12 @@ impl WorkRepository for RepositoryImpl<Work> {
                     FROM works w
                     LEFT JOIN dmm_works dw ON dw.work_id = w.id
                     LEFT JOIN work_collection_elements m1 ON m1.work_id = w.id
+                    LEFT JOIN collection_element_erogamescape_map e ON e.collection_element_id = m1.collection_element_id
                     LEFT JOIN work_omits oo ON oo.work_id = w.id
                     LEFT JOIN dmm_work_packs pp ON pp.work_id = w.id
                     LEFT JOIN dlsite_works lw ON lw.work_id = w.id
                     LEFT JOIN work_collection_elements m2 ON m2.work_id = w.id
+                    LEFT JOIN collection_element_erogamescape_map e2 ON e2.collection_element_id = m2.collection_element_id
                     LEFT JOIN work_omits oo2 ON oo2.work_id = w.id
                     ORDER BY w.id ASC
                     "#,
@@ -84,6 +90,7 @@ impl WorkRepository for RepositoryImpl<Work> {
                 dmm: None,
                 dlsite: None,
                 collection_element_id: r.ce_id.map(|v| Id::new(v as i32)),
+                erogamescape: None,
                 is_dmm_omitted: false,
                 is_dlsite_omitted: false,
                 is_dmm_pack: false,
@@ -108,6 +115,23 @@ impl WorkRepository for RepositoryImpl<Work> {
                     category: r.dlsite_category.unwrap_or_default(),
                 });
                 entry.is_dlsite_omitted = r.dlsite_omit_id.is_some();
+            }
+
+            if let Some(egs_row_id) = r.egs_id {
+                if let (Some(egs_id), Some(created), Some(updated), Some(ce_id)) = (
+                    r.egs_erogamescape_id,
+                    r.egs_created_at,
+                    r.egs_updated_at,
+                    r.ce_id,
+                ) {
+                    entry.erogamescape = Some(domain::collection::CollectionElementErogamescape::new(
+                        Id::new(egs_row_id as i32),
+                        Id::new(ce_id as i32),
+                        egs_id,
+                        created.and_utc().with_timezone(&chrono::Local),
+                        updated.and_utc().with_timezone(&chrono::Local),
+                    ));
+                }
             }
         }
 

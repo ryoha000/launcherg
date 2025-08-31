@@ -455,15 +455,14 @@ mod tests {
                     for work in works {
                         assert!(work.dlsite.is_none());
                         assert!(work.dmm.is_some());
-                        // TODO: egs を確認する
-                        // let dmm = work.dmm.unwrap();
-                        // if dmm.store_id == "SID1" {
-                        //     assert!(dmm.egs.is_some());
-                        // } else if dmm.store_id == "SID2" {
-                        //     assert!(dmm.egs.is_none());
-                        // } else {
-                        //     assert!(false, "unexpected store_id: {}", dmm.store_id);
-                        // }
+                        let dmm = work.dmm.unwrap();
+                        if dmm.store_id == "SID1" {
+                            assert!(work.erogamescape.is_some());
+                        } else if dmm.store_id == "SID2" {
+                            assert!(work.erogamescape.is_none());
+                        } else {
+                            assert!(false, "unexpected store_id: {}", dmm.store_id);
+                        }
                     }
                     true
                 }),
@@ -480,15 +479,14 @@ mod tests {
                     for work in works {
                         assert!(work.dmm.is_none());
                         assert!(work.dlsite.is_some());
-                        // TODO: egs を確認する
-                        // let dlsite = work.dlsite.unwrap();
-                        // if dlsite.store_id == "RJ1" {
-                        //     assert!(dlsite.egs.is_some());
-                        // } else if dlsite.store_id == "RJ2" {
-                        //     assert!(dlsite.egs.is_none());
-                        // } else {
-                        //     assert!(false, format!("unexpected store_id: {}", dlsite.store_id));
-                        // }
+                        let dlsite = work.dlsite.unwrap();
+                        if dlsite.store_id == "RJ1" {
+                            assert!(work.erogamescape.is_some());
+                        } else if dlsite.store_id == "RJ2" {
+                            assert!(work.erogamescape.is_none());
+                        } else {
+                            assert!(false, "unexpected store_id: {}", dlsite.store_id);
+                        }
                     }
                     true
                 }),
@@ -506,8 +504,7 @@ mod tests {
                     for work in works {
                         assert!(work.dmm.is_some());
                         assert!(work.dlsite.is_some());
-                        // TODO: collection_element_id ではなく EGS を確認する
-                        assert!(work.collection_element_id.is_some());
+                        assert!(work.erogamescape.is_some());
                     }
                     true
                 }),
@@ -525,8 +522,7 @@ mod tests {
                     for work in works {
                         assert!(work.dmm.is_some());
                         assert!(work.dlsite.is_some());
-                        // TODO: collection_element_id ではなく EGS を確認する
-                        assert!(work.collection_element_id.is_some());
+                        assert!(work.erogamescape.is_some());
                     }
                     true
                 }),
@@ -553,9 +549,7 @@ mod tests {
                     for work in works {
                         assert!(work.dmm.is_some());
                         assert!(work.dlsite.is_none());
-                        assert!(work.collection_element_id.is_some());
-                        // TODO: egs を確認する
-                        // assert!(work.egs.is_some());
+                        assert!(work.erogamescape.is_some());
                     }
                     true
                 }),
@@ -581,8 +575,8 @@ mod tests {
                     assert_eq!(works.len(), 1);
                     for work in works {
                         assert!(work.dlsite.is_some());
+                        assert!(work.erogamescape.is_some());
                         assert!(work.dmm.is_none());
-                        assert!(work.collection_element_id.is_some());
                     }
                     true
                 }),

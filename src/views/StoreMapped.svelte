@@ -228,6 +228,7 @@
             <th class='w-24 border-(b border-primary) px-2 py-2'></th>
             <th class='w-18 border-(b border-primary) px-2 py-2'></th>
             <th class='w-36 border-(b border-primary) px-2 py-2'>タイトル</th>
+            <th class='w-28 border-(b border-primary) px-2 py-2'>EGS</th>
             <th class='w-32 border-(b border-primary) px-2 py-2'>
               <div class='flex items-center gap-1'>
                 連携除外
@@ -265,6 +266,18 @@
                 {/if}
               </td>
               <td class='w-36 overflow-hidden text-ellipsis whitespace-nowrap px-2 py-1'>{item.title}</td>
+              <td class='px-2 py-1'>
+                {#if item.erogamescapeId}
+                  <a
+                    class='text-(sm text-link) underline'
+                    href={`https://erogamescape.dyndns.org/~ap2/ero/toukei_kaiseki/game.php?game=${item.erogamescapeId}`}
+                    target='_blank'
+                    rel='noreferrer noopener'
+                  >{item.erogamescapeId}</a>
+                {:else}
+                  <span class='text-(sm text-secondary)'>未連携</span>
+                {/if}
+              </td>
               <td class='px-2 py-1'>
                 <div class='flex gap-4'>
                   {#if item.dmm}

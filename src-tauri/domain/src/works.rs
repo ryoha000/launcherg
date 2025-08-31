@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::Id;
 
-use crate::collection::CollectionElement;
+use crate::collection::{CollectionElement, CollectionElementErogamescape};
 
 #[derive(new, Clone, Debug, Serialize, Deserialize)]
 pub struct Work {
@@ -54,6 +54,7 @@ pub struct WorkDetails {
     pub dmm: Option<DmmWork>,
     pub dlsite: Option<DlsiteWork>,
     pub collection_element_id: Option<Id<CollectionElement>>,
+    pub erogamescape: Option<CollectionElementErogamescape>,
     pub is_dmm_omitted: bool,
     pub is_dlsite_omitted: bool,
     pub is_dmm_pack: bool,

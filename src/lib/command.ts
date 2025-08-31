@@ -337,7 +337,7 @@ export async function commandWorkOmitAll() {
 }
 
 // WorkDetails
-export interface WorkDetailsVm { id: number, title: string, dmm?: { id: number, storeId: string, category: string, subcategory: string }, dlsite?: { id: number, storeId: string, category: string }, collectionElementId?: number | null, isDmmOmitted: boolean, isDlsiteOmitted: boolean, isDmmPack: boolean, thumbnail?: string }
+export interface WorkDetailsVm { id: number, title: string, dmm?: { id: number, storeId: string, category: string, subcategory: string }, dlsite?: { id: number, storeId: string, category: string }, collectionElementId?: number | null, erogamescapeId?: number | null, isDmmOmitted: boolean, isDlsiteOmitted: boolean, isDmmPack: boolean, thumbnail?: string }
 export async function commandGetWorkDetailsAll() {
   return await invoke<WorkDetailsVm[]>('get_work_details_all')
 }
