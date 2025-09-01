@@ -1,3 +1,4 @@
+import type { NativeMessageTs } from '@launcherg/shared/typeshare/native-messaging'
 import { logger } from '@launcherg/shared'
 
 const log = logger('background:native')
@@ -32,7 +33,7 @@ function createOnceSettled<T, E>(resolve: (value: T) => void, reject: (reason: E
 export function createNativeMessenger(nativeHostName: string) {
   const TIMEOUT_MS = 30000
 
-  const sendJson = async <TRes = unknown>(message: object): Promise<TRes | null> => {
+  const sendJson = async <TRes = unknown>(message: NativeMessageTs): Promise<TRes | null> => {
     return new Promise((_resolve, _reject) => {
       const { resolveOnce: resolve, rejectOnce: reject, startTimer } = createOnceSettled(_resolve, _reject)
       startTimer(TIMEOUT_MS, () => new Error('Native messaging timeout'))
@@ -40,8 +41,8 @@ export function createNativeMessenger(nativeHostName: string) {
       if (!isObjectRecord(message))
         return reject(new Error('Encoded JSON message is not an object'))
 
-      const requestId = (message as any).request_id ?? (message as any).requestId
-      log.debug('Sending native message(JSON)', { host: nativeHostName, requestId, message })
+      const requestId = message.request_id
+      log.debug('Sending native message(JSON)', { type: message.message.case, requestId, message })
 
       const startTime = Date.now()
       chrome.runtime.sendNativeMessage(

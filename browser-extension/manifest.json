@@ -10,7 +10,8 @@
     "storage",
     "notifications",
     "alarms",
-    "scripting"
+    "scripting",
+    "downloads"
   ],
   "host_permissions": [
     "https://dlsoft.dmm.co.jp/*",

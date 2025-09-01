@@ -6,12 +6,16 @@ import {
   waitForPageLoad,
 } from '@launcherg/shared'
 import { extractAllGames, shouldExtract } from './dom-extractor'
+import { initLaunchergDownloadOnceForUrl } from './download'
 import { fetchPackIds, fetchPackParentMap, processPacks, syncDmmGames } from './orchestrator'
 
 let isExtracting = false
 let currentUrl = window.location.href
 const log = logger('dmm-extractor')
 const lastSyncedUrls = new Set<string>()
+const downloadTriggeredForUrl = new Set<string>()
+const isMarked = (url: string) => downloadTriggeredForUrl.has(url)
+const mark = (url: string) => void downloadTriggeredForUrl.add(url)
 
 async function extractAndSync(): Promise<void> {
   if (isExtracting) {
@@ -64,7 +68,7 @@ async function initDmmExtractor(): Promise<void> {
     return
   }
 
-  await waitForPageLoad(2000)
+  await waitForPageLoad(500)
   lastSyncedUrls.add(url)
   log.info('Target page detected - Extracting once on DMM')
   void extractAndSync()
@@ -75,6 +79,7 @@ function setupPageChangeObserver(): void {
     if (window.location.href !== currentUrl) {
       currentUrl = window.location.href
       void initDmmExtractor()
+      void initLaunchergDownloadOnceForUrl(currentUrl, mark, isMarked)
     }
   })
   observer.observe(document.body, { childList: true, subtree: true })
@@ -86,6 +91,7 @@ function main(): void {
   setupPageChangeObserver()
   setTimeout(() => {
     void initDmmExtractor()
+    void initLaunchergDownloadOnceForUrl(window.location.href, mark, isMarked)
   }, 1000)
 }
 

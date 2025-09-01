@@ -5,6 +5,7 @@ import { createEgsResolver } from './adapter/egs/resolver'
 import { createNativeMessenger } from './adapter/native/send'
 import { createSyncPool } from './adapter/pool'
 import { createMessageDispatcher } from './inbound/dispatcher'
+import { setupDownloadsHandler } from './usecase/downloads'
 import { performPeriodicSync } from './usecase/periodic'
 import { SYNC_GAME_ALARM, syncGame } from './usecase/syncGameScheduler'
 
@@ -32,7 +33,23 @@ const context: HandlerContext = {
 
 const handle = createMessageDispatcher(context)
 
-chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  // Lightweight control message from content scripts
+  if (message && typeof message === 'object' && (message as any).type === 'close_current_tab') {
+    const tabId = sender?.tab?.id
+    if (typeof tabId === 'number') {
+      chrome.tabs.remove(tabId, () => {
+        if (chrome.runtime.lastError)
+          sendResponse({ success: false, error: chrome.runtime.lastError.message })
+        else
+          sendResponse({ success: true })
+      })
+      return true
+    }
+    sendResponse({ success: false, error: 'No tab id' })
+    return false
+  }
+
   void (async () => {
     const response = await handle(message)
     sendResponse(response)
@@ -60,6 +77,9 @@ chrome.alarms.onAlarm.addListener((alarm) => {
 })
 
 log.info('Service worker initialized')
+
+// downloads 完了検知のセットアップ
+setupDownloadsHandler(context)
 
 chrome.runtime.onInstalled.addListener((details) => {
   log.info('Extension installed:', details.reason)

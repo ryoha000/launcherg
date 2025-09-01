@@ -55,6 +55,31 @@ export interface DmmSyncGamesRequestTs {
 	extension_id: string;
 }
 
+export interface DownloadCompletedTs {
+	id: number;
+	filename: string;
+	mime?: string;
+	url?: string;
+	start_time?: string;
+	end_time?: string;
+}
+
+export interface DownloadIntentTs {
+	store: string;
+	game_store_id: string;
+	game_category: string;
+	game_subcategory: string;
+	parent_pack_store_id?: string;
+	parent_pack_category?: string;
+	parent_pack_subcategory?: string;
+}
+
+export interface DownloadsCompletedRequestTs {
+	extension_id: string;
+	items: DownloadCompletedTs[];
+	intent?: DownloadIntentTs;
+}
+
 export interface ExtensionConfigTs {
 	auto_sync: boolean;
 	allowed_domains: string[];
@@ -80,6 +105,7 @@ export interface HealthCheckResultTs {
 export type NativeMessageCase = 
 	| { case: "SyncDmmGames", value: DmmSyncGamesRequestTs }
 	| { case: "SyncDlsiteGames", value: DlsiteSyncGamesRequestTs }
+	| { case: "DownloadsCompleted", value: DownloadsCompletedRequestTs }
 	| { case: "GetStatus", value: GetStatusRequestTs }
 	| { case: "SetConfig", value: ExtensionConfigTs }
 	| { case: "HealthCheck", value: HealthCheckRequestTs }
