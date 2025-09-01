@@ -100,7 +100,7 @@ fn main() {
             command::proctail_manager_start,
             command::proctail_manager_stop,
             command::proctail_manager_is_running,
-            command::open_store_page,
+            command::open_url,
             command::link_installed_game,
             command::get_game_candidates_by_name,
             command::get_sync_status,

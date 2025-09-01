@@ -489,7 +489,7 @@ pub fn open_folder(path: String) -> anyhow::Result<(), CommandError> {
             .to_string(),
         false => path,
     };
-    let err_msg = anyhow::anyhow!("Failed to open folder at path: {}", path);
+    let err_msg: anyhow::Error = anyhow::anyhow!("Failed to open folder at path: {}", path);
     std::process::Command::new("explorer")
         .arg(path)
         .output()
@@ -778,11 +778,11 @@ pub async fn proctail_manager_is_running(
 }
 
 #[tauri::command]
-pub async fn open_store_page(handle: AppHandle, purchase_url: String) -> anyhow::Result<(), CommandError> {
+pub async fn open_url(handle: AppHandle, url: String) -> anyhow::Result<(), CommandError> {
     #[allow(deprecated)]
     let shell = handle.shell();
     #[allow(deprecated)]
-    shell.open(purchase_url, None)
+    shell.open(url, None)
         .map_err(|e| anyhow::anyhow!("Failed to open URL: {}", e))?;
     Ok(())
 }

@@ -227,8 +227,8 @@ export async function commandProcTailManagerIsRunning() {
   return await invoke<boolean>('proctail_manager_is_running')
 }
 
-export async function commandOpenStorePage(purchaseUrl: string) {
-  return await invoke<void>('open_store_page', { purchaseUrl })
+export async function commandOpenUrl(url: string) {
+  return await invoke<void>('open_url', { url })
 }
 
 export async function commandLinkInstalledGame(
