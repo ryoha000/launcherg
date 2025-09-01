@@ -78,6 +78,9 @@ pub trait SavePathResolver {
 		std::fs::create_dir_all(&p).ok();
 		p.to_string_lossy().to_string()
 	}
+
+	// downloaded games root directory
+	fn downloaded_games_dir(&self) -> String { self.join_and_ensure("downloaded_games") }
 }
 
 #[derive(Clone, Default)]

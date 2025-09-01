@@ -13,6 +13,7 @@ pub struct NativeMessageTs {
 pub enum NativeMessageCase {
     SyncDmmGames(super::sync::DmmSyncGamesRequestTs),
     SyncDlsiteGames(super::sync::DlsiteSyncGamesRequestTs),
+    DownloadsCompleted(super::downloads::DownloadsCompletedRequestTs),
     GetStatus(GetStatusRequestTs),
     SetConfig(super::status::ExtensionConfigTs),
     HealthCheck(HealthCheckRequestTs),

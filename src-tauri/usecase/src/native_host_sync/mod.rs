@@ -16,6 +16,7 @@ use domain::service::save_path_resolver::{SavePathResolver};
 mod dlsite;
 mod dmm;
 mod store;
+pub mod downloads;
 
 /// 拡張から渡された image_url/thumbnail_url を保存に適したサムネイルURLへ正規化する
 /// - DLsite: /resize/images2/.../_img_main_300x300.jpg → /modpub/images2/.../_img_main.jpg

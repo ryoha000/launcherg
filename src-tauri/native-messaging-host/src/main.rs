@@ -12,12 +12,14 @@ use models::{
     common::{NativeMessageCase, NativeMessageTs, NativeResponseCase, NativeResponseTs, HealthCheckRequestTs, HealthCheckResultTs},
     sync::{DmmSyncGamesRequestTs, DlsiteSyncGamesRequestTs, SyncBatchResultTs},
     packs::{GetDmmOmitWorksRequestTs, DmmOmitWorkItemTs, DmmOmitDmmPartTs},
+    downloads::DownloadsCompletedRequestTs,
 };
 use infrastructure::{
     sqliterepository::{driver::Db as RepoDb, sqliterepository::SqliteRepositoryManager, sqliterepository::SqliteRepositories},
     image_queue_worker::ImageQueueWorker,
 };
 use usecase::native_host_sync::{NativeHostSyncUseCase, DmmSyncGameParam, DlsiteSyncGameParam, EgsInfo};
+use usecase::native_host_sync::downloads::DownloadsUseCase;
 use domain::service::save_path_resolver::{SavePathResolver, DirsSavePathResolver};
 
 struct AppCtx {
@@ -133,6 +135,7 @@ async fn handle_message(ctx: &AppCtx) -> HostResult<bool> {
         NativeMessageCase::SyncDmmGames(req) => handle_sync_dmm_games(ctx, req, &message.request_id).await,
         NativeMessageCase::SyncDlsiteGames(req) => handle_sync_dlsite_games(ctx, req, &message.request_id).await,
         NativeMessageCase::GetDmmOmitWorks(req) => handle_get_dmm_omit_works(ctx, req, &message.request_id).await,
+        NativeMessageCase::DownloadsCompleted(req) => handle_downloads_completed(ctx, req, &message.request_id).await,
         NativeMessageCase::GetStatus(_) => NativeResponseTs { success: false, error: "GetStatus is not supported".to_string(), request_id: message.request_id.clone(), response: None },
         NativeMessageCase::SetConfig(_) => NativeResponseTs { success: false, error: "SetConfig is not supported".to_string(), request_id: message.request_id.clone(), response: None },
         NativeMessageCase::HealthCheck(_) => handle_health_check(&HealthCheckRequestTs {}, &message.request_id),
@@ -167,6 +170,36 @@ async fn handle_message(ctx: &AppCtx) -> HostResult<bool> {
     }).await;
 
     Ok(true)
+}
+async fn handle_downloads_completed(ctx: &AppCtx, request: &DownloadsCompletedRequestTs, request_id: &str) -> NativeResponseTs {
+    let usecase: DownloadsUseCase<SqliteRepositoryManager, SqliteRepositories> = DownloadsUseCase::new(ctx.manager.clone(), ctx.resolver.clone());
+
+    // helper: resolve work_id from intent (DMM only for now)
+    let work_id = if let Some(intent) = &request.intent {
+        if intent.store.to_uppercase() == "DMM" {
+            match usecase.resolve_dmm_work_id(&intent.game_store_id, &intent.game_category, &intent.game_subcategory).await { Ok(v) => v, Err(_) => None }
+        } else { None }
+    } else { None };
+
+    // items == 1
+    if request.items.len() == 1 {
+        let item = &request.items[0];
+        if let Err(e) = usecase.handle_single(&item.filename, work_id).await {
+            return err(request_id, format!("{}", e));
+        }
+        return ok(request_id, NativeResponseCase::HealthCheckResult(HealthCheckResultTs { message: "OK".into(), version: env!("CARGO_PKG_VERSION").into() }));
+    }
+
+    // items >= 2 (split)
+    if request.items.len() >= 2 {
+        let paths: Vec<String> = request.items.iter().map(|i| i.filename.clone()).collect();
+        if let Err(e) = usecase.handle_split(&paths, work_id).await {
+            return err(request_id, format!("{}", e));
+        }
+        return ok(request_id, NativeResponseCase::HealthCheckResult(HealthCheckResultTs { message: "OK".into(), version: env!("CARGO_PKG_VERSION").into() }));
+    }
+
+    ok(request_id, NativeResponseCase::HealthCheckResult(HealthCheckResultTs { message: "NOOP".into(), version: env!("CARGO_PKG_VERSION").into() }))
 }
 
 async fn handle_sync_dmm_games(ctx: &AppCtx, request: &DmmSyncGamesRequestTs, request_id: &str) -> NativeResponseTs {
