@@ -3,10 +3,13 @@ import { extractGameDataFromContainer, shouldExtract } from './dom-extractor'
 
 describe('dom-extractor', () => {
   describe('shouldExtract', () => {
-    it('dLsiteドメインで必要な要素がある場合はtrueを返す', () => {
+    it('dLsiteドメインで必要な要素があり、かつ /library のとき true を返す', () => {
       const hostname = 'play.dlsite.com'
       const rootElement = document.createElement('div')
       rootElement.id = 'root'
+
+      // URL を /library に設定（相対パス。jsdomの同一オリジン制約を回避）
+      window.history.pushState({}, '', '/library')
 
       // モックの要素（img.dlsite.jp を含む画像）を追加
       const img = document.createElement('img')
@@ -25,12 +28,15 @@ describe('dom-extractor', () => {
       const rootElement = document.createElement('div')
       rootElement.id = 'root'
 
+      window.history.pushState({}, '', '/library')
+
       const result = shouldExtract(hostname, rootElement)
       expect(result).toBe(false)
     })
 
     it('rootElementがnullの場合はfalseを返す', () => {
       const hostname = 'dlsite.com'
+      window.history.pushState({}, '', '/library')
       const result = shouldExtract(hostname, null)
       expect(result).toBe(false)
     })
@@ -39,6 +45,8 @@ describe('dom-extractor', () => {
       const hostname = 'dlsite.com'
       const rootElement = document.createElement('div')
       rootElement.id = 'root'
+
+      window.history.pushState({}, '', '/library')
 
       // data-indexやthumbnail要素を追加しない
       const result = shouldExtract(hostname, rootElement)

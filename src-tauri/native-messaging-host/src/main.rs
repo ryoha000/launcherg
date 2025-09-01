@@ -174,11 +174,13 @@ async fn handle_message(ctx: &AppCtx) -> HostResult<bool> {
 async fn handle_downloads_completed(ctx: &AppCtx, request: &DownloadsCompletedRequestTs, request_id: &str) -> NativeResponseTs {
     let usecase: DownloadsUseCase<SqliteRepositoryManager, SqliteRepositories> = DownloadsUseCase::new(ctx.manager.clone(), ctx.resolver.clone());
 
-    // helper: resolve work_id from intent (DMM only for now)
+    // helper: resolve work_id from intent (DMM / DLsite)
     let work_id = if let Some(intent) = &request.intent {
-        if intent.store.to_uppercase() == "DMM" {
-            match usecase.resolve_dmm_work_id(&intent.game_store_id, &intent.game_category, &intent.game_subcategory).await { Ok(v) => v, Err(_) => None }
-        } else { None }
+        match intent.store.to_uppercase().as_str() {
+            "DMM" => match usecase.resolve_dmm_work_id(&intent.game_store_id, &intent.game_category, &intent.game_subcategory).await { Ok(v) => v, Err(_) => None },
+            "DLSITE" => match usecase.resolve_dlsite_work_id(&intent.game_store_id, Some(&intent.game_category)).await { Ok(v) => v, Err(_) => None },
+            _ => None,
+        }
     } else { None };
 
     // items == 1

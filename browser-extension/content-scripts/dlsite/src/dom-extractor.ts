@@ -29,6 +29,12 @@ export function shouldExtract(hostname: string, rootElement: HTMLElement | null)
     return false
   }
 
+  // パス確認: /library のみ対象
+  const path = window.location.pathname
+  if (path !== '/library') {
+    return false
+  }
+
   if (!rootElement)
     return false
 

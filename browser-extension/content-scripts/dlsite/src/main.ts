@@ -11,6 +11,7 @@ import {
 
 import { processGames } from './data-processor'
 import { extractAllGames, shouldExtract } from './dom-extractor'
+import { initLaunchergDownloadOnceForUrl } from './download'
 
 // グローバル状態管理
 let isExtracting = false
@@ -18,6 +19,15 @@ let currentUrl = window.location.href
 const log = logger('dlsite-extractor')
 let pollingTimerId: number | null = null
 let didInitialWait = false
+
+// ダウンロード起動の一度きり実行制御
+const processedUrlSet = new Set<string>()
+function markProcessed(url: string): void {
+  processedUrlSet.add(url)
+}
+function isProcessed(url: string): boolean {
+  return processedUrlSet.has(url)
+}
 
 // 抽出と同期を実行するメイン関数
 async function extractAndSync(): Promise<void> {
@@ -124,6 +134,8 @@ function setupPageChangeObserver(): void {
         // 初期待機をリセット
         didInitialWait = false
         initDLsiteExtractor()
+        // クエリパラメータ起動があれば処理
+        void initLaunchergDownloadOnceForUrl(window.location.href, markProcessed, isProcessed)
       }, 2000)
     }
   })
@@ -147,6 +159,8 @@ function main(): void {
   // 即座に抽出を開始（設定不要）
   setTimeout(() => {
     initDLsiteExtractor()
+    // クエリパラメータ起動があれば処理
+    void initLaunchergDownloadOnceForUrl(window.location.href, markProcessed, isProcessed)
   }, 1000)
 }
 

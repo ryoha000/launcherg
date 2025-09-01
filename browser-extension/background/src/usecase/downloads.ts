@@ -36,10 +36,14 @@ export function setupDownloadsHandler(context: HandlerContext): void {
 
       log.debug('ダウンロード項目を解決しました', { id: item.id, filename: item.filename, size: item.fileSize })
 
-      // storeId を URL から抽出
+      // storeId を URL から抽出（DLsite/DMM対応）
       const storeId = (() => {
         try {
           const u = new URL(item.url ?? '')
+          // DLsite: https://play.dlsite.com/api/v3/download?workno=RJ01363269
+          const workno = u.searchParams.get('workno')
+          if (workno)
+            return workno
           const pid = u.searchParams.get('pid')
           if (pid)
             return pid
