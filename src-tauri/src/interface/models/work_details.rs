@@ -14,6 +14,7 @@ pub struct WorkDetailsVm {
     pub is_omitted: bool,
     pub is_dmm_pack: bool,
     pub thumbnail: Option<String>,
+    pub latest_download_path: Option<LatestWorkDownloadPathVm>,
 }
 
 #[derive(serde::Serialize)]
@@ -34,6 +35,14 @@ pub struct DlsiteSideVm {
     pub store_id: String,
     pub category: String,
     pub is_omitted: bool,
+}
+
+#[derive(serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct LatestWorkDownloadPathVm {
+    pub id: i32,
+    pub work_id: i32,
+    pub download_path: String,
 }
 
 impl From<WorkDetails> for WorkDetailsVm {
@@ -70,6 +79,11 @@ impl From<WorkDetails> for WorkDetailsVm {
             is_omitted: w.is_omitted,
             is_dmm_pack: w.is_dmm_pack,
             thumbnail: thumbnail,
+            latest_download_path: w.latest_download_path.map(|p| LatestWorkDownloadPathVm {
+                id: p.id.value,
+                work_id: p.work_id.value,
+                download_path: p.download_path,
+            }),
         }
     }
 }

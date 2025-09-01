@@ -4,6 +4,7 @@ use serde::{Deserialize, Serialize};
 use crate::Id;
 
 use crate::collection::{CollectionElement, CollectionElementErogamescape};
+use crate::work_download_path::WorkDownloadPath;
 
 #[derive(new, Clone, Debug, Serialize, Deserialize)]
 pub struct Work {
@@ -57,6 +58,7 @@ pub struct WorkDetails {
     pub erogamescape: Option<CollectionElementErogamescape>,
     pub is_omitted: bool,
     pub is_dmm_pack: bool,
+    pub latest_download_path: Option<WorkDownloadPath>,
 }
 
 

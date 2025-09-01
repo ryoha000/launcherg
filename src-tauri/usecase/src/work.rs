@@ -29,13 +29,9 @@ where
     }
 
     pub async fn find_details_by_collection_element_id(&self, collection_element_id: i32) -> anyhow::Result<Option<WorkDetails>> {
-        let all = self.manager.run(|repos| {
-            Box::pin(async move { repos.work().list_all_details().await })
-        }).await?;
-        let found = all
-            .into_iter()
-            .find(|w| w.collection_element_id.as_ref().map(|id| id.value == collection_element_id).unwrap_or(false));
-        Ok(found)
+        self.manager.run(|repos| {
+            Box::pin(async move { repos.work().find_details_by_collection_element_id(domain::Id::new(collection_element_id)).await })
+        }).await
     }
 }
 

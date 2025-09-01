@@ -1,6 +1,8 @@
 use super::TestDatabase;
 use domain::repository::{RepositoriesExt, works::{DmmWorkRepository, DlsiteWorkRepository, WorkRepository}};
 use domain::works::{NewDmmWork, NewDlsiteWork, NewWork};
+use domain::{collection::NewCollectionElement, Id};
+use domain::repository::collection::CollectionRepository;
 
 #[tokio::test]
 async fn dmm_works_upsert_and_find_by_store_key() {
@@ -110,5 +112,31 @@ async fn list_all_details_dmm_only() {
     assert!(!item.is_omitted);
     assert!(!item.is_dmm_pack);
     assert!(item.collection_element_id.is_none());
+}
+
+#[tokio::test]
+async fn find_details_by_collection_element_should_match_mapping() {
+    let test_db = TestDatabase::new().await.unwrap();
+    let repo = test_db.sqlite_repository();
+
+    // 1) Work と DMM を作成
+    let work_id = { let mut r = repo.work(); r.upsert(&NewWork { title: "Title A".into() }).await.unwrap() };
+    { let mut r = repo.dmm_work();
+        let _ = r.upsert(&NewDmmWork { store_id: "SID-1".into(), category: "software".into(), subcategory: "game".into(), work_id: work_id.clone() }).await.unwrap();
+    }
+
+    // 2) CollectionElement を作成して Work と紐づけ
+    {
+        let mut c = repo.collection();
+        let ce_id = Id::new(100);
+        c.upsert_collection_element(&NewCollectionElement::new(ce_id.clone(), "GameName".into())).await.unwrap();
+        c.upsert_work_mapping(&ce_id, work_id.clone()).await.unwrap();
+    }
+
+    // 3) collection_element_id で WorkDetails を取得できること
+    let found = { let mut w = repo.work(); w.find_details_by_collection_element_id(Id::new(100)).await.unwrap() };
+    assert!(found.is_some());
+    let details = found.unwrap();
+    assert_eq!(details.collection_element_id.as_ref().unwrap().value, 100);
 }
 

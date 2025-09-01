@@ -39,6 +39,8 @@ pub struct WorkDetailsRow {
     pub dlsite_id: Option<i64>,
     pub dlsite_store_id: Option<String>,
     pub dlsite_category: Option<String>,
+    pub latest_path_id: Option<i64>,
+    pub latest_path_download_path: Option<String>,
 }
 
 impl TryFrom<crate::sqliterepository::models::works::DmmWorkTable> for domain::works::DmmWork {

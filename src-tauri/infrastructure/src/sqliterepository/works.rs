@@ -1,6 +1,7 @@
 use std::collections::BTreeMap;
 
 use domain::{repository::works::{WorkRepository, DmmWorkRepository, DlsiteWorkRepository}, works::{DlsiteWork, DmmWork, NewDlsiteWork, NewDmmWork, NewWork, Work, WorkDetails}, Id};
+use domain::collection::CollectionElement;
 use sqlx::query_as;
 
 use crate::sqliterepository::{models::works::{WorkDetailsRow, WorkTable}, sqliterepository::RepositoryImpl};
@@ -63,7 +64,8 @@ impl WorkRepository for RepositoryImpl<Work> {
                         lw.id   as dlsite_id,
                         lw.store_id as dlsite_store_id,
                         lw.category as dlsite_category,
-                        oo.id as dlsite_omit_id
+                        (SELECT id FROM work_download_paths wdp WHERE wdp.work_id = w.id ORDER BY id DESC LIMIT 1) as latest_path_id,
+                        (SELECT download_path FROM work_download_paths wdp WHERE wdp.work_id = w.id ORDER BY id DESC LIMIT 1) as latest_path_download_path
                     FROM works w
                     LEFT JOIN dmm_works dw ON dw.work_id = w.id
                     LEFT JOIN work_collection_elements m1 ON m1.work_id = w.id
@@ -90,6 +92,7 @@ impl WorkRepository for RepositoryImpl<Work> {
                 erogamescape: None,
                 is_omitted: false,
                 is_dmm_pack: false,
+                latest_download_path: None,
             });
 
             if let Some(dmm_id) = r.dmm_id {
@@ -101,6 +104,15 @@ impl WorkRepository for RepositoryImpl<Work> {
                     subcategory: r.dmm_subcategory.unwrap_or_default(),
                 });
                 entry.is_dmm_pack = r.dmm_pack_id.is_some();
+            }
+            if let Some(path_id) = r.latest_path_id {
+                if let Some(download_path) = r.latest_path_download_path.clone() {
+                    entry.latest_download_path = Some(domain::work_download_path::WorkDownloadPath {
+                        id: Id::new(path_id as i32),
+                        work_id: Id::new(r.work_id as i32),
+                        download_path,
+                    });
+                }
             }
             if let Some(dl_id) = r.dlsite_id {
                 entry.dlsite = Some(DlsiteWork {
@@ -133,6 +145,92 @@ impl WorkRepository for RepositoryImpl<Work> {
         }
 
         Ok(map.into_values().collect())
+    }
+
+    async fn find_details_by_collection_element_id(&mut self, collection_element_id: Id<CollectionElement>) -> anyhow::Result<Option<WorkDetails>> {
+        let idv = collection_element_id.value as i64;
+        let rows = self.executor.with_conn(|conn| {
+            Box::pin(async move {
+                let rows: Vec<WorkDetailsRow> = query_as(
+                    r#"
+                    SELECT 
+                        w.id   as work_id,
+                        w.title as work_title,
+                        dw.id   as dmm_id,
+                        dw.store_id as dmm_store_id,
+                        dw.category as dmm_category,
+                        dw.subcategory as dmm_subcategory,
+                        m1.collection_element_id as ce_id,
+                        e.id as egs_id,
+                        e.erogamescape_id as egs_erogamescape_id,
+                        e.created_at as egs_created_at,
+                        e.updated_at as egs_updated_at,
+                        oo.id as omit_id,
+                        pp.id as dmm_pack_id,
+                        lw.id   as dlsite_id,
+                        lw.store_id as dlsite_store_id,
+                        lw.category as dlsite_category,
+                        (SELECT id FROM work_download_paths wdp WHERE wdp.work_id = w.id ORDER BY id DESC LIMIT 1) as latest_path_id,
+                        (SELECT download_path FROM work_download_paths wdp WHERE wdp.work_id = w.id ORDER BY id DESC LIMIT 1) as latest_path_download_path
+                    FROM works w
+                    JOIN work_collection_elements m1 ON m1.work_id = w.id
+                    LEFT JOIN dmm_works dw ON dw.work_id = w.id
+                    LEFT JOIN collection_element_erogamescape_map e ON e.collection_element_id = m1.collection_element_id
+                    LEFT JOIN work_omits oo ON oo.work_id = w.id
+                    LEFT JOIN dmm_work_packs pp ON pp.work_id = w.id
+                    LEFT JOIN dlsite_works lw ON lw.work_id = w.id
+                    WHERE m1.collection_element_id = ?
+                    LIMIT 1
+                    "#,
+                )
+                .bind(idv)
+                .fetch_all(conn)
+                .await?;
+                Ok(rows)
+            })
+        }).await?;
+
+        let mut map: std::collections::BTreeMap<i64, WorkDetails> = std::collections::BTreeMap::new();
+        for r in rows.into_iter() {
+            let entry = map.entry(r.work_id).or_insert_with(|| WorkDetails {
+                work: Work { id: Id::new(r.work_id as i32), title: r.work_title.clone() },
+                dmm: None,
+                dlsite: None,
+                collection_element_id: r.ce_id.map(|v| Id::new(v as i32)),
+                erogamescape: None,
+                is_omitted: false,
+                is_dmm_pack: false,
+                latest_download_path: None,
+            });
+
+            if let Some(dmm_id) = r.dmm_id {
+                entry.dmm = Some(DmmWork {
+                    id: Id::new(dmm_id as i32),
+                    work_id: Id::new(r.work_id as i32),
+                    store_id: r.dmm_store_id.unwrap_or_default(),
+                    category: r.dmm_category.unwrap_or_default(),
+                    subcategory: r.dmm_subcategory.unwrap_or_default(),
+                });
+                entry.is_dmm_pack = r.dmm_pack_id.is_some();
+            }
+            if let Some(dl_id) = r.dlsite_id {
+                entry.dlsite = Some(DlsiteWork {
+                    id: Id::new(dl_id as i32),
+                    work_id: Id::new(r.work_id as i32),
+                    store_id: r.dlsite_store_id.unwrap_or_default(),
+                    category: r.dlsite_category.unwrap_or_default(),
+                });
+            }
+            if let Some(_) = r.omit_id { entry.is_omitted = true; }
+            if let Some(path_id) = r.latest_path_id {
+                if let Some(download_path) = r.latest_path_download_path.clone() {
+                    entry.latest_download_path = Some(domain::work_download_path::WorkDownloadPath {
+                        id: Id::new(path_id as i32), work_id: Id::new(r.work_id as i32), download_path,
+                    });
+                }
+            }
+        }
+        Ok(map.into_values().next())
     }
 }
 

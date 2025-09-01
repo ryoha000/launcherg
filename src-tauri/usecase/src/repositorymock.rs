@@ -103,6 +103,7 @@ impl domain::repository::works::WorkRepository for TestRepositories {
     async fn upsert(&mut self, new_work: &domain::works::NewWork) -> anyhow::Result<domain::Id<domain::works::Work>> { self.work.lock().await.upsert(new_work).await }
     async fn find_by_title(&mut self, title: &str) -> anyhow::Result<Option<domain::works::Work>> { self.work.lock().await.find_by_title(title).await }
     async fn list_all_details(&mut self) -> anyhow::Result<Vec<domain::works::WorkDetails>> { self.work.lock().await.list_all_details().await }
+    async fn find_details_by_collection_element_id(&mut self, collection_element_id: domain::Id<domain::collection::CollectionElement>) -> anyhow::Result<Option<domain::works::WorkDetails>> { self.work.lock().await.find_details_by_collection_element_id(collection_element_id).await }
 }
 
 #[cfg(test)]
