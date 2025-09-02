@@ -51,7 +51,7 @@ export function createNativeMessenger(nativeHostName: string) {
         (response) => {
           if (chrome.runtime.lastError)
             return reject(new Error(chrome.runtime.lastError.message))
-          log.debug('Received native message(JSON)', { ellapsed: Date.now() - startTime, host: nativeHostName, response })
+          log.debug('Received native message(JSON)', { ellapsed: Date.now() - startTime, type: message.message.case, response })
           resolve(response as TRes)
         },
       )
