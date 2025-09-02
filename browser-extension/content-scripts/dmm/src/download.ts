@@ -1,4 +1,4 @@
-import { logger, showInPageNotification, waitForPageLoad } from '@launcherg/shared'
+import { logger, setDownloadIntent, showInPageNotification, waitForPageLoad } from '@launcherg/shared'
 import { collectDownloadLinks } from './download-modal'
 import { findDetailItemIdForStoreId } from './pack-helpers'
 import { findChildGameImage } from './pack-parser'
@@ -96,17 +96,14 @@ export async function initLaunchergDownloadOnceForUrl(url: string, mark: (url: s
       await waitForPageLoad(800)
       const links = collectDownloadLinks(document)
       try {
-        const key = 'download_intents'
-        const current = await new Promise<any>(resolve => chrome.storage.local.get([key], res => resolve(res?.[key] ?? {})))
-        current[p.value.game.storeId] = {
+        await setDownloadIntent(p.value.game.storeId, {
           store: 'DMM',
           game: p.value.game,
           parentPack: p.value.parentPack,
           expected: links.length,
           completed: 0,
           startedAt: Date.now(),
-        }
-        await chrome.storage.local.set({ [key]: current })
+        })
       }
       catch {}
       log.info('ダウンロードリンクをクリック', { links })
@@ -124,17 +121,14 @@ export async function initLaunchergDownloadOnceForUrl(url: string, mark: (url: s
       await waitForPageLoad(800)
       const links = collectDownloadLinks(document)
       try {
-        const key = 'download_intents'
-        const current = await new Promise<any>(resolve => chrome.storage.local.get([key], res => resolve(res?.[key] ?? {})))
-        current[p.value.game.storeId] = {
+        await setDownloadIntent(p.value.game.storeId, {
           store: 'DMM',
           game: p.value.game,
           parentPack: undefined,
           expected: links.length,
           completed: 0,
           startedAt: Date.now(),
-        }
-        await chrome.storage.local.set({ [key]: current })
+        })
       }
       catch {}
       log.info('ダウンロードリンクをクリック', { links })

@@ -1,6 +1,6 @@
-import type { NativeMessageTs } from '@launcherg/shared/typeshare/native-messaging'
+import type { DownloadIntentTs, NativeMessageTs } from '@launcherg/shared/typeshare/native-messaging'
 import type { HandlerContext } from '../shared/types'
-import { logger } from '@launcherg/shared'
+import { incrementCompletedAndPushItem, logger, readAllDownloadIntents, removeDownloadIntent, stripDownloadItemFields, toDownloadIntentTs } from '@launcherg/shared'
 
 const log = logger('background:downloads')
 
@@ -57,60 +57,40 @@ export function setupDownloadsHandler(context: HandlerContext): void {
         }
       })()
 
-      // 複数意図の管理マップを読み込み
-      const intentsMap = await new Promise<any>((resolve) => {
-        chrome.storage.local.get(['download_intents'], res => resolve(res?.download_intents ?? {}))
-      })
+      // 複数意図の管理マップから参照
+      const intentsMap = await readAllDownloadIntents()
       const entry = storeId ? intentsMap[storeId] ?? null : null
       log.debug('storeId と intent を解決', { storeId, hasIntent: !!entry })
 
       if (storeId && entry) {
-        // 進捗更新とファイル情報の集約
-        entry.completed = (entry.completed ?? 0) + 1
-        entry.items = Array.isArray(entry.items) ? entry.items : []
-        entry.items.push({
-          id: item.id,
-          filename: item.filename,
-          mime: item.mime,
-          file_size: item.fileSize,
-          url: item.url,
-          start_time: item.startTime,
-          end_time: item.endTime,
-        })
-        intentsMap[storeId] = entry
-        await new Promise<void>(resolve => chrome.storage.local.set({ download_intents: intentsMap }, () => resolve()))
+        // 進捗更新とファイル情報の集約（ヘルパー経由）
+        const updated = await incrementCompletedAndPushItem(storeId, stripDownloadItemFields(item))
+        const current = updated ?? entry
 
-        log.debug('intent を更新', { storeId, completed: entry.completed, expected: entry.expected })
+        log.debug('intent を更新', { storeId, completed: current.completed, expected: current.expected })
 
-        if (entry.completed >= entry.expected) {
+        if (current.completed >= current.expected) {
           // すべて完了: まとめて一度だけ送信
+          const intentUnion: DownloadIntentTs | undefined = toDownloadIntentTs(current)
+
           const aggregateMsg: NativeMessageTs = {
             request_id: context.idGenerator.generate(),
             message: {
               case: 'DownloadsCompleted',
               value: {
                 extension_id: context.extensionId,
-                items: entry.items,
-                intent: {
-                  store: String(entry.store ?? ''),
-                  game_store_id: String(entry.game?.storeId ?? ''),
-                  game_category: String(entry.game?.category ?? ''),
-                  game_subcategory: String(entry.game?.subcategory ?? ''),
-                  parent_pack_store_id: entry.parentPack?.storeId ?? undefined,
-                  parent_pack_category: entry.parentPack?.category ?? undefined,
-                  parent_pack_subcategory: entry.parentPack?.subcategory ?? undefined,
-                },
+                items: current.items ?? [],
+                intent: intentUnion,
               },
             },
           }
 
-          log.info('全パーツ完了 -> 集約メッセージを送信', { storeId, parts: entry.items.length })
+          log.info('全パーツ完了 -> 集約メッセージを送信', { storeId, parts: (current.items ?? []).length })
           await context.nativeMessenger.sendJson(aggregateMsg)
           log.info('集約メッセージを送信しました', { storeId })
 
           // 後片付け
-          delete intentsMap[storeId]
-          await new Promise<void>(resolve => chrome.storage.local.set({ download_intents: intentsMap }, () => resolve()))
+          await removeDownloadIntent(storeId)
         }
       }
       else {
@@ -136,8 +116,6 @@ export function setupDownloadsHandler(context: HandlerContext): void {
         log.info('intent なしのため単発送信', { storeId })
         await context.nativeMessenger.sendJson(fallbackMsg)
       }
-
-      // 旧キー互換のクリーンアップは不要
     }
     catch (e) {
       log.error('downloads.onChanged handler error', e)

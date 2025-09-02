@@ -31,6 +31,11 @@ function isProcessed(url: string): boolean {
 
 // 抽出と同期を実行するメイン関数
 async function extractAndSync(): Promise<void> {
+  if (shouldExtract(window.location.hostname, null)) {
+    log.debug('Not a target page - skipping extraction')
+    return
+  }
+
   if (isExtracting) {
     log.debug('Already extracting, skipping')
     return

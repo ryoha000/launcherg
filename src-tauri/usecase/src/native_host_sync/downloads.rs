@@ -31,26 +31,16 @@ where U: RepositoryManager<R> + Send + Sync + 'static, R: RepositoriesExt + Send
     }
 
     /// DLsite の `store_id` と `category` から対応する作品 ID を検索して返す。
-    /// `category` が空または未指定の場合は、代表的なカテゴリ候補（"pro"/"maniax"）を順に探索する。
-    pub async fn resolve_dlsite_work_id(&self, store_id: &str, category: Option<&str>) -> anyhow::Result<Option<Id<domain::works::Work>>> {
-        let try_once = |sid: String, cat: String| {
-            self.manager.run(move |repos| {
-                let sid2 = sid.clone();
-                let cat2 = cat.clone();
-                Box::pin(async move { Ok::<_, anyhow::Error>(repos.dlsite_work().find_by_store_key(&sid2, &cat2).await?.map(|w| w.work_id)) })
-            })
-        };
-
-        if let Some(cat) = category {
-            if !cat.is_empty() {
-                return try_once(store_id.to_string(), cat.to_string()).await;
-            }
-        }
-
-        // カテゴリ未指定時のフォールバック探索
-        if let Some(id) = try_once(store_id.to_string(), "pro".to_string()).await? { return Ok(Some(id)); }
-        if let Some(id) = try_once(store_id.to_string(), "maniax".to_string()).await? { return Ok(Some(id)); }
-        Ok(None)
+    /// 見つからない場合はエラーを返す。
+    pub async fn resolve_dlsite_work_id(&self, store_id: &str, category: &str) -> anyhow::Result<Id<domain::works::Work>> {
+        let sid = store_id.to_string();
+        let cat = category.to_string();
+        let maybe = self.manager.run(move |repos| {
+            let sid2 = sid.clone();
+            let cat2 = cat.clone();
+            Box::pin(async move { Ok::<_, anyhow::Error>(repos.dlsite_work().find_by_store_key(&sid2, &cat2).await?.map(|w| w.work_id)) })
+        }).await?;
+        if let Some(id) = maybe { Ok(id) } else { anyhow::bail!(format!("dlsite work not found: store_id={}, category={}", store_id, category)) }
     }
 
     /// ダウンロードした作品の保存先パスを記録する。

@@ -1,4 +1,4 @@
-import { logger, showInPageNotification, waitForPageLoad } from '@launcherg/shared'
+import { logger, setDownloadIntent, showInPageNotification, waitForPageLoad } from '@launcherg/shared'
 import { extractAllGames, extractGameContainers, extractGameDataFromContainer } from './dom-extractor'
 
 const log = logger('dlsite-download')
@@ -67,16 +67,13 @@ export function findZipDownloadButton(root: Document | HTMLElement = document): 
 
 async function saveDownloadIntent(storeId: string): Promise<void> {
   try {
-    const key = 'download_intents'
-    const current = await new Promise<any>(resolve => chrome.storage.local.get([key], res => resolve(res?.[key] ?? {})))
-    current[storeId] = {
+    await setDownloadIntent(storeId, {
       store: 'DLsite',
       game: { storeId },
       expected: 1,
       completed: 0,
       startedAt: Date.now(),
-    }
-    await chrome.storage.local.set({ [key]: current })
+    })
   }
   catch (e) {
     log.debug('Failed to save download intent', e)

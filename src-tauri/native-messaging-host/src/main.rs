@@ -176,10 +176,13 @@ async fn handle_downloads_completed(ctx: &AppCtx, request: &DownloadsCompletedRe
 
     // helper: resolve work_id from intent (DMM / DLsite)
     let work_id = if let Some(intent) = &request.intent {
-        match intent.store.to_uppercase().as_str() {
-            "DMM" => match usecase.resolve_dmm_work_id(&intent.game_store_id, &intent.game_category, &intent.game_subcategory).await { Ok(v) => v, Err(_) => None },
-            "DLSITE" => match usecase.resolve_dlsite_work_id(&intent.game_store_id, Some(&intent.game_category)).await { Ok(v) => v, Err(_) => None },
-            _ => None,
+        match intent {
+            models::downloads::DownloadIntentTs::Dmm { game_store_id, game_category, game_subcategory, .. } => {
+                match usecase.resolve_dmm_work_id(game_store_id, game_category, game_subcategory).await { Ok(v) => v, Err(_) => None }
+            },
+            models::downloads::DownloadIntentTs::Dlsite { game_store_id, game_category } => {
+                match usecase.resolve_dlsite_work_id(game_store_id, game_category).await { Ok(v) => Some(v), Err(_) => None }
+            },
         }
     } else { None };
 

@@ -64,15 +64,19 @@ export interface DownloadCompletedTs {
 	end_time?: string;
 }
 
-export interface DownloadIntentTs {
-	store: string;
+export type DownloadIntentTs = 
+	| { case: "Dmm", value: {
 	game_store_id: string;
 	game_category: string;
 	game_subcategory: string;
 	parent_pack_store_id?: string;
 	parent_pack_category?: string;
 	parent_pack_subcategory?: string;
-}
+}}
+	| { case: "Dlsite", value: {
+	game_store_id: string;
+	game_category: string;
+}};
 
 export interface DownloadsCompletedRequestTs {
 	extension_id: string;
