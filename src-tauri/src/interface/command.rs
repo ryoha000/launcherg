@@ -101,6 +101,26 @@ pub async fn create_elements_in_pc(
         .get_collection_ids_by_erogamescape_ids(egs_ids.clone())
         .await?;
 
+    // アイコン保存（EGS -> Collection ID 解決後に正しいIDで保存）
+    for scanned in new_elements_with_data.iter() {
+        if let Some(cid) = modules
+            .collection_use_case()
+            .get_collection_ids_by_erogamescape_ids(vec![scanned.erogamescape_id])
+            .await?
+            .into_iter()
+            .next()
+        {
+            modules
+                .image_use_case()
+                .save_icon_by_paths(
+                    &cid,
+                    &scanned.exe_path,
+                    &scanned.lnk_path,
+                )
+                .await?;
+        }
+    }
+
     // サムネイル用に EGSのキャッシュを取得
     let new_elements_game_caches = modules
         .all_game_cache_use_case()

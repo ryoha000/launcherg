@@ -16,7 +16,7 @@ use domain::{
     distance::get_comparable_distance,
     file::{
         get_file_paths_by_exts, get_lnk_metadatas,
-        normalize, save_icon_to_png, start_process,
+        normalize, start_process,
     },
     Id,
 };
@@ -186,7 +186,7 @@ impl FileUseCase {
     }
     pub async fn filter_files_to_collection_elements<P: PubSubService + 'static>(
         &self,
-        handle: &Arc<AppHandle>,
+        _handle: &Arc<AppHandle>,
         files: Vec<String>,
         all_game_cache: AllGameCache,
         pubsub: Arc<P>,
@@ -228,12 +228,7 @@ impl FileUseCase {
         }
 
         let mut collection_elements = vec![];
-        let mut save_icon_tasks = vec![];
         for (id, exe_path) in exe_id_path_vec.into_iter() {
-            // icon
-            let task = save_icon_to_png(handle, &exe_path, &Id::new(id))?;
-            save_icon_tasks.push(task);
-
             // new collection element
             let install_at = get_file_created_at_sync(&exe_path);
             let gamename = all_game_cache_hashmap.get(&id).map(|v| v.gamename.clone()).ok_or(anyhow::anyhow!("failed to get gamename {}", id))?;
@@ -247,17 +242,7 @@ impl FileUseCase {
         }
         for (erogamescape_id, lnk_path) in lnk_id_path_vec.iter() {
             let _install_at;
-            // icon
             if let Some(metadata) = lnk_metadatas.get(lnk_path.as_str()) {
-                let id = Id::new(*erogamescape_id);
-                let task;
-                if metadata.icon.to_lowercase().ends_with("ico") {
-                    task = save_icon_to_png(handle, &metadata.icon, &id)?;
-                } else {
-                    task = save_icon_to_png(handle, &metadata.path, &id)?;
-                }
-                save_icon_tasks.push(task);
-
                 _install_at = get_file_created_at_sync(&metadata.path);
             } else {
                 _install_at = None;
@@ -272,13 +257,6 @@ impl FileUseCase {
                 _install_at,
             ));
         }
-        futures::future::try_join_all(save_icon_tasks)
-            .await?
-            .into_iter()
-            .collect::<anyhow::Result<()>>()?;
-
-        emit_progress_with_time(pubsub.as_ref(), start, "icon の保存が完了しました。")?;
-
         Ok(collection_elements)
     }
     pub fn get_new_upload_image_path(&self, id: i32) -> anyhow::Result<String> {
