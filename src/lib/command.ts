@@ -241,8 +241,6 @@ export async function commandLinkInstalledGame(
   })
 }
 
-// DLStore関連のコマンドは廃止
-
 // 拡張機能連携用の新しいコマンド
 
 export async function commandGetSyncStatus() {

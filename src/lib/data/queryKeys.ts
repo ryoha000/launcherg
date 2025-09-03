@@ -7,5 +7,6 @@ export const queryKeys = {
   },
   workDetails: {
     all: () => ['workDetails'] as const,
+    byId: (id: number) => ['workDetails', id] as const,
   },
 }

@@ -1,42 +1,70 @@
 <script lang='ts'>
-  import type { Work } from '@/lib/types'
   import WorkErogameScape from '@/components/Work/WorkErogameScape.svelte'
-  import { commandGetCollectionElement, commandGetWorkDetailsByCollectionElement } from '@/lib/command'
-  import { works } from '@/store/works'
+  // import { commandGetCollectionElement, commandGetWorkDetailsByCollectionElement, commandOpenFolder, commandOpenUrl } from '@/lib/command'
+  // import { useWorkDetailsQuery } from '@/lib/data/queries/workDetails'
 
   let { route }: { route?: { result: { path: { params: { id?: string } } } } } = $props()
-  let idParam = $derived(route?.result?.path?.params?.id || '')
+  const idParam = $derived(route?.result?.path?.params?.id || '')
+  const collectionElementId = $derived(Number(idParam))
 
-  // ビューの責務: 表示ソース判定とデータ取得
-  let viewPromise = $derived((async () => {
-    const collectionElement = await commandGetCollectionElement(+idParam)
-    const workDetail = await commandGetWorkDetailsByCollectionElement(+idParam)
-    const erogameScapeId = collectionElement.erogamescapeId ?? null
-    let work: Work | null = null
-    if (erogameScapeId) {
-      work = (await works.get(erogameScapeId)) ?? null
-    }
-    return { collectionElement, work, workDetail }
-  })())
+// async function openDmmDownload(dmm: { storeId: string, category: string, subcategory: string }) {
+  //   const payload = {
+  //     type: 'download',
+  //     value: {
+  //       game: {
+  //         storeId: dmm.storeId,
+  //         category: dmm.category,
+  //         subcategory: dmm.subcategory,
+  //       },
+  //     },
+  //   }
+  //   const url = new URL('https://dlsoft.dmm.co.jp/mylibrary/')
+  //   // URLSearchParams が自動でエンコードするため encodeURIComponent は不要
+  //   url.searchParams.set('launcherg', JSON.stringify(payload))
+  //   await commandOpenUrl(url.toString())
+  // }
+
+  // async function openDlsiteDownload(dlsite: { storeId: string, category: string }) {
+  //   const payload = {
+  //     type: 'download',
+  //     value: {
+  //       game: {
+  //         storeId: dlsite.storeId,
+  //         category: dlsite.category,
+  //       },
+  //     },
+  //   }
+  //   const url = new URL('https://play.dlsite.com/library')
+  //   url.searchParams.set('launcherg', JSON.stringify(payload))
+  //   await commandOpenUrl(url.toString())
+  // }
+
+  // async function openLatestDownloadFolder(path: string) {
+  //   await commandOpenFolder(path)
+  // }
 </script>
 
-{#await viewPromise}
-  <div class='h-full w-full flex items-center justify-center'>
-    <span class='text-gray-500'>Loading...</span>
-  </div>
-{:then data}
-  {#if data.work}
-    <div class='h-full w-full'>
-      <WorkErogameScape work={data.work} />
-    </div>
-  {:else}
-    <div class='h-full w-full p-4'>
-      <div class='text-gray-500'>TODO: erogamescape id が紐づいていない。何らかの情報をソースに何かを書く {JSON.stringify(data.collectionElement)}</div>
-      <div class='mt-2 text-gray-500'>workDetail: {JSON.stringify(data.workDetail)}</div>
+<div class='h-full w-full'>
+  <!-- {#if data.workDetail?.dmm}
+    <div class='mt-4'>
+      <button class='rounded bg-blue-600 px-3 py-1 text-white hover:bg-blue-700' onclick={() => openDmmDownload(data.workDetail!.dmm!)}>
+        DMMからダウンロード
+      </button>
     </div>
   {/if}
-{:catch error}
-  <div class='h-full w-full flex items-center justify-center'>
-    <span class='text-red-500'>Error: {error.message}</span>
-  </div>
-{/await}
+  {#if data.workDetail?.dlsite}
+    <div class='mt-2'>
+      <button class='rounded bg-green-600 px-3 py-1 text-white hover:bg-green-700' onclick={() => openDlsiteDownload(data.workDetail!.dlsite!)}>
+        DLsiteからダウンロード
+      </button>
+    </div>
+  {/if}
+  {#if data.workDetail?.latestDownloadPath?.downloadPath}
+    <div class='mt-2'>
+      <button class='rounded bg-gray-600 px-3 py-1 text-white hover:bg-gray-700' onclick={() => openLatestDownloadFolder(data.workDetail!.latestDownloadPath!.downloadPath)}>
+        最新ダウンロードフォルダを開く
+      </button>
+    </div>
+  {/if} -->
+  <WorkErogameScape {collectionElementId} />
+</div>

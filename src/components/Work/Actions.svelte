@@ -1,4 +1,5 @@
 <script lang='ts'>
+  import type { WorkDetailsVm } from '@/lib/command'
   import type { AllGameCacheOne } from '@/lib/types'
   import { goto } from '@mateothegreat/svelte5-router'
   import ImportManually from '@/components/Sidebar/ImportManually.svelte'
@@ -6,6 +7,7 @@
   import Button from '@/components/UI/Button.svelte'
   import ButtonCancel from '@/components/UI/ButtonCancel.svelte'
   import ButtonIcon from '@/components/UI/ButtonIcon.svelte'
+  import { useStart } from '@/components/Work/action'
   import DeleteElement from '@/components/Work/DeleteElement.svelte'
   import OtherInformation from '@/components/Work/OtherInformation.svelte'
   import PlayButton from '@/components/Work/PlayButton.svelte'
@@ -16,57 +18,24 @@
     commandGetCollectionElement,
     commandGetErogamescapeIdByCollectionId,
     commandOpenFolder,
-    commandPlayGame,
     commandUpdateElementLike,
     commandUpsertCollectionElement,
+
   } from '@/lib/command'
   import { registerCollectionElementDetails } from '@/lib/registerCollectionElementDetails'
   import { showErrorToast } from '@/lib/toast'
-  import { localStorageWritable } from '@/lib/utils'
   import { sidebarCollectionElements } from '@/store/sidebarCollectionElements'
-  import { startProcessMap } from '@/store/startProcessMap'
   import { deleteTab, selected, tabs } from '@/store/tabs'
 
   interface Props {
-    name: string
+    workDetail: WorkDetailsVm
     id: number
     seiyaUrl: string
   }
 
-  const { name, id, seiyaUrl }: Props = $props()
+  const { workDetail, id, seiyaUrl }: Props = $props()
 
-  const isAdminRecord = localStorageWritable<Record<number, boolean>>(
-    'play-admin-cache',
-    {},
-  )
-
-  const play = async (isAdmin: boolean | undefined) => {
-    if (isAdmin !== undefined) {
-      isAdminRecord.update((v) => {
-        v[id] = isAdmin
-        return v
-      })
-    }
-    let _isAdmin: boolean = isAdmin ?? false
-    if (isAdmin === undefined) {
-      const cache = $isAdminRecord[id]
-      if (cache) {
-        _isAdmin = cache
-      }
-    }
-    try {
-      const processId = await commandPlayGame(id, _isAdmin)
-      startProcessMap.update((v) => {
-        if (processId) {
-          v[id] = processId
-        }
-        return v
-      })
-    }
-    catch (e) {
-      showErrorToast(e as string)
-    }
-  }
+  const { start } = useStart(workDetail)
 
   let isLike = $state(false)
 
@@ -117,13 +86,13 @@
   <div class='min-w-0 w-full flex flex-wrap items-center gap-4'>
     <PlayButton
       gameStatus={element.installStatus}
-      play={({ isAdmin }) => play(isAdmin)}
+      play={({ isAdmin }) => start(isAdmin === undefined ? 'default' : isAdmin ? 'admin' : 'user')}
       install={handleInstall}
     />
     <Button
       leftIcon='i-material-symbols-drive-file-rename-outline'
       text='Memo'
-      onclick={() => goto(`/memos/${id}?gamename=${name}`)}
+      onclick={() => goto(`/memos/${id}?gamename=${workDetail.title}`)}
     />
     <div class='ml-auto flex items-center gap-2'>
       <ButtonCancel
