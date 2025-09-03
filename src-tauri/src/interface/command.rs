@@ -14,11 +14,12 @@ use super::{
     module::{Modules, ModulesExt},
 };
 use domain::extension::{SyncStatus, ExtensionConfig};
-use domain::file::get_lnk_metadatas;
+use domain::windows::shell_link::ShellLink as _;
 use domain::windows::proctail::{
     HealthCheckResult, ProcTailEvent, ServiceStatus, WatchTarget,
 };
 use domain::windows::proctail_manager::{ProcTailManagerStatus, ProcTailVersion};
+use domain::windows::WindowsExt as _;
 use crate::{
     domain::{
         collection::{ScannedGameElement},
@@ -226,9 +227,10 @@ pub async fn upsert_collection_element(
     if let Some(path) = exe_path.clone() {
         _install_at = get_file_created_at_sync(&path);
     } else if let Some(path) = lnk_path.clone() {
-        let metadatas = get_lnk_metadatas(vec![path.as_str()])?;
+        let windows = crate::infrastructure::windowsimpl::windows::Windows::new();
+        let metadatas = windows.shell_link().get_lnk_metadatas(vec![path.clone()])?;
         let metadata = metadatas
-            .get(path.as_str())
+            .get(&path)
             .ok_or(anyhow::anyhow!("metadata cannot get"))?;
         println!(
             "metadata.path: {}, metadata.icon: {}",
@@ -338,23 +340,30 @@ pub async fn get_default_import_dirs() -> anyhow::Result<Vec<String>, CommandErr
 }
 
 #[tauri::command]
-pub async fn play_game(
+pub async fn list_work_lnks(
     modules: State<'_, Arc<Modules>>,
-    collection_element_id: i32,
+    work_id: i32,
+) -> anyhow::Result<Vec<(i32, String)>, CommandError> {
+    Ok(modules.work_use_case().list_work_lnks(work_id).await?)
+}
+
+#[tauri::command]
+pub async fn launch_work(
+    modules: State<'_, Arc<Modules>>,
     is_run_as_admin: bool,
+    work_lnk_id: i32,
 ) -> anyhow::Result<Option<u32>, CommandError> {
-    let element = modules
+    Ok(modules.work_use_case().launch_work(is_run_as_admin, work_lnk_id).await?)
+}
+
+#[tauri::command]
+pub async fn migrate_collection_paths_to_work_lnks(
+    modules: State<'_, Arc<Modules>>,
+) -> anyhow::Result<(), CommandError> {
+    Ok(modules
         .collection_use_case()
-        .get_element_by_element_id(&Id::new(collection_element_id))
-        .await?;
-    let process_id = modules
-        .file_use_case()
-        .start_game(element, is_run_as_admin)?;
-    modules
-        .collection_use_case()
-        .update_element_last_play_at(&Id::new(collection_element_id))
-        .await?;
-    Ok(process_id)
+        .migrate_collection_paths_to_work_lnks()
+        .await?)
 }
 
 #[tauri::command]
@@ -580,16 +589,20 @@ pub async fn get_game_candidates_by_name(
 }
 
 #[tauri::command]
-pub async fn get_exe_path_by_lnk(filepath: String) -> anyhow::Result<String, CommandError> {
+pub async fn get_exe_path_by_lnk(
+    _handle: AppHandle,
+    filepath: String,
+) -> anyhow::Result<String, CommandError> {
     if !filepath.to_lowercase().ends_with("lnk") {
         return Err(CommandError::Anyhow(anyhow::anyhow!(
             "filepath is not ends with lnk"
         )));
     }
 
-    let p: &str = &filepath;
-    let metadatas = get_lnk_metadatas(vec![p])?;
-    if let Some(meta) = metadatas.get(p) {
+    let p = filepath.clone();
+    let windows = crate::infrastructure::windowsimpl::windows::Windows::new();
+    let metadatas = windows.shell_link().get_lnk_metadatas(vec![p.clone()])?;
+    if let Some(meta) = metadatas.get(&p) {
         return Ok(meta.path.clone());
     } else {
         return Err(CommandError::Anyhow(anyhow::anyhow!(

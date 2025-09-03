@@ -24,6 +24,13 @@ impl AppConfigProvider for AppHandle {
     }
 }
 
+// DirsSavePathResolver の実装
+impl AppConfigProvider for DirsSavePathResolver {
+    fn get_app_config_dir(&self) -> String {
+        self.root_dir()
+    }
+}
+
 const PROCTAIL_DIR: &str = "proctail";
 const PROCTAIL_EXECUTABLE: &str = "ProcTail.Host.exe";
 const GITHUB_RELEASES_URL: &str = "https://api.github.com/repos/ryoha000/ProcTail/releases/latest";

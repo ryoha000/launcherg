@@ -30,10 +30,12 @@ mockall::mock! {
         type ProcessWindows = domain::windows::process::MockProcessWindows;
         type ProcTail = domain::windows::proctail::MockProcTail;
         type ProcTailManager = MockProcTailManagerTrait;
+        type ShellLink = domain::windows::shell_link::MockShellLink;
 
         fn process(&self) -> &domain::windows::process::MockProcessWindows;
         fn proctail(&self) -> &domain::windows::proctail::MockProcTail;
         fn proctail_manager(&self) -> &MockProcTailManagerTrait;
+        fn shell_link(&self) -> &domain::windows::shell_link::MockShellLink;
     }
 }
 

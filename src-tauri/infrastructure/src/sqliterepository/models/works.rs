@@ -76,3 +76,20 @@ impl TryFrom<crate::sqliterepository::models::works::WorkTable> for domain::work
 }
 
 
+#[derive(sqlx::FromRow, Clone)]
+pub struct WorkLnkRow {
+    pub id: i64,
+    pub work_id: i64,
+    pub lnk_path: String,
+}
+
+impl From<crate::sqliterepository::models::works::WorkLnkRow> for domain::repository::work_lnk::WorkLnk {
+    fn from(v: crate::sqliterepository::models::works::WorkLnkRow) -> Self {
+        domain::repository::work_lnk::WorkLnk {
+            id: domain::Id::new(v.id as i32),
+            work_id: domain::Id::new(v.work_id as i32),
+            lnk_path: v.lnk_path,
+        }
+    }
+}
+

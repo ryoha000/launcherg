@@ -3,8 +3,9 @@ use std::collections::BTreeMap;
 use domain::{repository::works::{WorkRepository, DmmWorkRepository, DlsiteWorkRepository}, works::{DlsiteWork, DmmWork, NewDlsiteWork, NewDmmWork, NewWork, Work, WorkDetails}, Id};
 use domain::collection::CollectionElement;
 use sqlx::query_as;
+use domain::repository::work_lnk::{WorkLnkRepository, WorkLnk as DomainWorkLnk, NewWorkLnk};
 
-use crate::sqliterepository::{models::works::{WorkDetailsRow, WorkTable}, sqliterepository::RepositoryImpl};
+use crate::sqliterepository::{models::works::{WorkDetailsRow, WorkTable, WorkLnkRow}, sqliterepository::RepositoryImpl};
 
 impl WorkRepository for RepositoryImpl<Work> {
     async fn upsert(&mut self, new_work: &NewWork) -> anyhow::Result<Id<Work>> {
@@ -370,5 +371,71 @@ impl DlsiteWorkRepository for RepositoryImpl<domain::works::DlsiteWork> {
             })
         }).await?;
         Ok(row.map(|t| t.try_into()).transpose()?)
+    }
+}
+
+impl WorkLnkRepository for RepositoryImpl<domain::repository::work_lnk::WorkLnk> {
+    async fn find_by_id(&mut self, id: Id<domain::repository::work_lnk::WorkLnk>) -> anyhow::Result<Option<DomainWorkLnk>> {
+        let idv = id.value as i64;
+        let row: Option<WorkLnkRow> = self.executor.with_conn(|conn| {
+            Box::pin(async move {
+                let row: Option<WorkLnkRow> = sqlx::query_as(
+                    r#"SELECT id, work_id, lnk_path FROM work_lnks WHERE id = ? LIMIT 1"#,
+                )
+                .bind(idv)
+                .fetch_optional(conn)
+                .await?;
+                Ok(row)
+            })
+        }).await?;
+        Ok(row.map(|r| r.into()))
+    }
+    async fn list_by_work_id(&mut self, work_id: Id<domain::works::Work>) -> anyhow::Result<Vec<DomainWorkLnk>> {
+        let idv = work_id.value as i64;
+        let rows: Vec<WorkLnkRow> = self.executor.with_conn(|conn| {
+            Box::pin(async move {
+                let rows: Vec<WorkLnkRow> = sqlx::query_as(
+                    r#"SELECT id, work_id, lnk_path FROM work_lnks WHERE work_id = ? ORDER BY id ASC"#,
+                )
+                .bind(idv)
+                .fetch_all(conn)
+                .await?;
+                Ok(rows)
+            })
+        }).await?;
+
+        Ok(rows.into_iter().map(|r| r.into()).collect())
+    }
+
+    async fn insert(&mut self, new_lnk: &NewWorkLnk) -> anyhow::Result<Id<domain::repository::work_lnk::WorkLnk>> {
+        let work_id = new_lnk.work_id.value as i64;
+        let lnk_path = new_lnk.lnk_path.clone();
+        let id: i64 = self.executor.with_conn(|conn| {
+            Box::pin(async move {
+                let (id,): (i64,) = sqlx::query_as(
+                    r#"INSERT INTO work_lnks (work_id, lnk_path) VALUES (?, ?) RETURNING id"#,
+                )
+                .bind(work_id)
+                .bind(lnk_path)
+                .fetch_one(conn)
+                .await?;
+                Ok::<i64, anyhow::Error>(id)
+            })
+        }).await?;
+
+        Ok(Id::new(id as i32))
+    }
+
+    async fn delete(&mut self, id: Id<domain::repository::work_lnk::WorkLnk>) -> anyhow::Result<()> {
+        let idv = id.value as i64;
+        self.executor.with_conn(|conn| {
+            Box::pin(async move {
+                sqlx::query(r#"DELETE FROM work_lnks WHERE id = ?"#)
+                    .bind(idv)
+                    .execute(conn)
+                    .await?;
+                Ok(())
+            })
+        }).await
     }
 }

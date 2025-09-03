@@ -5,7 +5,6 @@ pub struct LnkMetadata {
 }
 
 use std::{
-    collections::HashMap,
     fs,
     io::Write,
     sync::Arc,
@@ -18,13 +17,7 @@ use tauri_plugin_shell::process::CommandEvent;
 use tauri_plugin_shell::ShellExt;
 use walkdir::WalkDir;
 use windows::{
-    core::{ComInterface, PCWSTR},
-    Win32::{
-        Storage::FileSystem::WIN32_FIND_DATAW,
-        System::Com::{CoCreateInstance, CoInitialize, CoUninitialize, CLSCTX_INPROC_SERVER},
-        System::Com::{IPersistFile, STGM_READ},
-        UI::Shell::{IShellLinkW, ShellLink},
-    },
+    core::PCWSTR,
 };
 
 use crate::service::save_path_resolver::{SavePathResolver, DirsSavePathResolver};
@@ -33,9 +26,6 @@ use super::{
     collection::CollectionElement,
     Id,
 };
-
-// moved to infrastructure::thumbnail
-// use crate::infrastructure::thumbnail as thumb; // removed: thumbnail ops moved to infrastructure/usecase
 
 trait WString {
     #[allow(dead_code)]
@@ -112,57 +102,6 @@ fn get_ini_value(contents: &str, key: &str) -> Option<String> {
     } else {
         None
     }
-}
-
-pub fn get_lnk_metadatas(lnk_file_paths: Vec<&str>) -> anyhow::Result<HashMap<&str, LnkMetadata>> {
-    let mut metadatas = HashMap::new();
-
-    unsafe {
-        CoInitialize(None)?;
-
-        let mut target_path_vec: Vec<u16> = vec![0; 261];
-        let target_path_slice =
-            std::slice::from_raw_parts_mut(target_path_vec.as_mut_ptr(), target_path_vec.len());
-
-        for file_path in lnk_file_paths {
-            if file_path.to_lowercase().ends_with("lnk") {
-                let shell_link: IShellLinkW =
-                    CoCreateInstance(&ShellLink, None, CLSCTX_INPROC_SERVER)?;
-
-                let persist_file: IPersistFile = ComInterface::cast(&shell_link)?;
-                persist_file.Load(
-                    PCWSTR::from_raw(file_path.to_wide_null_terminated().as_ptr()),
-                    STGM_READ,
-                )?;
-
-                shell_link.GetPath(target_path_slice, &mut WIN32_FIND_DATAW::default(), 0)?;
-                let path = PCWSTR::from_raw(target_path_vec.as_mut_ptr())
-                    .to_string()?
-                    .clone();
-                shell_link.GetIconLocation(target_path_slice, &mut 0)?;
-                let icon = PCWSTR::from_raw(target_path_vec.as_mut_ptr())
-                    .to_string()?
-                    .clone();
-
-                metadatas.insert(file_path, LnkMetadata { path, icon });
-            } else if file_path.to_lowercase().ends_with("url") {
-                let icon_file = get_url_file_icon_path(file_path)?;
-
-                metadatas.insert(
-                    file_path,
-                    LnkMetadata {
-                        path: file_path.to_string(),
-                        icon: icon_file.unwrap_or_default(),
-                    },
-                );
-            } else {
-                return Err(anyhow::anyhow!("{} is not end lnk|url", file_path));
-            }
-        }
-
-        CoUninitialize();
-    }
-    Ok(metadatas)
 }
 
 // (icons dir constant is no longer used; path resolution is centralized in SavePathResolver)
@@ -286,100 +225,6 @@ pub struct PlayHistory {
     pub start_date: String,
 }
 
-fn get_lnk_start_process_script(is_run_as_admin: bool, lnk_path: &str) -> String {
-    let verb = if is_run_as_admin { "-Verb RunAs" } else { "" };
-    format!(
-        "
-    chcp 65001 | Out-Null
-    filter Get-Shortcut()
-    {{
-        $shl  = new-object -comobject WScript.Shell
-        return $shl.CreateShortcut($_)
-    }}
-    $shortcut_info = (\"{}\" | Get-Shortcut)
-
-    $params = @{{
-        'FilePath' = $shortcut_info.TargetPath
-    }}
-
-    # Check if WorkingDirectory exists and is not empty
-    if ($null -ne $shortcut_info.WorkingDirectory -and $shortcut_info.WorkingDirectory -ne '') {{
-        $params['WorkingDirectory'] = $shortcut_info.WorkingDirectory
-    }}
-
-    # Check if Arguments exists and is not empty
-    if ($null -ne $shortcut_info.Arguments -and $shortcut_info.Arguments -ne '') {{
-        $params['ArgumentList'] = $shortcut_info.Arguments
-    }}
-
-    $process = Start-Process @params {} -PassThru
-    echo $process.Id
-    ",
-        lnk_path, verb
-    )
-}
-
-fn get_exe_start_process_script(is_run_as_admin: bool, exe_path: &str) -> String {
-    let verb = if is_run_as_admin { "-Verb RunAs" } else { "" };
-    let exe_dir = std::path::Path::new(exe_path)
-        .parent()
-        .map(|v| v.to_string_lossy().to_string())
-        .unwrap_or_default();
-    format!(
-        "
-    chcp 65001 | Out-Null
-    Set-Location \"{}\" | Out-Null
-    $process = Start-Process \"{}\" {} -PassThru
-    echo $process.Id
-    ",
-        exe_dir, exe_path, verb
-    )
-}
-
-pub fn start_process(
-    is_run_as_admin: bool,
-    exe_path: Option<String>,
-    lnk_path: Option<String>,
-) -> anyhow::Result<Option<u32>> {
-    if exe_path.is_some() && lnk_path.is_some() {
-        return Err(anyhow::anyhow!(
-            "Both exe_path and lnk_path are provided. Only one should be provided.",
-        ));
-    }
-
-    let script: String;
-    if let Some(path) = exe_path {
-        script = get_exe_start_process_script(is_run_as_admin, &path);
-    } else if let Some(path) = lnk_path {
-        script = get_lnk_start_process_script(is_run_as_admin, &path);
-    } else {
-        return Err(anyhow::anyhow!(
-            "Neither exe_path nor lnk_path are provided."
-        ));
-    }
-
-    log::info!("[start processs] script: {}", script);
-
-    // PowerShellでスクリプトを実行
-    let output = std::process::Command::new("powershell")
-        .arg("-ExecutionPolicy")
-        .arg("Bypass")
-        .arg("-Command")
-        .arg(&script)
-        .output()?;
-
-    if !output.status.success() {
-        return Err(anyhow::anyhow!(
-            "PowerShell script failed with error: {}",
-            String::from_utf8_lossy(&output.stderr)
-        ));
-    }
-    let process_id = String::from_utf8_lossy(&output.stdout);
-    let process_id = process_id.trim().parse::<u32>().ok();
-
-    Ok(process_id)
-}
-
 pub fn get_file_created_at_sync(path: &str) -> Option<DateTime<Local>> {
     let metadata = fs::metadata(path).ok();
     metadata.and_then(|meta| {
@@ -388,5 +233,3 @@ pub fn get_file_created_at_sync(path: &str) -> Option<DateTime<Local>> {
             .and_then(|time| Some(DateTime::from(time)))
     })
 }
-
-// (thumbnails dir constant is no longer used; path resolution is centralized in SavePathResolver)

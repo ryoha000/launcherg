@@ -46,8 +46,12 @@ fn main() {
                 std::fs::remove_dir_all(src_dir).unwrap();
             }
 
-            let modules = Arc::new(block_on(Modules::new(app.handle())));
+            let modules = Arc::new(block_on(Modules::new(&app.handle())));
             app.manage(modules);
+
+            // migration: collection_element_paths -> work_lnks
+            // ベストエフォートで起動時に1回だけ実行
+            // 移行は usecase 経由でユーザー操作時に別コマンド化予定。起動時は何もしない。
 
             Ok(())
         })
@@ -67,7 +71,7 @@ fn main() {
             command::upsert_collection_element,
             command::update_collection_element_icon,
             command::get_default_import_dirs,
-            command::play_game,
+            // command::play_game, // removed
             command::get_play_time_minutes,
             command::get_collection_element,
             command::delete_collection_element,
@@ -121,6 +125,9 @@ fn main() {
             command::work_pack_add,
             command::work_pack_remove,
             command::work_pack_all,
+            command::list_work_lnks,
+            command::launch_work,
+            command::migrate_collection_paths_to_work_lnks,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

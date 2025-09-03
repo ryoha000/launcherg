@@ -29,6 +29,7 @@ tmp/*
 
 *.exe
 *.bin
+src-tauri/bin/*.lnk
 
 # Native Messaging Host generated files
 native-messaging-manifest-installed.json

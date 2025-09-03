@@ -15,6 +15,7 @@ mockall::mock! {
         type WorkRepo = domain::repository::works::MockWorkRepository;
         type WorkParentPacksRepo = domain::repository::work_parent_packs::MockWorkParentPacksRepository;
         type WorkDownloadPathRepo = domain::repository::work_download_path::MockWorkDownloadPathRepository;
+        type WorkLnkRepo = domain::repository::work_lnk::MockWorkLnkRepository;
         fn work(&self) -> domain::repository::works::MockWorkRepository;
         fn dmm_work(&self) -> domain::repository::works::MockDmmWorkRepository;
         fn dlsite_work(&self) -> domain::repository::works::MockDlsiteWorkRepository;
@@ -27,6 +28,7 @@ mockall::mock! {
         fn dmm_pack(&self) -> domain::repository::dmm_work_pack::MockDmmPackRepository;
         fn collection(&self) -> domain::repository::collection::MockCollectionRepository;
         fn work_download_path(&self) -> domain::repository::work_download_path::MockWorkDownloadPathRepository;
+        fn work_lnk(&self) -> domain::repository::work_lnk::MockWorkLnkRepository;
     }
 }
 
@@ -45,6 +47,7 @@ pub struct TestRepositories {
     pub work: std::sync::Arc<tauri::async_runtime::Mutex<domain::repository::works::MockWorkRepository>>,
     pub work_parent_packs: std::sync::Arc<tauri::async_runtime::Mutex<domain::repository::work_parent_packs::MockWorkParentPacksRepository>>,
     pub work_download_path: std::sync::Arc<tauri::async_runtime::Mutex<domain::repository::work_download_path::MockWorkDownloadPathRepository>>,
+    pub work_lnk: std::sync::Arc<tauri::async_runtime::Mutex<domain::repository::work_lnk::MockWorkLnkRepository>>,
 }
 
 #[cfg(test)]
@@ -63,6 +66,7 @@ impl Default for TestRepositories {
             work: std::sync::Arc::new(tauri::async_runtime::Mutex::new(Default::default())),
             work_parent_packs: std::sync::Arc::new(tauri::async_runtime::Mutex::new(Default::default())),
             work_download_path: std::sync::Arc::new(tauri::async_runtime::Mutex::new(Default::default())),
+            work_lnk: std::sync::Arc::new(tauri::async_runtime::Mutex::new(Default::default())),
         }
     }
 }
@@ -81,6 +85,7 @@ impl domain::repository::RepositoriesExt for TestRepositories {
     type DmmPackRepo = TestRepositories;
     type CollectionRepo = TestRepositories;
     type WorkDownloadPathRepo = TestRepositories;
+    type WorkLnkRepo = TestRepositories;
     fn work(&self) -> Self::WorkRepo { self.clone() }
     fn dmm_work(&self) -> Self::DmmWorkRepo { self.clone() }
     fn dlsite_work(&self) -> Self::DlsiteWorkRepo { self.clone() }
@@ -93,6 +98,7 @@ impl domain::repository::RepositoriesExt for TestRepositories {
     fn dmm_pack(&self) -> Self::DmmPackRepo { self.clone() }
     fn collection(&self) -> Self::CollectionRepo { self.clone() }
     fn work_download_path(&self) -> Self::WorkDownloadPathRepo { self.clone() }
+    fn work_lnk(&self) -> Self::WorkLnkRepo { self.clone() }
 }
 
 // Forward implementations to inner mocks (Arc<Mutex<...>>)
@@ -215,6 +221,14 @@ impl domain::repository::work_download_path::WorkDownloadPathRepository for Test
     async fn add(&mut self, work_id: domain::Id<domain::works::Work>, download_path: &str) -> anyhow::Result<()> { self.work_download_path.lock().await.add(work_id, download_path).await }
     async fn list_by_work(&mut self, work_id: domain::Id<domain::works::Work>) -> anyhow::Result<Vec<domain::work_download_path::WorkDownloadPath>> { self.work_download_path.lock().await.list_by_work(work_id).await }
     async fn latest_by_work(&mut self, work_id: domain::Id<domain::works::Work>) -> anyhow::Result<Option<domain::work_download_path::WorkDownloadPath>> { self.work_download_path.lock().await.latest_by_work(work_id).await }
+}
+
+#[cfg(test)]
+impl domain::repository::work_lnk::WorkLnkRepository for TestRepositories {
+    async fn find_by_id(&mut self, id: domain::Id<domain::repository::work_lnk::WorkLnk>) -> anyhow::Result<Option<domain::repository::work_lnk::WorkLnk>> { self.work_lnk.lock().await.find_by_id(id).await }
+    async fn list_by_work_id(&mut self, work_id: domain::Id<domain::works::Work>) -> anyhow::Result<Vec<domain::repository::work_lnk::WorkLnk>> { self.work_lnk.lock().await.list_by_work_id(work_id).await }
+    async fn insert(&mut self, new_lnk: &domain::repository::work_lnk::NewWorkLnk) -> anyhow::Result<domain::Id<domain::repository::work_lnk::WorkLnk>> { self.work_lnk.lock().await.insert(new_lnk).await }
+    async fn delete(&mut self, id: domain::Id<domain::repository::work_lnk::WorkLnk>) -> anyhow::Result<()> { self.work_lnk.lock().await.delete(id).await }
 }
 
 // Test RepositoryManager

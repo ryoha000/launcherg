@@ -15,15 +15,18 @@ use domain::{
     collection::{CollectionElement, ScannedGameElement},
     distance::get_comparable_distance,
     file::{
-        get_file_paths_by_exts, get_lnk_metadatas,
-        normalize, start_process,
+        get_file_paths_by_exts,
+        normalize,
     },
     Id,
 };
+use domain::windows::WindowsExt;
+use domain::windows::shell_link::ShellLink as _;
 
 #[derive(new)]
-pub struct FileUseCase {
+pub struct FileUseCase<W: WindowsExt + Send + Sync + 'static> {
     resolver: Arc<dyn SavePathResolver>,
+    windows: Arc<W>,
 }
 
 type FilePathString = String;
@@ -80,7 +83,7 @@ fn emit_progress_with_time<P: PubSubService>(
     )
 }
 
-impl FileUseCase {
+impl<W: WindowsExt + Send + Sync + 'static> FileUseCase<W> {
     pub async fn concurency_get_file_paths(
         &self,
         explore_dir_paths: Vec<String>,
@@ -216,11 +219,10 @@ impl FileUseCase {
             ".lnk, .exe ファイルのゲームとの紐づけが完了しました。",
         )?;
 
-        let lnk_path_vec: Vec<&str> = lnk_id_path_vec
-            .iter()
-            .map(|(_, lnk_path)| lnk_path.as_str())
-            .collect();
-        let lnk_metadatas = get_lnk_metadatas(lnk_path_vec)?;
+        let lnk_metadatas = self
+            .windows
+            .shell_link()
+            .get_lnk_metadatas(lnk_id_path_vec.iter().map(|(_, p)| p.clone()).collect())?;
         if lnk_id_path_vec.len() != lnk_metadatas.len() {
             pubsub.notify("progress", ProgressPayload::new(format!(
                 "lnk ファイルの数と lnk のターゲットファイルの数が一致しません。リンクファイル数: {}, ターゲットファイル数: {}", lnk_id_path_vec.len(), lnk_metadatas.len()
@@ -274,28 +276,6 @@ impl FileUseCase {
         let mut file = std::fs::File::create(&path)?;
         file.write_all(&decoded_data)?;
         Ok(path)
-    }
-    pub fn start_game(
-        &self,
-        collection_element: CollectionElement,
-        is_run_as_admin: bool,
-    ) -> anyhow::Result<Option<u32>> {
-        let (exe_path, lnk_path) = if let Some(paths) = &collection_element.paths {
-            (paths.exe_path.clone(), paths.lnk_path.clone())
-        } else {
-            return Err(anyhow::anyhow!(
-                "ゲームの実行ファイルパスが設定されていません。ゲームを再スキャンしてください。"
-            ));
-        };
-
-        // 両方のパスがNoneの場合もエラー
-        if exe_path.is_none() && lnk_path.is_none() {
-            return Err(anyhow::anyhow!(
-                "ゲームの実行ファイルパスが設定されていません。ゲームを再スキャンしてください。"
-            ));
-        }
-
-        start_process(is_run_as_admin, exe_path, lnk_path)
     }
     pub fn get_play_time_minutes(
         &self,

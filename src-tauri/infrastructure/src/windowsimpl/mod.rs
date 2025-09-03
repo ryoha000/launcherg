@@ -7,3 +7,6 @@ mod proctail_manager_test;
 mod proctail_test;
 mod screenshot;
 pub mod windows;
+pub mod shell_link;
+#[cfg(test)]
+mod tests;

@@ -29,18 +29,17 @@ use crate::{
 };
 
 pub struct Modules {
-    repositories: Arc<SqliteRepositoryManager>,
-    collection_use_case: CollectionUseCase<SqliteRepositoryManager, SqliteRepositories, ThumbnailServiceImpl>,
+    collection_use_case: CollectionUseCase<SqliteRepositoryManager, SqliteRepositories, ThumbnailServiceImpl, Windows>,
     explored_cache_use_case: ExploredCacheUseCase<SqliteRepositoryManager, SqliteRepositories>,
     extension_manager_use_case: ExtensionManagerUseCase<PubSub, NativeMessagingHostClientFactoryImpl>,
-    file_use_case: FileUseCase,
+    file_use_case: FileUseCase<Windows>,
     all_game_cache_use_case: AllGameCacheUseCase<SqliteRepositoryManager, SqliteRepositories>,
     process_use_case: ProcessUseCase<Windows>,
-    image_use_case: ImageUseCase<ThumbnailServiceImpl, TauriIconServiceImpl>,
+    image_use_case: ImageUseCase<ThumbnailServiceImpl, TauriIconServiceImpl, Windows>,
     work_omit_use_case: WorkOmitUseCase<SqliteRepositoryManager, SqliteRepositories>,
     host_log_use_case: HostLogUseCase<SqliteRepositoryManager, SqliteRepositories>,
     dmm_pack_use_case: DmmPackUseCase<SqliteRepositoryManager, SqliteRepositories>,
-    work_use_case: WorkUseCase<SqliteRepositoryManager, SqliteRepositories>,
+    work_use_case: WorkUseCase<SqliteRepositoryManager, SqliteRepositories, Windows>,
     pubsub: PubSub,
 }
 pub trait ModulesExt {
@@ -48,18 +47,17 @@ pub trait ModulesExt {
     type Windows: WindowsExt;
     type PubSub: PubSubExt + PubSubService;
 
-    fn repositories(&self) -> &Self::Repositories;
-    fn collection_use_case(&self) -> &CollectionUseCase<SqliteRepositoryManager, SqliteRepositories, ThumbnailServiceImpl>;
+    fn collection_use_case(&self) -> &CollectionUseCase<SqliteRepositoryManager, SqliteRepositories, ThumbnailServiceImpl, Windows>;
     fn explored_cache_use_case(&self) -> &ExploredCacheUseCase<SqliteRepositoryManager, SqliteRepositories>;
     fn extension_manager_use_case(&self) -> &ExtensionManagerUseCase<Self::PubSub, NativeMessagingHostClientFactoryImpl>;
     fn all_game_cache_use_case(&self) -> &AllGameCacheUseCase<SqliteRepositoryManager, SqliteRepositories>;
-    fn file_use_case(&self) -> &FileUseCase;
+    fn file_use_case(&self) -> &FileUseCase<Windows>;
     fn process_use_case(&self) -> &ProcessUseCase<Self::Windows>;
-    fn image_use_case(&self) -> &ImageUseCase<ThumbnailServiceImpl, TauriIconServiceImpl>;
+    fn image_use_case(&self) -> &ImageUseCase<ThumbnailServiceImpl, TauriIconServiceImpl, Windows>;
     fn work_omit_use_case(&self) -> &WorkOmitUseCase<SqliteRepositoryManager, SqliteRepositories>;
     fn host_log_use_case(&self) -> &HostLogUseCase<SqliteRepositoryManager, SqliteRepositories>;
     fn dmm_pack_use_case(&self) -> &DmmPackUseCase<SqliteRepositoryManager, SqliteRepositories>;
-    fn work_use_case(&self) -> &WorkUseCase<SqliteRepositoryManager, SqliteRepositories>;
+    fn work_use_case(&self) -> &WorkUseCase<SqliteRepositoryManager, SqliteRepositories, Windows>;
     fn pubsub(&self) -> &Self::PubSub;
 }
 
@@ -68,8 +66,7 @@ impl ModulesExt for Modules {
     type Windows = Windows;
     type PubSub = PubSub;
 
-    fn repositories(&self) -> &Self::Repositories { unimplemented!() }
-    fn collection_use_case(&self) -> &CollectionUseCase<SqliteRepositoryManager, SqliteRepositories, ThumbnailServiceImpl> {
+    fn collection_use_case(&self) -> &CollectionUseCase<SqliteRepositoryManager, SqliteRepositories, ThumbnailServiceImpl, Windows> {
         &self.collection_use_case
     }
     fn explored_cache_use_case(&self) -> &ExploredCacheUseCase<SqliteRepositoryManager, SqliteRepositories> {
@@ -81,19 +78,19 @@ impl ModulesExt for Modules {
     fn all_game_cache_use_case(&self) -> &AllGameCacheUseCase<SqliteRepositoryManager, SqliteRepositories> {
         &self.all_game_cache_use_case
     }
-    fn file_use_case(&self) -> &FileUseCase {
+    fn file_use_case(&self) -> &FileUseCase<Windows> {
         &self.file_use_case
     }
     fn process_use_case(&self) -> &ProcessUseCase<Self::Windows> {
         &self.process_use_case
     }
-    fn image_use_case(&self) -> &ImageUseCase<ThumbnailServiceImpl, TauriIconServiceImpl> {
+    fn image_use_case(&self) -> &ImageUseCase<ThumbnailServiceImpl, TauriIconServiceImpl, Windows> {
         &self.image_use_case
     }
     fn work_omit_use_case(&self) -> &WorkOmitUseCase<SqliteRepositoryManager, SqliteRepositories> { &self.work_omit_use_case }
     fn host_log_use_case(&self) -> &HostLogUseCase<SqliteRepositoryManager, SqliteRepositories> { &self.host_log_use_case }
     fn dmm_pack_use_case(&self) -> &DmmPackUseCase<SqliteRepositoryManager, SqliteRepositories> { &self.dmm_pack_use_case }
-    fn work_use_case(&self) -> &WorkUseCase<SqliteRepositoryManager, SqliteRepositories> { &self.work_use_case }
+    fn work_use_case(&self) -> &WorkUseCase<SqliteRepositoryManager, SqliteRepositories, Windows> { &self.work_use_case }
     fn pubsub(&self) -> &Self::PubSub {
         &self.pubsub
     }
@@ -104,31 +101,30 @@ impl Modules {
         let db = Db::new(handle).await;
 
         let repo_manager = Arc::new(SqliteRepositoryManager::new(db.pool_arc()));
-        let windows = Arc::new(Windows::new(Arc::new(handle.clone())));
+        let windows = Arc::new(Windows::new());
         let pubsub = PubSub::new(Arc::new(handle.clone()));
         let resolver = Arc::new(DirsSavePathResolver::default());
 
         let thumbs = Arc::new(ThumbnailServiceImpl::new(resolver.clone()));
         let icons = TauriIconServiceImpl::new_from_app_handle(Arc::new(handle.clone()));
 
-        let collection_use_case = CollectionUseCase::new(repo_manager.clone(), resolver.clone(), thumbs.clone());
+        let collection_use_case = CollectionUseCase::new(repo_manager.clone(), resolver.clone(), thumbs.clone(), windows.clone());
         let explored_cache_use_case = ExploredCacheUseCase::new(repo_manager.clone());
         let extension_manager_use_case = ExtensionManagerUseCase::new(pubsub.clone(), Arc::new(NativeMessagingHostClientFactoryImpl));
         let all_game_cache_use_case: AllGameCacheUseCase<SqliteRepositoryManager, SqliteRepositories> =
             AllGameCacheUseCase::new(repo_manager.clone());
 
-        let file_use_case: FileUseCase = FileUseCase::new(resolver.clone());
+        let file_use_case: FileUseCase<Windows> = FileUseCase::new(resolver.clone(), windows.clone());
 
         let process_use_case: ProcessUseCase<Windows> = ProcessUseCase::new(windows.clone());
 
-        let image_use_case: ImageUseCase<ThumbnailServiceImpl, TauriIconServiceImpl> = ImageUseCase::new(thumbs.clone(), Arc::new(icons), resolver.clone());
+        let image_use_case: ImageUseCase<ThumbnailServiceImpl, TauriIconServiceImpl, Windows> = ImageUseCase::new(thumbs.clone(), Arc::new(icons), resolver.clone(), windows.clone());
         let work_omit_use_case: WorkOmitUseCase<SqliteRepositoryManager, SqliteRepositories> = WorkOmitUseCase::new(repo_manager.clone());
         let host_log_use_case: HostLogUseCase<SqliteRepositoryManager, SqliteRepositories> = HostLogUseCase::new(repo_manager.clone());
         let dmm_pack_use_case: DmmPackUseCase<SqliteRepositoryManager, SqliteRepositories> = DmmPackUseCase::new(repo_manager.clone());
-        let work_use_case: WorkUseCase<SqliteRepositoryManager, SqliteRepositories> = WorkUseCase::new(repo_manager.clone());
+        let work_use_case: WorkUseCase<SqliteRepositoryManager, SqliteRepositories, Windows> = WorkUseCase::new(repo_manager.clone(), windows.clone());
 
         Self {
-            repositories: repo_manager,
             collection_use_case,
             explored_cache_use_case,
             extension_manager_use_case,

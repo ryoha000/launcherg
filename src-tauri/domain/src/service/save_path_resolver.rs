@@ -7,6 +7,7 @@ pub trait SavePathResolver {
 	fn icons_dir(&self) -> String { self.join_and_ensure("game-icons") }
 	fn thumbnails_dir(&self) -> String { self.join_and_ensure("thumbnails") }
 	fn screenshots_dir(&self) -> String { self.join_and_ensure("screenshots") }
+	fn lnks_dir(&self) -> String { self.join_and_ensure("lnks") }
 	fn memos_dir(&self) -> String { self.join_and_ensure("game-memos") }
 	fn play_histories_dir(&self) -> String { self.join_and_ensure("play-histories") }
 	fn db_file_path(&self) -> String { PathBuf::from(self.root_dir()).join("launcherg_sqlite.db3").to_string_lossy().to_string() }
@@ -34,6 +35,11 @@ pub trait SavePathResolver {
 	fn memo_image_new_png_path(&self, id: i32) -> String {
 		let dir = PathBuf::from(self.memo_image_dir(id));
 		dir.join(format!("{}.png", uuid::Uuid::new_v4().to_string())).to_string_lossy().to_string()
+	}
+
+	fn lnk_new_path(&self, work_id: i32) -> String {
+		let dir = PathBuf::from(self.lnks_dir());
+		dir.join(format!("{}-{}.lnk", work_id, uuid::Uuid::new_v4().to_string())).to_string_lossy().to_string()
 	}
 
 	// Generate screenshot file path with name-timestamp under screenshots dir (directory ensured)

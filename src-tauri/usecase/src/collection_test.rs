@@ -13,6 +13,7 @@ mod tests {
     };
     use crate::repositorymock::TestRepositories;
     use crate::{collection::CollectionUseCase, error::UseCaseError};
+    use crate::windowsmock::MockWindowsExtMock;
 
     fn create_test_element_id(id: i32) -> Id<CollectionElement> {
         Id::new(id)
@@ -80,9 +81,9 @@ mod tests {
         }
     }
 
-    fn setup_use_case(mock_repositories: TestRepositories) -> CollectionUseCase<crate::repositorymock::TestRepositoryManager, TestRepositories, MockThumbnailService> {
+    fn setup_use_case(mock_repositories: TestRepositories) -> CollectionUseCase<crate::repositorymock::TestRepositoryManager, TestRepositories, MockThumbnailService, MockWindowsExtMock> {
         let resolver = Arc::new(DirsSavePathResolver::default());
-        let use_case = CollectionUseCase::new(Arc::new(crate::repositorymock::TestRepositoryManager::new(mock_repositories)), resolver.clone(), Arc::new(MockThumbnailService::new()));
+        let use_case = CollectionUseCase::new(Arc::new(crate::repositorymock::TestRepositoryManager::new(mock_repositories)), resolver.clone(), Arc::new(MockThumbnailService::new()), Arc::new(MockWindowsExtMock::new()));
         use_case
     }
 
@@ -148,11 +149,6 @@ mod tests {
             .times(1)
             .returning(|_, _| Box::pin(async move { Ok::<_, anyhow::Error>(()) }));
         mock_repo
-            .expect_upsert_collection_element_paths()
-            .with(always())
-            .times(1)
-            .returning(|_| Box::pin(async move { Ok::<_, anyhow::Error>(()) }));
-        mock_repo
             .expect_upsert_collection_element_install()
             .with(always())
             .times(1)
@@ -160,6 +156,34 @@ mod tests {
 
         let mut mock_repositories = TestRepositories::default();
         mock_repositories.collection = Arc::new(tauri::async_runtime::Mutex::new(mock_repo));
+
+        // work_id 解決と work_lnk 登録のモック
+        let mut mock_work = domain::repository::works::MockWorkRepository::new();
+        mock_work
+            .expect_find_details_by_collection_element_id()
+            .times(1)
+            .returning(|_| {
+                Box::pin(async move {
+                    Ok::<_, anyhow::Error>(Some(domain::works::WorkDetails::new(
+                        domain::works::Work::new(domain::Id::new(1), "Game 1".to_string()),
+                        None,
+                        None,
+                        Some(domain::Id::new(100)),
+                        None,
+                        false,
+                        false,
+                        None,
+                    )))
+                })
+            });
+        mock_repositories.work = Arc::new(tauri::async_runtime::Mutex::new(mock_work));
+
+        let mut mock_work_lnk = domain::repository::work_lnk::MockWorkLnkRepository::new();
+        mock_work_lnk
+            .expect_insert()
+            .times(1)
+            .returning(|_| Box::pin(async move { Ok::<_, anyhow::Error>(domain::Id::new(1)) }));
+        mock_repositories.work_lnk = Arc::new(tauri::async_runtime::Mutex::new(mock_work_lnk));
 
         let use_case = setup_use_case(mock_repositories);
         let element = create_test_scanned_game_element(1);
@@ -399,10 +423,7 @@ mod tests {
             .expect_upsert_erogamescape_map()
             .times(2)
             .returning(|_, _| Box::pin(async move { Ok::<_, anyhow::Error>(()) }));
-        mock_repo
-            .expect_upsert_collection_element_paths()
-            .times(2)
-            .returning(|_| Box::pin(async move { Ok::<_, anyhow::Error>(()) }));
+        // パス保存は work_lnks に移行
         mock_repo
             .expect_upsert_collection_element_install()
             .times(2)
@@ -410,6 +431,33 @@ mod tests {
 
         let mut mock_repositories = TestRepositories::default();
         mock_repositories.collection = Arc::new(tauri::async_runtime::Mutex::new(mock_repo));
+
+        let mut mock_work = domain::repository::works::MockWorkRepository::new();
+        mock_work
+            .expect_find_details_by_collection_element_id()
+            .times(2)
+            .returning(|_| {
+                Box::pin(async move {
+                    Ok::<_, anyhow::Error>(Some(domain::works::WorkDetails::new(
+                        domain::works::Work::new(domain::Id::new(1), "Game X".to_string()),
+                        None,
+                        None,
+                        Some(domain::Id::new(100)),
+                        None,
+                        false,
+                        false,
+                        None,
+                    )))
+                })
+            });
+        mock_repositories.work = Arc::new(tauri::async_runtime::Mutex::new(mock_work));
+
+        let mut mock_work_lnk = domain::repository::work_lnk::MockWorkLnkRepository::new();
+        mock_work_lnk
+            .expect_insert()
+            .times(2)
+            .returning(|_| Box::pin(async move { Ok::<_, anyhow::Error>(domain::Id::new(1)) }));
+        mock_repositories.work_lnk = Arc::new(tauri::async_runtime::Mutex::new(mock_work_lnk));
 
         let use_case = setup_use_case(mock_repositories);
         let elements = vec![

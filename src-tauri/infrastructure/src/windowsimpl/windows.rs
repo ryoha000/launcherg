@@ -5,9 +5,10 @@ use std::sync::Arc;
 use domain::{
     process::Process, windows::WindowsExt,
 };
+use crate::windowsimpl::shell_link::ShellLinkImpl;
 use crate::windowsimpl::proctail::ProcTailImpl;
-use crate::windowsimpl::proctail_manager::AppHandleProcTailManager;
-use tauri::AppHandle;
+use crate::windowsimpl::proctail_manager::ProcTailManager;
+use domain::service::save_path_resolver::DirsSavePathResolver;
 
 #[derive(new)]
 pub struct WindowsImpl<T> {
@@ -17,13 +18,15 @@ pub struct WindowsImpl<T> {
 pub struct Windows {
     process: WindowsImpl<Process>,
     proctail: ProcTailImpl,
-    proctail_manager: AppHandleProcTailManager,
+    proctail_manager: ProcTailManager<DirsSavePathResolver>,
+    shell_link: ShellLinkImpl,
 }
 
 impl WindowsExt for Windows {
     type ProcessWindows = WindowsImpl<Process>;
     type ProcTail = ProcTailImpl;
-    type ProcTailManager = AppHandleProcTailManager;
+    type ProcTailManager = ProcTailManager<DirsSavePathResolver>;
+    type ShellLink = ShellLinkImpl;
 
     fn process(&self) -> &Self::ProcessWindows {
         &self.process
@@ -36,18 +39,22 @@ impl WindowsExt for Windows {
     fn proctail_manager(&self) -> &Self::ProcTailManager {
         &self.proctail_manager
     }
+
+    fn shell_link(&self) -> &Self::ShellLink { &self.shell_link }
 }
 
 impl Windows {
-    pub fn new(app_handle: Arc<AppHandle>) -> Self {
+    pub fn new() -> Self {
         let process = WindowsImpl::new();
         let proctail = ProcTailImpl::new();
-        let proctail_manager = AppHandleProcTailManager::new(app_handle);
+        let proctail_manager = ProcTailManager::new(Arc::new(DirsSavePathResolver::default()));
+        let shell_link = ShellLinkImpl::new();
 
         Self {
             process,
             proctail,
             proctail_manager,
+            shell_link,
         }
     }
 }

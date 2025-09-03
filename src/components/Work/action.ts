@@ -1,6 +1,6 @@
 import type { WorkDetailsVm } from '@/lib/command'
 import { get } from 'svelte/store'
-import { commandPlayGame } from '@/lib/command'
+import { commandLaunchWork, commandListWorkLnks } from '@/lib/command'
 import { showErrorToast } from '@/lib/toast'
 import { localStorageWritable } from '@/lib/utils'
 import { startProcessMap } from '@/store/startProcessMap'
@@ -11,9 +11,9 @@ export function useStart(workDetail: WorkDetailsVm) {
     {},
   )
 
-  const updateRunAsForCollectionElement = (collectionElementId: number, runAs: 'admin' | 'user') => {
+  const updateRunAsForWork = (workId: number, runAs: 'admin' | 'user') => {
     isAdminRecord.update((v) => {
-      v[collectionElementId] = runAs === 'admin'
+      v[workId] = runAs === 'admin'
       return v
     })
   }
@@ -25,15 +25,13 @@ export function useStart(workDetail: WorkDetailsVm) {
   }
 
   const start = async (runAs: 'admin' | 'user' | 'default') => {
-    const collectionElementId = workDetail.collectionElementId
-    if (!collectionElementId) {
-      throw new Error('collectionElementId is not set')
+    const workId = workDetail.id
+    if (!workId) {
+      throw new Error('workId is not set')
     }
     // runAs に指定があれば、次からの runAs === 'default' ではその権限で実行する
     if (runAs === 'admin' || runAs === 'user') {
-      if (collectionElementId) {
-        updateRunAsForCollectionElement(collectionElementId, runAs)
-      }
+      updateRunAsForWork(workId, runAs)
     }
 
     // 過去に実行された権限の記録もなく、runAs も default の場合は user で実行する
@@ -46,8 +44,8 @@ export function useStart(workDetail: WorkDetailsVm) {
         isAdmin = false
         break
       case 'default': {
-        if (collectionElementId) {
-          const cache = get(isAdminRecord)[collectionElementId]
+        if (workId) {
+          const cache = get(isAdminRecord)[workId]
           if (cache) {
             isAdmin = cache
           }
@@ -59,10 +57,15 @@ export function useStart(workDetail: WorkDetailsVm) {
     }
 
     try {
-      // TODO: これからは実行可能なものが複数存在するケースも発生しうるため、複数ある場合はダイアログから選ばせる。引数でそのパスだかそのパスのIDだかを受け取る
-      const processId = await commandPlayGame(collectionElementId, isAdmin)
+      // TODO: これからは実行可能なものが複数存在するケースも発生しうるため、複数ある場合はダイアログから選ばせる。現状は最初の lnk を取得して起動
+      const list = await commandListWorkLnks(workId)
+      if (!list || list.length === 0) {
+        throw new Error('起動可能なショートカットが登録されていません')
+      }
+      const [lnkId] = list[0]
+      const processId = await commandLaunchWork(isAdmin, lnkId)
       if (processId) {
-        updateStartProcess(collectionElementId, processId)
+        updateStartProcess(workId, processId)
       }
     }
     catch (e) {

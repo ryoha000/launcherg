@@ -23,6 +23,7 @@ mod work_parent_packs_test;
 mod dmm_work_pack_test;
 mod collection_test;
 mod works_extra_test;
+mod work_lnk_test;
 
 pub struct TestDatabase {
     pub pool: Pool<Sqlite>,

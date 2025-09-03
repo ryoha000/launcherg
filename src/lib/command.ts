@@ -66,11 +66,15 @@ export async function commandGetDefaultImportDirs() {
   return await invoke<string[]>('get_default_import_dirs', {})
 }
 
-export async function commandPlayGame(collectionElementId: number, isRunAsAdmin: boolean) {
-  return await invoke<number | null>('play_game', {
-    collectionElementId,
+export async function commandLaunchWork(isRunAsAdmin: boolean, workLnkId: number) {
+  return await invoke<number | null>('launch_work', {
     isRunAsAdmin,
+    workLnkId,
   })
+}
+
+export async function commandListWorkLnks(workId: number) {
+  return await invoke<[number, string][]>('list_work_lnks', { workId })
 }
 
 export async function commandGetPlayTomeMinutes(collectionElementId: number) {
