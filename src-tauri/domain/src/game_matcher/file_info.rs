@@ -1,4 +1,4 @@
-use std::path::Path;
+ 
 use super::normalizer::normalize;
 use super::config::{is_not_game, remove_unnecessary_words};
 
@@ -15,23 +15,25 @@ pub struct FileMatchingInfo {
 }
 
 /// ファイル名から拡張子を除去
-pub fn get_file_name_without_extension(file_path: &str) -> Option<String> {
-    let path = Path::new(file_path);
-    if let Some(file_name) = path.file_name() {
-        if let Some(file_name_str) = file_name.to_str() {
-            let file_name_without_extension = Path::new(file_name_str)
-                .file_stem()
-                .map(|stem| stem.to_string_lossy().into_owned());
-            return file_name_without_extension;
-        }
-    }
-    None
+pub fn get_file_name_without_extension<P>(file_path: P) -> Option<String>
+where
+    P: Into<std::path::PathBuf>,
+{
+    let path_buf: std::path::PathBuf = file_path.into();
+    let path = path_buf.as_path();
+    path.file_stem()
+        .map(|stem| stem.to_string_lossy().into_owned())
 }
 
 /// ファイルパスからマッチング用の情報を抽出
-pub fn extract_file_info(filepath: &str) -> anyhow::Result<FileMatchingInfo> {
+pub fn extract_file_info<P>(filepath: P) -> anyhow::Result<FileMatchingInfo>
+where
+    P: Into<std::path::PathBuf>,
+{
+    let filepath_buf: std::path::PathBuf = filepath.into();
+
     // 親ディレクトリ名を取得
-    let parent_dir = Path::new(&filepath)
+    let parent_dir = filepath_buf
         .parent()
         .and_then(|v| {
             v.file_name()
@@ -40,7 +42,7 @@ pub fn extract_file_info(filepath: &str) -> anyhow::Result<FileMatchingInfo> {
         .ok_or(anyhow::anyhow!("cannot get parent directory"))?;
 
     // ファイル名を取得（拡張子なし）
-    let filename = get_file_name_without_extension(filepath)
+    let filename = get_file_name_without_extension(filepath_buf.as_path())
         .ok_or(anyhow::anyhow!("cannot get filename"))?;
     
     let normalized_filename = normalize(&filename);
