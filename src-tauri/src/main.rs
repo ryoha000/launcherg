@@ -71,6 +71,7 @@ fn main() {
             command::upsert_collection_element,
             command::update_collection_element_icon,
             command::get_default_import_dirs,
+            command::scan_start,
             // command::play_game, // removed
             command::get_play_time_minutes,
             command::get_collection_element,

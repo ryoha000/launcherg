@@ -11,7 +11,11 @@ pub fn build_thumbnail_paths(id: &Id<CollectionElement>, src_url: &str) -> anyho
     // 互換: 既存の呼び出し用（今後は SavePathResolver へ移行）
     let resolver = DirsSavePathResolver::default();
     let resized = resolver.thumbnail_png_path(id.value);
-    let orig = resolver.tmp_download_path_for_id(id.value, src_url);
+    let ext = std::path::Path::new(src_url)
+        .extension()
+        .and_then(|e| e.to_str())
+        .unwrap_or("bin");
+    let orig = resolver.tmp_unique_path_with_ext(ext);
     Ok((orig, resized))
 }
 

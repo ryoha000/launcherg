@@ -57,13 +57,13 @@ impl GameIdentifierUseCase {
         // 親ディレクトリマッチング
         queries.push(file_info.parent_dir);
         
-        Ok(self.matcher.find_candidates(&queries))
+        Ok(self.matcher.find_candidates(&queries).into_iter().map(|(g, _d)| g).collect())
     }
     
     /// ゲーム名からゲームを特定
     pub fn identify_by_name(&self, game_name: &str) -> anyhow::Result<Vec<AllGameCacheOne>> {
         let normalized_name = normalize(game_name);
-        Ok(self.matcher.find_candidates(&[normalized_name]))
+        Ok(self.matcher.find_candidates(&[normalized_name]).into_iter().map(|(g, _d)| g).collect())
     }
     
     /// 最も可能性の高い候補を1つ取得

@@ -26,6 +26,7 @@ pub mod native_host_log;
 pub mod repository;
 pub mod windows;
 pub mod service;
+pub mod scan;
 
 #[derive(new, Debug, Clone, Copy, Serialize, Deserialize)]
 pub struct Id<T> {

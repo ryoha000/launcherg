@@ -1,3 +1,6 @@
+use std::sync::Arc;
+use tauri::async_runtime::Mutex;
+
 #[cfg(test)]
 mockall::mock! {
     pub RepositoriesExtMock {}
@@ -35,38 +38,38 @@ mockall::mock! {
 #[cfg(test)]
 #[derive(Clone)]
 pub struct TestRepositories {
-    pub collection: std::sync::Arc<tauri::async_runtime::Mutex<domain::repository::collection::MockCollectionRepository>>,
-    pub explored_cache: std::sync::Arc<tauri::async_runtime::Mutex<domain::repository::explored_cache::MockExploredCacheRepository>>,
-    pub all_game_cache: std::sync::Arc<tauri::async_runtime::Mutex<domain::repository::all_game_cache::MockAllGameCacheRepository>>,
-    pub image_queue: std::sync::Arc<tauri::async_runtime::Mutex<domain::repository::save_image_queue::MockImageSaveQueueRepository>>,
-    pub host_log: std::sync::Arc<tauri::async_runtime::Mutex<domain::repository::native_host_log::MockNativeHostLogRepository>>,
-    pub work_omit: std::sync::Arc<tauri::async_runtime::Mutex<domain::repository::work_omit::MockWorkOmitRepository>>,
-    pub dmm_pack: std::sync::Arc<tauri::async_runtime::Mutex<domain::repository::dmm_work_pack::MockDmmPackRepository>>,
-    pub dmm_work: std::sync::Arc<tauri::async_runtime::Mutex<domain::repository::works::MockDmmWorkRepository>>,
-    pub dlsite_work: std::sync::Arc<tauri::async_runtime::Mutex<domain::repository::works::MockDlsiteWorkRepository>>,
-    pub work: std::sync::Arc<tauri::async_runtime::Mutex<domain::repository::works::MockWorkRepository>>,
-    pub work_parent_packs: std::sync::Arc<tauri::async_runtime::Mutex<domain::repository::work_parent_packs::MockWorkParentPacksRepository>>,
-    pub work_download_path: std::sync::Arc<tauri::async_runtime::Mutex<domain::repository::work_download_path::MockWorkDownloadPathRepository>>,
-    pub work_lnk: std::sync::Arc<tauri::async_runtime::Mutex<domain::repository::work_lnk::MockWorkLnkRepository>>,
+    pub collection: Arc<Mutex<domain::repository::collection::MockCollectionRepository>>,
+    pub explored_cache: Arc<Mutex<domain::repository::explored_cache::MockExploredCacheRepository>>,
+    pub all_game_cache: Arc<Mutex<domain::repository::all_game_cache::MockAllGameCacheRepository>>,
+    pub image_queue: Arc<Mutex<domain::repository::save_image_queue::MockImageSaveQueueRepository>>,
+    pub host_log: Arc<Mutex<domain::repository::native_host_log::MockNativeHostLogRepository>>,
+    pub work_omit: Arc<Mutex<domain::repository::work_omit::MockWorkOmitRepository>>,
+    pub dmm_pack: Arc<Mutex<domain::repository::dmm_work_pack::MockDmmPackRepository>>,
+    pub dmm_work: Arc<Mutex<domain::repository::works::MockDmmWorkRepository>>,
+    pub dlsite_work: Arc<Mutex<domain::repository::works::MockDlsiteWorkRepository>>,
+    pub work: Arc<Mutex<domain::repository::works::MockWorkRepository>>,
+    pub work_parent_packs: Arc<Mutex<domain::repository::work_parent_packs::MockWorkParentPacksRepository>>,
+    pub work_download_path: Arc<Mutex<domain::repository::work_download_path::MockWorkDownloadPathRepository>>,
+    pub work_lnk: Arc<Mutex<domain::repository::work_lnk::MockWorkLnkRepository>>,
 }
 
 #[cfg(test)]
 impl Default for TestRepositories {
     fn default() -> Self {
         Self {
-            collection: std::sync::Arc::new(tauri::async_runtime::Mutex::new(Default::default())),
-            explored_cache: std::sync::Arc::new(tauri::async_runtime::Mutex::new(Default::default())),
-            all_game_cache: std::sync::Arc::new(tauri::async_runtime::Mutex::new(Default::default())),
-            image_queue: std::sync::Arc::new(tauri::async_runtime::Mutex::new(Default::default())),
-            host_log: std::sync::Arc::new(tauri::async_runtime::Mutex::new(Default::default())),
-            work_omit: std::sync::Arc::new(tauri::async_runtime::Mutex::new(Default::default())),
-            dmm_pack: std::sync::Arc::new(tauri::async_runtime::Mutex::new(Default::default())),
-            dmm_work: std::sync::Arc::new(tauri::async_runtime::Mutex::new(Default::default())),
-            dlsite_work: std::sync::Arc::new(tauri::async_runtime::Mutex::new(Default::default())),
-            work: std::sync::Arc::new(tauri::async_runtime::Mutex::new(Default::default())),
-            work_parent_packs: std::sync::Arc::new(tauri::async_runtime::Mutex::new(Default::default())),
-            work_download_path: std::sync::Arc::new(tauri::async_runtime::Mutex::new(Default::default())),
-            work_lnk: std::sync::Arc::new(tauri::async_runtime::Mutex::new(Default::default())),
+            collection: Arc::new(Mutex::new(Default::default())),
+            explored_cache: Arc::new(Mutex::new(Default::default())),
+            all_game_cache: Arc::new(Mutex::new(Default::default())),
+            image_queue: Arc::new(Mutex::new(Default::default())),
+            host_log: Arc::new(Mutex::new(Default::default())),
+            work_omit: Arc::new(Mutex::new(Default::default())),
+            dmm_pack: Arc::new(Mutex::new(Default::default())),
+            dmm_work: Arc::new(Mutex::new(Default::default())),
+            dlsite_work: Arc::new(Mutex::new(Default::default())),
+            work: Arc::new(Mutex::new(Default::default())),
+            work_parent_packs: Arc::new(Mutex::new(Default::default())),
+            work_download_path: Arc::new(Mutex::new(Default::default())),
+            work_lnk: Arc::new(Mutex::new(Default::default())),
         }
     }
 }
@@ -101,10 +104,7 @@ impl domain::repository::RepositoriesExt for TestRepositories {
     fn work_lnk(&self) -> Self::WorkLnkRepo { self.clone() }
 }
 
-// Forward implementations to inner mocks (Arc<Mutex<...>>)
 #[cfg(test)]
-// async-trait 不使用（Rustのasync fn in trait対応）
-
 impl domain::repository::works::WorkRepository for TestRepositories {
     async fn upsert(&mut self, new_work: &domain::works::NewWork) -> anyhow::Result<domain::Id<domain::works::Work>> { self.work.lock().await.upsert(new_work).await }
     async fn find_by_title(&mut self, title: &str) -> anyhow::Result<Option<domain::works::Work>> { self.work.lock().await.find_by_title(title).await }
@@ -154,6 +154,7 @@ impl domain::repository::collection::CollectionRepository for TestRepositories {
     async fn get_all_elements(&mut self) -> anyhow::Result<Vec<domain::collection::CollectionElement>> { self.collection.lock().await.get_all_elements().await }
     async fn get_element_by_element_id(&mut self, id: &domain::Id<domain::collection::CollectionElement>) -> anyhow::Result<Option<domain::collection::CollectionElement>> { self.collection.lock().await.get_element_by_element_id(id).await }
     async fn upsert_collection_element(&mut self, new_element: &domain::collection::NewCollectionElement) -> anyhow::Result<()> { self.collection.lock().await.upsert_collection_element(new_element).await }
+    async fn update_collection_element_gamename_by_id(&mut self, id: &domain::Id<domain::collection::CollectionElement>, gamename: &str) -> anyhow::Result<()> { self.collection.lock().await.update_collection_element_gamename_by_id(id, gamename).await }
     async fn delete_collection_element(&mut self, element_id: &domain::Id<domain::collection::CollectionElement>) -> anyhow::Result<()> { self.collection.lock().await.delete_collection_element(element_id).await }
     async fn upsert_collection_element_info(&mut self, info: &domain::collection::NewCollectionElementInfo) -> anyhow::Result<()> { self.collection.lock().await.upsert_collection_element_info(info).await }
     async fn get_element_info_by_element_id(&mut self, id: &domain::Id<domain::collection::CollectionElement>) -> anyhow::Result<Option<domain::collection::CollectionElementInfo>> { self.collection.lock().await.get_element_info_by_element_id(id).await }
@@ -180,6 +181,7 @@ impl domain::repository::collection::CollectionRepository for TestRepositories {
     async fn get_collection_ids_by_work_ids(&mut self, work_ids: &[domain::Id<domain::works::Work>]) -> anyhow::Result<Vec<(domain::Id<domain::works::Work>, domain::Id<domain::collection::CollectionElement>)>> { self.collection.lock().await.get_collection_ids_by_work_ids(work_ids).await }
     async fn get_collection_id_by_dlsite_mapping(&mut self, store_id: &str, category: &str) -> anyhow::Result<Option<domain::Id<domain::collection::CollectionElement>>> { self.collection.lock().await.get_collection_id_by_dlsite_mapping(store_id, category).await }
     async fn upsert_work_mapping(&mut self, collection_element_id: &domain::Id<domain::collection::CollectionElement>, work_id: domain::Id<domain::works::Work>) -> anyhow::Result<()> { self.collection.lock().await.upsert_work_mapping(collection_element_id, work_id).await }
+    async fn insert_work_mapping(&mut self, collection_element_id: &domain::Id<domain::collection::CollectionElement>, work_id: domain::Id<domain::works::Work>) -> anyhow::Result<()> { self.collection.lock().await.insert_work_mapping(collection_element_id, work_id).await }
     async fn get_work_ids_by_collection_ids(&mut self, collection_element_ids: &[domain::Id<domain::collection::CollectionElement>]) -> anyhow::Result<Vec<(domain::Id<domain::collection::CollectionElement>, domain::Id<domain::works::Work>)>> { self.collection.lock().await.get_work_ids_by_collection_ids(collection_element_ids).await }
     async fn get_element_erogamescape_by_element_id(&mut self, id: &domain::Id<domain::collection::CollectionElement>) -> anyhow::Result<Option<domain::collection::CollectionElementErogamescape>> { self.collection.lock().await.get_element_erogamescape_by_element_id(id).await }
     async fn upsert_erogamescape_map(&mut self, collection_element_id: &domain::Id<domain::collection::CollectionElement>, erogamescape_id: i32) -> anyhow::Result<()> { self.collection.lock().await.upsert_erogamescape_map(collection_element_id, erogamescape_id).await }
@@ -251,7 +253,7 @@ impl domain::repository::manager::RepositoryManager<TestRepositories> for TestRe
 #[cfg(test)]
 impl TestRepositories {
     pub fn set_all_game_cache(&mut self, repo: domain::repository::all_game_cache::MockAllGameCacheRepository) {
-        self.all_game_cache = std::sync::Arc::new(tokio::sync::Mutex::new(repo));
+        self.all_game_cache = Arc::new(tokio::sync::Mutex::new(repo));
     }
 }
 

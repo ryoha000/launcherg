@@ -181,6 +181,22 @@ impl CollectionRepository for RepositoryImpl<domain::collection::CollectionEleme
         Ok(())
     }
 
+    async fn update_collection_element_gamename_by_id(&mut self, id: &Id<CollectionElement>, gamename: &str) -> anyhow::Result<()> {
+        let idv = id.value;
+        let name = gamename.to_string();
+        self.executor.with_conn(|conn| {
+            Box::pin(async move {
+                query("UPDATE collection_elements SET gamename = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?")
+                    .bind(name)
+                    .bind(idv)
+                    .execute(conn)
+                    .await?;
+                Ok::<(), anyhow::Error>(())
+            })
+        }).await?;
+        Ok(())
+    }
+
     async fn delete_collection_element(&mut self, element_id: &Id<CollectionElement>) -> anyhow::Result<()> {
         let idv = element_id.value;
         self.executor.with_conn(|conn| {
@@ -641,6 +657,26 @@ impl CollectionRepository for RepositoryImpl<domain::collection::CollectionEleme
                 sqlx::query(
                     r#"
             INSERT OR IGNORE INTO work_collection_elements (work_id, collection_element_id)
+            VALUES (?, ?)
+            "#,
+                )
+                .bind(work_id.value as i64)
+                .bind(ce)
+                .execute(conn)
+                .await?;
+                Ok::<(), anyhow::Error>(())
+            })
+        }).await?;
+        Ok(())
+    }
+
+    async fn insert_work_mapping(&mut self, collection_element_id: &Id<CollectionElement>, work_id: Id<Work>) -> anyhow::Result<()> {
+        let ce = collection_element_id.value;
+        self.executor.with_conn(|conn| {
+            Box::pin(async move {
+                sqlx::query(
+                    r#"
+            INSERT INTO work_collection_elements (work_id, collection_element_id)
             VALUES (?, ?)
             "#,
                 )

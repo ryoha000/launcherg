@@ -12,6 +12,32 @@ pub struct ProgressLivePayload {
     pub max: Option<i32>,
 }
 
+// スキャンFSM用イベントPayload
+#[derive(new, Clone, Serialize)]
+pub struct ScanProgressPayload {
+    pub phase: String,
+    pub processed: i32,
+    pub total: i32,
+    pub errors: i32,
+    pub message: Option<String>,
+}
+
+#[derive(new, Clone, Serialize)]
+pub struct ScanLogPayload {
+    pub level: String,
+    pub message: String,
+}
+
+#[derive(new, Clone, Serialize)]
+pub struct ScanSummaryPayload {
+    pub duration_ms: i64,
+    pub found: i32,
+    pub recognized: i32,
+    pub persisted: i32,
+    pub skipped: i32,
+    pub duplicates: i32,
+}
+
 #[derive(Clone, Serialize)]
 pub struct ExtensionConnectionPayload {
     pub connection_status: String, // ExtensionConnectionStatus のシリアライズ形式

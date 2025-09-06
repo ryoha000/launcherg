@@ -102,6 +102,7 @@ windows = { version = "0.51", features = [
   "Storage_Streams",
 ] }
 winreg = "0.52"
+regex = "1"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 

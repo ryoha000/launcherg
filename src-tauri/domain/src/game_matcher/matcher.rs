@@ -1,5 +1,7 @@
 use std::collections::HashMap;
-use std::sync::Mutex;
+use std::sync::{Mutex, RwLock};
+use std::time::{Duration, Instant};
+use std::thread;
 use crate::all_game_cache::{AllGameCache, AllGameCacheOne};
 use crate::distance::get_comparable_distance;
 use super::config::{EQUALLY_FILENAME_GAME_ID_PAIR, IGNORE_GAME_ID};
@@ -31,15 +33,18 @@ impl Default for MatcherConfig {
 }
 
 /// ゲームマッチングを行うトレイト
+#[mockall::automock]
 pub trait GameMatcher {
     /// 複数の文字列でゲーム候補を検索する
-    fn find_candidates(&self, queries: &[String]) -> Vec<AllGameCacheOne>;
+    fn find_candidates(&self, queries: &[String]) -> Vec<(AllGameCacheOne, f32)>;
+    /// AllGameCache を更新する（読み書き分離のため RwLock を用いる）
+    fn update_all_game_cache(&self, new_cache: AllGameCache);
 }
 
 /// シンプルなマッチャー実装
 /// 元実装と同じ動作を再現
 pub struct Matcher {
-    game_cache: AllGameCache,
+    game_cache: RwLock<AllGameCache>,
     config: MatcherConfig,
     // query -> Vec<(game, score)> のキャッシュ（閾値以上のマッチのみ）
     query_cache: Mutex<HashMap<String, Vec<(AllGameCacheOne, f32)>>>,
@@ -48,7 +53,7 @@ pub struct Matcher {
 impl Matcher {
     pub fn new(game_cache: AllGameCache, config: MatcherConfig) -> Self {
         Self { 
-            game_cache, 
+            game_cache: RwLock::new(game_cache), 
             config,
             query_cache: Mutex::new(HashMap::new()),
         }
@@ -72,6 +77,32 @@ impl Matcher {
     
     /// 単一クエリに対する閾値以上のマッチング結果を取得（キャッシュ付き）
     pub fn get_matches_for_query(&self, query: &str) -> Vec<(AllGameCacheOne, f32)> {
+        // 30秒以内に読み取りスナップショットを取得
+        let cache_snapshot = match self.snapshot_cache_with_timeout(Duration::from_secs(30)) {
+            Some(s) => s,
+            None => return Vec::new(),
+        };
+        self.get_matches_for_query_with_snapshot(query, &cache_snapshot)
+    }
+
+    /// タイムアウト付きでゲームキャッシュのスナップショットを取得
+    fn snapshot_cache_with_timeout(&self, timeout: Duration) -> Option<AllGameCache> {
+        let start = Instant::now();
+        loop {
+            match self.game_cache.try_read() {
+                Ok(guard) => return Some(guard.clone()),
+                Err(_) => {
+                    if start.elapsed() >= timeout {
+                        return None;
+                    }
+                    thread::sleep(Duration::from_millis(5));
+                }
+            }
+        }
+    }
+
+    /// スナップショットを使ってマッチを計算（クエリキャッシュを利用）
+    fn get_matches_for_query_with_snapshot(&self, query: &str, cache_snapshot: &[AllGameCacheOne]) -> Vec<(AllGameCacheOne, f32)> {
         // キャッシュを確認
         if let Ok(cache) = self.query_cache.lock() {
             if let Some(cached_result) = cache.get(query) {
@@ -82,7 +113,7 @@ impl Matcher {
         // キャッシュにない場合は計算
         let mut matches = Vec::new();
         
-        for game in self.game_cache.iter() {
+        for game in cache_snapshot.iter() {
             // 無視するゲームIDをスキップ
             if self.config.ignore_game_ids.contains(&game.id) {
                 continue;
@@ -98,7 +129,7 @@ impl Matcher {
         
         // フォールバック: 部分文字列マッチング
         if matches.is_empty() && query.len() > self.config.partial_min_length {
-            for game in self.game_cache.iter() {
+            for game in cache_snapshot.iter() {
                 if game.gamename.contains(query) {
                     matches.push((game.clone(), query.len() as f32));
                 }
@@ -115,12 +146,17 @@ impl Matcher {
 }
 
 impl GameMatcher for Matcher {
-    fn find_candidates(&self, queries: &[String]) -> Vec<AllGameCacheOne> {
+    fn find_candidates(&self, queries: &[String]) -> Vec<(AllGameCacheOne, f32)> {
+        // 30秒以内に読み取りスナップショットを取得
+        let cache_snapshot = match self.snapshot_cache_with_timeout(Duration::from_secs(30)) {
+            Some(s) => s,
+            None => return Vec::new(),
+        };
         // 1. 完全一致チェック
         for query in queries {
             if let Some(&game_id) = self.config.exact_mappings.get(query) {
-                if let Some(game) = self.game_cache.iter().find(|g| g.id == game_id) {
-                    return vec![game.clone()];
+                if let Some(game) = cache_snapshot.iter().find(|g| g.id == game_id) {
+                    return vec![(game.clone(), 1.0)];
                 }
             }
         }
@@ -129,7 +165,7 @@ impl GameMatcher for Matcher {
         let mut game_scores: HashMap<i32, f32> = HashMap::new();
         
         for query in queries {
-            let matches = self.get_matches_for_query(query);
+            let matches = self.get_matches_for_query_with_snapshot(query, &cache_snapshot);
             for (game, score) in matches {
                 // 各ゲームの最高スコアを保持
                 let current_score = game_scores.get(&game.id).unwrap_or(&0.0);
@@ -141,18 +177,23 @@ impl GameMatcher for Matcher {
         let mut candidates: Vec<(AllGameCacheOne, f32)> = game_scores
             .into_iter()
             .filter_map(|(game_id, score)| {
-                self.game_cache
-                    .iter()
-                    .find(|g| g.id == game_id)
-                    .map(|game| (game.clone(), score))
+                cache_snapshot.iter().find(|g| g.id == game_id).map(|game| (game.clone(), score))
             })
             .collect();
         
         // スコア順にソート（降順）
-        candidates.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap());
+        use std::cmp::Ordering;
+        candidates.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(Ordering::Equal));
         
-        // ゲームのみを返す
-        candidates.into_iter().map(|(game, _)| game).collect()
+        candidates
+    }
+
+    fn update_all_game_cache(&self, new_cache: AllGameCache) {
+        if let Ok(mut cache_guard) = self.game_cache.write() {
+            *cache_guard = new_cache;
+        }
+        // クエリキャッシュは無効化（内容が変わるため）
+        self.clear_cache();
     }
 }
 
@@ -179,7 +220,7 @@ mod tests {
         let candidates = matcher.find_candidates(&queries);
         
         assert_eq!(candidates.len(), 1);
-        assert_eq!(candidates[0].id, 27123);
+        assert_eq!(candidates[0].0.id, 27123);
     }
 
     #[test]
@@ -207,7 +248,7 @@ mod tests {
         let candidates = matcher.find_candidates(&queries);
         
         assert_eq!(candidates.len(), 1);
-        assert_eq!(candidates[0].id, 27123);
+        assert_eq!(candidates[0].0.id, 27123);
     }
 
     #[test]
@@ -220,7 +261,7 @@ mod tests {
         let candidates = matcher.find_candidates(&queries);
         
         assert_eq!(candidates.len(), 1);
-        assert_eq!(candidates[0].id, 27123);
+        assert_eq!(candidates[0].0.id, 27123);
     }
 
     #[test]
@@ -243,7 +284,7 @@ mod tests {
         // 結果は同じ
         assert_eq!(result1.len(), result2.len());
         if !result1.is_empty() && !result2.is_empty() {
-            assert_eq!(result1[0].id, result2[0].id);
+            assert_eq!(result1[0].0.id, result2[0].0.id);
         }
         
         // キャッシュサイズは変わらない（同じクエリなので）

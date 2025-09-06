@@ -5,3 +5,6 @@ pub mod pubsubimpl;
 pub mod thumbnail;
 pub mod windowsimpl;
 pub mod sqliterepository;
+pub mod local_file_system;
+pub mod heuristic_metadata_extractor;
+pub mod heuristic_duplicate_resolver;

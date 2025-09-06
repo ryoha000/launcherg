@@ -166,6 +166,20 @@ pub async fn create_elements_in_pc(
 
     Ok(gamenames)
 }
+#[tauri::command]
+pub async fn scan_start(
+    modules: State<'_, Arc<Modules>>,
+    roots: Vec<String>,
+    use_cache: Option<bool>,
+) -> anyhow::Result<(), CommandError> {
+    let roots: Vec<std::path::PathBuf> = roots.into_iter().map(|s| std::path::PathBuf::from(s)).collect();
+    modules
+        .work_pipeline_use_case()
+        .start(roots, use_cache.unwrap_or(false))
+        .await
+        .map_err(|e| CommandError::Anyhow(anyhow::anyhow!(e.to_string())))
+}
+
 
 #[tauri::command]
 pub async fn get_nearest_key_and_distance(
@@ -554,18 +568,18 @@ pub async fn get_game_candidates(
     modules: State<'_, Arc<Modules>>,
     filepath: String,
 ) -> anyhow::Result<Vec<(i32, String)>, CommandError> {
-    let all_game_cache = modules
-        .all_game_cache_use_case()
-        .get_all_game_cache()
-        .await?;
-    
-    let game_identifier = usecase::game_identifier::GameIdentifierUseCase::with_default_matcher(all_game_cache);
-    
-    Ok(game_identifier
-        .identify_by_filepath(&filepath)?
+    let info = domain::game_matcher::extract_file_info(&filepath)
+        .map_err(|e| anyhow::anyhow!(e.to_string()))?;
+    let mut queries: Vec<String> = Vec::new();
+    if !info.skip_filename { queries.push(info.filename); }
+    queries.push(info.parent_dir);
+    let result = modules
+        .game_matcher()
+        .find_candidates(&queries)
         .into_iter()
-        .map(|c| (c.id, c.gamename))
-        .collect())
+        .map(|(c, _d)| (c.id, c.gamename))
+        .collect();
+    Ok(result)
 }
 
 #[tauri::command]
@@ -573,19 +587,15 @@ pub async fn get_game_candidates_by_name(
     modules: State<'_, Arc<Modules>>,
     game_name: String,
 ) -> anyhow::Result<Vec<(i32, String)>, CommandError> {
-    let all_game_cache = modules
-        .all_game_cache_use_case()
-        .get_all_game_cache()
-        .await?;
-    
-    let game_identifier = usecase::game_identifier::GameIdentifierUseCase::with_default_matcher(all_game_cache);
-    
-    Ok(game_identifier
-        .identify_by_name(&game_name)?
+    let normalized_name = domain::game_matcher::normalize(&game_name);
+    let result = modules
+        .game_matcher()
+        .find_candidates(&[normalized_name])
         .into_iter()
-        .take(20) // 上位20件まで
-        .map(|c| (c.id, c.gamename))
-        .collect())
+        .take(20)
+        .map(|(c, _d)| (c.id, c.gamename))
+        .collect();
+    Ok(result)
 }
 
 #[tauri::command]

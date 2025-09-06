@@ -38,6 +38,8 @@ zip = { workspace = true }
 semver = { workspace = true }
 mockall = { workspace = true }
 futures = { workspace = true }
+usecase = { path = "../usecase" }
+regex = { workspace = true }
 
 [dev-dependencies]
 mockall = { workspace = true }

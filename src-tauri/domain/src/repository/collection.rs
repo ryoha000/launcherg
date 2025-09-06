@@ -20,6 +20,9 @@ pub trait CollectionRepository {
     async fn upsert_collection_element(&mut self, new_element: &NewCollectionElement) -> Result<()>;
     async fn delete_collection_element(&mut self, element_id: &Id<CollectionElement>) -> Result<()>;
 
+    // 既存の要素に対して名称のみを更新する（非 upsert）
+    async fn update_collection_element_gamename_by_id(&mut self, id: &Id<CollectionElement>, gamename: &str) -> Result<()>;
+
     async fn upsert_collection_element_info(&mut self, info: &NewCollectionElementInfo) -> Result<()>;
     async fn get_element_info_by_element_id(&mut self, id: &Id<CollectionElement>) -> Result<Option<CollectionElementInfo>>;
     async fn get_not_registered_info_element_ids(&mut self) -> Result<Vec<Id<CollectionElement>>>;
@@ -58,6 +61,8 @@ pub trait CollectionRepository {
     async fn get_collection_ids_by_work_ids(&mut self, work_ids: &[Id<Work>]) -> Result<Vec<(Id<Work>, Id<CollectionElement>)>>;
     async fn get_collection_id_by_dlsite_mapping(&mut self, store_id: &str, category: &str) -> Result<Option<Id<CollectionElement>>>;
     async fn upsert_work_mapping(&mut self, collection_element_id: &Id<CollectionElement>, work_id: Id<Work>) -> Result<()>;
+    // 非 upsert の挿入（既存重複時はエラー）
+    async fn insert_work_mapping(&mut self, collection_element_id: &Id<CollectionElement>, work_id: Id<Work>) -> Result<()>;
 
     async fn get_work_ids_by_collection_ids(&mut self, collection_element_ids: &[Id<CollectionElement>]) -> Result<Vec<(Id<CollectionElement>, Id<Work>)>>;
 }

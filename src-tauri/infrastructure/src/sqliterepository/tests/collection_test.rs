@@ -114,4 +114,67 @@ async fn get_work_ids_by_collection_ids_returns_mapped_pairs() {
     assert_eq!(got_sorted[1].1.value, work_id2.value);
 }
 
+#[tokio::test]
+async fn update_collection_element_gamename_by_id_名称が更新される() {
+    let test_db = TestDatabase::new().await.unwrap();
+    let repo = test_db.sqlite_repository();
+
+    // 準備: 要素を作成
+    {
+        let mut c = repo.collection();
+        c.upsert_collection_element(&NewCollectionElement::new(Id::new(10), "Old".into())).await.unwrap();
+    }
+
+    // 実行: 名称更新（非 upsert）
+    {
+        let mut c = repo.collection();
+        c.update_collection_element_gamename_by_id(&Id::new(10), "New").await.unwrap();
+    }
+
+    // 検証: 名称が更新されている
+    {
+        let mut c = repo.collection();
+        let got = c.get_element_by_element_id(&Id::new(10)).await.unwrap().unwrap();
+        assert_eq!(got.gamename, "New");
+    }
+}
+
+#[tokio::test]
+async fn insert_work_mapping_重複挿入でエラーになる() {
+    let test_db = TestDatabase::new().await.unwrap();
+    let repo = test_db.sqlite_repository();
+
+    // 準備: work と collection を作成
+    let work_id = {
+        let mut w = repo.work();
+        w.upsert(&NewWork { title: "W".into() }).await.unwrap()
+    };
+    {
+        let mut c = repo.collection();
+        c.upsert_collection_element(&NewCollectionElement::new(Id::new(300), "G300".into())).await.unwrap();
+    }
+
+    // 実行: 非 upsert の insert でマッピング作成
+    {
+        let mut c = repo.collection();
+        c.insert_work_mapping(&Id::new(300), work_id.clone()).await.unwrap();
+    }
+
+    // 検証: マッピングが作成されている
+    {
+        let mut c = repo.collection();
+        let got = c.get_work_ids_by_collection_ids(&[Id::new(300)]).await.unwrap();
+        assert_eq!(got.len(), 1);
+        assert_eq!(got[0].0.value, 300);
+        assert_eq!(got[0].1.value, work_id.value);
+    }
+
+    // 再挿入: 一意制約違反で Err を返すはず
+    {
+        let mut c = repo.collection();
+        let res = c.insert_work_mapping(&Id::new(300), work_id.clone()).await;
+        assert!(res.is_err());
+    }
+}
+
 

@@ -1,22 +1,23 @@
 use std::sync::Arc;
 
 use chrono::{DateTime, Local};
-use derive_new::new;
 
 use domain::{
     all_game_cache::{AllGameCache, AllGameCacheOneWithThumbnailUrl, NewAllGameCacheOne},
 };
 use domain::repository::{RepositoriesExt, all_game_cache::AllGameCacheRepository, manager::RepositoryManager};
 use std::marker::PhantomData;
+use domain::game_matcher::{GameMatcher, normalize};
+use domain::all_game_cache::AllGameCacheOne as MatcherAllGameCacheOne;
 
-#[derive(new)]
 pub struct AllGameCacheUseCase<M, R>
 where
     M: RepositoryManager<R>,
     R: RepositoriesExt + Send + Sync + 'static,
 {
     manager: Arc<M>,
-    #[new(default)] _marker: PhantomData<R>,
+    _marker: PhantomData<R>,
+    matcher: Arc<dyn GameMatcher + Send + Sync>,
 }
 
 impl<M, R> AllGameCacheUseCase<M, R>
@@ -24,6 +25,11 @@ where
     M: RepositoryManager<R>,
     R: RepositoriesExt + Send + Sync + 'static,
 {
+    /// 既存テスト互換のためのデフォルトコンストラクタ（NopMatcher を使用）
+    pub fn new(manager: Arc<M>) -> Self { Self { manager, _marker: PhantomData, matcher: Arc::new(NopMatcher) } }
+
+    /// 明示的に Matcher を注入して生成
+    pub fn with_matcher(manager: Arc<M>, matcher: Arc<dyn GameMatcher + Send + Sync>) -> Self { Self { manager, _marker: PhantomData, matcher } }
     pub async fn get(&self, id: i32) -> anyhow::Result<Option<AllGameCacheOneWithThumbnailUrl>> {
         self.manager.run(move |repos| {
             Box::pin(async move {
@@ -64,7 +70,16 @@ where
                 repos.all_game_cache().delete_by_ids(ids).await?;
                 repos.all_game_cache().update(cache_clone).await
             })
-        }).await
+        }).await?;
+
+        // 変更を GameMatcher へ反映（正規化してから設定）
+        let all = self.get_all_game_cache().await?;
+        let normalized: Vec<MatcherAllGameCacheOne> = all
+            .into_iter()
+            .map(|g| MatcherAllGameCacheOne::new(g.id, normalize(&g.gamename)))
+            .collect();
+        self.matcher.update_all_game_cache(normalized);
+        Ok(())
     }
 
     pub async fn search_games_by_name(
@@ -74,4 +89,12 @@ where
         let name = name.to_string();
         self.manager.run(move |repos| Box::pin(async move { repos.all_game_cache().search_by_name(&name).await })).await
     }
+}
+
+/// 何もしないデフォルト Matcher（テスト・後方互換用）
+struct NopMatcher;
+
+impl GameMatcher for NopMatcher {
+    fn find_candidates(&self, _queries: &[String]) -> Vec<(domain::all_game_cache::AllGameCacheOne, f32)> { Vec::new() }
+    fn update_all_game_cache(&self, _new_cache: domain::all_game_cache::AllGameCache) {}
 }

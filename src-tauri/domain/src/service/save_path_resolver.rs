@@ -1,6 +1,7 @@
 use std::path::PathBuf;
 
 #[trait_variant::make(Send + Sync)]
+#[mockall::automock]
 pub trait SavePathResolver {
 	fn root_dir(&self) -> String;
 
@@ -55,20 +56,38 @@ pub trait SavePathResolver {
 		dir.join("untitled.md").to_string_lossy().to_string()
 	}
 
-	fn tmp_download_path_for_queue(&self, queue_id: i32, url: &str) -> String {
+	// 新方針: 一意な一時ファイルパスを生成（UUIDベース）。
+	// 拡張子あり/なしの2種を提供する。
+	fn tmp_unique_path_with_ext(&self, extension: &str) -> String {
 		let mut dir = std::env::temp_dir();
-		dir.push("launcherg-image-queue");
+		dir.push("launcherg-temp");
 		std::fs::create_dir_all(&dir).ok();
-		let filename = self.filename_from_url(url);
-		PathBuf::from(dir).join(format!("{}-{}", queue_id, filename)).to_string_lossy().to_string()
+		let name = format!("{}.{}", uuid::Uuid::new_v4().to_string(), extension);
+		PathBuf::from(dir).join(name).to_string_lossy().to_string()
 	}
 
-	fn tmp_download_path_for_id(&self, id: i32, url: &str) -> String {
+	fn tmp_unique_path(&self) -> String {
 		let mut dir = std::env::temp_dir();
-		dir.push("launcherg-images");
+		dir.push("launcherg-temp");
 		std::fs::create_dir_all(&dir).ok();
-		let filename = self.filename_from_url(url);
-		PathBuf::from(dir).join(format!("{}-{}", id, filename)).to_string_lossy().to_string()
+		PathBuf::from(dir).join(uuid::Uuid::new_v4().to_string()).to_string_lossy().to_string()
+	}
+
+	// 互換: 旧APIは新APIで代替（将来削除予定）
+	fn tmp_download_path_for_queue(&self, _queue_id: i32, url: &str) -> String {
+		let ext = PathBuf::from(self.filename_from_url(url))
+			.extension()
+			.map(|e| e.to_string_lossy().to_string())
+			.unwrap_or_else(|| "bin".to_string());
+		self.tmp_unique_path_with_ext(&ext)
+	}
+
+	fn tmp_download_path_for_id(&self, _id: i32, url: &str) -> String {
+		self.tmp_download_path_for_queue(0, url)
+	}
+
+	fn tmp_ensure_path_for_queue(&self, _queue_id: i32, _filepath: &str) -> String {
+		self.tmp_unique_path_with_ext("png")
 	}
 
 	fn filename_from_url(&self, url: &str) -> String {

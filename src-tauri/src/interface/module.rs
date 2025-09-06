@@ -16,6 +16,9 @@ use crate::{
         thumbnail::ThumbnailServiceImpl,
         icon::IconServiceImpl as TauriIconServiceImpl,
         native_messaging::NativeMessagingHostClientFactoryImpl,
+        heuristic_metadata_extractor::HeuristicMetadataExtractor,
+        heuristic_duplicate_resolver::HeuristicDuplicateResolver,
+        local_file_system::LocalFileSystem,
     },
     usecase::{
         all_game_cache::AllGameCacheUseCase, collection::CollectionUseCase,
@@ -25,8 +28,12 @@ use crate::{
         host_log::HostLogUseCase,
         dmm_pack::DmmPackUseCase,
         work::WorkUseCase,
+        work_pipeline::WorkPipelineUseCase,
     },
 };
+use domain::repository::manager::RepositoryManager as _;
+use domain::game_matcher::{Matcher as GameMatcherImpl, GameMatcher, normalize};
+use domain::all_game_cache::AllGameCacheOne as DomainAllGameCacheOne;
 
 pub struct Modules {
     collection_use_case: CollectionUseCase<SqliteRepositoryManager, SqliteRepositories, ThumbnailServiceImpl, Windows>,
@@ -40,7 +47,16 @@ pub struct Modules {
     host_log_use_case: HostLogUseCase<SqliteRepositoryManager, SqliteRepositories>,
     dmm_pack_use_case: DmmPackUseCase<SqliteRepositoryManager, SqliteRepositories>,
     work_use_case: WorkUseCase<SqliteRepositoryManager, SqliteRepositories, Windows>,
+    work_pipeline_use_case: WorkPipelineUseCase<
+        SqliteRepositoryManager,
+        SqliteRepositories,
+        PubSub,
+        LocalFileSystem,
+        HeuristicMetadataExtractor,
+        HeuristicDuplicateResolver,
+    >,
     pubsub: PubSub,
+    game_matcher: std::sync::Arc<dyn GameMatcher + Send + Sync>,
 }
 pub trait ModulesExt {
     type Repositories: RepositoriesExt;
@@ -58,7 +74,16 @@ pub trait ModulesExt {
     fn host_log_use_case(&self) -> &HostLogUseCase<SqliteRepositoryManager, SqliteRepositories>;
     fn dmm_pack_use_case(&self) -> &DmmPackUseCase<SqliteRepositoryManager, SqliteRepositories>;
     fn work_use_case(&self) -> &WorkUseCase<SqliteRepositoryManager, SqliteRepositories, Windows>;
+    fn work_pipeline_use_case(&self) -> &WorkPipelineUseCase<
+        SqliteRepositoryManager,
+        SqliteRepositories,
+        Self::PubSub,
+        LocalFileSystem,
+        HeuristicMetadataExtractor,
+        HeuristicDuplicateResolver,
+    >;
     fn pubsub(&self) -> &Self::PubSub;
+    fn game_matcher(&self) -> &std::sync::Arc<dyn GameMatcher + Send + Sync>;
 }
 
 impl ModulesExt for Modules {
@@ -91,9 +116,18 @@ impl ModulesExt for Modules {
     fn host_log_use_case(&self) -> &HostLogUseCase<SqliteRepositoryManager, SqliteRepositories> { &self.host_log_use_case }
     fn dmm_pack_use_case(&self) -> &DmmPackUseCase<SqliteRepositoryManager, SqliteRepositories> { &self.dmm_pack_use_case }
     fn work_use_case(&self) -> &WorkUseCase<SqliteRepositoryManager, SqliteRepositories, Windows> { &self.work_use_case }
+    fn work_pipeline_use_case(&self) -> &WorkPipelineUseCase<
+        SqliteRepositoryManager,
+        SqliteRepositories,
+        Self::PubSub,
+        LocalFileSystem,
+        HeuristicMetadataExtractor,
+        HeuristicDuplicateResolver,
+    > { &self.work_pipeline_use_case }
     fn pubsub(&self) -> &Self::PubSub {
         &self.pubsub
     }
+    fn game_matcher(&self) -> &std::sync::Arc<dyn GameMatcher + Send + Sync> { &self.game_matcher }
 }
 
 impl Modules {
@@ -111,8 +145,6 @@ impl Modules {
         let collection_use_case = CollectionUseCase::new(repo_manager.clone(), resolver.clone(), thumbs.clone(), windows.clone());
         let explored_cache_use_case = ExploredCacheUseCase::new(repo_manager.clone());
         let extension_manager_use_case = ExtensionManagerUseCase::new(pubsub.clone(), Arc::new(NativeMessagingHostClientFactoryImpl));
-        let all_game_cache_use_case: AllGameCacheUseCase<SqliteRepositoryManager, SqliteRepositories> =
-            AllGameCacheUseCase::new(repo_manager.clone());
 
         let file_use_case: FileUseCase<Windows> = FileUseCase::new(resolver.clone(), windows.clone());
 
@@ -123,6 +155,34 @@ impl Modules {
         let host_log_use_case: HostLogUseCase<SqliteRepositoryManager, SqliteRepositories> = HostLogUseCase::new(repo_manager.clone());
         let dmm_pack_use_case: DmmPackUseCase<SqliteRepositoryManager, SqliteRepositories> = DmmPackUseCase::new(repo_manager.clone());
         let work_use_case: WorkUseCase<SqliteRepositoryManager, SqliteRepositories, Windows> = WorkUseCase::new(repo_manager.clone(), windows.clone());
+
+        // GameMatcher 構築（初期キャッシュを正規化して設定）
+        use domain::repository::all_game_cache::AllGameCacheRepository as _;
+        let initial_cache = repo_manager
+            .run(|repos| Box::pin(async move { repos.all_game_cache().get_all().await }))
+            .await
+            .unwrap_or_else(|_| vec![]);
+        let normalized_cache: Vec<DomainAllGameCacheOne> = initial_cache
+            .into_iter()
+            .map(|g| DomainAllGameCacheOne::new(g.id, normalize(&g.gamename)))
+            .collect();
+        let game_matcher = std::sync::Arc::new(GameMatcherImpl::with_default_config(normalized_cache));
+        // AllGameCacheUseCase を生成（matcher を注入）
+        let all_game_cache_use_case: AllGameCacheUseCase<SqliteRepositoryManager, SqliteRepositories> =
+            AllGameCacheUseCase::with_matcher(repo_manager.clone(), game_matcher.clone());
+
+        // WorkPipelineUseCase 構築
+        let fs = std::sync::Arc::new(LocalFileSystem::default());
+        let extractor = std::sync::Arc::new(HeuristicMetadataExtractor::new(game_matcher.clone()));
+        let dedup = std::sync::Arc::new(HeuristicDuplicateResolver);
+        let work_pipeline_use_case: WorkPipelineUseCase<
+            SqliteRepositoryManager,
+            SqliteRepositories,
+            PubSub,
+            LocalFileSystem,
+            HeuristicMetadataExtractor,
+            HeuristicDuplicateResolver,
+        > = WorkPipelineUseCase::new(repo_manager.clone(), pubsub.clone(), fs, extractor, dedup);
 
         Self {
             collection_use_case,
@@ -136,7 +196,9 @@ impl Modules {
             host_log_use_case,
             dmm_pack_use_case,
             work_use_case,
+            work_pipeline_use_case,
             pubsub,
+            game_matcher,
         }
     }
 }

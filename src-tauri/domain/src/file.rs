@@ -1,4 +1,12 @@
 pub struct File {}
+/// .lnk/.url から取得したメタデータ
+///
+/// - `path`: ショートカットの遷移先
+///   - .lnk の場合: ショートカットが指す実体ファイルの絶対パス（例: .exe）
+///   - .url の場合: ファイル自体のパス（URL の実体ではなく .url ファイルのパス）
+/// - `icon`: アイコンの取得元パス
+///   - .lnk の場合: IShellLinkW::GetIconLocation で取得したアイコンファイル（例: .ico や .exe）
+///   - .url の場合: INI（`IconFile=...`）から取得したアイコンファイルパス（なければ空文字）
 pub struct LnkMetadata {
     pub path: String,
     pub icon: String,

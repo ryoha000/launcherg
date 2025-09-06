@@ -199,6 +199,17 @@ mod tests {
             .with(always())
             .times(1)
             .returning(|_| Box::pin(async move { Ok::<_, anyhow::Error>(()) }));
+        // update 後に matcher 同期のため get_all が呼ばれる
+        mock_repo.expect_get_all()
+            .times(1)
+            .returning(|| {
+                Box::pin(async move {
+                    Ok(vec![
+                        AllGameCacheOne { id: 1, gamename: "Test Game 1".to_string() },
+                        AllGameCacheOne { id: 2, gamename: "Test Game 2".to_string() },
+                    ])
+                })
+            });
 
         let mut repos = TestRepositories::default();
         repos.set_all_game_cache(mock_repo);

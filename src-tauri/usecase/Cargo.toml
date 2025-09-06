@@ -28,6 +28,7 @@ tempfile = { workspace = true }
 zip = { workspace = true }
 winreg = { workspace = true }
 mockall = { workspace = true }
+regex = { workspace = true }
 
 [dev-dependencies]
 mockall = { workspace = true }

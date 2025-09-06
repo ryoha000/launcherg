@@ -10,6 +10,7 @@ pub mod collection;
 pub mod work_download_path;
 pub mod work_lnk;
 pub mod manager;
+pub mod mock;
 
 pub trait RepositoriesExt {
     type WorkRepo: works::WorkRepository;

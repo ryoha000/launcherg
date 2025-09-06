@@ -19,9 +19,12 @@ pub mod work_omit;
 pub mod host_log;
 pub mod dmm_pack;
 pub mod work;
+pub mod work_pipeline;
 #[cfg(test)]
 mod repositorymock;
 #[cfg(test)]
 mod windowsmock;
 #[cfg(test)]
 mod native_messaging_mock;
+#[cfg(test)]
+mod work_pipeline_test;

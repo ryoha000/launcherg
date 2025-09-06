@@ -5,6 +5,8 @@ use std::sync::Arc;
 use tokio::io::{self as tokio_io, AsyncReadExt, AsyncWriteExt};
 use serde_json;
 use thiserror::Error;
+use std::path::PathBuf;
+use std::fs;
 
 use domain::repository::{manager::RepositoryManager, native_host_log::NativeHostLogRepository, RepositoriesExt};
 use domain::native_host_log::{HostLogLevel, HostLogType};
@@ -17,6 +19,7 @@ use models::{
 use infrastructure::{
     sqliterepository::{driver::Db as RepoDb, sqliterepository::SqliteRepositoryManager, sqliterepository::SqliteRepositories},
     image_queue_worker::ImageQueueWorker,
+    windowsimpl::windows::Windows,
 };
 use usecase::native_host_sync::{NativeHostSyncUseCase, DmmSyncGameParam, DlsiteSyncGameParam, EgsInfo};
 use usecase::native_host_sync::downloads::DownloadsUseCase;
@@ -74,6 +77,8 @@ async fn main() {
         .init();
 
     let resolver = Arc::new(DirsSavePathResolver::default());
+    // ensure sidecar (extract-icon.exe) is present next to host executable
+    let _ = ensure_extract_icon_sidecar();
     let db_path = resolver.db_file_path();
     let repo_db = RepoDb::from_path(&db_path).await;
     let repo_manager = Arc::new(SqliteRepositoryManager::new(repo_db.pool_arc()));
@@ -154,7 +159,7 @@ async fn handle_message(ctx: &AppCtx) -> HostResult<bool> {
     // 画像キューの drain は同期時のみ
     match &message.message {
         NativeMessageCase::SyncDmmGames(_) | NativeMessageCase::SyncDlsiteGames(_) => {
-            let worker = ImageQueueWorker::new(ctx.manager.clone(), ctx.resolver.clone());
+            let worker = ImageQueueWorker::new(ctx.manager.clone(), ctx.resolver.clone(), Arc::new(Windows::new()));
             let _ = worker.drain_until_empty().await;
             return Ok(false);
         }
@@ -308,6 +313,22 @@ fn err(request_id: &str, msg: impl Into<String>) -> NativeResponseTs {
         request_id: request_id.to_string(),
         response: None,
     }
+}
+
+fn ensure_extract_icon_sidecar() -> anyhow::Result<PathBuf> {
+    // resolve destination: same directory as current executable
+    let exe_dir = std::env::current_exe()
+        .ok()
+        .and_then(|p| p.parent().map(|p| p.to_path_buf()))
+        .ok_or_else(|| anyhow::anyhow!("failed to resolve current exe directory"))?;
+    let dst = exe_dir.join("extract-icon.exe");
+    if dst.exists() {
+        return Ok(dst);
+    }
+    // embedded bytes from repository's prebuilt binary
+    const BYTES: &[u8] = include_bytes!("../../bin/extract-icon-x86_64-pc-windows-msvc.exe");
+    fs::write(&dst, BYTES)?;
+    Ok(dst)
 }
 
 fn fail_with_body(request_id: &str, msg: impl Into<String>, body: NativeResponseCase) -> NativeResponseTs {
