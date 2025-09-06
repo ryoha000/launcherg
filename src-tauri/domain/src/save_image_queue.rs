@@ -1,7 +1,7 @@
 use crate::Id;
 
 #[derive(Debug, Clone, Copy)]
-pub enum ImageSrcType { Url = 1, Path = 2 }
+pub enum ImageSrcType { Url = 1, Path = 2, Exe = 3, Shortcut = 4 }
 
 #[derive(Debug, Clone, Copy)]
 pub enum ImagePreprocess { None = 0, ResizeAndCropSquare256 = 1, ResizeForWidth400 = 2 }

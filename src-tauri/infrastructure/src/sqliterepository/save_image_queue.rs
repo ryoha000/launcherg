@@ -10,7 +10,7 @@ impl ImageSaveQueueRepository for RepositoryImpl<domain::save_image_queue::Image
             Box::pin(async move {
                 let rec: (i64,) = sqlx::query_as("INSERT INTO save_image_queue (src, src_type, dst_path, preprocess) VALUES (?, ?, ?, ?) RETURNING id")
                     .bind(src)
-                    .bind(match src_type { ImageSrcType::Url => 1_i64, ImageSrcType::Path => 2_i64 })
+                    .bind(match src_type { ImageSrcType::Url => 1_i64, ImageSrcType::Path => 2_i64, ImageSrcType::Exe => 3_i64, ImageSrcType::Shortcut => 4_i64 })
                     .bind(dst_path)
                     .bind(match preprocess { ImagePreprocess::None => 0_i64, ImagePreprocess::ResizeAndCropSquare256 => 1_i64, ImagePreprocess::ResizeForWidth400 => 2_i64 })
                     .fetch_one(conn)
@@ -36,7 +36,7 @@ impl ImageSaveQueueRepository for RepositoryImpl<domain::save_image_queue::Image
         let mapped = rows.into_iter().map(|t| ImageSaveQueueRow {
             id: Id::new(t.id as i32),
             src: t.src,
-            src_type: if t.src_type == 1 { ImageSrcType::Url } else { ImageSrcType::Path },
+            src_type: match t.src_type { 1 => ImageSrcType::Url, 2 => ImageSrcType::Path, 3 => ImageSrcType::Exe, 4 => ImageSrcType::Shortcut, _ => ImageSrcType::Path },
             dst_path: t.dst_path,
             preprocess: match t.preprocess { 0 => ImagePreprocess::None, 1 => ImagePreprocess::ResizeAndCropSquare256, _ => ImagePreprocess::ResizeForWidth400 },
             last_error: t.last_error,
