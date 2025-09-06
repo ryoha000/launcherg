@@ -1,7 +1,4 @@
 use domain::scan::{DuplicateResolver, ResolvedWork};
-use domain::file::normalize;
-use domain::game_matcher::get_file_name_without_extension;
-// distance は ResolvedWork に保持されたものを使用する
 
 pub struct HeuristicDuplicateResolver;
 
@@ -14,16 +11,6 @@ impl HeuristicDuplicateResolver {
 
     fn grouping_key(item: &ResolvedWork) -> i32 {
         item.egs_id
-    }
-
-    fn path_for_compare(item: &ResolvedWork) -> String {
-        let path = item
-            .candidate
-            .path
-            .to_string_lossy()
-            .to_string();
-        // filename without ext and normalized (like original logic)
-        get_file_name_without_extension(&normalize(&path)).unwrap_or_default()
     }
 
     fn better(a_text: &str, b_text: &str, a_distance: f32, b_distance: f32) -> bool {
@@ -58,13 +45,13 @@ impl DuplicateResolver for HeuristicDuplicateResolver {
 
             // 複数ある場合は、キーワードとタイトルの距離を比較して最適なものを選択
             let mut best_idx: usize = 0;
-            let mut best_text: String = Self::path_for_compare(&vec[0]);
+            let mut best_path = vec[0].candidate.path.to_string_lossy().to_string();
             let mut best_distance: f32 = vec[0].distance;
             for (idx, item) in vec.iter().enumerate().skip(1) {
-                let text = Self::path_for_compare(item);
-                if Self::better(&best_text, &text, best_distance, item.distance) {
+                let path = item.candidate.path.to_string_lossy().to_string();
+                if Self::better(&best_path, &path, best_distance, item.distance) {
                     best_idx = idx;
-                    best_text = text;
+                    best_path = path;
                     best_distance = item.distance;
                 }
             }
