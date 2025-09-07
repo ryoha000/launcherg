@@ -44,6 +44,21 @@ pub struct ScanPhaseTimingPayload {
     pub duration_ms: i64,
 }
 
+#[derive(new, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct EnrichResultPayload {
+    pub status: String, // "candidate" | "resolved"
+    pub path: String,
+    pub title: Option<String>,
+    pub egs_id: Option<i32>,
+}
+
+#[derive(new, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DedupResultPayload {
+    pub removed_count: i32,
+}
+
 #[derive(Clone, Serialize)]
 pub struct ExtensionConnectionPayload {
     pub connection_status: String, // ExtensionConnectionStatus のシリアライズ形式

@@ -120,15 +120,15 @@ pub fn save_icon_to_png(
 ) -> anyhow::Result<JoinHandle<anyhow::Result<()>>> {
     let save_png_path = DirsSavePathResolver::default().icon_png_path(collection_element_id.value);
 
-    let is_ico = file_path.to_lowercase().ends_with("ico");
     let is_exe = file_path.to_lowercase().ends_with("exe");
+    let is_ico = file_path.to_lowercase().ends_with("ico");
 
-    // if is_ico {
-    //     return save_ico_to_png(file_path, &save_png_path);
-    // }
-    // if is_exe {
-    //     return save_exe_file_png(handle, file_path, &save_png_path);
-    // }
+    if is_ico {
+        return save_ico_to_png(file_path, &save_png_path);
+    }
+    if is_exe {
+        return save_exe_file_png(handle, file_path, &save_png_path);
+    }
     return save_default_icon(&save_png_path);
 }
 

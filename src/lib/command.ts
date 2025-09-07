@@ -33,6 +33,13 @@ export async function commandCreateElementsInPc(exploreDirPaths: string[], useCa
   })
 }
 
+export async function commandScanStart(exploreDirPaths: string[], useCache: boolean) {
+  return await invoke<string[]>('scan_start', {
+    exploreDirPaths,
+    useCache,
+  })
+}
+
 export async function commandGetNearestKeyAndDistance(key: string, calculateDistanceKv: [string, string][]) {
   return await invoke<[string, number]>('get_nearest_key_and_distance', {
     key,

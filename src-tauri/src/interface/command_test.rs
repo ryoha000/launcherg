@@ -175,53 +175,13 @@ async fn create_elements_in_pc_と_scan_start_で生成結果が等しい_root_G
     let snap_a = snapshot(&db_a.to_string_lossy()).await.unwrap();
 
     // -------- B: scan_start --------
-    // Db 直渡しで初期化するため環境変数の切り替えは不要
-    // WorkPipelineUseCase を直接構築して実行し、フェーズ時間は PubSub 経由で収集する
-    #[derive(Clone, Default)]
-    struct TestPubSub { events: std::sync::Arc<std::sync::Mutex<Vec<(String, serde_json::Value)>>> }
-    impl domain::pubsub::PubSubService for TestPubSub {
-        fn notify<T: serde::Serialize + Clone>(&self, event: &str, payload: T) -> Result<(), anyhow::Error> {
-            let val = serde_json::to_value(payload)?;
-            self.events.lock().unwrap().push((event.to_string(), val));
-            Ok(())
-        }
-    }
-
-    use crate::infrastructure::sqliterepository::driver::Db as TestDb;
-    use crate::infrastructure::sqliterepository::sqliterepository::SqliteRepositoryManager as TestRepoManager;
-    use crate::infrastructure::local_file_system::LocalFileSystem;
-    use crate::infrastructure::heuristic_metadata_extractor::HeuristicMetadataExtractor;
-    use crate::infrastructure::heuristic_duplicate_resolver::HeuristicDuplicateResolver;
-    use crate::infrastructure::windowsimpl::windows::Windows as InfraWindows;
-    use domain::game_matcher::{Matcher as GameMatcherImpl, GameMatcher, normalize};
-    use domain::all_game_cache::AllGameCacheOne as DomainAllGameCacheOne;
-    use domain::repository::manager::RepositoryManager as _;
-
-    use domain::repository::all_game_cache::AllGameCacheRepository as _;
-    let test_db = TestDb::from_path(&db_b.to_string_lossy()).await;
-    let test_repo_manager = std::sync::Arc::new(TestRepoManager::new(test_db.pool_arc()));
-    // GameMatcher をDBから初期化
-    let initial_cache = test_repo_manager
-        .run(|repos| Box::pin(async move { repos.all_game_cache().get_all().await }))
-        .await
-        .unwrap_or_else(|_| vec![]);
-    let normalized_cache: Vec<DomainAllGameCacheOne> = initial_cache
-        .into_iter()
-        .map(|g| DomainAllGameCacheOne::new(g.id, normalize(&g.gamename)))
-        .collect();
-    let game_matcher: std::sync::Arc<dyn GameMatcher + Send + Sync> = std::sync::Arc::new(GameMatcherImpl::with_default_config(normalized_cache));
-    let extractor = std::sync::Arc::new(HeuristicMetadataExtractor::new(game_matcher));
-    let fs = std::sync::Arc::new(LocalFileSystem::default());
-    let dedup = std::sync::Arc::new(HeuristicDuplicateResolver);
-    let pubsub = TestPubSub::default();
-
-    let windows = std::sync::Arc::new(InfraWindows::new());
-    let resolver = std::sync::Arc::new(domain::service::save_path_resolver::DirsSavePathResolver::default());
-    let uc: crate::usecase::work_pipeline::WorkPipelineUseCase<_, _, _, _, _, _, _> =
-        crate::usecase::work_pipeline::WorkPipelineUseCase::new(test_repo_manager, pubsub.clone(), fs, extractor, dedup, resolver, windows);
-
+    
+    // -------- B: scan_start --------
+    let db_b_loaded = Db::from_path(&db_b.to_string_lossy()).await;
+    let (app_b, _handle_b, _modules_b) = init_app_and_modules_with_db(db_b_loaded).await;
+    let state_b: tauri::State<'_, Arc<Modules>> = app_b.state::<Arc<Modules>>();
     let start_scan_start = std::time::Instant::now();
-    let _ = uc.start(vec![std::path::PathBuf::from("G:\\game")], false).await;
+    let _ = command::scan_start(state_b, vec!["G:\\game".to_string()], Some(false)).await.unwrap();
     let processing_time_scan_start = start_scan_start.elapsed();
     let snap_b = snapshot(&db_b.to_string_lossy()).await.unwrap();
 
@@ -231,56 +191,14 @@ async fn create_elements_in_pc_と_scan_start_で生成結果が等しい_root_G
 
     let egs_a = egs_ce_a.iter().map(|(egs, _)| egs).collect::<HashSet<_>>();
     let egs_b = egs_ce_b.iter().map(|(egs, _)| egs).collect::<HashSet<_>>();
-    // assert_eq!(egs_a, egs_b, "EGS 集合が一致しません");
+    assert_eq!(egs_a, egs_b, "EGS 集合が一致しません");
 
-    // assert_eq!(explored_a, explored_b, "explored_cache が一致しません");
-
-    // 受信したフェーズ時間を標準出力へ出す（目視確認用）
-    let received_timings: Vec<(String, i64)> = pubsub
-        .events
-        .lock()
-        .unwrap()
-        .iter()
-        .filter_map(|(k, v)| if k == "scanPhaseTiming" {
-            let phase = v.get("phase").and_then(|s| s.as_str()).unwrap_or("").to_string();
-            let dur = v.get("duration_ms").and_then(|n| n.as_i64()).unwrap_or(0);
-            Some((phase, dur))
-        } else { None })
-        .collect();
-    assert!(!received_timings.is_empty(), "scanPhaseTiming が届いていない");
-    for (phase, ms) in received_timings.into_iter() {
-        println!("scanPhaseTiming: phase={} duration={}ms", phase, ms);
-    }
-
-    // パイプライン統計を標準出力へ出す
-    let received_stats: Vec<(i64, i64, i64, i64, i64, i64, f64, f64)> = pubsub
-        .events
-        .lock()
-        .unwrap()
-        .iter()
-        .filter_map(|(k, v)| if k == "scanPipelineStats" {
-            let enumerated = v.get("enumerated_count").and_then(|n| n.as_i64()).unwrap_or(0);
-            let processed = v.get("processed_count").and_then(|n| n.as_i64()).unwrap_or(0);
-            let walking_ms = v.get("walking_ms").and_then(|n| n.as_i64()).unwrap_or(0);
-            let enriching_ms = v.get("enriching_ms").and_then(|n| n.as_i64()).unwrap_or(0);
-            let backlog_ms = v.get("backlog_ms").and_then(|n| n.as_i64()).unwrap_or(0);
-            let producer_block_ms = v.get("producer_block_ms").and_then(|n| n.as_i64()).unwrap_or(0);
-            let producer_rate_per_s = v.get("producer_rate_per_s").and_then(|n| n.as_f64()).unwrap_or(0.0);
-            let consumer_rate_per_s = v.get("consumer_rate_per_s").and_then(|n| n.as_f64()).unwrap_or(0.0);
-            Some((enumerated, processed, walking_ms, enriching_ms, backlog_ms, producer_block_ms, producer_rate_per_s, consumer_rate_per_s))
-        } else { None })
-        .collect();
-    for (enum_cnt, proc_cnt, w_ms, e_ms, back_ms, block_ms, pr, cr) in received_stats.into_iter() {
-        println!(
-            "scanPipelineStats: enumerated={} processed={} walking_ms={} enriching_ms={} backlog_ms={} producer_block_ms={} producer_rate/s={:.2} consumer_rate/s={:.2}",
-            enum_cnt, proc_cnt, w_ms, e_ms, back_ms, block_ms, pr, cr
-        );
-    }
+    assert_eq!(explored_a, explored_b, "explored_cache が一致しません");
 
     println!("processing_time_scan_start: {:?}", processing_time_scan_start);
     println!("processing_time_create_elements_in_pc: {:?}", processing_time_create_elements_in_pc);
 
-    // assert!(processing_time_scan_start < processing_time_create_elements_in_pc, "scan_start の処理時間が create_elements_in_pc の処理時間より長い. {:?} > {:?}", processing_time_scan_start, processing_time_create_elements_in_pc);
+    assert!(processing_time_scan_start < processing_time_create_elements_in_pc, "scan_start の処理時間が create_elements_in_pc の処理時間より長い. {:?} < {:?}", processing_time_scan_start, processing_time_create_elements_in_pc);
 }
 
 

@@ -1,4 +1,4 @@
-import { commandCreateElementsInPc } from '@/lib/command'
+import { commandScanStart } from '@/lib/command'
 import { registerCollectionElementDetails } from '@/lib/registerCollectionElementDetails'
 import { showInfoToast } from '@/lib/toast'
 import { sidebarCollectionElements } from '@/store/sidebarCollectionElements'
@@ -10,7 +10,7 @@ export function useAutoImport() {
   const executeImport = async (paths: string[]) => {
     isLoading = true
     try {
-      const res = await commandCreateElementsInPc(paths, useCache)
+      const res = await commandScanStart(paths, useCache)
       await registerCollectionElementDetails()
       await sidebarCollectionElements.refetch()
 

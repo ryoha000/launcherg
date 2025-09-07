@@ -171,7 +171,7 @@ pub async fn scan_start(
     modules: State<'_, Arc<Modules>>,
     roots: Vec<String>,
     use_cache: Option<bool>,
-) -> anyhow::Result<(), CommandError> {
+) -> anyhow::Result<Vec<String>, CommandError> {
     let roots: Vec<std::path::PathBuf> = roots.into_iter().map(|s| std::path::PathBuf::from(s)).collect();
     modules
         .work_pipeline_use_case()

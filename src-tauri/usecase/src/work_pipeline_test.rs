@@ -1,7 +1,7 @@
 #[cfg(test)]
 mod tests {
     #![allow(non_snake_case)]
-    use std::collections::{HashSet, HashMap};
+    use std::collections::HashSet;
     use std::{path::PathBuf, sync::Arc, sync::Mutex};
 
     use domain::pubsub::PubSubService;
@@ -22,9 +22,9 @@ mod tests {
         }
     }
 
-    // smoke: start sends initial EnumeratingRoots
+    // smoke
     #[tokio::test]
-    async fn IdleでStartを受けるとEnumeratingRootsへ遷移する() {
+    async fn Start_空ストリームでもエラーなく完了する() {
         let pubsub = MockPubSub::default();
         let mut fs = MockFileSystem::new();
         fs.expect_walk_dir().returning(|_, _| Ok(Box::new(Vec::<WorkCandidate>::new().into_iter())));
@@ -50,55 +50,43 @@ mod tests {
         let windows = Arc::new(MockWindowsExtMock::new());
         let uc: WorkPipelineUseCase<_, _, _, _, _, _, _> = WorkPipelineUseCase::new(manager, pubsub.clone(), fs, extractor, dedup, Arc::new(domain::service::save_path_resolver::DirsSavePathResolver::default()), windows);
         let roots: Vec<PathBuf> = vec![];
-        let _ = uc.start(roots, false).await;
-
-        let events = pubsub.events.lock().unwrap().clone();
-        let first = events.into_iter().next().expect("no events");
-        assert_eq!(first.0, "scanProgress");
+        let _ = uc.start(roots, false).await.unwrap();
+        // 何も検出されないのでイベントは0～数件（内部での副作用無し）
     }
 
-    // notify_phase unit
+    // enrich 1件ごとに candidate/resolved を送る
     #[tokio::test]
-    async fn notify_phase_がscanProgressを送る() {
-        let pubsub = MockPubSub::default();
-        let mut fs = MockFileSystem::new();
-        fs.expect_walk_dir().returning(|_, _| Ok(Box::new(Vec::<WorkCandidate>::new().into_iter())));
-        let fs = Arc::new(fs);
-        let extractor = Arc::new(MockMetadataExtractor::new());
-        let dedup = Arc::new(MockDuplicateResolver::new());
-        let manager = Arc::new(TestRepositoryManager::new(TestRepositories::default()));
-        let windows = Arc::new(MockWindowsExtMock::new());
-        let uc: WorkPipelineUseCase<_, _, _, _, _, _, _> = WorkPipelineUseCase::new(manager, pubsub.clone(), fs, extractor, dedup, Arc::new(domain::service::save_path_resolver::DirsSavePathResolver::default()), windows);
-        uc.notify_phase("PhaseX", 1, 2, 3, Some("ラベル"));
-        let events = pubsub.events.lock().unwrap();
-        let last = events.last().unwrap();
-        assert_eq!(last.0, "scanProgress");
-        assert_eq!(last.1.get("phase").unwrap().as_str().unwrap(), "PhaseX");
-        assert_eq!(last.1.get("processed").unwrap().as_i64().unwrap(), 1);
-        assert_eq!(last.1.get("total").unwrap().as_i64().unwrap(), 2);
-        assert_eq!(last.1.get("errors").unwrap().as_i64().unwrap(), 3);
-        assert_eq!(last.1.get("message").unwrap().as_str().unwrap(), "ラベル");
-    }
-
-    // notify_summary unit
-    #[tokio::test]
-    async fn notify_summary_がsummaryとprogress系を送る() {
+    async fn enrich結果_候補と解決を1件ずつ通知する() {
         let pubsub = MockPubSub::default();
         let fs = Arc::new(MockFileSystem::new());
-        let extractor = Arc::new(MockMetadataExtractor::new());
-        let dedup = Arc::new(MockDuplicateResolver::new());
+        let mut extractor = MockMetadataExtractor::new();
+        extractor.expect_enrich().returning(|c| {
+            if c.path.to_string_lossy().contains("a.exe") {
+                Ok(WorkCandidateOrResolvedWork::Candidate(c))
+            } else {
+                Ok(WorkCandidateOrResolvedWork::Resolved(ResolvedWork::new(c, "B".into(), 2, 0.1)))
+            }
+        });
+        let extractor = Arc::new(extractor);
+        let mut d = MockDuplicateResolver::new();
+        d.expect_resolve().returning(|items| items);
+        let dedup = Arc::new(d);
         let manager = Arc::new(TestRepositoryManager::new(TestRepositories::default()));
         let windows = Arc::new(MockWindowsExtMock::new());
-        let uc: WorkPipelineUseCase<_, _, _, _, _, _, _> = WorkPipelineUseCase::new(manager, pubsub.clone(), fs, extractor, dedup, Arc::new(domain::service::save_path_resolver::DirsSavePathResolver::default()), windows);
-        let stats = domain::scan::ScanStats::new(10, 7, 5, 1, 2);
-        uc.notify_summary(1234, &stats);
-        let events = pubsub.events.lock().unwrap().clone();
-        let mut kinds: HashMap<String, i32> = HashMap::new();
-        for (k, _) in events { *kinds.entry(k).or_default() += 1; }
-        assert_eq!(kinds.get("scanSummary").copied().unwrap_or(0), 1);
-        assert_eq!(kinds.get("progress").copied().unwrap_or(0), 1);
-        assert_eq!(kinds.get("progresslive").copied().unwrap_or(0), 1);
+        let uc: WorkPipelineUseCase<_, _, _, _, _, _, _> = WorkPipelineUseCase::new(
+            manager, pubsub.clone(), fs, extractor, dedup,
+            Arc::new(domain::service::save_path_resolver::DirsSavePathResolver::default()), windows
+        );
+        let _ = uc.enrich_candidates_parallel_stream(futures::stream::iter(vec![
+            WorkCandidate::new(PathBuf::from("a.exe"), CandidateKind::Exe),
+            WorkCandidate::new(PathBuf::from("b.exe"), CandidateKind::Exe),
+        ])).await;
+        let events = pubsub.events.lock().unwrap();
+        assert!(events.iter().any(|(k, v)| k == "scanEnrichResult" && v.get("status").unwrap() == "candidate"));
+        assert!(events.iter().any(|(k, v)| k == "scanEnrichResult" && v.get("status").unwrap() == "resolved"));
     }
+
+    // dedup は重複数のみ通知
 
     // open_candidate_stream
     #[tokio::test]
@@ -140,7 +128,7 @@ mod tests {
 
     // deduplicate_and_notify
     #[tokio::test]
-    async fn deduplicate_and_notify_重複数が計算されscanProgressが出る() {
+    async fn deduplicate_and_notify_重複数のみscanDedupで通知される() {
         let pubsub = MockPubSub::default();
         let fs = Arc::new(MockFileSystem::new());
         let extractor = Arc::new(MockMetadataExtractor::new());
@@ -157,7 +145,7 @@ mod tests {
         let (_deduped, dup) = uc.deduplicate_and_notify(resolved, 2);
         assert_eq!(dup, 1);
         let events = pubsub.events.lock().unwrap();
-        assert!(events.iter().any(|(ev, v)| ev == "scanProgress" && v.get("phase").unwrap() == "Deduping"));
+        assert!(events.iter().any(|(ev, v)| ev == "scanDedup" && v.get("removedCount").unwrap() == 1));
     }
 
     // persist

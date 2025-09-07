@@ -1,9 +1,9 @@
-use std::{marker::PhantomData, sync::Arc, time::Instant};
+use std::{marker::PhantomData, sync::Arc};
 use std::collections::{HashMap, HashSet};
 use std::sync::atomic::{AtomicI32, Ordering};
 
-use domain::pubsub::{PubSubService, ScanProgressPayload, ScanLogPayload, ScanSummaryPayload};
-use domain::scan::{CandidateKind, DuplicateResolver, FileSystem, MetadataExtractor, ResolvedWork, ScanStats, WorkCandidate, WorkCandidateOrResolvedWork};
+use domain::pubsub::{PubSubService, EnrichResultPayload, DedupResultPayload};
+use domain::scan::{CandidateKind, DuplicateResolver, FileSystem, MetadataExtractor, ResolvedWork, WorkCandidate, WorkCandidateOrResolvedWork};
 use domain::Id;
 use domain::collection::CollectionElement;
 use domain::repository::{
@@ -64,69 +64,26 @@ where
         windows: Arc<W>,
     ) -> Self { Self { manager, pubsub, fs, extractor, dedup, resolver, windows, _marker: PhantomData } }
 
-    pub async fn start(&self, roots: Vec<std::path::PathBuf>, use_cache: bool) -> anyhow::Result<()> {
-        let started = Instant::now();
-        let mut stats = ScanStats::new(0, 0, 0, 0, 0);
-
+    pub async fn start(&self, roots: Vec<std::path::PathBuf>, use_cache: bool) -> anyhow::Result<Vec<String>> {
         let rx = self.open_candidate_stream(&roots, use_cache).await?;
         // フェーズ: メタ付与（並列・ストリーミング）
-        let (resolved, explored, processed_count) = self.enrich_candidates_parallel_stream(ReceiverStream::new(rx)).await;
-        stats.found = processed_count;
-        stats.recognized = resolved.len();
+        let (resolved, explored, _processed_count) = self.enrich_candidates_parallel_stream(ReceiverStream::new(rx)).await;
 
         // フェーズ: 重複排除
-        let (deduped, duplicates) = self.deduplicate_and_notify(resolved, stats.recognized);
-        stats.duplicates = duplicates;
+        let recognized_len = resolved.len();
+        let (deduped, _duplicates) = self.deduplicate_and_notify(resolved, recognized_len);
 
         // フェーズ: 永続化
-        let persisted = self.persist(&deduped).await?;
+        let _ = self.persist(&deduped).await?;
         // フェーズ: .lnk 保全
         self.ensure_work_lnks(&deduped).await?;
         self.update_explored_cache(explored).await?;
-        stats.persisted = persisted;
 
         self.post_process_thumbnail_sizes().await?;
-
-        // サマリ通知
-        let took = started.elapsed().as_millis() as i64;
-        self.notify_summary(took, &stats);
-        Ok(())
+        Ok(deduped.into_iter().map(|r| r.title).collect())
     }
 
-    pub(crate) fn notify_phase(&self, phase: &str, current: i32, total: i32, errors: i32, label: Option<&str>) {
-        let _ = self.pubsub.notify(
-            "scanProgress",
-            ScanProgressPayload::new(
-                phase.into(),
-                current,
-                total,
-                errors,
-                label.map(|s| s.to_string()),
-            ),
-        );
-    }
-
-    pub(crate) fn notify_summary(&self, took_ms: i64, stats: &ScanStats) {
-        let _ = self.pubsub.notify(
-            "scanSummary",
-            ScanSummaryPayload::new(
-                took_ms,
-                stats.found as i32,
-                stats.recognized as i32,
-                stats.persisted as i32,
-                stats.skipped as i32,
-                stats.duplicates as i32,
-            ),
-        );
-        let _ = self.pubsub.notify(
-            "progress",
-            domain::pubsub::ProgressPayload::new(format!(
-                "スキャン完了: {}ms, 件数 found={}, recognized={}, persisted={}, skipped={}, duplicates={}",
-                took_ms, stats.found, stats.recognized, stats.persisted, stats.skipped, stats.duplicates
-            )),
-        );
-        let _ = self.pubsub.notify("progresslive", domain::pubsub::ProgressLivePayload::new(None));
-    }
+    
 
     pub(crate) async fn open_candidate_stream(&self, roots: &[std::path::PathBuf], use_cache: bool) -> anyhow::Result<mpsc::Receiver<WorkCandidate>> {
         let exclude = if use_cache {
@@ -175,25 +132,27 @@ where
                 let pubsub = pubsub_en;
                 let processed = processed_counter.clone();
                 async move {
-                    let current = processed.fetch_add(1, Ordering::Relaxed) + 1;
-                    let _ = pubsub.notify(
-                        "scanProgress",
-                        ScanProgressPayload::new(
-                            "Enriching".into(),
-                            current,
-                            0,
-                            0,
-                            Some("メタ付与中".into()),
-                        ),
-                    );
+                    let _ = processed.fetch_add(1, Ordering::Relaxed) + 1;
                     match res {
-                        Ok(Ok(v)) => Some(v),
-                        Ok(Err(e)) => {
-                            let _ = pubsub.notify("scanLog", ScanLogPayload::new("error".into(), e.to_string()));
+                        Ok(Ok(v)) => {
+                            match &v {
+                                WorkCandidateOrResolvedWork::Candidate(c) => {
+                                    let path = c.path.to_string_lossy().to_string();
+                                    let _ = pubsub.notify("scanEnrichResult", EnrichResultPayload::new("candidate".into(), path, None, None));
+                                }
+                                WorkCandidateOrResolvedWork::Resolved(r) => {
+                                    let path = r.candidate.path.to_string_lossy().to_string();
+                                    let title = r.title.clone();
+                                    let egs_id = r.egs_id;
+                                    let _ = pubsub.notify("scanEnrichResult", EnrichResultPayload::new("resolved".into(), path, Some(title), Some(egs_id)));
+                                }
+                            }
+                            Some(v)
+                        },
+                        Ok(Err(_e)) => {
                             None
                         },
-                        Err(join_err) => {
-                            let _ = pubsub.notify("scanLog", ScanLogPayload::new("error".into(), format!("join error: {}", join_err)));
+                        Err(_join_err) => {
                             None
                         }
                     }
@@ -216,13 +175,7 @@ where
     pub(crate) fn deduplicate_and_notify(&self, resolved: Vec<ResolvedWork>, recognized_len: usize) -> (Vec<ResolvedWork>, usize) {
         let deduped: Vec<ResolvedWork> = self.dedup.resolve(resolved);
         let duplicates = recognized_len.saturating_sub(deduped.len());
-        self.notify_phase(
-            "Deduping",
-            deduped.len() as i32,
-            recognized_len as i32,
-            0,
-            Some("重複排除"),
-        );
+        let _ = self.pubsub.notify("scanDedup", DedupResultPayload::new(duplicates as i32));
         (deduped, duplicates)
     }
 
@@ -426,7 +379,7 @@ where
                 if std::fs::copy(&t.src, &t.dst).is_ok() {
                     to_insert.push((t.work_id.clone(), t.dst.clone()));
                 } else {
-                    let _ = self.pubsub.notify("scanLog", ScanLogPayload::new("error".into(), format!("ensure_work_lnks copy failed: {} -> {}", t.src, t.dst)));
+                    // no-op: フロントへのログ通知を廃止
                 }
             } else if matches!(t.kind, CandidateKind::Exe) {
                 exe_reqs.push(CreateShortcutRequest { target_path: t.src.clone(), dest_lnk_path: t.dst.clone(), working_dir: None, arguments: None, icon_path: None });
