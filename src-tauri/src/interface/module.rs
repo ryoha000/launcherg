@@ -1,7 +1,5 @@
 use std::sync::Arc;
 
-use tauri::AppHandle;
-
 use crate::{
     domain::{pubsub::PubSubService, repository::RepositoriesExt},
     domain::service::save_path_resolver::{DirsSavePathResolver},
@@ -34,6 +32,7 @@ use crate::{
 use domain::repository::manager::RepositoryManager as _;
 use domain::game_matcher::{Matcher as GameMatcherImpl, GameMatcher, normalize};
 use domain::all_game_cache::AllGameCacheOne as DomainAllGameCacheOne;
+use tauri::AppHandle;
 
 pub struct Modules {
     collection_use_case: CollectionUseCase<SqliteRepositoryManager, SqliteRepositories, ThumbnailServiceImpl, Windows>,
@@ -131,9 +130,7 @@ impl ModulesExt for Modules {
 }
 
 impl Modules {
-    pub async fn new(handle: &AppHandle) -> Self {
-        let db = Db::new(handle).await;
-
+    pub async fn new(db: Db, handle: &AppHandle) -> Self {
         let repo_manager = Arc::new(SqliteRepositoryManager::new(db.pool_arc()));
         let windows = Arc::new(Windows::new());
         let pubsub = PubSub::new(Arc::new(handle.clone()));

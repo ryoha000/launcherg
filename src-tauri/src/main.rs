@@ -9,6 +9,7 @@ pub mod usecase { pub use ::usecase::*; }
 use std::sync::Arc;
 
 use domain::service::save_path_resolver::{SavePathResolver, DirsSavePathResolver};
+use ::infrastructure::sqliterepository::driver::Db;
 use interface::{command, module::Modules};
 use tauri::{async_runtime::block_on, Manager};
 use tauri_plugin_log::{Target, TargetKind};
@@ -46,7 +47,8 @@ fn main() {
                 std::fs::remove_dir_all(src_dir).unwrap();
             }
 
-            let modules = Arc::new(block_on(Modules::new(&app.handle())));
+            let db = block_on(Db::new(&app.handle()));
+            let modules = Arc::new(block_on(Modules::new(db, &app.handle())));
             app.manage(modules);
 
             // migration: collection_element_paths -> work_lnks

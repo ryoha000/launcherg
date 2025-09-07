@@ -1,5 +1,5 @@
 use std::collections::HashMap;
-use std::sync::{Mutex, RwLock};
+use std::sync::RwLock;
 use std::time::{Duration, Instant};
 use std::thread;
 use crate::all_game_cache::{AllGameCache, AllGameCacheOne};
@@ -14,6 +14,7 @@ pub struct MatcherConfig {
     pub similarity_threshold: f32,
     pub partial_min_length: usize,
     pub ignore_game_ids: Vec<i32>,
+    pub normalized_index: HashMap<String, i32>,
 }
 
 impl Default for MatcherConfig {
@@ -28,6 +29,7 @@ impl Default for MatcherConfig {
             similarity_threshold: 0.8,
             partial_min_length: 5,
             ignore_game_ids: IGNORE_GAME_ID.to_vec(),
+            normalized_index: HashMap::new(),
         }
     }
 }
@@ -47,15 +49,19 @@ pub struct Matcher {
     game_cache: RwLock<AllGameCache>,
     config: MatcherConfig,
     // query -> Vec<(game, score)> のキャッシュ（閾値以上のマッチのみ）
-    query_cache: Mutex<HashMap<String, Vec<(AllGameCacheOne, f32)>>>,
+    query_cache: RwLock<HashMap<String, Vec<(AllGameCacheOne, f32)>>>,
+    // 正規化キー -> id の O(1) 近似 index（完全一致用）
+    normalized_index: RwLock<HashMap<String, i32>>,
 }
 
 impl Matcher {
     pub fn new(game_cache: AllGameCache, config: MatcherConfig) -> Self {
-        Self { 
-            game_cache: RwLock::new(game_cache), 
+        let index = Self::build_normalized_index(&game_cache);
+        Self {
+            game_cache: RwLock::new(game_cache),
             config,
-            query_cache: Mutex::new(HashMap::new()),
+            query_cache: RwLock::new(HashMap::new()),
+            normalized_index: RwLock::new(index),
         }
     }
     
@@ -65,24 +71,19 @@ impl Matcher {
     
     /// キャッシュをクリアする
     pub fn clear_cache(&self) {
-        if let Ok(mut cache) = self.query_cache.lock() {
-            cache.clear();
-        }
+        if let Ok(mut cache) = self.query_cache.write() { cache.clear(); }
     }
     
     /// キャッシュサイズを取得
     pub fn cache_size(&self) -> usize {
-        self.query_cache.lock().map_or(0, |cache| cache.len())
+        self.query_cache.read().map_or(0, |cache| cache.len())
     }
     
     /// 単一クエリに対する閾値以上のマッチング結果を取得（キャッシュ付き）
     pub fn get_matches_for_query(&self, query: &str) -> Vec<(AllGameCacheOne, f32)> {
-        // 30秒以内に読み取りスナップショットを取得
-        let cache_snapshot = match self.snapshot_cache_with_timeout(Duration::from_secs(30)) {
-            Some(s) => s,
-            None => return Vec::new(),
-        };
-        self.get_matches_for_query_with_snapshot(query, &cache_snapshot)
+        // 読み取りロックを取得してスナップショット参照を直接使用（クローンを避ける）
+        let guard = match self.game_cache.read() { Ok(g) => g, Err(_) => return Vec::new() };
+        self.get_matches_for_query_with_snapshot(query, &guard)
     }
 
     /// タイムアウト付きでゲームキャッシュのスナップショットを取得
@@ -103,13 +104,20 @@ impl Matcher {
 
     /// スナップショットを使ってマッチを計算（クエリキャッシュを利用）
     fn get_matches_for_query_with_snapshot(&self, query: &str, cache_snapshot: &[AllGameCacheOne]) -> Vec<(AllGameCacheOne, f32)> {
-        // キャッシュを確認
-        if let Ok(cache) = self.query_cache.lock() {
-            if let Some(cached_result) = cache.get(query) {
-                return cached_result.clone();
+        // キャッシュを確認（read lock）
+        if let Ok(cache) = self.query_cache.read() { if let Some(cached_result) = cache.get(query) { return cached_result.clone(); } }
+        
+        // 正規化キーの O(1) 近似（完全一致短絡）
+        if let Ok(idx) = self.normalized_index.read() {
+            if let Some(&game_id) = idx.get(query) {
+                if let Some(game) = cache_snapshot.iter().find(|g| g.id == game_id) {
+                    let res = vec![(game.clone(), 1.0)];
+                    if let Ok(mut cache) = self.query_cache.write() { cache.insert(query.to_string(), res.clone()); }
+                    return res;
+                }
             }
         }
-        
+
         // キャッシュにない場合は計算
         let mut matches = Vec::new();
         
@@ -136,22 +144,29 @@ impl Matcher {
             }
         }
         
-        // 結果をキャッシュに保存
-        if let Ok(mut cache) = self.query_cache.lock() {
-            cache.insert(query.to_string(), matches.clone());
-        }
+        // 結果をキャッシュに保存（write lock）
+        if let Ok(mut cache) = self.query_cache.write() { cache.insert(query.to_string(), matches.clone()); }
         
         matches
+    }
+
+    fn build_normalized_index(snapshot: &AllGameCache) -> HashMap<String, i32> {
+        let mut m = HashMap::new();
+        for g in snapshot.iter() {
+            // ここでは既に AllGameCache は正規化済みを前提とするか、
+            // そうでなければ normalize を適用する（normalize は `super::normalizer`）。
+            // 安全側でそのままキー化する。
+            m.insert(g.gamename.clone(), g.id);
+        }
+        m
     }
 }
 
 impl GameMatcher for Matcher {
     fn find_candidates(&self, queries: &[String]) -> Vec<(AllGameCacheOne, f32)> {
-        // 30秒以内に読み取りスナップショットを取得
-        let cache_snapshot = match self.snapshot_cache_with_timeout(Duration::from_secs(30)) {
-            Some(s) => s,
-            None => return Vec::new(),
-        };
+        // 読み取りロックを取得してスナップショット参照を直接使用（クローンを避ける）
+        let cache_guard = match self.game_cache.read() { Ok(g) => g, Err(_) => return Vec::new() };
+        let cache_snapshot: &[AllGameCacheOne] = &cache_guard;
         // 1. 完全一致チェック
         for query in queries {
             if let Some(&game_id) = self.config.exact_mappings.get(query) {
@@ -165,7 +180,7 @@ impl GameMatcher for Matcher {
         let mut game_scores: HashMap<i32, f32> = HashMap::new();
         
         for query in queries {
-            let matches = self.get_matches_for_query_with_snapshot(query, &cache_snapshot);
+            let matches = self.get_matches_for_query_with_snapshot(query, cache_snapshot);
             for (game, score) in matches {
                 // 各ゲームの最高スコアを保持
                 let current_score = game_scores.get(&game.id).unwrap_or(&0.0);
@@ -194,6 +209,13 @@ impl GameMatcher for Matcher {
         }
         // クエリキャッシュは無効化（内容が変わるため）
         self.clear_cache();
+        // 正規化インデックスを再構築
+        if let Ok(cache_guard) = self.game_cache.read() {
+            let new_index = Self::build_normalized_index(&cache_guard);
+            if let Ok(mut idx) = self.normalized_index.write() {
+                *idx = new_index;
+            }
+        }
     }
 }
 

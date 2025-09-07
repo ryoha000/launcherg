@@ -29,7 +29,6 @@ impl FileSystem for LocalFileSystem {
             .flat_map(move |root| {
                 let exclude = exclude.clone();
                 walkdir::WalkDir::new(root)
-                    .follow_links(true)
                     .into_iter()
                     .filter_map(|e| e.ok())
                     .filter_map(move |entry| {

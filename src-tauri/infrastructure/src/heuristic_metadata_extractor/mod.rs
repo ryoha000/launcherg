@@ -46,4 +46,3 @@ impl MetadataExtractor for HeuristicMetadataExtractor
 #[cfg(test)]
 mod test;
 
-

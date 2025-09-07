@@ -1,6 +1,6 @@
 use std::{marker::PhantomData, sync::Arc, time::Instant};
 
-use domain::pubsub::{PubSubService, ScanProgressPayload, ScanLogPayload, ScanSummaryPayload};
+use domain::pubsub::{PubSubService, ScanProgressPayload, ScanLogPayload, ScanSummaryPayload, ScanPhaseTimingPayload, ScanPipelineStatsPayload};
 use domain::scan::{CandidateKind, DuplicateResolver, FileSystem, MetadataExtractor, ResolvedWork, ScanStats, WorkCandidate, WorkCandidateOrResolvedWork};
 use domain::Id;
 use domain::collection::CollectionElement;
@@ -16,6 +16,8 @@ use domain::repository::{
 use domain::save_image_queue::{ImageSrcType, ImagePreprocess};
 use domain::service::save_path_resolver::{SavePathResolver, DirsSavePathResolver};
 use futures::StreamExt as _;
+use tokio::sync::mpsc;
+use tokio_stream::wrappers::ReceiverStream;
 
 pub struct WorkPipelineUseCase<M, R, P, FS, ME, DR>
 where
@@ -40,7 +42,7 @@ where
     R: RepositoriesExt + Send + Sync + 'static,
     P: PubSubService,
     FS: FileSystem,
-    ME: MetadataExtractor,
+    ME: MetadataExtractor + Send + Sync + 'static,
     DR: DuplicateResolver,
 {
     pub fn new(manager: Arc<M>, pubsub: P, fs: Arc<FS>, extractor: Arc<ME>, dedup: Arc<DR>) -> Self { Self { manager, pubsub, fs, extractor, dedup, _marker: PhantomData } }
@@ -53,34 +55,95 @@ where
         // フェーズ: ルート列挙
         self.notify_phase("EnumeratingRoots", 0, 0, 0, Some("ルート列挙"));
 
-        // フェーズ: FS 走査（exclude は内部で解決）→ イテレータをそのまま enrich へストリーミング
+        // フェーズ: FS 走査（exclude は内部で解決）→ mpsc チャネルで enrich へストリーミング
         self.notify_phase("WalkingFs", 0, 0, 0, Some("候補抽出"));
+        let t_build = Instant::now();
         let iter = self.build_candidate_iter(&roots, use_cache).await?;
+        self.notify_phase_timing("BuildCandidateIter", t_build.elapsed());
+        let (tx, rx) = mpsc::channel::<WorkCandidate>(2048);
+        let t_walk = Instant::now();
+        let (done_tx, done_rx) = tokio::sync::oneshot::channel::<(i64, i64, i64)>();
+        tokio::spawn(async move {
+            let mut enumerated: i64 = 0;
+            let mut produce_block_ms: i64 = 0;
+            for c in iter {
+                enumerated += 1;
+                match tx.try_send(c) {
+                    Ok(_) => {}
+                    Err(tokio::sync::mpsc::error::TrySendError::Full(c)) => {
+                        let t = Instant::now();
+                        if tx.send(c).await.is_err() { break; }
+                        produce_block_ms += t.elapsed().as_millis() as i64;
+                    }
+                    Err(tokio::sync::mpsc::error::TrySendError::Closed(_)) => break,
+                }
+            }
+            let walking_ms = t_walk.elapsed().as_millis() as i64;
+            let _ = done_tx.send((walking_ms, enumerated, produce_block_ms));
+        });
         self.notify_phase("Classifying", 0, 0, 0, Some("認識"));
         // フェーズ: メタ付与（並列・ストリーミング）
-        let (resolved, explored, processed_count) = self.enrich_candidates_parallel(iter).await;
+        let t_enrich = Instant::now();
+        let (resolved, explored, processed_count) = self.enrich_candidates_parallel_stream(ReceiverStream::new(rx)).await;
+        let enriching_ms = t_enrich.elapsed().as_millis() as i64;
+        self.notify_phase_timing("Enriching", std::time::Duration::from_millis(enriching_ms as u64));
+        if let Ok((walking_ms, enumerated_count, producer_block_ms)) = done_rx.await {
+            self.notify_phase_timing("WalkingFs", std::time::Duration::from_millis(walking_ms as u64));
+            let processed_count = processed_count as i64;
+            let backlog_ms = (enriching_ms - walking_ms).max(0);
+            let producer_rate_per_s = if walking_ms > 0 { enumerated_count as f64 / (walking_ms as f64 / 1000.0) } else { 0.0 };
+            let consumer_rate_per_s = if enriching_ms > 0 { processed_count as f64 / (enriching_ms as f64 / 1000.0) } else { 0.0 };
+            let _ = self.pubsub.notify(
+                "scanPipelineStats",
+                ScanPipelineStatsPayload::new(
+                    enumerated_count,
+                    processed_count,
+                    walking_ms,
+                    enriching_ms,
+                    backlog_ms,
+                    producer_block_ms,
+                    producer_rate_per_s,
+                    consumer_rate_per_s,
+                ),
+            );
+        }
         stats.found = processed_count;
         stats.recognized = resolved.len();
         let total = stats.found as i32;
 
         // フェーズ: 重複排除
+        let t_dedup = Instant::now();
         let (deduped, duplicates) = self.deduplicate_and_notify(resolved, stats.recognized);
+        self.notify_phase_timing("Deduping", t_dedup.elapsed());
         stats.duplicates = duplicates;
 
         // フェーズ: 永続化
+        let t_persist = Instant::now();
         let persisted = self.persist(&deduped).await?;
+        self.notify_phase_timing("Persisting", t_persist.elapsed());
+        let t_update_cache = Instant::now();
         let _ = self.update_explored_cache(explored).await;
+        self.notify_phase_timing("UpdateExploredCache", t_update_cache.elapsed());
         stats.persisted = persisted;
         self.notify_phase("Persisting", persisted as i32, stats.recognized as i32, errors, Some("保存"));
 
         // フェーズ: PostProcessing（通知→実処理）
         self.notify_phase("PostProcessing", persisted as i32, total, errors, Some("事後処理"));
+        let t_post = Instant::now();
         let _ = self.post_process_thumbnail_sizes().await;
+        self.notify_phase_timing("PostProcessing", t_post.elapsed());
 
         // サマリ通知
         let took = started.elapsed().as_millis() as i64;
         self.notify_summary(took, &stats);
         Ok(())
+    }
+
+    fn notify_phase_timing(&self, phase: &str, took: std::time::Duration) {
+        let _ = self.pubsub.notify(
+            "scanPhaseTiming",
+            ScanPhaseTimingPayload::new(phase.to_string(), took.as_millis() as i64),
+        );
     }
 
     pub(crate) fn notify_phase(&self, phase: &str, current: i32, total: i32, errors: i32, label: Option<&str>) {
@@ -129,18 +192,25 @@ where
         Ok(iter)
     }
 
-    pub(crate) async fn enrich_candidates_parallel(&self, candidates: Box<dyn Iterator<Item = WorkCandidate> + Send>) -> (Vec<ResolvedWork>, Vec<String>, usize) {
+    pub(crate) async fn enrich_candidates_parallel_stream<S>(&self, candidates: S) -> (Vec<ResolvedWork>, Vec<String>, usize)
+    where
+        S: futures::Stream<Item = WorkCandidate> + Unpin,
+    {
         use std::sync::atomic::{AtomicI32, Ordering};
         let extractor = self.extractor.clone();
         let processed = std::sync::Arc::new(AtomicI32::new(0));
         let pubsub_en = &self.pubsub;
         let processed_counter = processed.clone();
-        let enriched = futures::stream::iter(candidates)
+        // 並列度は CPUスレッド×4（最大512）で固定
+        let default_parallel = std::thread::available_parallelism().map(|n| n.get()).unwrap_or(4);
+        let parallel_count = (default_parallel * 4).max(1).min(512);
+        let enriched = candidates
             .map(|c| {
                 let extractor = extractor.clone();
-                async move { extractor.enrich(c) }
+                // CPUバウンド処理はblockingプールへ
+                tokio::task::spawn_blocking(move || extractor.enrich(c))
             })
-            .buffer_unordered(32)
+            .buffer_unordered(parallel_count)
             .filter_map(move |res| {
                 let pubsub = pubsub_en;
                 let processed = processed_counter.clone();
@@ -157,11 +227,13 @@ where
                         ),
                     );
                     match res {
-                        Ok(v) => {
-                            Some(v)
-                        },
-                        Err(e) => {
+                        Ok(Ok(v)) => Some(v),
+                        Ok(Err(e)) => {
                             let _ = pubsub.notify("scanLog", ScanLogPayload::new("error".into(), e.to_string()));
+                            None
+                        },
+                        Err(join_err) => {
+                            let _ = pubsub.notify("scanLog", ScanLogPayload::new("error".into(), format!("join error: {}", join_err)));
                             None
                         }
                     }
@@ -179,6 +251,11 @@ where
         }).collect();
         let count = processed.load(Ordering::Relaxed) as usize;
         (results, explored, count)
+    }
+
+    pub(crate) async fn enrich_candidates_parallel(&self, candidates: Box<dyn Iterator<Item = WorkCandidate> + Send>) -> (Vec<ResolvedWork>, Vec<String>, usize) {
+        let stream = futures::stream::iter(candidates);
+        self.enrich_candidates_parallel_stream(stream).await
     }
 
     pub(crate) fn deduplicate_and_notify(&self, resolved: Vec<ResolvedWork>, recognized_len: usize) -> (Vec<ResolvedWork>, usize) {
