@@ -31,3 +31,9 @@ trait-variant = "0.1"
 [dev-dependencies]
 mockall = { workspace = true }
 tempfile = { workspace = true }
+criterion = { version = "0.5", features = ["html_reports"] }
+rand = "0.8"
+
+[[bench]]
+name = "game_matcher_bench"
+harness = false

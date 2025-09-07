@@ -1,10 +1,9 @@
 use std::collections::HashMap;
 use std::sync::RwLock;
-use std::time::{Duration, Instant};
-use std::thread;
 use crate::all_game_cache::{AllGameCache, AllGameCacheOne};
-use crate::distance::get_comparable_distance;
+use crate::distance::get_comparable_distance_bounded;
 use super::config::{EQUALLY_FILENAME_GAME_ID_PAIR, IGNORE_GAME_ID};
+use super::ngram::NGramIndex;
 
 
 /// ゲームマッチング設定
@@ -52,16 +51,19 @@ pub struct Matcher {
     query_cache: RwLock<HashMap<String, Vec<(AllGameCacheOne, f32)>>>,
     // 正規化キー -> id の O(1) 近似 index（完全一致用）
     normalized_index: RwLock<HashMap<String, i32>>,
+    ngram_index: RwLock<NGramIndex>,
 }
 
 impl Matcher {
     pub fn new(game_cache: AllGameCache, config: MatcherConfig) -> Self {
         let index = Self::build_normalized_index(&game_cache);
+        let ngram_index = NGramIndex::build(&game_cache, 2);
         Self {
             game_cache: RwLock::new(game_cache),
             config,
             query_cache: RwLock::new(HashMap::new()),
             normalized_index: RwLock::new(index),
+            ngram_index: RwLock::new(ngram_index),
         }
     }
     
@@ -86,22 +88,6 @@ impl Matcher {
         self.get_matches_for_query_with_snapshot(query, &guard)
     }
 
-    /// タイムアウト付きでゲームキャッシュのスナップショットを取得
-    fn snapshot_cache_with_timeout(&self, timeout: Duration) -> Option<AllGameCache> {
-        let start = Instant::now();
-        loop {
-            match self.game_cache.try_read() {
-                Ok(guard) => return Some(guard.clone()),
-                Err(_) => {
-                    if start.elapsed() >= timeout {
-                        return None;
-                    }
-                    thread::sleep(Duration::from_millis(5));
-                }
-            }
-        }
-    }
-
     /// スナップショットを使ってマッチを計算（クエリキャッシュを利用）
     fn get_matches_for_query_with_snapshot(&self, query: &str, cache_snapshot: &[AllGameCacheOne]) -> Vec<(AllGameCacheOne, f32)> {
         // キャッシュを確認（read lock）
@@ -120,26 +106,30 @@ impl Matcher {
 
         // キャッシュにない場合は計算
         let mut matches = Vec::new();
-        
-        for game in cache_snapshot.iter() {
-            // 無視するゲームIDをスキップ
-            if self.config.ignore_game_ids.contains(&game.id) {
-                continue;
-            }
-            
-            let score = get_comparable_distance(query, &game.gamename);
-            
-            // 閾値以上の場合は結果に追加
-            if score > self.config.similarity_threshold {
-                matches.push((game.clone(), score));
-            }
+
+        // 2-gram フィルタで候補を絞る（外部モジュール）
+        let mut candidate_ids: Vec<i32> = Vec::new();
+        if let Ok(ng) = self.ngram_index.read() {
+            candidate_ids = ng.filter_candidates(query, self.config.similarity_threshold, &self.config.ignore_game_ids);
         }
-        
-        // フォールバック: 部分文字列マッチング
-        if matches.is_empty() && query.len() > self.config.partial_min_length {
-            for game in cache_snapshot.iter() {
-                if game.gamename.contains(query) {
-                    matches.push((game.clone(), query.len() as f32));
+
+        // フィルタで候補が無ければ距離計算をスキップ
+        if candidate_ids.is_empty() {
+            if let Ok(mut cache) = self.query_cache.write() { cache.insert(query.to_string(), matches.clone()); }
+            return matches;
+        }
+
+        // 候補にのみ距離計算を適用
+        if let Ok(ng) = self.ngram_index.read() {
+            for id in candidate_ids {
+                if let Some(&pos) = ng.id_to_pos.get(&id) {
+                    if let Some(game) = cache_snapshot.get(pos) {
+                        if let Some(score) = get_comparable_distance_bounded(query, &game.gamename, self.config.similarity_threshold) {
+                            if score > self.config.similarity_threshold {
+                                matches.push((game.clone(), score));
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -160,6 +150,8 @@ impl Matcher {
         }
         m
     }
+
+    // n-gram 構築は ngram モジュールへ移動
 }
 
 impl GameMatcher for Matcher {
@@ -215,6 +207,8 @@ impl GameMatcher for Matcher {
             if let Ok(mut idx) = self.normalized_index.write() {
                 *idx = new_index;
             }
+            let ng = NGramIndex::build(&cache_guard, 2);
+            if let Ok(mut n) = self.ngram_index.write() { *n = ng; }
         }
     }
 }

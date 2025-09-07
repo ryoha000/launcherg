@@ -74,6 +74,13 @@ tasks:
       - cargo check
       - cargo test --workspace
 
+  # bench
+  bench:tauri:domain:
+    description: domain クレートのベンチマークを実行
+    dir: src-tauri
+    cmds:
+      - cargo bench -p domain
+
   # check:src-tauri:native-messaging-host
   check:native-messaging-host:
     dir: src-tauri/native-messaging-host
