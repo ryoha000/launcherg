@@ -543,65 +543,6 @@ impl CollectionRepository for RepositoryImpl<domain::collection::CollectionEleme
         Ok(row.map(|v| v.0))
     }
 
-    async fn get_collection_id_by_dmm_mapping(&mut self, store_id: &str, category: &str, subcategory: &str) -> anyhow::Result<Option<Id<CollectionElement>>> {
-        let store_id = store_id.to_string();
-        let category = category.to_string();
-        let subcategory = subcategory.to_string();
-        let row: Option<(i32,)> = self.executor.with_conn(|conn| {
-            Box::pin(async move {
-                Ok(sqlx::query_as(
-                    r#"
-            SELECT m.collection_element_id
-            FROM dmm_works w
-            JOIN work_collection_elements m ON m.work_id = w.work_id
-            WHERE w.store_id = ? AND w.category = ? AND COALESCE(w.subcategory, '') = COALESCE(?, '')
-            LIMIT 1
-            "#,
-                )
-                .bind(store_id)
-                .bind(category)
-                .bind(subcategory)
-                .fetch_optional(conn)
-                .await?)
-            })
-        }).await?;
-        Ok(row.map(|v| Id::new(v.0)))
-    }
-
-    async fn get_collection_ids_by_dmm_mappings(&mut self, keys: &[(String, String, String)]) -> anyhow::Result<Vec<(String, String, String, Id<CollectionElement>)>> {
-        use sqlx::QueryBuilder;
-        if keys.is_empty() { return Ok(Vec::new()); }
-        let keys = keys.to_vec();
-        let rows: Vec<(String, String, String, i32)> = self.executor.with_conn(|conn| {
-            Box::pin(async move {
-                let mut qb = QueryBuilder::new(
-                    r#"
-            SELECT w.store_id, w.category, COALESCE(w.subcategory, '') as subcategory, m.collection_element_id
-            FROM dmm_works w
-            JOIN work_collection_elements m ON m.work_id = w.work_id
-            WHERE (w.store_id, w.category, COALESCE(w.subcategory, '')) IN (
-            "#,
-                );
-                {
-                    let mut separated = qb.separated(", ");
-                    for (store_id, category, subcategory) in keys.iter() {
-                        separated.push_unseparated("(");
-                        separated.push_bind(store_id);
-                        separated.push_unseparated(", ");
-                        separated.push_bind(category);
-                        separated.push_unseparated(", ");
-                        separated.push_bind(subcategory);
-                        separated.push_unseparated(")");
-                    }
-                }
-                qb.push(")");
-                let rows: Vec<(String, String, String, i32)> = qb.build_query_as().fetch_all(conn).await?;
-                Ok(rows)
-            })
-        }).await?;
-        Ok(rows.into_iter().map(|(sid, cat, sub, ce)| (sid, cat, sub, Id::new(ce))).collect())
-    }
-
     async fn get_collection_ids_by_work_ids(&mut self, work_ids: &[Id<Work>]) -> anyhow::Result<Vec<(Id<Work>, Id<CollectionElement>)>> {
         use sqlx::QueryBuilder;
         if work_ids.is_empty() { return Ok(Vec::new()); }
@@ -625,29 +566,6 @@ impl CollectionRepository for RepositoryImpl<domain::collection::CollectionEleme
             })
         }).await?;
         Ok(rows.into_iter().map(|(wid, ce)| (Id::new(wid), Id::new(ce))).collect())
-    }
-
-    async fn get_collection_id_by_dlsite_mapping(&mut self, store_id: &str, category: &str) -> anyhow::Result<Option<Id<CollectionElement>>> {
-        let store_id = store_id.to_string();
-        let category = category.to_string();
-        let row: Option<(i32,)> = self.executor.with_conn(|conn| {
-            Box::pin(async move {
-                Ok(sqlx::query_as(
-                    r#"
-            SELECT m.collection_element_id
-            FROM dlsite_works w
-            JOIN work_collection_elements m ON m.work_id = w.work_id
-            WHERE w.store_id = ? AND w.category = ?
-            LIMIT 1
-            "#,
-                )
-                .bind(store_id)
-                .bind(category)
-                .fetch_optional(conn)
-                .await?)
-            })
-        }).await?;
-        Ok(row.map(|v| Id::new(v.0)))
     }
 
     async fn upsert_work_mapping(&mut self, collection_element_id: &Id<CollectionElement>, work_id: Id<Work>) -> anyhow::Result<()> {

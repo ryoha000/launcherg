@@ -1,6 +1,8 @@
 use std::{marker::PhantomData, sync::Arc, time::Instant};
+use std::collections::{HashMap, HashSet};
+use std::sync::atomic::{AtomicI32, Ordering};
 
-use domain::pubsub::{PubSubService, ScanProgressPayload, ScanLogPayload, ScanSummaryPayload, ScanPhaseTimingPayload, ScanPipelineStatsPayload};
+use domain::pubsub::{PubSubService, ScanProgressPayload, ScanLogPayload, ScanSummaryPayload};
 use domain::scan::{CandidateKind, DuplicateResolver, FileSystem, MetadataExtractor, ResolvedWork, ScanStats, WorkCandidate, WorkCandidateOrResolvedWork};
 use domain::Id;
 use domain::collection::CollectionElement;
@@ -15,11 +17,14 @@ use domain::repository::{
 };
 use domain::save_image_queue::{ImageSrcType, ImagePreprocess};
 use domain::service::save_path_resolver::{SavePathResolver, DirsSavePathResolver};
+use domain::windows::WindowsExt;
+use domain::repository::work_lnk::{WorkLnkRepository as _, NewWorkLnk};
+use domain::windows::shell_link::{CreateShortcutRequest, ShellLink as _};
 use futures::StreamExt as _;
 use tokio::sync::mpsc;
 use tokio_stream::wrappers::ReceiverStream;
 
-pub struct WorkPipelineUseCase<M, R, P, FS, ME, DR>
+pub struct WorkPipelineUseCase<M, R, P, FS, ME, DR, W>
 where
     M: RepositoryManager<R>,
     R: RepositoriesExt + Send + Sync + 'static,
@@ -27,16 +32,19 @@ where
     FS: FileSystem,
     ME: MetadataExtractor,
     DR: DuplicateResolver,
+    W: WindowsExt,
 {
     manager: Arc<M>,
     pubsub: P,
     fs: Arc<FS>,
     extractor: Arc<ME>,
     dedup: Arc<DR>,
+    resolver: Arc<dyn SavePathResolver>,
+    windows: Arc<W>,
     _marker: PhantomData<R>,
 }
 
-impl<M, R, P, FS, ME, DR> WorkPipelineUseCase<M, R, P, FS, ME, DR>
+impl<M, R, P, FS, ME, DR, W> WorkPipelineUseCase<M, R, P, FS, ME, DR, W>
 where
     M: RepositoryManager<R>,
     R: RepositoriesExt + Send + Sync + 'static,
@@ -44,106 +52,45 @@ where
     FS: FileSystem,
     ME: MetadataExtractor + Send + Sync + 'static,
     DR: DuplicateResolver,
+    W: WindowsExt + Send + Sync + 'static,
 {
-    pub fn new(manager: Arc<M>, pubsub: P, fs: Arc<FS>, extractor: Arc<ME>, dedup: Arc<DR>) -> Self { Self { manager, pubsub, fs, extractor, dedup, _marker: PhantomData } }
+    pub fn new(
+        manager: Arc<M>,
+        pubsub: P,
+        fs: Arc<FS>,
+        extractor: Arc<ME>,
+        dedup: Arc<DR>,
+        resolver: Arc<dyn SavePathResolver>,
+        windows: Arc<W>,
+    ) -> Self { Self { manager, pubsub, fs, extractor, dedup, resolver, windows, _marker: PhantomData } }
 
     pub async fn start(&self, roots: Vec<std::path::PathBuf>, use_cache: bool) -> anyhow::Result<()> {
         let started = Instant::now();
         let mut stats = ScanStats::new(0, 0, 0, 0, 0);
-        let errors = 0i32;
 
-        // フェーズ: ルート列挙
-        self.notify_phase("EnumeratingRoots", 0, 0, 0, Some("ルート列挙"));
-
-        // フェーズ: FS 走査（exclude は内部で解決）→ mpsc チャネルで enrich へストリーミング
-        self.notify_phase("WalkingFs", 0, 0, 0, Some("候補抽出"));
-        let t_build = Instant::now();
-        let iter = self.build_candidate_iter(&roots, use_cache).await?;
-        self.notify_phase_timing("BuildCandidateIter", t_build.elapsed());
-        let (tx, rx) = mpsc::channel::<WorkCandidate>(2048);
-        let t_walk = Instant::now();
-        let (done_tx, done_rx) = tokio::sync::oneshot::channel::<(i64, i64, i64)>();
-        tokio::spawn(async move {
-            let mut enumerated: i64 = 0;
-            let mut produce_block_ms: i64 = 0;
-            for c in iter {
-                enumerated += 1;
-                match tx.try_send(c) {
-                    Ok(_) => {}
-                    Err(tokio::sync::mpsc::error::TrySendError::Full(c)) => {
-                        let t = Instant::now();
-                        if tx.send(c).await.is_err() { break; }
-                        produce_block_ms += t.elapsed().as_millis() as i64;
-                    }
-                    Err(tokio::sync::mpsc::error::TrySendError::Closed(_)) => break,
-                }
-            }
-            let walking_ms = t_walk.elapsed().as_millis() as i64;
-            let _ = done_tx.send((walking_ms, enumerated, produce_block_ms));
-        });
-        self.notify_phase("Classifying", 0, 0, 0, Some("認識"));
+        let rx = self.open_candidate_stream(&roots, use_cache).await?;
         // フェーズ: メタ付与（並列・ストリーミング）
-        let t_enrich = Instant::now();
         let (resolved, explored, processed_count) = self.enrich_candidates_parallel_stream(ReceiverStream::new(rx)).await;
-        let enriching_ms = t_enrich.elapsed().as_millis() as i64;
-        self.notify_phase_timing("Enriching", std::time::Duration::from_millis(enriching_ms as u64));
-        if let Ok((walking_ms, enumerated_count, producer_block_ms)) = done_rx.await {
-            self.notify_phase_timing("WalkingFs", std::time::Duration::from_millis(walking_ms as u64));
-            let processed_count = processed_count as i64;
-            let backlog_ms = (enriching_ms - walking_ms).max(0);
-            let producer_rate_per_s = if walking_ms > 0 { enumerated_count as f64 / (walking_ms as f64 / 1000.0) } else { 0.0 };
-            let consumer_rate_per_s = if enriching_ms > 0 { processed_count as f64 / (enriching_ms as f64 / 1000.0) } else { 0.0 };
-            let _ = self.pubsub.notify(
-                "scanPipelineStats",
-                ScanPipelineStatsPayload::new(
-                    enumerated_count,
-                    processed_count,
-                    walking_ms,
-                    enriching_ms,
-                    backlog_ms,
-                    producer_block_ms,
-                    producer_rate_per_s,
-                    consumer_rate_per_s,
-                ),
-            );
-        }
         stats.found = processed_count;
         stats.recognized = resolved.len();
-        let total = stats.found as i32;
 
         // フェーズ: 重複排除
-        let t_dedup = Instant::now();
         let (deduped, duplicates) = self.deduplicate_and_notify(resolved, stats.recognized);
-        self.notify_phase_timing("Deduping", t_dedup.elapsed());
         stats.duplicates = duplicates;
 
         // フェーズ: 永続化
-        let t_persist = Instant::now();
         let persisted = self.persist(&deduped).await?;
-        self.notify_phase_timing("Persisting", t_persist.elapsed());
-        let t_update_cache = Instant::now();
-        let _ = self.update_explored_cache(explored).await;
-        self.notify_phase_timing("UpdateExploredCache", t_update_cache.elapsed());
+        // フェーズ: .lnk 保全
+        self.ensure_work_lnks(&deduped).await?;
+        self.update_explored_cache(explored).await?;
         stats.persisted = persisted;
-        self.notify_phase("Persisting", persisted as i32, stats.recognized as i32, errors, Some("保存"));
 
-        // フェーズ: PostProcessing（通知→実処理）
-        self.notify_phase("PostProcessing", persisted as i32, total, errors, Some("事後処理"));
-        let t_post = Instant::now();
-        let _ = self.post_process_thumbnail_sizes().await;
-        self.notify_phase_timing("PostProcessing", t_post.elapsed());
+        self.post_process_thumbnail_sizes().await?;
 
         // サマリ通知
         let took = started.elapsed().as_millis() as i64;
         self.notify_summary(took, &stats);
         Ok(())
-    }
-
-    fn notify_phase_timing(&self, phase: &str, took: std::time::Duration) {
-        let _ = self.pubsub.notify(
-            "scanPhaseTiming",
-            ScanPhaseTimingPayload::new(phase.to_string(), took.as_millis() as i64),
-        );
     }
 
     pub(crate) fn notify_phase(&self, phase: &str, current: i32, total: i32, errors: i32, label: Option<&str>) {
@@ -181,22 +128,35 @@ where
         let _ = self.pubsub.notify("progresslive", domain::pubsub::ProgressLivePayload::new(None));
     }
 
-    pub(crate) async fn build_candidate_iter(&self, roots: &[std::path::PathBuf], use_cache: bool) -> anyhow::Result<Box<dyn Iterator<Item = WorkCandidate> + Send>> {
+    pub(crate) async fn open_candidate_stream(&self, roots: &[std::path::PathBuf], use_cache: bool) -> anyhow::Result<mpsc::Receiver<WorkCandidate>> {
         let exclude = if use_cache {
             let cache = self.manager.run(|repos| {
                 Box::pin(async move { Ok::<_, anyhow::Error>(repos.explored_cache().get_all().await?) })
             }).await?;
             Some(std::sync::Arc::new(cache))
         } else { None };
+
         let iter = self.fs.walk_dir(roots, exclude)?;
-        Ok(iter)
+
+        let (tx, rx) = mpsc::channel::<WorkCandidate>(2048);
+        tokio::spawn(async move {
+            for c in iter {
+                match tx.try_send(c) {
+                    Ok(_) => {}
+                    Err(tokio::sync::mpsc::error::TrySendError::Full(c)) => {
+                        if tx.send(c).await.is_err() { break; }
+                    }
+                    Err(tokio::sync::mpsc::error::TrySendError::Closed(_)) => break,
+                }
+            }
+        });
+        Ok(rx)
     }
 
     pub(crate) async fn enrich_candidates_parallel_stream<S>(&self, candidates: S) -> (Vec<ResolvedWork>, Vec<String>, usize)
     where
         S: futures::Stream<Item = WorkCandidate> + Unpin,
     {
-        use std::sync::atomic::{AtomicI32, Ordering};
         let extractor = self.extractor.clone();
         let processed = std::sync::Arc::new(AtomicI32::new(0));
         let pubsub_en = &self.pubsub;
@@ -251,11 +211,6 @@ where
         }).collect();
         let count = processed.load(Ordering::Relaxed) as usize;
         (results, explored, count)
-    }
-
-    pub(crate) async fn enrich_candidates_parallel(&self, candidates: Box<dyn Iterator<Item = WorkCandidate> + Send>) -> (Vec<ResolvedWork>, Vec<String>, usize) {
-        let stream = futures::stream::iter(candidates);
-        self.enrich_candidates_parallel_stream(stream).await
     }
 
     pub(crate) fn deduplicate_and_notify(&self, resolved: Vec<ResolvedWork>, recognized_len: usize) -> (Vec<ResolvedWork>, usize) {
@@ -382,7 +337,7 @@ where
     }
 
     pub(crate) async fn post_process_thumbnail_sizes(&self) -> anyhow::Result<()> {
-        let _ = self.manager.run(|repos| {
+        self.manager.run(|repos| {
             Box::pin(async move {
                 use domain::repository::collection::CollectionRepository as _;
                 let mut coll = repos.collection();
@@ -399,7 +354,105 @@ where
                 }
                 Ok::<(), anyhow::Error>(())
             })
-        }).await;
+        }).await?;
+        Ok(())
+    }
+
+    // DB への保存後に、必要であれば .lnk を作成/コピーし work_lnks へ登録する
+    pub(crate) async fn ensure_work_lnks(&self, deduped: &[ResolvedWork]) -> anyhow::Result<()> {
+        if deduped.is_empty() { return Ok(()); }
+
+        // 1) bulk で EGS -> CE -> Work を解決
+        let mut uniq_egs: Vec<i32> = Vec::new();
+        let mut seen_egs: HashSet<i32> = HashSet::new();
+        for it in deduped.iter() { if seen_egs.insert(it.egs_id) { uniq_egs.push(it.egs_id); } }
+
+        let egs_to_work: HashMap<i32, Id<domain::works::Work>> = self.manager.run(|repos| {
+            let uniq_egs = uniq_egs.clone();
+            Box::pin(async move {
+                let mut coll = repos.collection();
+                // EGS -> CE
+                let egs_ce_pairs = coll.get_collection_ids_by_erogamescape_ids(&uniq_egs).await?; // Vec<(egs, ce)>
+                if egs_ce_pairs.is_empty() { return Ok::<HashMap<i32, Id<domain::works::Work>>, anyhow::Error>(HashMap::new()); }
+                // CE -> Work
+                let ce_ids: Vec<Id<CollectionElement>> = egs_ce_pairs.iter().map(|(_e, ce)| ce.clone()).collect();
+                let ce_work_pairs = coll.get_work_ids_by_collection_ids(&ce_ids).await?; // Vec<(ce, work)>
+                let mut ce_to_work: HashMap<Id<CollectionElement>, Id<domain::works::Work>> = HashMap::new();
+                for (ce, w) in ce_work_pairs.into_iter() { ce_to_work.insert(ce, w); }
+                let mut map: HashMap<i32, Id<domain::works::Work>> = HashMap::new();
+                for (egs, ce) in egs_ce_pairs.into_iter() { if let Some(w) = ce_to_work.get(&ce) { map.insert(egs, w.clone()); } }
+                Ok::<HashMap<i32, Id<domain::works::Work>>, anyhow::Error>(map)
+            })
+        }).await?;
+
+        if egs_to_work.is_empty() { return Ok(()); }
+
+        // 2) 処理対象の task を作成（work_id ごとに一意）
+        struct Task { work_id: Id<domain::works::Work>, kind: CandidateKind, src: String, dst: String }
+        let mut tasks: Vec<Task> = Vec::new();
+        let mut seen_work: HashSet<i32> = HashSet::new();
+        for item in deduped.iter() {
+            if let Some(wid) = egs_to_work.get(&item.egs_id) {
+                if !seen_work.insert(wid.value) { continue; }
+                let src = item.candidate.path.to_string_lossy().to_string();
+                let dst = self.resolver.lnk_new_path(wid.value);
+                tasks.push(Task { work_id: wid.clone(), kind: item.candidate.kind.clone(), src, dst });
+            }
+        }
+        if tasks.is_empty() { return Ok(()); }
+
+        // 3) 既に work_lnks が存在する work はスキップ（単発 API をまとめて 1 run 内で呼ぶ）
+        let tasks: Vec<Task> = self.manager.run(|repos| {
+            Box::pin(async move {
+                let mut repo = repos.work_lnk();
+                let mut filtered: Vec<Task> = Vec::new();
+                for t in tasks.into_iter() {
+                    let existed = repo.list_by_work_id(t.work_id.clone()).await?;
+                    if existed.is_empty() { filtered.push(t); }
+                }
+                Ok::<Vec<Task>, anyhow::Error>(filtered)
+            })
+        }).await?;
+        if tasks.is_empty() { return Ok(()); }
+
+        // 4) OS 操作: Shortcut は個別コピー、Exe は create_bulk を一度だけ
+        let mut exe_reqs: Vec<CreateShortcutRequest> = Vec::new();
+        let mut to_insert: Vec<(Id<domain::works::Work>, String)> = Vec::new();
+
+        for t in tasks.iter() {
+            let parent = std::path::Path::new(&t.dst).parent().map(|p| p.to_path_buf());
+            if let Some(p) = parent { let _ = std::fs::create_dir_all(p); }
+            if matches!(t.kind, CandidateKind::Shortcut) {
+                if std::fs::copy(&t.src, &t.dst).is_ok() {
+                    to_insert.push((t.work_id.clone(), t.dst.clone()));
+                } else {
+                    let _ = self.pubsub.notify("scanLog", ScanLogPayload::new("error".into(), format!("ensure_work_lnks copy failed: {} -> {}", t.src, t.dst)));
+                }
+            } else if matches!(t.kind, CandidateKind::Exe) {
+                exe_reqs.push(CreateShortcutRequest { target_path: t.src.clone(), dest_lnk_path: t.dst.clone(), working_dir: None, arguments: None, icon_path: None });
+            }
+        }
+        if !exe_reqs.is_empty() {
+            self.windows.shell_link().create_bulk(exe_reqs)?;
+            for t in tasks.iter().filter(|t| matches!(t.kind, CandidateKind::Exe)) {
+                to_insert.push((t.work_id.clone(), t.dst.clone()));
+            }
+        }
+
+        if to_insert.is_empty() { return Ok(()); }
+
+        // 5) DB 書き込みはトランザクションで一括
+        let _ = self.manager.run_in_transaction(|repos| {
+            let to_insert = to_insert.clone();
+            Box::pin(async move {
+                let mut repo = repos.work_lnk();
+                for (wid, lnk_path) in to_insert.into_iter() {
+                    let _ = repo.insert(&NewWorkLnk { work_id: wid, lnk_path }).await?;
+                }
+                Ok::<(), anyhow::Error>(())
+            })
+        }).await?;
+
         Ok(())
     }
 }

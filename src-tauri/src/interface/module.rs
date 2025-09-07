@@ -53,6 +53,7 @@ pub struct Modules {
         LocalFileSystem,
         HeuristicMetadataExtractor,
         HeuristicDuplicateResolver,
+        Windows,
     >,
     pubsub: PubSub,
     game_matcher: std::sync::Arc<dyn GameMatcher + Send + Sync>,
@@ -80,6 +81,7 @@ pub trait ModulesExt {
         LocalFileSystem,
         HeuristicMetadataExtractor,
         HeuristicDuplicateResolver,
+        Windows,
     >;
     fn pubsub(&self) -> &Self::PubSub;
     fn game_matcher(&self) -> &std::sync::Arc<dyn GameMatcher + Send + Sync>;
@@ -122,6 +124,7 @@ impl ModulesExt for Modules {
         LocalFileSystem,
         HeuristicMetadataExtractor,
         HeuristicDuplicateResolver,
+        Windows,
     > { &self.work_pipeline_use_case }
     fn pubsub(&self) -> &Self::PubSub {
         &self.pubsub
@@ -179,7 +182,8 @@ impl Modules {
             LocalFileSystem,
             HeuristicMetadataExtractor,
             HeuristicDuplicateResolver,
-        > = WorkPipelineUseCase::new(repo_manager.clone(), pubsub.clone(), fs, extractor, dedup);
+            Windows,
+        > = WorkPipelineUseCase::new(repo_manager.clone(), pubsub.clone(), fs, extractor, dedup, resolver.clone(), windows.clone());
 
         Self {
             collection_use_case,

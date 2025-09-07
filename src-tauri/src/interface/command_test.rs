@@ -192,6 +192,7 @@ async fn create_elements_in_pc_と_scan_start_で生成結果が等しい_root_G
     use crate::infrastructure::local_file_system::LocalFileSystem;
     use crate::infrastructure::heuristic_metadata_extractor::HeuristicMetadataExtractor;
     use crate::infrastructure::heuristic_duplicate_resolver::HeuristicDuplicateResolver;
+    use crate::infrastructure::windowsimpl::windows::Windows as InfraWindows;
     use domain::game_matcher::{Matcher as GameMatcherImpl, GameMatcher, normalize};
     use domain::all_game_cache::AllGameCacheOne as DomainAllGameCacheOne;
     use domain::repository::manager::RepositoryManager as _;
@@ -214,8 +215,10 @@ async fn create_elements_in_pc_と_scan_start_で生成結果が等しい_root_G
     let dedup = std::sync::Arc::new(HeuristicDuplicateResolver);
     let pubsub = TestPubSub::default();
 
-    let uc: crate::usecase::work_pipeline::WorkPipelineUseCase<_, _, _, _, _, _> =
-        crate::usecase::work_pipeline::WorkPipelineUseCase::new(test_repo_manager, pubsub.clone(), fs, extractor, dedup);
+    let windows = std::sync::Arc::new(InfraWindows::new());
+    let resolver = std::sync::Arc::new(domain::service::save_path_resolver::DirsSavePathResolver::default());
+    let uc: crate::usecase::work_pipeline::WorkPipelineUseCase<_, _, _, _, _, _, _> =
+        crate::usecase::work_pipeline::WorkPipelineUseCase::new(test_repo_manager, pubsub.clone(), fs, extractor, dedup, resolver, windows);
 
     let start_scan_start = std::time::Instant::now();
     let _ = uc.start(vec![std::path::PathBuf::from("G:\\game")], false).await;

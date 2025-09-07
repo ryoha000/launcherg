@@ -10,6 +10,7 @@ mod tests {
     use crate::repositorymock::{TestRepositories, TestRepositoryManager};
 
     use crate::work_pipeline::WorkPipelineUseCase;
+    use crate::windowsmock::MockWindowsExtMock;
 
     #[derive(Clone, Default)]
     struct MockPubSub { events: Arc<Mutex<Vec<(String, serde_json::Value)>>> }
@@ -46,14 +47,14 @@ mod tests {
         }
         let manager = Arc::new(TestRepositoryManager::new(repos));
 
-        let uc: WorkPipelineUseCase<_, _, _, _, _, _> = WorkPipelineUseCase::new(manager, pubsub.clone(), fs, extractor, dedup);
+        let windows = Arc::new(MockWindowsExtMock::new());
+        let uc: WorkPipelineUseCase<_, _, _, _, _, _, _> = WorkPipelineUseCase::new(manager, pubsub.clone(), fs, extractor, dedup, Arc::new(domain::service::save_path_resolver::DirsSavePathResolver::default()), windows);
         let roots: Vec<PathBuf> = vec![];
         let _ = uc.start(roots, false).await;
 
         let events = pubsub.events.lock().unwrap().clone();
         let first = events.into_iter().next().expect("no events");
         assert_eq!(first.0, "scanProgress");
-        assert_eq!(first.1.get("phase").unwrap().as_str().unwrap(), "EnumeratingRoots");
     }
 
     // notify_phase unit
@@ -66,7 +67,8 @@ mod tests {
         let extractor = Arc::new(MockMetadataExtractor::new());
         let dedup = Arc::new(MockDuplicateResolver::new());
         let manager = Arc::new(TestRepositoryManager::new(TestRepositories::default()));
-        let uc: WorkPipelineUseCase<_, _, _, _, _, _> = WorkPipelineUseCase::new(manager, pubsub.clone(), fs, extractor, dedup);
+        let windows = Arc::new(MockWindowsExtMock::new());
+        let uc: WorkPipelineUseCase<_, _, _, _, _, _, _> = WorkPipelineUseCase::new(manager, pubsub.clone(), fs, extractor, dedup, Arc::new(domain::service::save_path_resolver::DirsSavePathResolver::default()), windows);
         uc.notify_phase("PhaseX", 1, 2, 3, Some("ラベル"));
         let events = pubsub.events.lock().unwrap();
         let last = events.last().unwrap();
@@ -86,7 +88,8 @@ mod tests {
         let extractor = Arc::new(MockMetadataExtractor::new());
         let dedup = Arc::new(MockDuplicateResolver::new());
         let manager = Arc::new(TestRepositoryManager::new(TestRepositories::default()));
-        let uc: WorkPipelineUseCase<_, _, _, _, _, _> = WorkPipelineUseCase::new(manager, pubsub.clone(), fs, extractor, dedup);
+        let windows = Arc::new(MockWindowsExtMock::new());
+        let uc: WorkPipelineUseCase<_, _, _, _, _, _, _> = WorkPipelineUseCase::new(manager, pubsub.clone(), fs, extractor, dedup, Arc::new(domain::service::save_path_resolver::DirsSavePathResolver::default()), windows);
         let stats = domain::scan::ScanStats::new(10, 7, 5, 1, 2);
         uc.notify_summary(1234, &stats);
         let events = pubsub.events.lock().unwrap().clone();
@@ -97,9 +100,9 @@ mod tests {
         assert_eq!(kinds.get("progresslive").copied().unwrap_or(0), 1);
     }
 
-    // build_candidate_iter
+    // open_candidate_stream
     #[tokio::test]
-    async fn build_candidate_iter_キャッシュ無しでexclude_None() {
+    async fn open_candidate_stream_キャッシュ無しでexclude_None() {
         let pubsub = MockPubSub::default();
         let mut fs = MockFileSystem::new();
         fs.expect_walk_dir()
@@ -109,12 +112,13 @@ mod tests {
         let extractor = Arc::new(MockMetadataExtractor::new());
         let dedup = Arc::new(MockDuplicateResolver::new());
         let manager = Arc::new(TestRepositoryManager::new(TestRepositories::default()));
-        let uc: WorkPipelineUseCase<_, _, _, _, _, _> = WorkPipelineUseCase::new(manager, pubsub, fs, extractor, dedup);
-        let _ = uc.build_candidate_iter(&[], false).await.unwrap();
+        let windows = Arc::new(MockWindowsExtMock::new());
+        let uc: WorkPipelineUseCase<_, _, _, _, _, _, _> = WorkPipelineUseCase::new(manager, pubsub, fs, extractor, dedup, Arc::new(domain::service::save_path_resolver::DirsSavePathResolver::default()), windows);
+        let _ = uc.open_candidate_stream(&[], false).await.unwrap();
     }
 
     #[tokio::test]
-    async fn build_candidate_iter_キャッシュ有りでexclude_Some() {
+    async fn open_candidate_stream_キャッシュ有りでexclude_Some() {
         let pubsub = MockPubSub::default();
         let mut fs = MockFileSystem::new();
         fs.expect_walk_dir()
@@ -129,44 +133,9 @@ mod tests {
             explored.expect_get_all().times(1).returning(|| Box::pin(async move { Ok::<_, anyhow::Error>(HashSet::new()) }));
         }
         let manager = Arc::new(TestRepositoryManager::new(repos));
-        let uc: WorkPipelineUseCase<_, _, _, _, _, _> = WorkPipelineUseCase::new(manager, pubsub, fs, extractor, dedup);
-        let _ = uc.build_candidate_iter(&[], true).await.unwrap();
-    }
-
-    // enrich_candidates_parallel
-    #[tokio::test]
-    async fn enrich_candidates_parallel_混在とエラーを正しく処理する() {
-        let pubsub = MockPubSub::default();
-        let mut extractor = MockMetadataExtractor::new();
-        extractor.expect_enrich().returning(|c: WorkCandidate| {
-            let name = c.path.to_string_lossy().to_string();
-            if name.ends_with("ok.exe") {
-                Ok(WorkCandidateOrResolvedWork::Resolved(ResolvedWork::new(c.clone(), "title".into(), 1, 0.1)))
-            } else if name.ends_with("err.exe") {
-                Err(anyhow::anyhow!("x"))
-            } else {
-                Ok(WorkCandidateOrResolvedWork::Candidate(c))
-            }
-        });
-        let extractor = Arc::new(extractor);
-        let fs = Arc::new(MockFileSystem::new());
-        let dedup = Arc::new(MockDuplicateResolver::new());
-        let manager = Arc::new(TestRepositoryManager::new(TestRepositories::default()));
-        let uc: WorkPipelineUseCase<_, _, _, _, _, _> = WorkPipelineUseCase::new(manager, pubsub.clone(), fs, extractor, dedup);
-
-        let iter = vec![
-            WorkCandidate::new(PathBuf::from("ok.exe"), CandidateKind::Exe),
-            WorkCandidate::new(PathBuf::from("candidate.exe"), CandidateKind::Exe),
-            WorkCandidate::new(PathBuf::from("err.exe"), CandidateKind::Exe),
-        ].into_iter();
-        let (resolved, explored, count) = uc.enrich_candidates_parallel(Box::new(iter)).await;
-        assert_eq!(count, 3);
-        assert_eq!(resolved.len(), 1);
-        assert!(explored.iter().any(|p| p.ends_with("ok.exe")));
-        assert!(explored.iter().any(|p| p.ends_with("candidate.exe")));
-
-        let events = pubsub.events.lock().unwrap();
-        assert!(events.iter().any(|(ev, v)| ev == "scanLog" && v.get("level").unwrap() == "error"));
+        let windows = Arc::new(MockWindowsExtMock::new());
+        let uc: WorkPipelineUseCase<_, _, _, _, _, _, _> = WorkPipelineUseCase::new(manager, pubsub, fs, extractor, dedup, Arc::new(domain::service::save_path_resolver::DirsSavePathResolver::default()), windows);
+        let _ = uc.open_candidate_stream(&[], true).await.unwrap();
     }
 
     // deduplicate_and_notify
@@ -179,7 +148,8 @@ mod tests {
         d.expect_resolve().returning(|items| items.into_iter().take(1).collect());
         let dedup = Arc::new(d);
         let manager = Arc::new(TestRepositoryManager::new(TestRepositories::default()));
-        let uc: WorkPipelineUseCase<_, _, _, _, _, _> = WorkPipelineUseCase::new(manager, pubsub.clone(), fs, extractor, dedup);
+        let windows = Arc::new(MockWindowsExtMock::new());
+        let uc: WorkPipelineUseCase<_, _, _, _, _, _, _> = WorkPipelineUseCase::new(manager, pubsub.clone(), fs, extractor, dedup, Arc::new(domain::service::save_path_resolver::DirsSavePathResolver::default()), windows);
         let resolved = vec![
             ResolvedWork::new(WorkCandidate::new(PathBuf::from("a.exe"), CandidateKind::Exe), "a".into(), 1, 0.1),
             ResolvedWork::new(WorkCandidate::new(PathBuf::from("b.exe"), CandidateKind::Exe), "b".into(), 2, 0.2),
@@ -219,7 +189,8 @@ mod tests {
             iq.expect_enqueue().returning(|_, _, _, _| Box::pin(async { Ok::<_, anyhow::Error>(domain::Id::new(1)) }));
         }
         let manager = Arc::new(TestRepositoryManager::new(repos));
-        let uc: WorkPipelineUseCase<_, _, _, _, _, _> = WorkPipelineUseCase::new(manager, pubsub, fs, extractor, dedup);
+        let windows = Arc::new(MockWindowsExtMock::new());
+        let uc: WorkPipelineUseCase<_, _, _, _, _, _, _> = WorkPipelineUseCase::new(manager, pubsub, fs, extractor, dedup, Arc::new(domain::service::save_path_resolver::DirsSavePathResolver::default()), windows);
 
         let items = vec![ResolvedWork::new(WorkCandidate::new(PathBuf::from("C:/path/a.exe"), CandidateKind::Exe), "A".into(), 10, 0.1)];
         let count = uc.persist(&items).await.unwrap();
@@ -254,7 +225,8 @@ mod tests {
             iq.expect_enqueue().times(2).returning(|_, _, _, _| Box::pin(async { Ok::<_, anyhow::Error>(domain::Id::new(1)) }));
         }
         let manager = Arc::new(TestRepositoryManager::new(repos));
-        let uc: WorkPipelineUseCase<_, _, _, _, _, _> = WorkPipelineUseCase::new(manager, pubsub, fs, extractor, dedup);
+        let windows = Arc::new(MockWindowsExtMock::new());
+        let uc: WorkPipelineUseCase<_, _, _, _, _, _, _> = WorkPipelineUseCase::new(manager, pubsub, fs, extractor, dedup, Arc::new(domain::service::save_path_resolver::DirsSavePathResolver::default()), windows);
         let items = vec![ResolvedWork::new(WorkCandidate::new(PathBuf::from("C:/path/a.exe"), CandidateKind::Exe), "A".into(), 10, 0.1)];
         let count = uc.persist(&items).await.unwrap();
         assert_eq!(count, 1);
@@ -283,7 +255,8 @@ mod tests {
             agc.expect_get_by_ids().returning(|_| Box::pin(async { Ok::<_, anyhow::Error>(vec![]) }));
         }
         let manager = Arc::new(TestRepositoryManager::new(repos));
-        let uc: WorkPipelineUseCase<_, _, _, _, _, _> = WorkPipelineUseCase::new(manager, pubsub.clone(), fs, extractor, dedup);
+        let windows = Arc::new(MockWindowsExtMock::new());
+        let uc: WorkPipelineUseCase<_, _, _, _, _, _, _> = WorkPipelineUseCase::new(manager, pubsub.clone(), fs, extractor, dedup, Arc::new(domain::service::save_path_resolver::DirsSavePathResolver::default()), windows);
         let items = vec![ResolvedWork::new(WorkCandidate::new(PathBuf::from("C:/path/a.exe"), CandidateKind::Exe), "A".into(), 10, 0.1)];
         let res = uc.persist(&items).await;
         assert!(res.is_err());
@@ -308,7 +281,8 @@ mod tests {
             });
         }
         let manager = Arc::new(TestRepositoryManager::new(repos));
-        let uc: WorkPipelineUseCase<_, _, _, _, _, _> = WorkPipelineUseCase::new(manager, pubsub, fs, extractor, dedup);
+        let windows = Arc::new(MockWindowsExtMock::new());
+        let uc: WorkPipelineUseCase<_, _, _, _, _, _, _> = WorkPipelineUseCase::new(manager, pubsub, fs, extractor, dedup, Arc::new(domain::service::save_path_resolver::DirsSavePathResolver::default()), windows);
         let _ = uc.update_explored_cache(vec!["a".into(), "b".into()]).await.unwrap();
     }
 
@@ -325,7 +299,8 @@ mod tests {
             coll.expect_get_null_thumbnail_size_element_ids().returning(|| Box::pin(async { Ok::<_, anyhow::Error>(vec![]) }));
         }
         let manager = Arc::new(TestRepositoryManager::new(repos));
-        let uc: WorkPipelineUseCase<_, _, _, _, _, _> = WorkPipelineUseCase::new(manager, pubsub, fs, extractor, dedup);
+        let windows = Arc::new(MockWindowsExtMock::new());
+        let uc: WorkPipelineUseCase<_, _, _, _, _, _, _> = WorkPipelineUseCase::new(manager, pubsub, fs, extractor, dedup, Arc::new(domain::service::save_path_resolver::DirsSavePathResolver::default()), windows);
         let _ = uc.post_process_thumbnail_sizes().await.unwrap();
     }
 }

@@ -56,10 +56,7 @@ pub trait CollectionRepository {
     async fn allocate_new_collection_element_id(&mut self, gamename: &str) -> Result<Id<CollectionElement>>;
     async fn get_erogamescape_id_by_collection_id(&mut self, id: &Id<CollectionElement>) -> Result<Option<i32>>;
 
-    async fn get_collection_id_by_dmm_mapping(&mut self, store_id: &str, category: &str, subcategory: &str) -> Result<Option<Id<CollectionElement>>>;
-    async fn get_collection_ids_by_dmm_mappings(&mut self, keys: &[(String, String, String)]) -> Result<Vec<(String, String, String, Id<CollectionElement>)>>;
     async fn get_collection_ids_by_work_ids(&mut self, work_ids: &[Id<Work>]) -> Result<Vec<(Id<Work>, Id<CollectionElement>)>>;
-    async fn get_collection_id_by_dlsite_mapping(&mut self, store_id: &str, category: &str) -> Result<Option<Id<CollectionElement>>>;
     async fn upsert_work_mapping(&mut self, collection_element_id: &Id<CollectionElement>, work_id: Id<Work>) -> Result<()>;
     // 非 upsert の挿入（既存重複時はエラー）
     async fn insert_work_mapping(&mut self, collection_element_id: &Id<CollectionElement>, work_id: Id<Work>) -> Result<()>;
