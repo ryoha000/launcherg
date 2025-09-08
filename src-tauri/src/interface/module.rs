@@ -17,6 +17,7 @@ use crate::{
         heuristic_metadata_extractor::HeuristicMetadataExtractor,
         heuristic_duplicate_resolver::HeuristicDuplicateResolver,
         local_file_system::LocalFileSystem,
+        image_queue_worker::ImageQueueRunnerImpl,
     },
     usecase::{
         all_game_cache::AllGameCacheUseCase, collection::CollectionUseCase,
@@ -57,6 +58,7 @@ pub struct Modules {
     >,
     pubsub: PubSub,
     game_matcher: std::sync::Arc<dyn GameMatcher + Send + Sync>,
+    image_queue_runner: std::sync::Arc<ImageQueueRunnerImpl<SqliteRepositoryManager, SqliteRepositories, Windows>>,
 }
 pub trait ModulesExt {
     type Repositories: RepositoriesExt;
@@ -85,6 +87,7 @@ pub trait ModulesExt {
     >;
     fn pubsub(&self) -> &Self::PubSub;
     fn game_matcher(&self) -> &std::sync::Arc<dyn GameMatcher + Send + Sync>;
+    fn image_queue_runner(&self) -> &std::sync::Arc<ImageQueueRunnerImpl<SqliteRepositoryManager, SqliteRepositories, Windows>>;
 }
 
 impl ModulesExt for Modules {
@@ -130,6 +133,7 @@ impl ModulesExt for Modules {
         &self.pubsub
     }
     fn game_matcher(&self) -> &std::sync::Arc<dyn GameMatcher + Send + Sync> { &self.game_matcher }
+    fn image_queue_runner(&self) -> &std::sync::Arc<ImageQueueRunnerImpl<SqliteRepositoryManager, SqliteRepositories, Windows>> { &self.image_queue_runner }
 }
 
 impl Modules {
@@ -185,6 +189,10 @@ impl Modules {
             Windows,
         > = WorkPipelineUseCase::new(repo_manager.clone(), pubsub.clone(), fs, extractor, dedup, resolver.clone(), windows.clone());
 
+        let image_queue_runner: std::sync::Arc<ImageQueueRunnerImpl<SqliteRepositoryManager, SqliteRepositories, Windows>> = std::sync::Arc::new(
+            ImageQueueRunnerImpl::new(repo_manager.clone(), resolver.clone(), windows.clone())
+        );
+
         Self {
             collection_use_case,
             explored_cache_use_case,
@@ -200,6 +208,7 @@ impl Modules {
             work_pipeline_use_case,
             pubsub,
             game_matcher,
+            image_queue_runner,
         }
     }
 }

@@ -173,11 +173,19 @@ pub async fn scan_start(
     use_cache: Option<bool>,
 ) -> anyhow::Result<Vec<String>, CommandError> {
     let roots: Vec<std::path::PathBuf> = roots.into_iter().map(|s| std::path::PathBuf::from(s)).collect();
-    modules
+    let gamenames = modules
         .work_pipeline_use_case()
         .start(roots, use_cache.unwrap_or(false))
         .await
-        .map_err(|e| CommandError::Anyhow(anyhow::anyhow!(e.to_string())))
+        .map_err(|e| CommandError::Anyhow(anyhow::anyhow!(e.to_string())))?;
+
+    // 非同期で画像キューをドレイン（応答はすでに返す）
+    let runner = modules.image_queue_runner().clone();
+    tauri::async_runtime::spawn(async move {
+        let _ = domain::service::image_queue_drain::ImageQueueDrainService::drain_until_empty(&*runner).await;
+    });
+
+    Ok(gamenames)
 }
 
 

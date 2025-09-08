@@ -3,8 +3,10 @@ pub mod preprocess;
 pub mod sidecar;
 pub mod resolver;
 mod worker;
+pub mod runner;
 
 pub use worker::ImageQueueWorker;
+pub use runner::ImageQueueRunnerImpl;
 
 #[cfg(test)]
 mod tests;

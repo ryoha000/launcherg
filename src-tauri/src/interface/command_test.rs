@@ -25,6 +25,13 @@ fn copy_file(src: &Path, dst: &Path) {
 // 環境変数でのルート切替は行わず、Db を直接渡して Modules を初期化する
 
 fn build_app_with_plugins() -> tauri::App {
+    let exe_dir = std::env::current_exe()
+            .ok()
+            .and_then(|p| p.parent().map(|p| p.to_path_buf()))
+            .expect("resolve current exe dir");
+        let dst = exe_dir.join("extract-icon.exe");
+        const BYTES: &[u8] = include_bytes!("../../bin/extract-icon-x86_64-pc-windows-msvc.exe");
+        std::fs::write(&dst, BYTES).expect("write sidecar");
     tauri::Builder::default()
         .any_thread()
         .plugin(tauri_plugin_shell::init())
