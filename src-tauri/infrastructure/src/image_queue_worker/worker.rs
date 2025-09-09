@@ -2,17 +2,21 @@ use std::marker::PhantomData;
 use std::path::Path;
 use std::sync::Arc;
 
+use std::collections::{HashMap, HashSet};
+use futures::stream::{self, StreamExt};
+
 use domain::repository::RepositoriesExt;
 use domain::repository::manager::RepositoryManager;
-use domain::save_image_queue::{ImagePreprocess};
+use domain::save_image_queue::ImageSrcType;
 use domain::repository::save_image_queue::ImageSaveQueueRepository;
 use domain::service::save_path_resolver::SavePathResolver;
 use domain::windows::WindowsExt;
+use domain::windows::shell_link::ShellLink as _;
 
 use crate::icon::IconServiceImpl;
 
 use super::preprocess::run_preprocess;
-use super::resolver::resolve_source;
+use super::resolver::resolve_source_with_shortcut_metas;
 use super::types::SourceDecision;
 
 pub struct ImageQueueWorker<M, R, W>
@@ -44,63 +48,98 @@ where
                 })
             }).await?;
             if items.is_empty() { break; }
-            for item in items {
-                let result: anyhow::Result<()> = async {
-                    if Path::new(&item.dst_path).exists() { return Ok(()); }
+            // 1) バッチ内ショートカットのパスをユニーク収集
+            let shortcut_srcs: Vec<String> = {
+                let set: HashSet<String> = items
+                    .iter()
+                    .filter(|it| matches!(it.src_type, ImageSrcType::Shortcut) && !Path::new(&it.dst_path).exists())
+                    .map(|it| it.src.clone())
+                    .collect();
+                set.into_iter().collect()
+            };
 
-                    // 決定
-                    let decision = resolve_source(&*self.windows, &*self.resolver, &item.src, item.src_type).await?;
+            // 2) get_lnk_metadatas を OS スレッドで一括実行（必要時のみ）
+            let shortcut_metas: HashMap<String, domain::file::LnkMetadata> = if shortcut_srcs.is_empty() {
+                HashMap::new()
+            } else {
+                let windows = Arc::clone(&self.windows);
+                tokio::task::spawn_blocking(move || {
+                    windows.shell_link().get_lnk_metadatas(shortcut_srcs)
+                }).await??
+            };
+            let shortcut_metas = Arc::new(shortcut_metas);
 
-                    match decision {
-                        SourceDecision::FallbackDefaultAndSkip => {
-                            IconServiceImpl::write_default_icon(&item.dst_path)?;
-                            return Ok(());
-                        }
-                        SourceDecision::Use(local) => {
-                            // 前処理
-                            match item.preprocess {
-                                ImagePreprocess::ResizeAndCropSquare256 => {
-                                    run_preprocess(local.path(), &item.dst_path, ImagePreprocess::ResizeAndCropSquare256)?;
+            // 3) 並列処理（前処理/デフォルトアイコンは spawn_blocking）
+            let concurrency: usize = 8;
+            stream::iter(items)
+                .for_each_concurrent(concurrency, |item| {
+                    let manager = Arc::clone(&self.manager);
+                    let resolver = Arc::clone(&self.resolver);
+                    let windows = Arc::clone(&self.windows);
+                    let shortcut_metas = Arc::clone(&shortcut_metas);
+
+                    async move {
+                        let result: anyhow::Result<()> = async {
+                            if Path::new(&item.dst_path).exists() { return Ok(()); }
+
+                            // 決定（ショートカットは事前メタを使用して追加の COM 呼び出しを避ける）
+                            let decision = resolve_source_with_shortcut_metas(
+                                &*windows,
+                                &*resolver,
+                                &item.src,
+                                item.src_type,
+                                Some(&*shortcut_metas),
+                            ).await?;
+
+                            match decision {
+                                SourceDecision::FallbackDefaultAndSkip => {
+                                    let dst = item.dst_path.clone();
+                                    tokio::task::spawn_blocking(move || {
+                                        IconServiceImpl::write_default_icon(&dst)
+                                    }).await??;
+                                    return Ok(());
                                 }
-                                ImagePreprocess::ResizeForWidth400 => {
-                                    run_preprocess(local.path(), &item.dst_path, ImagePreprocess::ResizeForWidth400)?;
+                                SourceDecision::Use(local) => {
+                                    let src_path = local.path().to_string();
+                                    let dst_path = item.dst_path.clone();
+                                    let preprocess = item.preprocess;
+                                    tokio::task::spawn_blocking(move || {
+                                        run_preprocess(&src_path, &dst_path, preprocess)
+                                    }).await??;
                                 }
-                                ImagePreprocess::None => {
-                                    run_preprocess(local.path(), &item.dst_path, ImagePreprocess::None)?;
-                                }
+                            }
+
+                            Ok(())
+                        }.await;
+
+                        match result {
+                            Ok(_) => {
+                                let finished_id = item.id.clone();
+                                let _ = manager.run(|repos| {
+                                    Box::pin(async move {
+                                        let mut iq = repos.image_queue();
+                                        let _ = iq.mark_finished(finished_id).await;
+                                        Ok::<(), anyhow::Error>(())
+                                    })
+                                }).await;
+                            }
+                            Err(e) => {
+                                let failed_id = item.id.clone();
+                                let failed_id_value = failed_id.value;
+                                let msg = format!("failed id={} err={}", failed_id_value, e);
+                                let _ = manager.run(|repos| {
+                                    let msg = msg.clone();
+                                    Box::pin(async move {
+                                        let mut iq = repos.image_queue();
+                                        let _ = iq.mark_failed(failed_id, &msg).await;
+                                        Ok::<(), anyhow::Error>(())
+                                    })
+                                }).await;
                             }
                         }
                     }
-
-                    Ok(())
-                }.await;
-
-                match result {
-                    Ok(_) => {
-                        let finished_id = item.id.clone();
-                        let _ = self.manager.run(|repos| {
-                            Box::pin(async move {
-                                let mut iq = repos.image_queue();
-                                let _ = iq.mark_finished(finished_id).await;
-                                Ok::<(), anyhow::Error>(())
-                            })
-                        }).await;
-                    }
-                    Err(e) => {
-                        let failed_id = item.id.clone();
-                        let failed_id_value = failed_id.value;
-                        let msg = format!("failed id={} err={}", failed_id_value, e);
-                        let _ = self.manager.run(|repos| {
-                            let msg = msg.clone();
-                            Box::pin(async move {
-                                let mut iq = repos.image_queue();
-                                let _ = iq.mark_failed(failed_id, &msg).await;
-                                Ok::<(), anyhow::Error>(())
-                            })
-                        }).await;
-                    }
-                }
-            }
+                })
+                .await;
         }
         Ok(())
     }

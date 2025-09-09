@@ -37,4 +37,32 @@ pub async fn resolve_source<W: WindowsExt>(
     })
 }
 
+/// 事前取得したショートカットメタデータを活用して解決するバリアント
+pub async fn resolve_source_with_shortcut_metas<W: WindowsExt>(
+    windows: &W,
+    resolver: &dyn SavePathResolver,
+    src: &str,
+    src_type: ImageSrcType,
+    shortcut_metas: Option<&std::collections::HashMap<String, domain::file::LnkMetadata>>,
+) -> anyhow::Result<SourceDecision> {
+    Ok(match src_type {
+        ImageSrcType::Url => {
+            let tmp = url::resolve_to_tmp(resolver, src).await?;
+            let cleanup_path = tmp.clone();
+            SourceDecision::Use(LocalSource::new(tmp, Cleanup::DeleteOnDrop { path: cleanup_path }))
+        }
+        ImageSrcType::Path => {
+            SourceDecision::Use(LocalSource::new(path::resolve(src), Cleanup::None))
+        }
+        ImageSrcType::Shortcut => {
+            if let Some(metas) = shortcut_metas {
+                shortcut::decision_from_metadata(resolver, src, metas)?
+            } else {
+                shortcut::resolve(windows, resolver, src)?
+            }
+        }
+        ImageSrcType::Exe => exe::resolve(resolver, src)?,
+    })
+}
+
 
