@@ -159,7 +159,9 @@ async fn handle_message(ctx: &AppCtx) -> HostResult<bool> {
     // 画像キューの drain は同期時のみ
     match &message.message {
         NativeMessageCase::SyncDmmGames(_) | NativeMessageCase::SyncDlsiteGames(_) => {
-            let worker = ImageQueueWorker::new(ctx.manager.clone(), ctx.resolver.clone(), Arc::new(Windows::new()));
+            // Native Messaging Host 側では HostLog を使用
+            let handler = std::sync::Arc::new(infrastructure::image_queue_worker::handler::ImageQueueHostLogHandler::new(ctx.manager.clone()));
+            let worker = ImageQueueWorker::new_with_event_handler(ctx.manager.clone(), ctx.resolver.clone(), Arc::new(Windows::new()), handler);
             let _ = worker.drain_until_empty().await;
             return Ok(false);
         }

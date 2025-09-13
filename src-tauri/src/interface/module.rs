@@ -18,6 +18,7 @@ use crate::{
         heuristic_duplicate_resolver::HeuristicDuplicateResolver,
         local_file_system::LocalFileSystem,
         image_queue_worker::ImageQueueRunnerImpl,
+        image_queue_worker::handler::{ImageQueuePubSubHandler},
     },
     usecase::{
         all_game_cache::AllGameCacheUseCase, collection::CollectionUseCase,
@@ -31,6 +32,7 @@ use crate::{
     },
 };
 use domain::repository::manager::RepositoryManager as _;
+use domain::repository::all_game_cache::AllGameCacheRepository as _;
 use domain::game_matcher::{Matcher as GameMatcherImpl, GameMatcher, normalize};
 use domain::all_game_cache::AllGameCacheOne as DomainAllGameCacheOne;
 use tauri::AppHandle;
@@ -161,7 +163,6 @@ impl Modules {
         let work_use_case: WorkUseCase<SqliteRepositoryManager, SqliteRepositories, Windows> = WorkUseCase::new(repo_manager.clone(), windows.clone());
 
         // GameMatcher 構築（初期キャッシュを正規化して設定）
-        use domain::repository::all_game_cache::AllGameCacheRepository as _;
         let initial_cache = repo_manager
             .run(|repos| Box::pin(async move { repos.all_game_cache().get_all().await }))
             .await
@@ -189,8 +190,11 @@ impl Modules {
             Windows,
         > = WorkPipelineUseCase::new(repo_manager.clone(), pubsub.clone(), fs, extractor, dedup, resolver.clone(), windows.clone());
 
+        // ImageQueue のイベントハンドラ: Tauri 側は PubSub を利用
+        let pubsub_handler = std::sync::Arc::new(ImageQueuePubSubHandler::new(pubsub.clone()));
+
         let image_queue_runner: std::sync::Arc<ImageQueueRunnerImpl<SqliteRepositoryManager, SqliteRepositories, Windows>> = std::sync::Arc::new(
-            ImageQueueRunnerImpl::new(repo_manager.clone(), resolver.clone(), windows.clone())
+            ImageQueueRunnerImpl::new_with_event_handler(repo_manager.clone(), resolver.clone(), windows.clone(), pubsub_handler)
         );
 
         Self {

@@ -4,6 +4,7 @@ pub mod sidecar;
 pub mod resolver;
 mod worker;
 pub mod runner;
+pub mod handler;
 
 pub use worker::ImageQueueWorker;
 pub use runner::ImageQueueRunnerImpl;

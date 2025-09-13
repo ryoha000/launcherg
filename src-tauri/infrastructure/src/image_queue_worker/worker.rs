@@ -12,6 +12,7 @@ use domain::repository::save_image_queue::ImageSaveQueueRepository;
 use domain::service::save_path_resolver::SavePathResolver;
 use domain::windows::WindowsExt;
 use domain::windows::shell_link::ShellLink as _;
+use domain::service::image_queue_event::ImageQueueWorkerEventHandler;
 
 use crate::icon::IconServiceImpl;
 
@@ -28,6 +29,7 @@ where
     manager: Arc<M>,
     resolver: Arc<dyn SavePathResolver>,
     windows: Arc<W>,
+    event_handler: Option<Arc<dyn ImageQueueWorkerEventHandler + Send + Sync>>,
     _marker: PhantomData<R>,
 }
 
@@ -37,9 +39,22 @@ where
     R: RepositoriesExt + Send + Sync + 'static,
     W: WindowsExt + Send + Sync + 'static,
 {
-    pub fn new(manager: Arc<M>, resolver: Arc<dyn SavePathResolver>, windows: Arc<W>) -> Self { Self { manager, resolver, windows, _marker: PhantomData } }
+    pub fn new(manager: Arc<M>, resolver: Arc<dyn SavePathResolver>, windows: Arc<W>) -> Self { Self { manager, resolver, windows, event_handler: None, _marker: PhantomData } }
+
+    pub fn new_with_event_handler(
+        manager: Arc<M>,
+        resolver: Arc<dyn SavePathResolver>,
+        windows: Arc<W>,
+        event_handler: Arc<dyn ImageQueueWorkerEventHandler + Send + Sync>,
+    ) -> Self {
+        Self { manager, resolver, windows, event_handler: Some(event_handler), _marker: PhantomData }
+    }
 
     pub async fn drain_until_empty(&self) -> anyhow::Result<()> {
+        if let Some(handler) = &self.event_handler {
+            let h = Arc::clone(handler);
+            let _ = h.on_worker_started().await;
+        }
         loop {
             let items = self.manager.run(|repos| {
                 Box::pin(async move {
@@ -77,9 +92,13 @@ where
                     let resolver = Arc::clone(&self.resolver);
                     let windows = Arc::clone(&self.windows);
                     let shortcut_metas = Arc::clone(&shortcut_metas);
+                    let event_handler = self.event_handler.as_ref().map(Arc::clone);
 
                     async move {
                         let result: anyhow::Result<()> = async {
+                            if let Some(h) = &event_handler {
+                                let _ = h.on_item_started(&item).await;
+                            }
                             if Path::new(&item.dst_path).exists() { return Ok(()); }
 
                             // 決定（ショートカットは事前メタを使用して追加の COM 呼び出しを避ける）
@@ -122,6 +141,9 @@ where
                                         Ok::<(), anyhow::Error>(())
                                     })
                                 }).await;
+                                if let Some(h) = &event_handler {
+                                    let _ = h.on_item_succeeded(&item).await;
+                                }
                             }
                             Err(e) => {
                                 let failed_id = item.id.clone();
@@ -135,11 +157,18 @@ where
                                         Ok::<(), anyhow::Error>(())
                                     })
                                 }).await;
+                                if let Some(h) = &event_handler {
+                                    let _ = h.on_item_failed(&item, &msg).await;
+                                }
                             }
                         }
                     }
                 })
                 .await;
+        }
+        if let Some(handler) = &self.event_handler {
+            let h = Arc::clone(handler);
+            let _ = h.on_worker_finished().await;
         }
         Ok(())
     }

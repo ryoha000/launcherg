@@ -13,10 +13,9 @@ use domain::file::LnkMetadata;
 use domain::save_image_queue::ImageSrcType;
 use domain::service::save_path_resolver::{SavePathResolver, DirsSavePathResolver};
 use domain::windows::shell_link::MockShellLink;
-use domain::windows::{
-    process::MockProcessWindows, proctail::MockProcTail,
-    proctail_manager::MockProcTailManagerTrait, WindowsExt,
-};
+use domain::windows::{ process::MockProcessWindows, proctail::MockProcTail, proctail_manager::MockProcTailManagerTrait, WindowsExt };
+use crate::image_queue_worker::handler::{ImageQueueHostLogHandler, ImageQueuePubSubHandler};
+use domain::pubsub::PubSubService;
 
 use super::{resolver, types::SourceDecision};
 
@@ -628,4 +627,112 @@ async fn drain_until_empty_url経由_一時ファイル削除される() {
 
     // 一時ファイルは削除されているはず（RAII）: 具体パスは取得困難なので dst の存在のみを確認
     assert!(Path::new(&dst).exists());
+}
+
+#[tokio::test]
+async fn drain_until_empty_イベントハンドラ_PubSub通知が発火する() {
+    // Arrange
+    #[derive(Clone, Default)]
+    struct MockPubSub { events: std::sync::Arc<std::sync::Mutex<Vec<(String, serde_json::Value)>>> }
+    impl PubSubService for MockPubSub {
+        fn notify<T: serde::Serialize + Clone>(&self, event: &str, payload: T) -> Result<(), anyhow::Error> {
+            let v = serde_json::to_value(payload)?;
+            self.events.lock().unwrap().push((event.to_string(), v));
+            Ok(())
+        }
+    }
+
+    use domain::repository::mock::{TestRepositories, TestRepositoryManager};
+    let repos = TestRepositories::default();
+    let manager = std::sync::Arc::new(TestRepositoryManager::new(repos.clone()));
+    let tmp = tempfile::TempDir::new().unwrap();
+    let resolver = std::sync::Arc::new(TestResolver::new(tmp.path().to_string_lossy().to_string()));
+
+    // 入力ファイルを用意
+    let src_dir = tempfile::TempDir::new().unwrap();
+    let src = src_dir.path().join("src_pubsub.png");
+    write_small_png(&src.to_string_lossy(), 10, 10);
+    let dst = tmp.path().join("dst_pubsub.png");
+
+    let row = ImageSaveQueueRow { id: Id::new(101), src: src.to_string_lossy().to_string(), src_type: ImageSrcType::Path, dst_path: dst.to_string_lossy().to_string(), preprocess: ImagePreprocess::None, last_error: None };
+
+    // list/mark expectations
+    let counter = std::sync::Arc::new(std::sync::Mutex::new(0));
+    {
+        let c = counter.clone();
+        let mut iq = repos.image_queue.lock().await;
+        iq.expect_list_unfinished_oldest().returning(move |_| {
+            let mut n = c.lock().unwrap();
+            let ret = if *n == 0 { vec![row.clone()] } else { vec![] };
+            *n += 1;
+            std::pin::Pin::from(Box::new(async move { Ok(ret) }))
+        });
+        iq.expect_mark_finished().times(1).returning(|_| std::pin::Pin::from(Box::new(async { Ok(()) })));
+        iq.expect_mark_failed().times(0);
+    }
+
+    let mut mock = MockShellLink::new();
+    mock.expect_get_lnk_metadatas().returning(|_| Ok(std::collections::HashMap::new()));
+    let windows = std::sync::Arc::new(TestWindows::new(mock));
+
+    let pubsub = MockPubSub::default();
+    let handler = std::sync::Arc::new(ImageQueuePubSubHandler::new(pubsub.clone()));
+    let worker = crate::image_queue_worker::ImageQueueWorker::new_with_event_handler(manager, resolver, windows, handler);
+
+    // Act
+    worker.drain_until_empty().await.unwrap();
+
+    // Assert
+    let events = pubsub.events.lock().unwrap();
+    let names: Vec<String> = events.iter().map(|(n, _)| n.clone()).collect();
+    // 最低限必要なイベント名が含まれること
+    for expected in ["imageQueueWorkerStarted", "imageQueueItemStarted", "imageQueueItemSucceeded", "imageQueueWorkerFinished"] {
+        assert!(names.iter().any(|n| n == expected), "missing event: {}", expected);
+    }
+}
+
+#[tokio::test]
+async fn drain_until_empty_イベントハンドラ_HostLogが書き込まれる() {
+    // Arrange
+    use domain::repository::mock::{TestRepositories, TestRepositoryManager};
+    let repos = TestRepositories::default();
+    let manager = std::sync::Arc::new(TestRepositoryManager::new(repos.clone()));
+    let tmp = tempfile::TempDir::new().unwrap();
+    let resolver = std::sync::Arc::new(TestResolver::new(tmp.path().to_string_lossy().to_string()));
+
+    // 入力ファイル
+    let src_dir = tempfile::TempDir::new().unwrap();
+    let src = src_dir.path().join("src_hostlog.png");
+    write_small_png(&src.to_string_lossy(), 10, 10);
+    let dst = tmp.path().join("dst_hostlog.png");
+    let row = ImageSaveQueueRow { id: Id::new(102), src: src.to_string_lossy().to_string(), src_type: ImageSrcType::Path, dst_path: dst.to_string_lossy().to_string(), preprocess: ImagePreprocess::None, last_error: None };
+
+    let counter = std::sync::Arc::new(std::sync::Mutex::new(0));
+    {
+        let c = counter.clone();
+        let mut iq = repos.image_queue.lock().await;
+        iq.expect_list_unfinished_oldest().returning(move |_| {
+            let mut n = c.lock().unwrap();
+            let ret = if *n == 0 { vec![row.clone()] } else { vec![] };
+            *n += 1;
+            std::pin::Pin::from(Box::new(async move { Ok(ret) }))
+        });
+        iq.expect_mark_finished().times(1).returning(|_| std::pin::Pin::from(Box::new(async { Ok(()) })));
+        iq.expect_mark_failed().times(0);
+    }
+    {
+        // 4回のログ呼び出し（開始/アイテム開始/成功/終了）を期待
+        let mut host_log = repos.host_log.lock().await;
+        host_log.expect_insert_log().times(4).returning(|_, _, _| std::pin::Pin::from(Box::new(async { Ok(()) })));
+    }
+
+    let mut mock = MockShellLink::new();
+    mock.expect_get_lnk_metadatas().returning(|_| Ok(std::collections::HashMap::new()));
+    let windows = std::sync::Arc::new(TestWindows::new(mock));
+
+    let handler = std::sync::Arc::new(ImageQueueHostLogHandler::new(manager.clone()));
+    let worker = crate::image_queue_worker::ImageQueueWorker::new_with_event_handler(manager, resolver, windows, handler);
+
+    // Act & Assert
+    worker.drain_until_empty().await.unwrap();
 }

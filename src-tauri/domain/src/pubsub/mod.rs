@@ -70,3 +70,26 @@ pub struct ExtensionConnectionPayload {
 pub trait PubSubService: Send + Sync {
     fn notify<T: Serialize + Clone>(&self, event: &str, payload: T) -> Result<(), anyhow::Error>;
 }
+
+// ImageQueue 用のイベントペイロード
+#[derive(new, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ImageQueueWorkerStatusPayload {
+    pub status: String, // "started" | "finished"
+}
+
+#[derive(new, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ImageQueueItemPayload {
+    pub id: i64,
+    pub src: String,
+    pub src_type: i32,
+    pub dst_path: String,
+}
+
+#[derive(new, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ImageQueueItemErrorPayload {
+    pub id: i64,
+    pub message: String,
+}

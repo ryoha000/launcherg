@@ -6,6 +6,7 @@ use domain::service::save_path_resolver::SavePathResolver;
 use domain::windows::WindowsExt;
 
 use super::ImageQueueWorker;
+use domain::service::image_queue_event::ImageQueueWorkerEventHandler;
 
 pub struct ImageQueueRunnerImpl<M, R, W> 
 where
@@ -25,6 +26,16 @@ where
 {
     pub fn new(manager: Arc<M>, resolver: Arc<dyn SavePathResolver>, windows: Arc<W>) -> Self {
         let worker = Arc::new(ImageQueueWorker::new(manager, resolver, windows));
+        Self { worker, is_running: std::sync::atomic::AtomicBool::new(false) }
+    }
+
+    pub fn new_with_event_handler(
+        manager: Arc<M>,
+        resolver: Arc<dyn SavePathResolver>,
+        windows: Arc<W>,
+        handler: Arc<dyn ImageQueueWorkerEventHandler + Send + Sync>,
+    ) -> Self {
+        let worker = Arc::new(ImageQueueWorker::new_with_event_handler(manager, resolver, windows, handler));
         Self { worker, is_running: std::sync::atomic::AtomicBool::new(false) }
     }
 }
