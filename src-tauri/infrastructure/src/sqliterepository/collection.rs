@@ -11,53 +11,68 @@ use domain::{
     works::Work,
 };
 use domain::repository::collection::CollectionRepository;
-use sqlx::{query, query_as, Row};
+use sqlx::{query, query_as};
 
 use crate::sqliterepository::models::collection::{
-    CollectionElementTable, CollectionElementInfoTable, CollectionElementInstallTable,
+    CollectionElementInfoTable, CollectionElementInstallTable,
     CollectionElementLikeTable, CollectionElementPathsTable, CollectionElementPlayTable,
-    CollectionElementThumbnailTable, CollectionElementErogamescapeTable,
+    CollectionElementThumbnailTable, CollectionElementErogamescapeTable, CollectionElementDetailsRow,
 };
 use crate::sqliterepository::sqliterepository::RepositoryImpl;
 
 impl CollectionRepository for RepositoryImpl<domain::collection::CollectionElement> {
     async fn get_all_elements(&mut self) -> anyhow::Result<Vec<CollectionElement>> {
-        // 旧実装はリッチ JOIN を各要素ごとに追っていた。まずは elements の一覧のみ取得し、詳細は既存 API で埋める。
-        let rows: Vec<CollectionElementTable> = self.executor.with_conn(|conn| {
-            Box::pin(async move { Ok(query_as("SELECT * FROM collection_elements").fetch_all(conn).await?) })
-        }).await?;
-        let mut result = Vec::new();
-        for element_table in rows {
-            let element_id = Id::new(element_table.id);
-            let mut element: CollectionElement = element_table.try_into()?;
-
-            element.info = self.get_element_info_by_element_id(&element_id).await?;
-            element.paths = self.get_element_paths_by_element_id(&element_id).await?;
-            element.install = self.get_element_install_by_element_id(&element_id).await?;
-            element.play = self.get_element_play_by_element_id(&element_id).await?;
-            element.like = self.get_element_like_by_element_id(&element_id).await?;
-            element.thumbnail = self.get_element_thumbnail_by_element_id(&element_id).await?;
-            element.erogamescape = self.get_element_erogamescape_by_element_id(&element_id).await?;
-
-            result.push(element);
-        }
-        Ok(result)
-    }
-
-    async fn get_element_by_element_id(&mut self, id: &Id<CollectionElement>) -> anyhow::Result<Option<CollectionElement>> {
-        let idv = id.value;
-        let row = self.executor.with_conn(|conn| {
+        use std::collections::BTreeMap;
+        let rows: Vec<CollectionElementDetailsRow> = self.executor.with_conn(|conn| {
             Box::pin(async move {
-                Ok(query(
-                    "SELECT 
-                        ce.id, ce.gamename, ce.created_at, ce.updated_at,
-                        cei.id as info_id, cei.gamename_ruby, cei.sellday, cei.is_nukige, cei.brandname, cei.brandname_ruby, cei.created_at as info_created_at, cei.updated_at as info_updated_at,
-                        cep.id as paths_id, cep.exe_path, cep.lnk_path, cep.created_at as paths_created_at, cep.updated_at as paths_updated_at,
-                        cei_install.id as install_id, cei_install.install_at, cei_install.created_at as install_created_at, cei_install.updated_at as install_updated_at,
-                        cei_play.id as play_id, cei_play.last_play_at, cei_play.created_at as play_created_at, cei_play.updated_at as play_updated_at,
-                        cei_like.id as like_id, cei_like.like_at, cei_like.created_at as like_created_at, cei_like.updated_at as like_updated_at,
-                        cet.id as thumbnail_id, cet.thumbnail_width, cet.thumbnail_height, cet.created_at as thumbnail_created_at, cet.updated_at as thumbnail_updated_at,
-                        cee.id as egs_id, cee.erogamescape_id as egs_erogamescape_id, cee.created_at as egs_created_at, cee.updated_at as egs_updated_at
+                let rows: Vec<CollectionElementDetailsRow> = query_as(
+                    r#"
+                    SELECT 
+                        ce.id AS ce_id,
+                        ce.gamename AS ce_gamename,
+                        ce.created_at AS ce_created_at,
+                        ce.updated_at AS ce_updated_at,
+
+                        cei.id AS info_id,
+                        cei.gamename_ruby AS info_gamename_ruby,
+                        cei.sellday AS info_sellday,
+                        cei.is_nukige AS info_is_nukige,
+                        cei.brandname AS info_brandname,
+                        cei.brandname_ruby AS info_brandname_ruby,
+                        cei.created_at AS info_created_at,
+                        cei.updated_at AS info_updated_at,
+
+                        cep.id AS paths_id,
+                        cep.exe_path AS paths_exe_path,
+                        cep.lnk_path AS paths_lnk_path,
+                        cep.created_at AS paths_created_at,
+                        cep.updated_at AS paths_updated_at,
+
+                        cei_install.id AS install_id,
+                        cei_install.install_at AS install_install_at,
+                        cei_install.created_at AS install_created_at,
+                        cei_install.updated_at AS install_updated_at,
+
+                        cei_play.id AS play_id,
+                        cei_play.last_play_at AS play_last_play_at,
+                        cei_play.created_at AS play_created_at,
+                        cei_play.updated_at AS play_updated_at,
+
+                        cei_like.id AS like_id,
+                        cei_like.like_at AS like_like_at,
+                        cei_like.created_at AS like_created_at,
+                        cei_like.updated_at AS like_updated_at,
+
+                        cet.id AS thumbnail_id,
+                        cet.thumbnail_width AS thumbnail_width,
+                        cet.thumbnail_height AS thumbnail_height,
+                        cet.created_at AS thumbnail_created_at,
+                        cet.updated_at AS thumbnail_updated_at,
+
+                        cee.id AS egs_id,
+                        cee.erogamescape_id AS egs_erogamescape_id,
+                        cee.created_at AS egs_created_at,
+                        cee.updated_at AS egs_updated_at
                     FROM collection_elements ce
                     LEFT JOIN collection_element_info_by_erogamescape cei ON ce.id = cei.collection_element_id
                     LEFT JOIN collection_element_paths cep ON ce.id = cep.collection_element_id
@@ -66,100 +81,121 @@ impl CollectionRepository for RepositoryImpl<domain::collection::CollectionEleme
                     LEFT JOIN collection_element_likes cei_like ON ce.id = cei_like.collection_element_id
                     LEFT JOIN collection_element_thumbnails cet ON ce.id = cet.collection_element_id
                     LEFT JOIN collection_element_erogamescape_map cee ON ce.id = cee.collection_element_id
-                    WHERE ce.id = ?"
+                    ORDER BY ce.id ASC
+                    "#,
                 )
-                .bind(idv)
-                .fetch_optional(conn)
-                .await?)
+                .fetch_all(conn)
+                .await?;
+                Ok(rows)
             })
         }).await?;
 
-        let row = match row { Some(row) => row, None => return Ok(None) };
+        let mut map: BTreeMap<i32, CollectionElement> = BTreeMap::new();
+        for r in rows.into_iter() {
+            let element: CollectionElement = r.into();
+            let key = element.id.value;
+            match map.get_mut(&key) {
+                Some(entry) => {
+                    if entry.info.is_none() { entry.info = element.info; }
+                    if entry.paths.is_none() { entry.paths = element.paths; }
+                    if entry.install.is_none() { entry.install = element.install; }
+                    if entry.play.is_none() { entry.play = element.play; }
+                    if entry.like.is_none() { entry.like = element.like; }
+                    if entry.thumbnail.is_none() { entry.thumbnail = element.thumbnail; }
+                    if entry.erogamescape.is_none() { entry.erogamescape = element.erogamescape; }
+                }
+                None => {
+                    map.insert(key, element);
+                }
+            }
+        }
+        Ok(map.into_values().collect())
+    }
 
-        let element_table = CollectionElementTable {
-            id: row.get("id"),
-            gamename: row.get("gamename"),
-            created_at: row.get("created_at"),
-            updated_at: row.get("updated_at"),
-        };
-        let mut element: CollectionElement = element_table.try_into()?;
+    async fn get_element_by_element_id(&mut self, id: &Id<CollectionElement>) -> anyhow::Result<Option<CollectionElement>> {
+        let idv = id.value;
+        let rows: Vec<CollectionElementDetailsRow> = self.executor.with_conn(|conn| {
+            Box::pin(async move {
+                let rows: Vec<CollectionElementDetailsRow> = query_as(
+                    r#"
+                    SELECT 
+                        ce.id AS ce_id,
+                        ce.gamename AS ce_gamename,
+                        ce.created_at AS ce_created_at,
+                        ce.updated_at AS ce_updated_at,
 
-        element.info = if let Some(info_id) = row.get::<Option<i32>, _>("info_id") {
-            Some(CollectionElementInfo::new(
-                Id::new(info_id),
-                id.clone(),
-                row.get("gamename_ruby"),
-                row.get("brandname"),
-                row.get("brandname_ruby"),
-                row.get("sellday"),
-                row.get::<i32, _>("is_nukige") != 0,
-                row.get::<chrono::NaiveDateTime, _>("info_created_at").and_utc().with_timezone(&chrono::Local),
-                row.get::<chrono::NaiveDateTime, _>("info_updated_at").and_utc().with_timezone(&chrono::Local),
-            ))
-        } else { None };
+                        cei.id AS info_id,
+                        cei.gamename_ruby AS info_gamename_ruby,
+                        cei.sellday AS info_sellday,
+                        cei.is_nukige AS info_is_nukige,
+                        cei.brandname AS info_brandname,
+                        cei.brandname_ruby AS info_brandname_ruby,
+                        cei.created_at AS info_created_at,
+                        cei.updated_at AS info_updated_at,
 
-        element.paths = if let Some(paths_id) = row.get::<Option<i32>, _>("paths_id") {
-            Some(CollectionElementPaths::new(
-                Id::new(paths_id),
-                id.clone(),
-                row.get("exe_path"),
-                row.get("lnk_path"),
-                row.get::<chrono::NaiveDateTime, _>("paths_created_at").and_utc().with_timezone(&chrono::Local),
-                row.get::<chrono::NaiveDateTime, _>("paths_updated_at").and_utc().with_timezone(&chrono::Local),
-            ))
-        } else { None };
+                        cep.id AS paths_id,
+                        cep.exe_path AS paths_exe_path,
+                        cep.lnk_path AS paths_lnk_path,
+                        cep.created_at AS paths_created_at,
+                        cep.updated_at AS paths_updated_at,
 
-        element.install = if let Some(install_id) = row.get::<Option<i32>, _>("install_id") {
-            Some(CollectionElementInstall::new(
-                Id::new(install_id),
-                id.clone(),
-                row.get::<chrono::NaiveDateTime, _>("install_at").and_utc().with_timezone(&chrono::Local),
-                row.get::<chrono::NaiveDateTime, _>("install_created_at").and_utc().with_timezone(&chrono::Local),
-                row.get::<chrono::NaiveDateTime, _>("install_updated_at").and_utc().with_timezone(&chrono::Local),
-            ))
-        } else { None };
+                        cei_install.id AS install_id,
+                        cei_install.install_at AS install_install_at,
+                        cei_install.created_at AS install_created_at,
+                        cei_install.updated_at AS install_updated_at,
 
-        element.play = if let Some(play_id) = row.get::<Option<i32>, _>("play_id") {
-            Some(CollectionElementPlay::new(
-                Id::new(play_id),
-                id.clone(),
-                row.get::<chrono::NaiveDateTime, _>("last_play_at").and_utc().with_timezone(&chrono::Local),
-                row.get::<chrono::NaiveDateTime, _>("play_created_at").and_utc().with_timezone(&chrono::Local),
-                row.get::<chrono::NaiveDateTime, _>("play_updated_at").and_utc().with_timezone(&chrono::Local),
-            ))
-        } else { None };
+                        cei_play.id AS play_id,
+                        cei_play.last_play_at AS play_last_play_at,
+                        cei_play.created_at AS play_created_at,
+                        cei_play.updated_at AS play_updated_at,
 
-        element.like = if let Some(like_id) = row.get::<Option<i32>, _>("like_id") {
-            Some(CollectionElementLike::new(
-                Id::new(like_id),
-                id.clone(),
-                row.get::<chrono::NaiveDateTime, _>("like_at").and_utc().with_timezone(&chrono::Local),
-                row.get::<chrono::NaiveDateTime, _>("like_created_at").and_utc().with_timezone(&chrono::Local),
-                row.get::<chrono::NaiveDateTime, _>("like_updated_at").and_utc().with_timezone(&chrono::Local),
-            ))
-        } else { None };
+                        cei_like.id AS like_id,
+                        cei_like.like_at AS like_like_at,
+                        cei_like.created_at AS like_created_at,
+                        cei_like.updated_at AS like_updated_at,
 
-        element.thumbnail = if let Some(thumbnail_id) = row.get::<Option<i32>, _>("thumbnail_id") {
-            Some(CollectionElementThumbnail::new(
-                Id::new(thumbnail_id),
-                id.clone(),
-                row.get("thumbnail_width"),
-                row.get("thumbnail_height"),
-                row.get::<chrono::NaiveDateTime, _>("thumbnail_created_at").and_utc().with_timezone(&chrono::Local),
-                row.get::<chrono::NaiveDateTime, _>("thumbnail_updated_at").and_utc().with_timezone(&chrono::Local),
-            ))
-        } else { None };
+                        cet.id AS thumbnail_id,
+                        cet.thumbnail_width AS thumbnail_width,
+                        cet.thumbnail_height AS thumbnail_height,
+                        cet.created_at AS thumbnail_created_at,
+                        cet.updated_at AS thumbnail_updated_at,
 
-        element.erogamescape = if let Some(egs_row_id) = row.get::<Option<i32>, _>("egs_id") {
-            Some(domain::collection::CollectionElementErogamescape::new(
-                Id::new(egs_row_id),
-                id.clone(),
-                row.get("egs_erogamescape_id"),
-                row.get::<chrono::NaiveDateTime, _>("egs_created_at").and_utc().with_timezone(&chrono::Local),
-                row.get::<chrono::NaiveDateTime, _>("egs_updated_at").and_utc().with_timezone(&chrono::Local),
-            ))
-        } else { None };
+                        cee.id AS egs_id,
+                        cee.erogamescape_id AS egs_erogamescape_id,
+                        cee.created_at AS egs_created_at,
+                        cee.updated_at AS egs_updated_at
+                    FROM collection_elements ce
+                    LEFT JOIN collection_element_info_by_erogamescape cei ON ce.id = cei.collection_element_id
+                    LEFT JOIN collection_element_paths cep ON ce.id = cep.collection_element_id
+                    LEFT JOIN collection_element_installs cei_install ON ce.id = cei_install.collection_element_id
+                    LEFT JOIN collection_element_plays cei_play ON ce.id = cei_play.collection_element_id
+                    LEFT JOIN collection_element_likes cei_like ON ce.id = cei_like.collection_element_id
+                    LEFT JOIN collection_element_thumbnails cet ON ce.id = cet.collection_element_id
+                    LEFT JOIN collection_element_erogamescape_map cee ON ce.id = cee.collection_element_id
+                    WHERE ce.id = ?
+                    "#,
+                )
+                .bind(idv)
+                .fetch_all(conn)
+                .await?;
+                Ok(rows)
+            })
+        }).await?;
 
+        if rows.is_empty() { return Ok(None); }
+        // 同一IDで重複が出た場合は最初の要素に統合
+        let mut iter = rows.into_iter();
+        let mut element: CollectionElement = iter.next().unwrap().into();
+        for r in iter {
+            let e: CollectionElement = r.into();
+            if element.info.is_none() { element.info = e.info; }
+            if element.paths.is_none() { element.paths = e.paths; }
+            if element.install.is_none() { element.install = e.install; }
+            if element.play.is_none() { element.play = e.play; }
+            if element.like.is_none() { element.like = e.like; }
+            if element.thumbnail.is_none() { element.thumbnail = e.thumbnail; }
+            if element.erogamescape.is_none() { element.erogamescape = e.erogamescape; }
+        }
         Ok(Some(element))
     }
 

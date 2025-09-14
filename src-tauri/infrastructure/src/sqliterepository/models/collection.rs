@@ -11,6 +11,55 @@ use domain::{
     Id,
 };
 
+#[derive(FromRow, Clone)]
+pub struct CollectionElementDetailsRow {
+    pub ce_id: i32,
+    pub ce_gamename: String,
+    pub ce_created_at: NaiveDateTime,
+    pub ce_updated_at: NaiveDateTime,
+
+    pub info_id: Option<i32>,
+    pub info_gamename_ruby: Option<String>,
+    pub info_sellday: Option<String>,
+    pub info_is_nukige: Option<i32>,
+    pub info_brandname: Option<String>,
+    pub info_brandname_ruby: Option<String>,
+    pub info_created_at: Option<NaiveDateTime>,
+    pub info_updated_at: Option<NaiveDateTime>,
+
+    pub paths_id: Option<i32>,
+    pub paths_exe_path: Option<String>,
+    pub paths_lnk_path: Option<String>,
+    pub paths_created_at: Option<NaiveDateTime>,
+    pub paths_updated_at: Option<NaiveDateTime>,
+
+    pub install_id: Option<i32>,
+    pub install_install_at: Option<NaiveDateTime>,
+    pub install_created_at: Option<NaiveDateTime>,
+    pub install_updated_at: Option<NaiveDateTime>,
+
+    pub play_id: Option<i32>,
+    pub play_last_play_at: Option<NaiveDateTime>,
+    pub play_created_at: Option<NaiveDateTime>,
+    pub play_updated_at: Option<NaiveDateTime>,
+
+    pub like_id: Option<i32>,
+    pub like_like_at: Option<NaiveDateTime>,
+    pub like_created_at: Option<NaiveDateTime>,
+    pub like_updated_at: Option<NaiveDateTime>,
+
+    pub thumbnail_id: Option<i32>,
+    pub thumbnail_width: Option<i32>,
+    pub thumbnail_height: Option<i32>,
+    pub thumbnail_created_at: Option<NaiveDateTime>,
+    pub thumbnail_updated_at: Option<NaiveDateTime>,
+
+    pub egs_id: Option<i32>,
+    pub egs_erogamescape_id: Option<i32>,
+    pub egs_created_at: Option<NaiveDateTime>,
+    pub egs_updated_at: Option<NaiveDateTime>,
+}
+
 #[derive(FromRow)]
 pub struct CollectionElementTable {
     pub id: i32,
@@ -220,6 +269,127 @@ impl TryFrom<CollectionElementErogamescapeTable> for CollectionElementErogamesca
             st.created_at.and_utc().with_timezone(&Local),
             st.updated_at.and_utc().with_timezone(&Local),
         ))
+    }
+}
+
+impl From<CollectionElementDetailsRow> for CollectionElement {
+    fn from(r: CollectionElementDetailsRow) -> Self {
+        let id = Id::new(r.ce_id);
+        let mut element = CollectionElement::new(
+            id.clone(),
+            r.ce_gamename,
+            r.ce_created_at.and_utc().with_timezone(&Local),
+            r.ce_updated_at.and_utc().with_timezone(&Local),
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+        );
+
+        if let Some(info_id) = r.info_id {
+            if let (Some(gamename_ruby), Some(brandname), Some(brandname_ruby), Some(sellday), Some(is_nukige), Some(created), Some(updated)) = (
+                r.info_gamename_ruby,
+                r.info_brandname,
+                r.info_brandname_ruby,
+                r.info_sellday,
+                r.info_is_nukige,
+                r.info_created_at,
+                r.info_updated_at,
+            ) {
+                element.info = Some(CollectionElementInfo::new(
+                    Id::new(info_id),
+                    id.clone(),
+                    gamename_ruby,
+                    brandname,
+                    brandname_ruby,
+                    sellday,
+                    is_nukige != 0,
+                    created.and_utc().with_timezone(&Local),
+                    updated.and_utc().with_timezone(&Local),
+                ));
+            }
+        }
+
+        if let Some(paths_id) = r.paths_id {
+            if let (Some(created), Some(updated)) = (r.paths_created_at, r.paths_updated_at) {
+                element.paths = Some(CollectionElementPaths::new(
+                    Id::new(paths_id),
+                    id.clone(),
+                    r.paths_exe_path,
+                    r.paths_lnk_path,
+                    created.and_utc().with_timezone(&Local),
+                    updated.and_utc().with_timezone(&Local),
+                ));
+            }
+        }
+
+        if let Some(install_id) = r.install_id {
+            if let (Some(install_at), Some(created), Some(updated)) = (r.install_install_at, r.install_created_at, r.install_updated_at) {
+                element.install = Some(CollectionElementInstall::new(
+                    Id::new(install_id),
+                    id.clone(),
+                    install_at.and_utc().with_timezone(&Local),
+                    created.and_utc().with_timezone(&Local),
+                    updated.and_utc().with_timezone(&Local),
+                ));
+            }
+        }
+
+        if let Some(play_id) = r.play_id {
+            if let (Some(last_play_at), Some(created), Some(updated)) = (r.play_last_play_at, r.play_created_at, r.play_updated_at) {
+                element.play = Some(CollectionElementPlay::new(
+                    Id::new(play_id),
+                    id.clone(),
+                    last_play_at.and_utc().with_timezone(&Local),
+                    created.and_utc().with_timezone(&Local),
+                    updated.and_utc().with_timezone(&Local),
+                ));
+            }
+        }
+
+        if let Some(like_id) = r.like_id {
+            if let (Some(like_at), Some(created), Some(updated)) = (r.like_like_at, r.like_created_at, r.like_updated_at) {
+                element.like = Some(CollectionElementLike::new(
+                    Id::new(like_id),
+                    id.clone(),
+                    like_at.and_utc().with_timezone(&Local),
+                    created.and_utc().with_timezone(&Local),
+                    updated.and_utc().with_timezone(&Local),
+                ));
+            }
+        }
+
+        if let Some(thumbnail_id) = r.thumbnail_id {
+            if let (Some(created), Some(updated)) = (r.thumbnail_created_at, r.thumbnail_updated_at) {
+                element.thumbnail = Some(CollectionElementThumbnail::new(
+                    Id::new(thumbnail_id),
+                    id.clone(),
+                    r.thumbnail_width,
+                    r.thumbnail_height,
+                    created.and_utc().with_timezone(&Local),
+                    updated.and_utc().with_timezone(&Local),
+                ));
+            }
+        }
+
+        if let Some(egs_row_id) = r.egs_id {
+            if let (Some(egs_id), Some(created), Some(updated)) = (r.egs_erogamescape_id, r.egs_created_at, r.egs_updated_at) {
+                element.erogamescape = Some(CollectionElementErogamescape::new(
+                    Id::new(egs_row_id),
+                    id.clone(),
+                    egs_id,
+                    created.and_utc().with_timezone(&Local),
+                    updated.and_utc().with_timezone(&Local),
+                ));
+            }
+        }
+
+        element
     }
 }
 
