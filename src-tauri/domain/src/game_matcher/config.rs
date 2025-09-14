@@ -4,10 +4,11 @@
 pub const NOT_GAME_EQUALLY_WORD: [&str; 1] = ["bgi"];
 
 /// ゲーム以外を表す語句（部分一致）
-pub const NOT_GAME_TERMS: [&str; 16] = [
+pub const NOT_GAME_TERMS: [&str; 17] = [
     "マニュアル",
     "詳細設定",
     "はじめに",
+    "初めに",
     "サポート",
     "セーブデータ",
     "インストール",

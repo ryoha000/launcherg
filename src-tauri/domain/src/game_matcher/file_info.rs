@@ -48,8 +48,11 @@ where
     let normalized_filename = normalize(&filename);
     
     // ゲーム以外のファイルは除外
+    if is_not_game(&parent_dir) {
+        return Err(anyhow::anyhow!("parent_dir is not a game. {}", parent_dir));
+    }
     if is_not_game(&normalized_filename) {
-        return Err(anyhow::anyhow!("file is not a game"));
+        return Err(anyhow::anyhow!("file is not a game. {}", normalized_filename));
     }
     
     // 不要な語句を除去
