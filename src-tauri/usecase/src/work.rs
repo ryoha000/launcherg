@@ -5,6 +5,8 @@ use domain::{
     works::WorkDetails,
 };
 use domain::repository::{works::WorkRepository, RepositoriesExt, manager::RepositoryManager, work_lnk::WorkLnkRepository, collection::CollectionRepository};
+use domain::repository::work_parent_packs::WorkParentPacksRepository as _;
+use domain::repository::works::DmmWorkRepository as _;
 use domain::windows::{WindowsExt, shell_link::ShellLink as ShellLinkTrait};
 use std::marker::PhantomData;
 
@@ -68,6 +70,21 @@ where
         }).await;
 
         Ok(pid)
+    }
+
+    pub async fn get_parent_dmm_pack_work_id(&self, work_id: i32) -> anyhow::Result<Option<i32>> {
+        let wid = domain::Id::new(work_id);
+        let parent = self.manager.run(|repos| {
+            Box::pin(async move { repos.work_parent_packs().find_parent_id(wid).await })
+        }).await?;
+        Ok(parent.map(|p| p.value))
+    }
+
+    pub async fn get_dmm_work_by_work_id(&self, work_id: i32) -> anyhow::Result<Option<domain::works::DmmWork>> {
+        let wid = domain::Id::new(work_id);
+        self.manager.run(|repos| {
+            Box::pin(async move { repos.dmm_work().find_by_work_id(wid).await })
+        }).await
     }
 }
 

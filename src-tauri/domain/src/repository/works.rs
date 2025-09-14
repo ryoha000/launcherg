@@ -16,6 +16,7 @@ pub trait DmmWorkRepository {
     async fn upsert(&mut self, new_work: &NewDmmWork) -> Result<Id<DmmWork>>;
     async fn find_by_store_key(&mut self, store_id: &str, category: &str, subcategory: &str) -> Result<Option<DmmWork>>;
     async fn find_by_store_keys(&mut self, keys: &[(String, String, String)]) -> Result<Vec<DmmWork>>;
+    async fn find_by_work_id(&mut self, work_id: Id<Work>) -> Result<Option<DmmWork>>;
 }
 
 #[trait_variant::make(Send)]

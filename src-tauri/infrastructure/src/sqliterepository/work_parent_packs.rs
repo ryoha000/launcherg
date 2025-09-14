@@ -32,6 +32,22 @@ impl WorkParentPacksRepository for RepositoryImpl<domain::work_parent_pack::Work
         }).await?;
         Ok(row.is_some())
     }
+
+    async fn find_parent_id(&mut self, work_id: Id<Work>) -> anyhow::Result<Option<Id<Work>>> {
+        let wid = work_id.value as i64;
+        let row: Option<(i64,)> = self.executor.with_conn(|conn| {
+            Box::pin(async move {
+                let row: Option<(i64,)> = sqlx::query_as(
+                    r#"SELECT parent_pack_work_id FROM work_parent_packs WHERE work_id=? LIMIT 1"#,
+                )
+                .bind(wid)
+                .fetch_optional(conn)
+                .await?;
+                Ok(row)
+            })
+        }).await?;
+        Ok(row.map(|(pid,)| domain::Id::new(pid as i32)))
+    }
 }
 
 

@@ -4,6 +4,7 @@ use tauri::State;
 use tauri_plugin_shell::ShellExt;
 
 use super::models::all_game_cache::AllGameCacheOne;
+use super::models::parent_dmm_pack::DmmPackKeysVm;
 use super::{
     error::CommandError,
     models::{
@@ -1074,6 +1075,28 @@ pub async fn get_work_details_all(modules: State<'_, Arc<Modules>>) -> anyhow::R
 pub async fn get_work_details_by_collection_element(modules: State<'_, Arc<Modules>>, collection_element_id: i32) -> anyhow::Result<Option<WorkDetailsVm>, CommandError> {
     let row = modules.work_use_case().find_details_by_collection_element_id(collection_element_id).await?;
     Ok(row.map(|w| w.into()))
+}
+
+// ========== Parent DMM Pack ==========
+#[tauri::command]
+pub async fn get_parent_dmm_pack_keys(
+    modules: State<'_, Arc<Modules>>,
+    work_id: i32,
+) -> anyhow::Result<Option<DmmPackKeysVm>, CommandError> {
+    let parent_id = modules
+        .work_use_case()
+        .get_parent_dmm_pack_work_id(work_id)
+        .await?;
+    if let Some(pid) = parent_id {
+        if let Some(dmm) = modules
+            .work_use_case()
+            .get_dmm_work_by_work_id(pid)
+            .await?
+        {
+            return Ok(Some(DmmPackKeysVm { store_id: dmm.store_id, category: dmm.category, subcategory: dmm.subcategory }));
+        }
+    }
+    Ok(None)
 }
 
 // ========== Image Save Queue ==========

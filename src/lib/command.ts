@@ -22,7 +22,7 @@ async function invoke<T>(command: Parameters<typeof invokeCore>[0], args?: Param
   console.log('invoke', command, args)
   const response = await invokeCore<T>(command, args)
   // eslint-disable-next-line no-console
-  console.log('response', response)
+  console.log('response', command, response)
   return response
 }
 
@@ -295,6 +295,12 @@ export async function commandGetErogamescapeIdByCollectionId(collectionElementId
   return await invoke<number | null>('get_erogamescape_id_by_collection_id', {
     collectionElementId,
   })
+}
+
+// Parent DMM Pack keys for a child work
+export interface DmmPackKeysVm { storeId: string, category: string, subcategory: string }
+export async function commandGetParentDmmPackKeys(workId: number) {
+  return await invoke<DmmPackKeysVm | null>('get_parent_dmm_pack_keys', { workId })
 }
 
 // Native Messaging Host Logs

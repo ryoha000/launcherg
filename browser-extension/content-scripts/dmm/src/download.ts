@@ -45,7 +45,7 @@ export function closeCurrentTab(): void {
 }
 
 export async function performDownloadByStoreId(storeId: string): Promise<void> {
-  await waitForPageLoad(2000)
+  await waitForPageLoad(800)
   const id = findDetailItemIdForStoreId(storeId)
   if (!id) {
     showInPageNotification('DMM: 対象ゲームが見つかりませんでした', 'error')
@@ -94,7 +94,7 @@ export async function initLaunchergDownloadOnceForUrl(url: string, mark: (url: s
       }
       // 子ゲームのモーダルが開いた後、リンク件数を算出し intent を保存してからクリック
       await waitForPageLoad(800)
-      const links = collectDownloadLinks(document)
+      const links = collectDownloadLinks(document, p.value.game.storeId)
       try {
         await setDownloadIntent(p.value.game.storeId, {
           store: 'DMM',
@@ -119,7 +119,7 @@ export async function initLaunchergDownloadOnceForUrl(url: string, mark: (url: s
       await performDownloadByStoreId(p.value.game.storeId)
       // モーダル待機→リンク件数を算出し intent を保存してからクリック
       await waitForPageLoad(800)
-      const links = collectDownloadLinks(document)
+      const links = collectDownloadLinks(document, p.value.game.storeId)
       try {
         await setDownloadIntent(p.value.game.storeId, {
           store: 'DMM',

@@ -1,19 +1,12 @@
+import type { CreateQueryResult } from '@tanstack/svelte-query'
 import type { WorkDetailsVm } from '@/lib/command'
 import { get } from 'svelte/store'
-import { commandLaunchWork, commandOpenUrl } from '@/lib/command'
-import { useWorkLnkQuery } from '@/lib/data/queries/workLnk'
+import { commandLaunchWork } from '@/lib/command'
 import { showErrorToast } from '@/lib/toast'
 import { localStorageWritable } from '@/lib/utils'
 import { startProcessMap } from '@/store/startProcessMap'
 
-interface InstallOption {
-  store: 'DMM' | 'DLsite'
-  install: () => Promise<void>
-}
-
-export function useStart(workDetail: WorkDetailsVm) {
-  const workLnkQuery = useWorkLnkQuery(workDetail.id)
-
+export function useStart(workDetail: WorkDetailsVm, workLnkQuery: CreateQueryResult<[number, string][], Error>) {
   const isAdminRecord = localStorageWritable<Record<number, boolean>>(
     'play-admin-cache',
     {},
@@ -81,55 +74,5 @@ export function useStart(workDetail: WorkDetailsVm) {
     }
   }
 
-  const isNotInstalled = $derived(get(workLnkQuery).data?.length === 0)
-
-  const installFromDmm = async () => {
-    const dmm = workDetail.dmm
-    if (!dmm) {
-      throw new Error('dmm is not set')
-    }
-    const payload = {
-      type: 'download',
-      value: {
-        game: {
-          storeId: dmm.storeId,
-          category: dmm.category,
-          subcategory: dmm.subcategory,
-        },
-      },
-    }
-    const url = new URL('https://dlsoft.dmm.co.jp/mylibrary/')
-    url.searchParams.set('launcherg', JSON.stringify(payload))
-    await commandOpenUrl(url.toString())
-  }
-  const installFromDlsite = async () => {
-    const dlsite = workDetail.dlsite
-    if (!dlsite) {
-      throw new Error('dlsite is not set')
-    }
-    const payload = {
-      type: 'download',
-      value: {
-        game: {
-          storeId: dlsite.storeId,
-          category: dlsite.category,
-        },
-      },
-    }
-    const url = new URL('https://play.dlsite.com/library')
-    url.searchParams.set('launcherg', JSON.stringify(payload))
-    await commandOpenUrl(url.toString())
-  }
-  const installOptions = $derived.by(() => {
-    const options: InstallOption[] = []
-    if (workDetail.dmm) {
-      options.push({ store: 'DMM', install: installFromDmm })
-    }
-    if (workDetail.dlsite) {
-      options.push({ store: 'DLsite', install: installFromDlsite })
-    }
-    return options
-  })
-
-  return { start, isNotInstalled, installOptions }
+  return { start }
 }

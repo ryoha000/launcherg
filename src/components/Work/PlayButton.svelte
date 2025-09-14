@@ -6,6 +6,9 @@
   import { useStart } from '@/components/Work/action.svelte'
   import InstallPopover from '@/components/Work/InstallPopover.svelte'
   import PlayPopover from '@/components/Work/PlayPopover.svelte'
+  import { commandOpenUrl } from '@/lib/command'
+  import { useWorkLnkQuery } from '@/lib/data/queries/workLnk'
+  import { useParentDmmPackKeysQuery } from '@/lib/data/queries/workParentDmmPack'
 
   interface Props {
     workDetail: WorkDetailsVm
@@ -13,9 +16,72 @@
 
   let { workDetail }: Props = $props()
 
-  const { start, isNotInstalled, installOptions } = useStart(workDetail)
+  const workLnkQuery = useWorkLnkQuery(workDetail.id)
+  const isNotInstalled = $derived(!$workLnkQuery.data?.length)
+
+  const parentDmmPackKeysQuery = useParentDmmPackKeysQuery(workDetail.id)
+
+  const { start } = useStart(workDetail, workLnkQuery)
+
+  const dmmUrlForInstall = $derived.by<string | null>(() => {
+    const dmm = workDetail.dmm
+    if (!dmm) {
+      return null
+    }
+    const parent = $parentDmmPackKeysQuery.data ?? null
+    const payload = {
+      type: 'download',
+      value: {
+        game: {
+          storeId: dmm.storeId,
+          category: dmm.category,
+          subcategory: dmm.subcategory,
+        },
+        parentPack: parent
+          ? {
+            storeId: parent.storeId,
+            category: parent.category,
+            subcategory: parent.subcategory,
+          }
+          : undefined,
+      },
+    }
+    const url = new URL('https://dlsoft.dmm.co.jp/mylibrary/')
+    url.searchParams.set('launcherg', JSON.stringify(payload))
+    return url.toString()
+  })
+  const dlsiteUrlForInstall = $derived.by(() => {
+    const dlsite = workDetail.dlsite
+    if (!dlsite) {
+      return null
+    }
+    const payload = {
+      type: 'download',
+      value: {
+        game: { storeId: dlsite.storeId, category: dlsite.category },
+      },
+    }
+    const url = new URL('https://play.dlsite.com/library')
+    url.searchParams.set('launcherg', JSON.stringify(payload))
+    return url.toString()
+  })
+
+  const installOptions = $derived.by(() => {
+    const options: { store: 'DMM' | 'DLsite', installUrl: string }[] = []
+    if (dmmUrlForInstall) {
+      options.push({ store: 'DMM', installUrl: dmmUrlForInstall })
+    }
+    if (dlsiteUrlForInstall) {
+      options.push({ store: 'DLsite', installUrl: dlsiteUrlForInstall })
+    }
+    return options
+  })
 
   const installPopoverOptions = $derived(installOptions.map(option => option.store))
+
+  const install = async (url: string) => {
+    await commandOpenUrl(url)
+  }
 </script>
 
 <div class='min-w-0 flex items-center'>
@@ -26,7 +92,7 @@
         leftIcon='i-material-symbols-download-rounded'
         text='Install'
         variant='accent-fill'
-        onclick={installOptions[0].install}
+        onclick={() => install(installOptions[0].installUrl)}
       />
       <APopover>
         {#snippet button({ open })}
@@ -53,7 +119,10 @@
             close={close}
             options={installPopoverOptions}
             install={(store) => {
-              installOptions.find(option => option.store === store)?.install()
+              const url = installOptions.find(option => option.store === store)?.installUrl
+              if (url) {
+                install(url)
+              }
             }}
           />
         {/snippet}
@@ -97,7 +166,10 @@
             start('admin')
           }}
           install={(store) => {
-            installOptions.find(option => option.store === store)?.install()
+            const url = installOptions.find(option => option.store === store)?.installUrl
+            if (url) {
+              install(url)
+            }
           }}
           installOptions={installPopoverOptions}
         />

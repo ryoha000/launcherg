@@ -7,7 +7,7 @@ import {
 } from '@launcherg/shared'
 import { extractAllGames, shouldExtract } from './dom-extractor'
 import { initLaunchergDownloadOnceForUrl } from './download'
-import { fetchPackIds, fetchPackParentMap, processPacks, syncDmmGames } from './orchestrator'
+import { fetchOmitWorks, processPacks, syncDmmGames } from './orchestrator'
 
 let isExtracting = false
 let currentUrl = window.location.href
@@ -31,16 +31,14 @@ async function extractAndSync(): Promise<void> {
       log.info('No games found')
       return
     }
-    // 1) パックIDの取得
-    const packSet = await fetchPackIds()
+    // 1) omit 情報を1回で取得（packSet と parentMap を同時に）
+    const { packSet, parentMap } = await fetchOmitWorks()
     // 2) パック要素はfetchで詳細取得し、配列で受け取る
     const packOnly = games.filter(g => packSet.has(g.storeId))
     const normalGames = games.filter(g => !packSet.has(g.storeId))
-    let packGames: DmmExtractedGame[] = []
-    if (packOnly.length > 0) {
-      const parentMap = await fetchPackParentMap()
-      packGames = await processPacks(new Set(packOnly.map(g => g.storeId)), parentMap)
-    }
+    const packGames: DmmExtractedGame[] = packOnly.length > 0
+      ? await processPacks(new Set(packOnly.map(g => g.storeId)), parentMap)
+      : []
 
     // 3) パック配下ゲームと通常ゲームを結合し、一度だけ同期
     const allGames: DmmExtractedGame[] = [...normalGames, ...packGames]

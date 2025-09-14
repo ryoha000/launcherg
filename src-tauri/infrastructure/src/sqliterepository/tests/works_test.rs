@@ -45,6 +45,33 @@ async fn dmm_works_upsert_and_find_by_store_key() {
 }
 
 #[tokio::test]
+async fn dmm_works_find_by_work_id_should_return_matching_row() {
+    let test_db = TestDatabase::new().await.unwrap();
+    let repo = test_db.sqlite_repository();
+
+    // create work and dmm row
+    let work_id = repo.work().upsert(&NewWork { title: "W-FIND".into() }).await.unwrap();
+    let _ = repo.dmm_work().upsert(&NewDmmWork {
+        store_id: "SID-WF".into(),
+        category: "game".into(),
+        subcategory: "pc".into(),
+        work_id: work_id.clone(),
+    }).await.unwrap();
+
+    // find by work_id
+    let found = repo.dmm_work().find_by_work_id(work_id.clone()).await.unwrap();
+    assert!(found.is_some());
+    let row = found.unwrap();
+    assert_eq!(row.work_id.value, work_id.value);
+    assert_eq!(row.store_id, "SID-WF");
+
+    // not found case
+    let other = repo.work().upsert(&NewWork { title: "OTHER".into() }).await.unwrap();
+    let none = repo.dmm_work().find_by_work_id(other).await.unwrap();
+    assert!(none.is_none());
+}
+
+#[tokio::test]
 async fn dlsite_works_upsert_and_find_by_store_key() {
     let test_db = TestDatabase::new().await.unwrap();
     let repo = test_db.sqlite_repository();

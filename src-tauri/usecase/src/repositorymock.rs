@@ -117,6 +117,7 @@ impl domain::repository::works::DmmWorkRepository for TestRepositories {
     async fn upsert(&mut self, new_work: &domain::works::NewDmmWork) -> anyhow::Result<domain::Id<domain::works::DmmWork>> { self.dmm_work.lock().await.upsert(new_work).await }
     async fn find_by_store_key(&mut self, store_id: &str, category: &str, subcategory: &str) -> anyhow::Result<Option<domain::works::DmmWork>> { self.dmm_work.lock().await.find_by_store_key(store_id, category, subcategory).await }
     async fn find_by_store_keys(&mut self, keys: &[(String, String, String)]) -> anyhow::Result<Vec<domain::works::DmmWork>> { self.dmm_work.lock().await.find_by_store_keys(keys).await }
+    async fn find_by_work_id(&mut self, work_id: domain::Id<domain::works::Work>) -> anyhow::Result<Option<domain::works::DmmWork>> { self.dmm_work.lock().await.find_by_work_id(work_id).await }
 }
 
 #[cfg(test)]
@@ -213,6 +214,7 @@ impl domain::repository::work_omit::WorkOmitRepository for TestRepositories {
 impl domain::repository::work_parent_packs::WorkParentPacksRepository for TestRepositories {
     async fn add(&mut self, work_id: domain::Id<domain::works::Work>, parent_pack_work_id: domain::Id<domain::works::Work>) -> anyhow::Result<()> { self.work_parent_packs.lock().await.add(work_id, parent_pack_work_id).await }
     async fn exists(&mut self, work_id: domain::Id<domain::works::Work>, parent_pack_work_id: domain::Id<domain::works::Work>) -> anyhow::Result<bool> { self.work_parent_packs.lock().await.exists(work_id, parent_pack_work_id).await }
+    async fn find_parent_id(&mut self, work_id: domain::Id<domain::works::Work>) -> anyhow::Result<Option<domain::Id<domain::works::Work>>> { self.work_parent_packs.lock().await.find_parent_id(work_id).await }
 }
 
 #[cfg(test)]

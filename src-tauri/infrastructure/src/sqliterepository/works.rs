@@ -259,6 +259,25 @@ impl DmmWorkRepository for RepositoryImpl<domain::works::DmmWork> {
         }).await?;
         Ok(rows.into_iter().map(|t| t.try_into()).collect::<anyhow::Result<Vec<_>>>()?)
     }
+
+    async fn find_by_work_id(&mut self, work_id: Id<Work>) -> anyhow::Result<Option<DmmWork>> {
+        let idv = work_id.value as i64;
+        let row = self.executor.with_conn(|conn| {
+            Box::pin(async move {
+                let row: Option<crate::sqliterepository::models::works::DmmWorkTable> = sqlx::query_as(
+                    r#"SELECT w.id as id, w.store_id, w.category, w.subcategory, w.work_id
+                       FROM dmm_works w
+                       WHERE w.work_id=?
+                       LIMIT 1"#,
+                )
+                .bind(idv)
+                .fetch_optional(conn)
+                .await?;
+                Ok(row)
+            })
+        }).await?;
+        Ok(row.map(|t| t.try_into()).transpose()?)
+    }
 }
 
 impl DlsiteWorkRepository for RepositoryImpl<domain::works::DlsiteWork> {

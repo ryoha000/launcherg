@@ -13,6 +13,9 @@ export const queryKeys = {
     all: () => ['workLnk'] as const,
     byId: (id: number) => ['workLnk', id] as const,
   },
+  workParentDmmPack: {
+    byId: (id: number) => ['workParentDmmPack', id] as const,
+  },
   imageQueue: {
     unfinished: () => ['imageQueue', 'unfinished'] as const,
     finished: () => ['imageQueue', 'finished'] as const,

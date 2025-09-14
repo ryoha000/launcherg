@@ -2,43 +2,26 @@ import type { DmmGame, DmmSyncGamesRequest, ExtensionRequest } from '@launcherg/
 import type { DmmExtractedGame } from './types'
 
 import { sendExtensionRequest } from '@launcherg/shared'
+import { getCachedPackChildrenMulti, setCachedPackChildren } from './cache'
 import { fetchPackDetailHtmlForItemId, findDetailItemIdForStoreId } from './pack-helpers'
 import { parsePackModal } from './pack-parser'
 
-export async function fetchPackIds(): Promise<Set<string>> {
-  const packReq: ExtensionRequest = {
+export async function fetchOmitWorks(): Promise<{ packSet: Set<string>, parentMap: Map<string, number> }> {
+  const req: ExtensionRequest = {
     requestId: Date.now().toString(36) + Math.random().toString(36).slice(2),
     request: { case: 'getDmmOmitWorks', value: {} },
   }
-  const packResJson = await sendExtensionRequest(packReq)
-  const dmmPackIds: string[] = []
-  if (packResJson?.response?.case === 'getDmmOmitWorksResult') {
-    const payload = packResJson.response.value
-    dmmPackIds.push(...payload.items.map(it => it.dmm.storeId))
-  }
-  else {
+  const res = await sendExtensionRequest(req)
+  if (res?.response?.case !== 'getDmmOmitWorksResult')
     throw new Error('Unexpected response from getDmmOmitWorks')
+  const payload = res.response.value
+  const set = new Set<string>()
+  const map = new Map<string, number>()
+  for (const it of payload.items) {
+    set.add(it.dmm.storeId)
+    map.set(it.dmm.storeId, it.workId)
   }
-  return new Set<string>(dmmPackIds)
-}
-
-export async function fetchPackParentMap(): Promise<Map<string, number>> {
-  const packReq: ExtensionRequest = {
-    requestId: Date.now().toString(36) + Math.random().toString(36).slice(2),
-    request: { case: 'getDmmOmitWorks', value: {} },
-  }
-  const packResJson = await sendExtensionRequest(packReq)
-  const m = new Map<string, number>()
-  if (packResJson?.response?.case === 'getDmmOmitWorksResult') {
-    const payload = packResJson.response.value
-    for (const it of payload.items) {
-      m.set(it.dmm.storeId, it.workId)
-    }
-  }
-  else {
-    throw new Error('Unexpected response from getDmmOmitWorks')
-  }
-  return m
+  return { packSet: set, parentMap: map }
 }
 
 export async function syncDmmGames(games: DmmExtractedGame[]): Promise<void> {
@@ -62,14 +45,34 @@ export async function syncDmmGames(games: DmmExtractedGame[]): Promise<void> {
 export async function processPacks(packSet: Set<string>, parentMap?: Map<string, number>): Promise<DmmExtractedGame[]> {
   const packIds = Array.from(packSet)
   const collectedGames: DmmExtractedGame[] = []
+
+  // 事前に可能な限りキャッシュをバルク取得
+  const cached = await getCachedPackChildrenMulti(packIds)
+
   for (const sid of packIds) {
+    const parentId = parentMap?.get(sid)
+    const cachedChildren = cached.get(sid)
+    if (cachedChildren) {
+      // キャッシュヒット：ネットワークをスキップ
+      if (parentId) {
+        collectedGames.push(...cachedChildren.map(g => ({ ...g, parentPackWorkId: parentId })))
+      }
+      else {
+        collectedGames.push(...cachedChildren)
+      }
+      continue
+    }
+
+    // キャッシュミス：DOM から detail item を探し、fetch→parse
     const itemId = findDetailItemIdForStoreId(sid)
     if (!itemId)
       continue
     try {
       const html = await fetchPackDetailHtmlForItemId(itemId, 12000)
       const games = parsePackModal(html)
-      const parentId = parentMap?.get(sid)
+      // 子リストを永続キャッシュに保存（parentPackWorkId は保存しない）
+      await setCachedPackChildren(sid, games.map(({ parentPackWorkId: _omit, ...rest }) => rest))
+
       if (parentId) {
         collectedGames.push(...games.map(g => ({ ...g, parentPackWorkId: parentId })))
       }
@@ -78,6 +81,7 @@ export async function processPacks(packSet: Set<string>, parentMap?: Map<string,
       }
     }
     catch {}
+    // 連続アクセスを軽減
     await new Promise(r => setTimeout(r, 500))
   }
   return collectedGames

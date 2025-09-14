@@ -83,6 +83,7 @@ impl crate::repository::works::DmmWorkRepository for TestRepositories {
     async fn upsert(&mut self, new_work: &crate::works::NewDmmWork) -> anyhow::Result<crate::Id<crate::works::DmmWork>> { self.dmm_work.lock().await.upsert(new_work).await }
     async fn find_by_store_key(&mut self, store_id: &str, category: &str, subcategory: &str) -> anyhow::Result<Option<crate::works::DmmWork>> { self.dmm_work.lock().await.find_by_store_key(store_id, category, subcategory).await }
     async fn find_by_store_keys(&mut self, keys: &[(String, String, String)]) -> anyhow::Result<Vec<crate::works::DmmWork>> { self.dmm_work.lock().await.find_by_store_keys(keys).await }
+    async fn find_by_work_id(&mut self, work_id: crate::Id<crate::works::Work>) -> anyhow::Result<Option<crate::works::DmmWork>> { self.dmm_work.lock().await.find_by_work_id(work_id).await }
 }
 
 
@@ -179,6 +180,7 @@ impl crate::repository::work_omit::WorkOmitRepository for TestRepositories {
 impl crate::repository::work_parent_packs::WorkParentPacksRepository for TestRepositories {
     async fn add(&mut self, work_id: crate::Id<crate::works::Work>, parent_pack_work_id: crate::Id<crate::works::Work>) -> anyhow::Result<()> { self.work_parent_packs.lock().await.add(work_id, parent_pack_work_id).await }
     async fn exists(&mut self, work_id: crate::Id<crate::works::Work>, parent_pack_work_id: crate::Id<crate::works::Work>) -> anyhow::Result<bool> { self.work_parent_packs.lock().await.exists(work_id, parent_pack_work_id).await }
+    async fn find_parent_id(&mut self, work_id: crate::Id<crate::works::Work>) -> anyhow::Result<Option<crate::Id<crate::works::Work>>> { self.work_parent_packs.lock().await.find_parent_id(work_id).await }
 }
 
 
