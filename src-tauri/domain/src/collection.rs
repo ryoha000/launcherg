@@ -190,36 +190,3 @@ pub struct NewCollectionElementDLsite {
     pub collection_element_id: Id<CollectionElement>,
     pub category: String,
 }
-
-#[derive(Debug, Clone, PartialEq)]
-pub enum GameInstallStatus {
-    Installed,
-    OwnedNotInstalled,
-    NotOwned,
-}
-
-impl CollectionElement {
-    pub fn install_status(&self) -> GameInstallStatus {
-        // インストール済み最優先
-        if let Some(paths) = &self.paths {
-            if paths.exe_path.is_some() || paths.lnk_path.is_some() {
-                return GameInstallStatus::Installed;
-            }
-        }
-
-        // 所有判定は DMM または DLsite マッピングの存在で判断
-        if self.dmm.is_some() || self.dlsite.is_some() {
-            return GameInstallStatus::OwnedNotInstalled;
-        }
-
-        GameInstallStatus::NotOwned
-    }
-
-    pub fn can_play(&self) -> bool {
-        matches!(self.install_status(), GameInstallStatus::Installed)
-    }
-
-    pub fn can_install(&self) -> bool {
-        matches!(self.install_status(), GameInstallStatus::OwnedNotInstalled)
-    }
-}

@@ -1,15 +1,20 @@
 <script lang='ts'>
   interface Props {
     label: string
-    value: string | number | undefined | null
+    value?: string | number | undefined | null
+    children?: import('svelte').Snippet<[]>
   }
 
-  const { label, value }: Props = $props()
+  const { label, value, children }: Props = $props()
 </script>
 
-<div class='space-y-2'>
+<div class='space-y-1'>
   <div class='text-(body2 text-primary) font-medium'>{label}</div>
   <div class='text-(body2 text-secondary)'>
-    {value}
+    {#if children}
+      {@render children()}
+    {:else}
+      {value}
+    {/if}
   </div>
 </div>

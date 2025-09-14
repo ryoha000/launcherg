@@ -65,10 +65,8 @@ export interface CollectionElement {
   thumbnail: string
   thumbnailWidth: number | null
   thumbnailHeight: number | null
-  // dlStore?: DLStoreInfo | null (廃止)
   dmm?: DmmInfo | null
   dlsite?: DlsiteInfo | null
-  installStatus: GameInstallStatus
   canPlay: boolean
   canInstall: boolean
 }
@@ -87,8 +85,6 @@ export interface DlsiteInfo {
   collectionElementId: number
   category: string
 }
-
-export type GameInstallStatus = 'installed' | 'owned-not-installed' | 'not-owned'
 
 export interface CollectionElementsWithLabel {
   label: string

@@ -35,7 +35,7 @@
   const iconSizeClass = 'w-4 h-4'
 
   const iconVarinatClass = $derived.by(() => {
-    if (variant === 'success') {
+    if (variant === 'success' || variant === 'accent-fill') {
       return 'color-text-white'
     }
     return 'color-ui-tertiary'

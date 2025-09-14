@@ -1,10 +1,12 @@
 <script lang='ts'>
   import OptionButton from '@/components/UI/OptionButton.svelte'
 
-  const { close, play, playAdmin }: {
+  const { close, play, playAdmin, install, installOptions }: {
     close: () => void
     play: () => void
     playAdmin: () => void
+    install: (store: 'DMM' | 'DLsite') => void
+    installOptions: ('DMM' | 'DLsite')[]
   } = $props()
 </script>
 
@@ -33,4 +35,13 @@
       play()
     }}
   />
+  {#each installOptions as option}
+    <OptionButton
+      text={`${option}からインストールする`}
+      onclick={() => {
+        close()
+        install(option)
+      }}
+    />
+  {/each}
 </div>

@@ -1,30 +1,71 @@
 <script lang='ts'>
-  import type { GameInstallStatus } from '@/lib/types'
+  import type { WorkDetailsVm } from '@/lib/command'
   import APopover from '@/components/UI/APopover.svelte'
   import Button from '@/components/UI/Button.svelte'
   import ButtonBase from '@/components/UI/ButtonBase.svelte'
+  import { useStart } from '@/components/Work/action.svelte'
+  import InstallPopover from '@/components/Work/InstallPopover.svelte'
   import PlayPopover from '@/components/Work/PlayPopover.svelte'
 
   interface Props {
-    gameStatus: GameInstallStatus
-    play?: (arg: { isAdmin: boolean | undefined }) => void
-    install?: () => void
+    workDetail: WorkDetailsVm
   }
 
-  let { gameStatus, play, install }: Props = $props()
+  let { workDetail }: Props = $props()
 
-  const isInstalled = $derived(gameStatus === 'installed')
-  const canInstall = $derived(gameStatus === 'owned-not-installed')
+  const { start, isNotInstalled, installOptions } = useStart(workDetail)
+
+  const installPopoverOptions = $derived(installOptions.map(option => option.store))
 </script>
 
 <div class='min-w-0 flex items-center'>
-  {#if isInstalled && play}
+  {#if isNotInstalled}
+    {#if installOptions.length > 0}
+      <Button
+        appendClass='rounded-r-0'
+        leftIcon='i-material-symbols-download-rounded'
+        text='Install'
+        variant='accent-fill'
+        onclick={installOptions[0].install}
+      />
+      <APopover>
+        {#snippet button({ open })}
+          <ButtonBase
+            appendClass='h-8 w-8 flex items-center justify-center rounded-l-0'
+            tooltip={open
+              ? undefined
+              : {
+                content: 'インストール元の選択',
+                placement: 'bottom',
+                theme: 'default',
+                delay: 1000,
+              }}
+            variant='accent-fill'
+          >
+            <div
+              class='i-material-symbols-arrow-drop-down h-5 w-5 color-text-white'
+              class:rotate-180={open}
+            ></div>
+          </ButtonBase>
+        {/snippet}
+        {#snippet children({ close })}
+          <InstallPopover
+            close={close}
+            options={installPopoverOptions}
+            install={(store) => {
+              installOptions.find(option => option.store === store)?.install()
+            }}
+          />
+        {/snippet}
+      </APopover>
+    {/if}
+  {:else}
     <Button
       appendClass='rounded-r-0'
       leftIcon='i-material-symbols-power-rounded'
       text='Play'
       variant='success'
-      onclick={() => play({ isAdmin: undefined })}
+      onclick={() => start('default')}
     />
     <APopover>
       {#snippet button({ open })}
@@ -50,20 +91,17 @@
         <PlayPopover
           close={close}
           play={() => {
-            play({ isAdmin: false })
+            start('user')
           }}
           playAdmin={() => {
-            play({ isAdmin: true })
+            start('admin')
           }}
+          install={(store) => {
+            installOptions.find(option => option.store === store)?.install()
+          }}
+          installOptions={installPopoverOptions}
         />
       {/snippet}
     </APopover>
-  {:else if canInstall && install}
-    <Button
-      leftIcon='i-material-symbols-download-rounded'
-      text='Install'
-      variant='accent'
-      onclick={install}
-    />
   {/if}
 </div>

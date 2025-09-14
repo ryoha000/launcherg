@@ -30,9 +30,6 @@ pub struct CollectionElement {
     pub thumbnail_height: Option<i32>,
     pub dmm: Option<DmmInfo>,
     pub dlsite: Option<DlsiteInfo>,
-    pub install_status: String,
-    pub can_play: bool,
-    pub can_install: bool,
 }
 
 #[derive(Serialize)]
@@ -89,14 +86,6 @@ impl CollectionElement {
             (None, None)
         };
 
-        let install_status = match st.install_status() {
-            domain::collection::GameInstallStatus::Installed => "installed",
-            domain::collection::GameInstallStatus::OwnedNotInstalled => "owned-not-installed",
-            domain::collection::GameInstallStatus::NotOwned => "not-owned",
-        };
-        let can_play = st.can_play();
-        let can_install = st.can_install();
-
         let dmm = st.dmm.as_ref().map(|d| DmmInfo {
             id: d.id.value,
             collection_element_id: d.collection_element_id.value,
@@ -132,9 +121,6 @@ impl CollectionElement {
             thumbnail_height,
             dmm,
             dlsite,
-            install_status.to_string(),
-            can_play,
-            can_install,
         )
     }
 }

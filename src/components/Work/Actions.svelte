@@ -7,7 +7,6 @@
   import Button from '@/components/UI/Button.svelte'
   import ButtonCancel from '@/components/UI/ButtonCancel.svelte'
   import ButtonIcon from '@/components/UI/ButtonIcon.svelte'
-  import { useStart } from '@/components/Work/action'
   import DeleteElement from '@/components/Work/DeleteElement.svelte'
   import OtherInformation from '@/components/Work/OtherInformation.svelte'
   import PlayButton from '@/components/Work/PlayButton.svelte'
@@ -23,7 +22,6 @@
 
   } from '@/lib/command'
   import { registerCollectionElementDetails } from '@/lib/registerCollectionElementDetails'
-  import { showErrorToast } from '@/lib/toast'
   import { sidebarCollectionElements } from '@/store/sidebarCollectionElements'
   import { deleteTab, selected, tabs } from '@/store/tabs'
 
@@ -34,8 +32,6 @@
   }
 
   const { workDetail, id, seiyaUrl }: Props = $props()
-
-  const { start } = useStart(workDetail)
 
   let isLike = $state(false)
 
@@ -75,20 +71,11 @@
   let isOpenDelete = $state(false)
   let isOpenOtherInformation = $state(false)
   let isOpenQrCode = $state(false)
-
-  const handleInstall = async () => {
-    // DLStore廃止のため、Installは無効
-    showErrorToast('ストア連携によるインストールは利用できません')
-  }
 </script>
 
 {#await elementPromise then element}
   <div class='min-w-0 w-full flex flex-wrap items-center gap-4'>
-    <PlayButton
-      gameStatus={element.installStatus}
-      play={({ isAdmin }) => start(isAdmin === undefined ? 'default' : isAdmin ? 'admin' : 'user')}
-      install={handleInstall}
-    />
+    <PlayButton workDetail={workDetail} />
     <Button
       leftIcon='i-material-symbols-drive-file-rename-outline'
       text='Memo'
@@ -130,6 +117,6 @@
     oncancel={() => (isOpenImportManually = false)}
   />
   <DeleteElement bind:isOpen={isOpenDelete} {element} />
-  <OtherInformation bind:isOpen={isOpenOtherInformation} {element} />
+  <OtherInformation bind:isOpen={isOpenOtherInformation} {workDetail} />
   <QrCode bind:isOpen={isOpenQrCode} {id} {seiyaUrl} />
 {/await}
