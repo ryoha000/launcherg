@@ -166,7 +166,7 @@ mod tests {
         use chrono::Local;
         use std::sync::Arc;
 
-        let mut mock_repo = {
+        let mock_repo = {
             let mut repo = MockAllGameCacheRepository::new();
             let expected_time = Local::now();
             repo.expect_get_last_updated()
@@ -224,9 +224,6 @@ mod tests {
     #[tokio::test]
     async fn test_update_all_game_cache_empty() {
         use std::sync::Arc;
-
-        let mut mock_repo = MockAllGameCacheRepository::new();
-        // empty cacheの場合、repositoryメソッドは呼ばれない
 
         let repos = TestRepositories::default();
 

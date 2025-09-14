@@ -8,6 +8,7 @@ use super::{
     error::CommandError,
     models::{
         collection::CollectionElement,
+        save_image_queue::ImageSaveQueueRowVm,
         work_details::WorkDetailsVm,
         work_omit::WorkOmitItemVm,
     },
@@ -299,34 +300,6 @@ pub async fn upsert_collection_element(
     Ok(modules
         .collection_use_case()
         .upsert_collection_element_thumbnail_size(&new_element_id)
-        .await?)
-}
-
-#[tauri::command]
-pub async fn update_collection_element_thumbnails(
-    _handle: AppHandle,
-    modules: State<'_, Arc<Modules>>,
-    ids: Vec<i32>,
-) -> anyhow::Result<(), CommandError> {
-    let all_game_cache = modules
-        .all_game_cache_use_case()
-        .get_by_ids(ids.clone())
-        .await?;
-    // no handle needed
-    modules
-        .image_use_case()
-        .concurency_save_thumbnails(
-            all_game_cache
-                .into_iter()
-                .map(|v| (Id::new(v.id), v.thumbnail_url))
-                .collect(),
-        )
-        .await?;
-    Ok(modules
-        .collection_use_case()
-        .concurency_upsert_collection_element_thumbnail_size(
-            ids.into_iter().map(|v| Id::new(v)).collect(),
-        )
         .await?)
 }
 
@@ -1101,5 +1074,25 @@ pub async fn get_work_details_all(modules: State<'_, Arc<Modules>>) -> anyhow::R
 pub async fn get_work_details_by_collection_element(modules: State<'_, Arc<Modules>>, collection_element_id: i32) -> anyhow::Result<Option<WorkDetailsVm>, CommandError> {
     let row = modules.work_use_case().find_details_by_collection_element_id(collection_element_id).await?;
     Ok(row.map(|w| w.into()))
+}
+
+// ========== Image Save Queue ==========
+
+#[derive(serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct GetImageSaveQueueRequest {
+    pub limit: Option<i64>,
+    pub status: Option<String>,
+}
+
+#[tauri::command]
+pub async fn get_image_save_queue(
+    modules: State<'_, Arc<Modules>>,
+    request: Option<GetImageSaveQueueRequest>,
+) -> anyhow::Result<Vec<ImageSaveQueueRowVm>, CommandError> {
+    let limit = request.as_ref().and_then(|r| r.limit).unwrap_or(500);
+    let status = request.and_then(|r| r.status).unwrap_or_else(|| "unfinished".to_string());
+    let rows = modules.image_queue_use_case().list(status.as_str() == "unfinished", limit).await?;
+    Ok(rows.into_iter().map(|r| r.into()).collect())
 }
 

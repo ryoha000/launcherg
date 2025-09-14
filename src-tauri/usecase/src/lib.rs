@@ -20,6 +20,7 @@ pub mod host_log;
 pub mod dmm_pack;
 pub mod work;
 pub mod work_pipeline;
+pub mod image_queue;
 #[cfg(test)]
 mod repositorymock;
 #[cfg(test)]

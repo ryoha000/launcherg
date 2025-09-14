@@ -5,8 +5,9 @@ use std::path::Path;
 pub enum SourceDecision {
     /// 前処理に進むべきローカルソース
     Use(LocalSource),
-    /// 既定アイコンを書いてスキップ（呼び出し側が既定アイコン出力を行う）
-    FallbackDefaultAndSkip,
+    /// 既定アイコンを書いてスキップ（呼び出し側が既定アイコン出力を行う）。
+    /// また、なぜフォールバックになったかの理由文字列を含む。
+    FallbackDefaultAndSkip { reason: String },
 }
 
 /// ローカルソースと後始末戦略

@@ -8,7 +8,6 @@
   import {
     commandGetCollectionElement,
     commandUpdateAllGameCache,
-    commandUpdateCollectionElementThumbnails,
   } from '@/lib/command'
   import { scrapeAllGameCacheOnes } from '@/lib/scrape/scrapeAllGame'
   import { showErrorToast, showInfoToast } from '@/lib/toast'
@@ -38,7 +37,6 @@
         .map(v => v.id)
       const caches = await scrapeAllGameCacheOnes(ids)
       await commandUpdateAllGameCache(caches)
-      await commandUpdateCollectionElementThumbnails(ids)
       await sidebarCollectionElements.refetch()
       showInfoToast('サムネイルの再取得が完了しました')
     }

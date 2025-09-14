@@ -21,15 +21,22 @@ impl ImageSaveQueueRepository for RepositoryImpl<domain::save_image_queue::Image
         Ok(Id::new(id as i32))
     }
 
-    async fn list_unfinished_oldest(&mut self, limit: i64) -> anyhow::Result<Vec<ImageSaveQueueRow>> {
+    async fn list(&mut self, unfinished: bool, limit: i64) -> anyhow::Result<Vec<ImageSaveQueueRow>> {
+        let (condition, order) = if unfinished {
+            ("finished_at IS NULL", "created_at ASC")
+        } else {
+            ("finished_at IS NOT NULL", "finished_at DESC")
+        };
+        let query = format!(
+            "SELECT id, src, src_type, dst_path, preprocess, last_error FROM save_image_queue WHERE {} ORDER BY {} LIMIT ?",
+            condition, order
+        );
         let rows: Vec<SaveImageQueueTable> = self.executor.with_conn(|conn| {
             Box::pin(async move {
-                let rows: Vec<SaveImageQueueTable> = sqlx::query_as(
-                    "SELECT id, src, src_type, dst_path, preprocess, last_error FROM save_image_queue WHERE finished_at IS NULL ORDER BY created_at ASC LIMIT ?"
-                )
-                .bind(limit)
-                .fetch_all(conn)
-                .await?;
+                let rows: Vec<SaveImageQueueTable> = sqlx::query_as(&query)
+                    .bind(limit)
+                    .fetch_all(conn)
+                    .await?;
                 Ok(rows)
             })
         }).await?;

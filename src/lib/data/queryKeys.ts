@@ -9,4 +9,8 @@ export const queryKeys = {
     all: () => ['workDetails'] as const,
     byId: (id: number) => ['workDetails', id] as const,
   },
+  imageQueue: {
+    unfinished: () => ['imageQueue', 'unfinished'] as const,
+    finished: () => ['imageQueue', 'finished'] as const,
+  },
 }

@@ -189,7 +189,7 @@ impl domain::repository::collection::CollectionRepository for TestRepositories {
 #[cfg(test)]
 impl domain::repository::save_image_queue::ImageSaveQueueRepository for TestRepositories {
     async fn enqueue(&mut self, image_url: &str, src_type: domain::save_image_queue::ImageSrcType, dst_path: &str, preprocess: domain::save_image_queue::ImagePreprocess) -> anyhow::Result<domain::Id<domain::save_image_queue::ImageSaveQueueRow>> { self.image_queue.lock().await.enqueue(image_url, src_type, dst_path, preprocess).await }
-    async fn list_unfinished_oldest(&mut self, limit: i64) -> anyhow::Result<Vec<domain::save_image_queue::ImageSaveQueueRow>> { self.image_queue.lock().await.list_unfinished_oldest(limit).await }
+    async fn list(&mut self, unfinished: bool, limit: i64) -> anyhow::Result<Vec<domain::save_image_queue::ImageSaveQueueRow>> { self.image_queue.lock().await.list(unfinished, limit).await }
     async fn mark_finished(&mut self, id: domain::Id<domain::save_image_queue::ImageSaveQueueRow>) -> anyhow::Result<()> { self.image_queue.lock().await.mark_finished(id).await }
     async fn mark_failed(&mut self, id: domain::Id<domain::save_image_queue::ImageSaveQueueRow>, error: &str) -> anyhow::Result<()> { self.image_queue.lock().await.mark_failed(id, error).await }
 }

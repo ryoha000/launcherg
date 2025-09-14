@@ -10,10 +10,10 @@ async fn save_image_queue_normal_flows() {
     // enqueue
     let id = { let mut r = repo.image_queue(); r.enqueue("http://img", ImageSrcType::Url, "dst", ImagePreprocess::None).await.unwrap() };
 
-    // list_unfinished_oldest
+    // list (unfinished)
     {
         let mut r = repo.image_queue();
-        let rows = r.list_unfinished_oldest(10).await.unwrap();
+        let rows = r.list(true, 10).await.unwrap();
         assert_eq!(rows.len(), 1);
         assert_eq!(rows[0].id.value, id.value);
     }
@@ -28,8 +28,11 @@ async fn save_image_queue_normal_flows() {
     {
         let mut r = repo.image_queue();
         r.mark_finished(id).await.unwrap();
-        let rows = r.list_unfinished_oldest(10).await.unwrap();
+        let rows = r.list(true, 10).await.unwrap();
         assert_eq!(rows.len(), 0);
+        // finished 側に出る
+        let rows_finished = { let mut r = repo.image_queue(); r.list(false, 10).await.unwrap() };
+        assert_eq!(rows_finished.len(), 1);
     }
 }
 

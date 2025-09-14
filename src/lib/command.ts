@@ -33,9 +33,9 @@ export async function commandCreateElementsInPc(exploreDirPaths: string[], useCa
   })
 }
 
-export async function commandScanStart(exploreDirPaths: string[], useCache: boolean) {
+export async function commandScanStart(roots: string[], useCache: boolean) {
   return await invoke<string[]>('scan_start', {
-    exploreDirPaths,
+    roots,
     useCache,
   })
 }
@@ -167,12 +167,6 @@ export async function commandSaveScreenshotByPid(workId: number, processId: numb
   return await invoke<string>('save_screenshot_by_pid', {
     workId,
     processId,
-  })
-}
-
-export async function commandUpdateCollectionElementThumbnails(ids: number[]) {
-  return await invoke<void>('update_collection_element_thumbnails', {
-    ids,
   })
 }
 
@@ -364,4 +358,17 @@ export async function commandWorkPackAdd(workId: number) {
 }
 export async function commandWorkPackRemove(workId: number) {
   return await invoke<void>('work_pack_remove', { workId })
+}
+
+// Image Save Queue
+export interface ImageSaveQueueRowVm {
+  id: number
+  src: string
+  srcType: number
+  dstPath: string
+  preprocess: number
+  lastError?: string | null
+}
+export async function commandGetImageSaveQueue(req?: { limit?: number, status?: 'unfinished' | 'finished' }) {
+  return await invoke<ImageSaveQueueRowVm[]>('get_image_save_queue', req ? { request: req } : {})
 }

@@ -59,7 +59,7 @@ where
             let items = self.manager.run(|repos| {
                 Box::pin(async move {
                     let mut iq = repos.image_queue();
-                    iq.list_unfinished_oldest(50).await
+                    iq.list(true, 50).await
                 })
             }).await?;
             if items.is_empty() { break; }
@@ -111,12 +111,17 @@ where
                             ).await?;
 
                             match decision {
-                                SourceDecision::FallbackDefaultAndSkip => {
+                                SourceDecision::FallbackDefaultAndSkip { reason } => {
                                     let dst = item.dst_path.clone();
                                     tokio::task::spawn_blocking(move || {
                                         IconServiceImpl::write_default_icon(&dst)
                                     }).await??;
-                                    return Ok(());
+                                    // フォールバックは成功扱いではなく、エラーとして記録する
+                                    let msg = format!(
+                                        "fallback: {}; wrote default icon. src={} src_type={:?}",
+                                        reason, item.src, item.src_type
+                                    );
+                                    return Err(anyhow::anyhow!(msg));
                                 }
                                 SourceDecision::Use(local) => {
                                     let src_path = local.path().to_string();
@@ -148,7 +153,7 @@ where
                             Err(e) => {
                                 let failed_id = item.id.clone();
                                 let failed_id_value = failed_id.value;
-                                let msg = format!("failed id={} err={}", failed_id_value, e);
+                                let msg = format!("failed id={} err={:#}", failed_id_value, e);
                                 let _ = manager.run(|repos| {
                                     let msg = msg.clone();
                                     Box::pin(async move {

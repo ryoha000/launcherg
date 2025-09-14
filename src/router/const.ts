@@ -6,6 +6,7 @@ import ExtensionLog from '@/views/Debug/ExtensionLog.svelte'
 import ExtensionManager from '@/views/Debug/ExtensionManager.svelte'
 import ProcTail from '@/views/Debug/ProcTail.svelte'
 import Home from '@/views/Home.svelte'
+import ImageQueue from '@/views/ImageQueue.svelte'
 import Memo from '@/views/Memo.svelte'
 import Settings from '@/views/Settings.svelte'
 import StoreMapped from '@/views/StoreMapped.svelte'
@@ -41,6 +42,13 @@ export const ROUTE_REGISTRY = [
     component: Settings,
     icon: 'i-material-symbols-settings-outline-rounded color-text-disabled',
     tab: singletonTab('設定'),
+  },
+  {
+    kind: 'image-queue',
+    pathTemplate: '/image-queue',
+    component: ImageQueue,
+    icon: 'i-material-symbols-image-outline color-text-disabled',
+    tab: singletonTab('画像保存キュー'),
   },
   {
     kind: 'store-mapped',

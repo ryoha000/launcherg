@@ -10,7 +10,7 @@ use crate::image_queue_worker::types::SourceDecision;
 fn exe_存在しない場合は_skip() {
     let resolver = DirsSavePathResolver::default();
     let res = resolve(&resolver, "C:/not-exists/app.exe").unwrap();
-    match res { SourceDecision::FallbackDefaultAndSkip => {}, _ => panic!("expected skip") }
+    match res { SourceDecision::FallbackDefaultAndSkip { .. } => {}, _ => panic!("expected skip") }
 }
 
 #[test]

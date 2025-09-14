@@ -7,7 +7,7 @@ use domain::{
 };
 use domain::repository::{RepositoriesExt, all_game_cache::AllGameCacheRepository, manager::RepositoryManager};
 use std::marker::PhantomData;
-use domain::game_matcher::{GameMatcher, normalize};
+use domain::game_matcher::GameMatcher;
 use domain::all_game_cache::AllGameCacheOne as MatcherAllGameCacheOne;
 
 pub struct AllGameCacheUseCase<M, R>
@@ -72,13 +72,13 @@ where
             })
         }).await?;
 
-        // 変更を GameMatcher へ反映（正規化してから設定）
+        // 変更を GameMatcher へ反映
         let all = self.get_all_game_cache().await?;
-        let normalized: Vec<MatcherAllGameCacheOne> = all
+        let passthrough: Vec<MatcherAllGameCacheOne> = all
             .into_iter()
-            .map(|g| MatcherAllGameCacheOne::new(g.id, normalize(&g.gamename)))
+            .map(|g| MatcherAllGameCacheOne::new(g.id, g.gamename))
             .collect();
-        self.matcher.update_all_game_cache(normalized);
+        self.matcher.update_all_game_cache(passthrough);
         Ok(())
     }
 

@@ -29,12 +29,12 @@ use crate::{
         dmm_pack::DmmPackUseCase,
         work::WorkUseCase,
         work_pipeline::WorkPipelineUseCase,
+        image_queue::ImageQueueUseCase,
     },
 };
 use domain::repository::manager::RepositoryManager as _;
 use domain::repository::all_game_cache::AllGameCacheRepository as _;
-use domain::game_matcher::{Matcher as GameMatcherImpl, GameMatcher, normalize};
-use domain::all_game_cache::AllGameCacheOne as DomainAllGameCacheOne;
+use domain::game_matcher::{Matcher as GameMatcherImpl, GameMatcher};
 use tauri::AppHandle;
 
 pub struct Modules {
@@ -58,6 +58,7 @@ pub struct Modules {
         HeuristicDuplicateResolver,
         Windows,
     >,
+    image_queue_use_case: ImageQueueUseCase<SqliteRepositoryManager, SqliteRepositories>,
     pubsub: PubSub,
     game_matcher: std::sync::Arc<dyn GameMatcher + Send + Sync>,
     image_queue_runner: std::sync::Arc<ImageQueueRunnerImpl<SqliteRepositoryManager, SqliteRepositories, Windows>>,
@@ -90,6 +91,7 @@ pub trait ModulesExt {
     fn pubsub(&self) -> &Self::PubSub;
     fn game_matcher(&self) -> &std::sync::Arc<dyn GameMatcher + Send + Sync>;
     fn image_queue_runner(&self) -> &std::sync::Arc<ImageQueueRunnerImpl<SqliteRepositoryManager, SqliteRepositories, Windows>>;
+    fn image_queue_use_case(&self) -> &ImageQueueUseCase<SqliteRepositoryManager, SqliteRepositories>;
 }
 
 impl ModulesExt for Modules {
@@ -136,6 +138,7 @@ impl ModulesExt for Modules {
     }
     fn game_matcher(&self) -> &std::sync::Arc<dyn GameMatcher + Send + Sync> { &self.game_matcher }
     fn image_queue_runner(&self) -> &std::sync::Arc<ImageQueueRunnerImpl<SqliteRepositoryManager, SqliteRepositories, Windows>> { &self.image_queue_runner }
+    fn image_queue_use_case(&self) -> &ImageQueueUseCase<SqliteRepositoryManager, SqliteRepositories> { &self.image_queue_use_case }
 }
 
 impl Modules {
@@ -161,17 +164,14 @@ impl Modules {
         let host_log_use_case: HostLogUseCase<SqliteRepositoryManager, SqliteRepositories> = HostLogUseCase::new(repo_manager.clone());
         let dmm_pack_use_case: DmmPackUseCase<SqliteRepositoryManager, SqliteRepositories> = DmmPackUseCase::new(repo_manager.clone());
         let work_use_case: WorkUseCase<SqliteRepositoryManager, SqliteRepositories, Windows> = WorkUseCase::new(repo_manager.clone(), windows.clone());
+        let image_queue_use_case: ImageQueueUseCase<SqliteRepositoryManager, SqliteRepositories> = ImageQueueUseCase::new(repo_manager.clone());
 
-        // GameMatcher 構築（初期キャッシュを正規化して設定）
+        // GameMatcher 構築
         let initial_cache = repo_manager
             .run(|repos| Box::pin(async move { repos.all_game_cache().get_all().await }))
             .await
             .unwrap_or_else(|_| vec![]);
-        let normalized_cache: Vec<DomainAllGameCacheOne> = initial_cache
-            .into_iter()
-            .map(|g| DomainAllGameCacheOne::new(g.id, normalize(&g.gamename)))
-            .collect();
-        let game_matcher = std::sync::Arc::new(GameMatcherImpl::with_default_config(normalized_cache));
+        let game_matcher = std::sync::Arc::new(GameMatcherImpl::with_default_config(initial_cache));
         // AllGameCacheUseCase を生成（matcher を注入）
         let all_game_cache_use_case: AllGameCacheUseCase<SqliteRepositoryManager, SqliteRepositories> =
             AllGameCacheUseCase::with_matcher(repo_manager.clone(), game_matcher.clone());
@@ -213,6 +213,7 @@ impl Modules {
             pubsub,
             game_matcher,
             image_queue_runner,
+            image_queue_use_case,
         }
     }
 }

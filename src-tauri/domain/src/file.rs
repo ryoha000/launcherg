@@ -7,6 +7,7 @@ pub struct File {}
 /// - `icon`: アイコンの取得元パス
 ///   - .lnk の場合: IShellLinkW::GetIconLocation で取得したアイコンファイル（例: .ico や .exe）
 ///   - .url の場合: INI（`IconFile=...`）から取得したアイコンファイルパス（なければ空文字）
+#[derive(Debug)]
 pub struct LnkMetadata {
     pub path: String,
     pub icon: String,

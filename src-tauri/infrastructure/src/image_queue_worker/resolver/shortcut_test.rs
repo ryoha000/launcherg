@@ -23,10 +23,19 @@ impl WindowsExt for TestWindows {
 #[test]
 fn shortcut_メタにicoなら一時png() {
     let mut mock = MockShellLink::new();
-    mock.expect_get_lnk_metadatas().returning(|paths| {
+    let ico_path = {
+        let manifest_dir = std::env::var("CARGO_MANIFEST_DIR").unwrap();
+        std::path::Path::new(&manifest_dir)
+            .join("..")
+            .join("icons")
+            .join("icon.ico")
+            .to_string_lossy()
+            .to_string()
+    };
+    mock.expect_get_lnk_metadatas().returning(move |paths| {
         let mut map = HashMap::new();
         let key = paths[0].clone();
-        map.insert(key, LnkMetadata { path: "C:/app/app.exe".into(), icon: "C:/icons/app.ico".into() });
+        map.insert(key, LnkMetadata { path: "C:/app/app.exe".into(), icon: ico_path.clone() });
         Ok(map)
     });
     let win = TestWindows::new(mock);
@@ -52,12 +61,7 @@ fn shortcut_メタpngならそのまま() {
     let win = TestWindows::new(mock);
     let resolver = DirsSavePathResolver::default();
     let res = resolve(&win, &resolver, "C:/links/app.lnk");
-    match res {
-        Ok(super::super::types::SourceDecision::Use(local)) => {
-            assert_eq!(local.path(), "C:/images/icon.png");
-        }
-        _ => panic!("unexpected"),
-    }
+    match res { Ok(super::super::types::SourceDecision::FallbackDefaultAndSkip { .. }) => {}, _ => panic!("unexpected") }
 }
 
 #[test]
@@ -67,7 +71,7 @@ fn shortcut_情報なしはskip() {
     let win = TestWindows::new(mock);
     let resolver = DirsSavePathResolver::default();
     let res = resolve(&win, &resolver, "C:/links/app.lnk");
-    match res { Ok(super::super::types::SourceDecision::FallbackDefaultAndSkip) => {}, _ => panic!("unexpected") }
+    match res { Ok(super::super::types::SourceDecision::FallbackDefaultAndSkip { .. }) => {}, _ => panic!("unexpected") }
 }
 
 

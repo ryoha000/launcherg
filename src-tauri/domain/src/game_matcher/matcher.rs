@@ -4,6 +4,7 @@ use crate::all_game_cache::{AllGameCache, AllGameCacheOne};
 use crate::distance::get_comparable_distance_bounded;
 use super::config::{EQUALLY_FILENAME_GAME_ID_PAIR, IGNORE_GAME_ID};
 use super::ngram::NGramIndex;
+use super::normalizer::normalize;
 
 
 /// ゲームマッチング設定
@@ -56,8 +57,15 @@ pub struct Matcher {
 
 impl Matcher {
     pub fn new(game_cache: AllGameCache, config: MatcherConfig) -> Self {
-        let index = Self::build_normalized_index(&game_cache);
-        let ngram_index = NGramIndex::build(&game_cache, 2);
+        let normalized_game_cache: AllGameCache = game_cache
+            .iter()
+            .map(|game| AllGameCacheOne {
+                id: game.id,
+                gamename: normalize(&game.gamename),
+            })
+            .collect();
+        let index = Self::build_normalized_index(&normalized_game_cache);
+        let ngram_index = NGramIndex::build(&normalized_game_cache, 2);
         Self {
             game_cache: RwLock::new(game_cache),
             config,
@@ -80,22 +88,16 @@ impl Matcher {
     pub fn cache_size(&self) -> usize {
         self.query_cache.read().map_or(0, |cache| cache.len())
     }
-    
-    /// 単一クエリに対する閾値以上のマッチング結果を取得（キャッシュ付き）
-    pub fn get_matches_for_query(&self, query: &str) -> Vec<(AllGameCacheOne, f32)> {
-        // 読み取りロックを取得してスナップショット参照を直接使用（クローンを避ける）
-        let guard = match self.game_cache.read() { Ok(g) => g, Err(_) => return Vec::new() };
-        self.get_matches_for_query_with_snapshot(query, &guard)
-    }
 
     /// スナップショットを使ってマッチを計算（クエリキャッシュを利用）
     fn get_matches_for_query_with_snapshot(&self, query: &str, cache_snapshot: &[AllGameCacheOne]) -> Vec<(AllGameCacheOne, f32)> {
+        let query = normalize(query);
         // キャッシュを確認（read lock）
-        if let Ok(cache) = self.query_cache.read() { if let Some(cached_result) = cache.get(query) { return cached_result.clone(); } }
+        if let Ok(cache) = self.query_cache.read() { if let Some(cached_result) = cache.get(&query) { return cached_result.clone(); } }
         
         // 正規化キーの O(1) 近似（完全一致短絡）
         if let Ok(idx) = self.normalized_index.read() {
-            if let Some(&game_id) = idx.get(query) {
+            if let Some(&game_id) = idx.get(&query) {
                 if let Some(game) = cache_snapshot.iter().find(|g| g.id == game_id) {
                     let res = vec![(game.clone(), 1.0)];
                     if let Ok(mut cache) = self.query_cache.write() { cache.insert(query.to_string(), res.clone()); }
@@ -110,7 +112,7 @@ impl Matcher {
         // 2-gram フィルタで候補を絞る（外部モジュール）
         let mut candidate_ids: Vec<i32> = Vec::new();
         if let Ok(ng) = self.ngram_index.read() {
-            candidate_ids = ng.filter_candidates(query, self.config.similarity_threshold, &self.config.ignore_game_ids);
+            candidate_ids = ng.filter_candidates(&query, self.config.similarity_threshold, &self.config.ignore_game_ids);
         }
 
         // フィルタで候補が無ければ距離計算をスキップ
@@ -124,7 +126,7 @@ impl Matcher {
             for id in candidate_ids {
                 if let Some(&pos) = ng.id_to_pos.get(&id) {
                     if let Some(game) = cache_snapshot.get(pos) {
-                        if let Some(score) = get_comparable_distance_bounded(query, &game.gamename, self.config.similarity_threshold) {
+                        if let Some(score) = get_comparable_distance_bounded(&query, &game.gamename, self.config.similarity_threshold) {
                             if score > self.config.similarity_threshold {
                                 matches.push((game.clone(), score));
                             }
@@ -150,8 +152,6 @@ impl Matcher {
         }
         m
     }
-
-    // n-gram 構築は ngram モジュールへ移動
 }
 
 impl GameMatcher for Matcher {
@@ -342,25 +342,6 @@ mod tests {
         assert!(cache_size_after_second > cache_size_after_first);
         // "foo"が再利用されるため、キャッシュサイズは2になる（foo, bar, bazのうちfooは再利用）
         assert_eq!(cache_size_after_second, 3); // foo, bar, baz
-    }
-
-    #[test]
-    fn test_individual_query_cache() {
-        let cache = create_test_cache();
-        let matcher = Matcher::with_default_config(cache);
-        
-        // 単一クエリでマッチング結果を取得
-        let matches1 = matcher.get_matches_for_query("piece"); // "pieces"に似ている
-        assert_eq!(matcher.cache_size(), 1);
-        
-        // 同じクエリでもう一度
-        let matches2 = matcher.get_matches_for_query("piece");
-        assert_eq!(matches1.len(), matches2.len());
-        assert_eq!(matcher.cache_size(), 1); // キャッシュサイズは変わらない
-        
-        // 異なるクエリ
-        let _matches3 = matcher.get_matches_for_query("test");
-        assert_eq!(matcher.cache_size(), 2); // 新しいエントリが追加される
     }
 
     #[test]

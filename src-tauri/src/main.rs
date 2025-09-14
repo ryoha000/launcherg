@@ -91,7 +91,6 @@ fn main() {
             command::get_exe_path_by_lnk,
             command::get_game_cache_by_id,
             command::save_screenshot_by_pid,
-            command::update_collection_element_thumbnails,
             command::proctail_add_watch_target,
             command::proctail_remove_watch_target,
             command::proctail_get_watch_targets,
@@ -131,6 +130,7 @@ fn main() {
             command::list_work_lnks,
             command::launch_work,
             command::migrate_collection_paths_to_work_lnks,
+            command::get_image_save_queue,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
