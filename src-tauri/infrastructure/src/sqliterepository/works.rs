@@ -85,62 +85,20 @@ impl WorkRepository for RepositoryImpl<Work> {
 
         let mut map: BTreeMap<i64, WorkDetails> = BTreeMap::new();
         for r in rows.into_iter() {
-            let entry = map.entry(r.work_id).or_insert_with(|| WorkDetails {
-                work: Work { id: Id::new(r.work_id as i32), title: r.work_title.clone() },
-                dmm: None,
-                dlsite: None,
-                collection_element_id: r.ce_id.map(|v| Id::new(v as i32)),
-                erogamescape: None,
-                is_omitted: false,
-                is_dmm_pack: false,
-                latest_download_path: None,
-            });
-
-            if let Some(dmm_id) = r.dmm_id {
-                entry.dmm = Some(DmmWork {
-                    id: Id::new(dmm_id as i32),
-                    work_id: Id::new(r.work_id as i32),
-                    store_id: r.dmm_store_id.unwrap_or_default(),
-                    category: r.dmm_category.unwrap_or_default(),
-                    subcategory: r.dmm_subcategory.unwrap_or_default(),
-                });
-                entry.is_dmm_pack = r.dmm_pack_id.is_some();
-            }
-            if let Some(path_id) = r.latest_path_id {
-                if let Some(download_path) = r.latest_path_download_path.clone() {
-                    entry.latest_download_path = Some(domain::work_download_path::WorkDownloadPath {
-                        id: Id::new(path_id as i32),
-                        work_id: Id::new(r.work_id as i32),
-                        download_path,
-                    });
+            let details: WorkDetails = r.into();
+            let key = details.work.id.value as i64;
+            match map.get_mut(&key) {
+                Some(entry) => {
+                    if entry.dmm.is_none() { entry.dmm = details.dmm; }
+                    if entry.dlsite.is_none() { entry.dlsite = details.dlsite; }
+                    if entry.collection_element_id.is_none() { entry.collection_element_id = details.collection_element_id; }
+                    if entry.erogamescape.is_none() { entry.erogamescape = details.erogamescape; }
+                    entry.is_omitted |= details.is_omitted;
+                    entry.is_dmm_pack |= details.is_dmm_pack;
+                    if entry.latest_download_path.is_none() { entry.latest_download_path = details.latest_download_path; }
                 }
-            }
-            if let Some(dl_id) = r.dlsite_id {
-                entry.dlsite = Some(DlsiteWork {
-                    id: Id::new(dl_id as i32),
-                    work_id: Id::new(r.work_id as i32),
-                    store_id: r.dlsite_store_id.unwrap_or_default(),
-                    category: r.dlsite_category.unwrap_or_default(),
-                });
-            }
-            if let Some(_) = r.omit_id {
-                entry.is_omitted = true;
-            }
-
-            if let Some(egs_row_id) = r.egs_id {
-                if let (Some(egs_id), Some(created), Some(updated), Some(ce_id)) = (
-                    r.egs_erogamescape_id,
-                    r.egs_created_at,
-                    r.egs_updated_at,
-                    r.ce_id,
-                ) {
-                    entry.erogamescape = Some(domain::collection::CollectionElementErogamescape::new(
-                        Id::new(egs_row_id as i32),
-                        Id::new(ce_id as i32),
-                        egs_id,
-                        created.and_utc().with_timezone(&chrono::Local),
-                        updated.and_utc().with_timezone(&chrono::Local),
-                    ));
+                None => {
+                    map.insert(key, details);
                 }
             }
         }
@@ -193,41 +151,20 @@ impl WorkRepository for RepositoryImpl<Work> {
 
         let mut map: std::collections::BTreeMap<i64, WorkDetails> = std::collections::BTreeMap::new();
         for r in rows.into_iter() {
-            let entry = map.entry(r.work_id).or_insert_with(|| WorkDetails {
-                work: Work { id: Id::new(r.work_id as i32), title: r.work_title.clone() },
-                dmm: None,
-                dlsite: None,
-                collection_element_id: r.ce_id.map(|v| Id::new(v as i32)),
-                erogamescape: None,
-                is_omitted: false,
-                is_dmm_pack: false,
-                latest_download_path: None,
-            });
-
-            if let Some(dmm_id) = r.dmm_id {
-                entry.dmm = Some(DmmWork {
-                    id: Id::new(dmm_id as i32),
-                    work_id: Id::new(r.work_id as i32),
-                    store_id: r.dmm_store_id.unwrap_or_default(),
-                    category: r.dmm_category.unwrap_or_default(),
-                    subcategory: r.dmm_subcategory.unwrap_or_default(),
-                });
-                entry.is_dmm_pack = r.dmm_pack_id.is_some();
-            }
-            if let Some(dl_id) = r.dlsite_id {
-                entry.dlsite = Some(DlsiteWork {
-                    id: Id::new(dl_id as i32),
-                    work_id: Id::new(r.work_id as i32),
-                    store_id: r.dlsite_store_id.unwrap_or_default(),
-                    category: r.dlsite_category.unwrap_or_default(),
-                });
-            }
-            if let Some(_) = r.omit_id { entry.is_omitted = true; }
-            if let Some(path_id) = r.latest_path_id {
-                if let Some(download_path) = r.latest_path_download_path.clone() {
-                    entry.latest_download_path = Some(domain::work_download_path::WorkDownloadPath {
-                        id: Id::new(path_id as i32), work_id: Id::new(r.work_id as i32), download_path,
-                    });
+            let details: WorkDetails = r.into();
+            let key = details.work.id.value as i64;
+            match map.get_mut(&key) {
+                Some(entry) => {
+                    if entry.dmm.is_none() { entry.dmm = details.dmm; }
+                    if entry.dlsite.is_none() { entry.dlsite = details.dlsite; }
+                    if entry.collection_element_id.is_none() { entry.collection_element_id = details.collection_element_id; }
+                    if entry.erogamescape.is_none() { entry.erogamescape = details.erogamescape; }
+                    entry.is_omitted |= details.is_omitted;
+                    entry.is_dmm_pack |= details.is_dmm_pack;
+                    if entry.latest_download_path.is_none() { entry.latest_download_path = details.latest_download_path; }
+                }
+                None => {
+                    map.insert(key, details);
                 }
             }
         }

@@ -43,6 +43,75 @@ pub struct WorkDetailsRow {
     pub latest_path_download_path: Option<String>,
 }
 
+impl From<crate::sqliterepository::models::works::WorkDetailsRow> for domain::works::WorkDetails {
+    fn from(r: crate::sqliterepository::models::works::WorkDetailsRow) -> Self {
+        use domain::{Id, works::{Work, DmmWork, DlsiteWork}, collection::CollectionElementErogamescape};
+        let mut details = domain::works::WorkDetails {
+            work: Work { id: Id::new(r.work_id as i32), title: r.work_title.clone() },
+            dmm: None,
+            dlsite: None,
+            collection_element_id: r.ce_id.map(|v| Id::new(v as i32)),
+            erogamescape: None,
+            is_omitted: false,
+            is_dmm_pack: false,
+            latest_download_path: None,
+        };
+
+        if let Some(dmm_id) = r.dmm_id {
+            details.dmm = Some(DmmWork {
+                id: Id::new(dmm_id as i32),
+                work_id: Id::new(r.work_id as i32),
+                store_id: r.dmm_store_id.unwrap_or_default(),
+                category: r.dmm_category.unwrap_or_default(),
+                subcategory: r.dmm_subcategory.unwrap_or_default(),
+            });
+            details.is_dmm_pack = r.dmm_pack_id.is_some();
+        }
+
+        if let Some(path_id) = r.latest_path_id {
+            if let Some(download_path) = r.latest_path_download_path.clone() {
+                details.latest_download_path = Some(domain::work_download_path::WorkDownloadPath {
+                    id: Id::new(path_id as i32),
+                    work_id: Id::new(r.work_id as i32),
+                    download_path,
+                });
+            }
+        }
+
+        if let Some(dl_id) = r.dlsite_id {
+            details.dlsite = Some(DlsiteWork {
+                id: Id::new(dl_id as i32),
+                work_id: Id::new(r.work_id as i32),
+                store_id: r.dlsite_store_id.unwrap_or_default(),
+                category: r.dlsite_category.unwrap_or_default(),
+            });
+        }
+
+        if let Some(_) = r.omit_id {
+            details.is_omitted = true;
+        }
+
+        if let Some(egs_row_id) = r.egs_id {
+            if let (Some(egs_id), Some(created), Some(updated), Some(ce_id)) = (
+                r.egs_erogamescape_id,
+                r.egs_created_at,
+                r.egs_updated_at,
+                r.ce_id,
+            ) {
+                details.erogamescape = Some(CollectionElementErogamescape::new(
+                    Id::new(egs_row_id as i32),
+                    Id::new(ce_id as i32),
+                    egs_id,
+                    created.and_utc().with_timezone(&chrono::Local),
+                    updated.and_utc().with_timezone(&chrono::Local),
+                ));
+            }
+        }
+
+        details
+    }
+}
+
 impl TryFrom<crate::sqliterepository::models::works::DmmWorkTable> for domain::works::DmmWork {
     type Error = anyhow::Error;
     fn try_from(v: crate::sqliterepository::models::works::DmmWorkTable) -> Result<Self, Self::Error> {
