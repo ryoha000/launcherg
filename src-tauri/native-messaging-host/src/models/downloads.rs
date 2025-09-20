@@ -36,5 +36,3 @@ pub struct DownloadsCompletedRequestTs {
     pub items: Vec<DownloadCompletedTs>,
     pub intent: Option<DownloadIntentTs>,
 }
-
-

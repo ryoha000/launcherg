@@ -6,8 +6,11 @@ use futures::FutureExt;
 
 use domain::{
     native_host_log::{HostLogLevel, HostLogType},
-    pubsub::{PubSubService, ImageQueueItemErrorPayload, ImageQueueItemPayload, ImageQueueWorkerStatusPayload},
-    repository::{RepositoriesExt, manager::RepositoryManager},
+    pubsub::{
+        ImageQueueItemErrorPayload, ImageQueueItemPayload, ImageQueueWorkerStatusPayload,
+        PubSubService,
+    },
+    repository::{manager::RepositoryManager, RepositoriesExt},
     save_image_queue::ImageSaveQueueRow,
     service::image_queue_event::ImageQueueWorkerEventHandler,
 };
@@ -27,7 +30,12 @@ where
     M: RepositoryManager<R>,
     R: RepositoriesExt + Send + Sync + 'static,
 {
-    pub fn new(manager: Arc<M>) -> Self { Self { manager, _marker: std::marker::PhantomData } }
+    pub fn new(manager: Arc<M>) -> Self {
+        Self {
+            manager,
+            _marker: std::marker::PhantomData,
+        }
+    }
 }
 
 impl<M, R> ImageQueueWorkerEventHandler for ImageQueueHostLogHandler<M, R>
@@ -38,77 +46,146 @@ where
     fn on_worker_started(&self) -> futures::future::BoxFuture<'static, Result<()>> {
         let manager = Arc::clone(&self.manager);
         async move {
-            let _ = manager.run(|repos| {
-                Box::pin(async move {
-                    use domain::repository::native_host_log::NativeHostLogRepository as _;
-                    repos.host_log().insert_log(HostLogLevel::Info, HostLogType::ImageQueueWorkerStarted, "").await?;
-                    Ok::<(), anyhow::Error>(())
+            let _ = manager
+                .run(|repos| {
+                    Box::pin(async move {
+                        use domain::repository::native_host_log::NativeHostLogRepository as _;
+                        repos
+                            .host_log()
+                            .insert_log(
+                                HostLogLevel::Info,
+                                HostLogType::ImageQueueWorkerStarted,
+                                "",
+                            )
+                            .await?;
+                        Ok::<(), anyhow::Error>(())
+                    })
                 })
-            }).await;
+                .await;
             Ok(())
-        }.boxed()
+        }
+        .boxed()
     }
     fn on_worker_finished(&self) -> futures::future::BoxFuture<'static, Result<()>> {
         let manager = Arc::clone(&self.manager);
         async move {
-            let _ = manager.run(|repos| {
-                Box::pin(async move {
-                    use domain::repository::native_host_log::NativeHostLogRepository as _;
-                    repos.host_log().insert_log(HostLogLevel::Info, HostLogType::ImageQueueWorkerFinished, "").await?;
-                    Ok::<(), anyhow::Error>(())
+            let _ = manager
+                .run(|repos| {
+                    Box::pin(async move {
+                        use domain::repository::native_host_log::NativeHostLogRepository as _;
+                        repos
+                            .host_log()
+                            .insert_log(
+                                HostLogLevel::Info,
+                                HostLogType::ImageQueueWorkerFinished,
+                                "",
+                            )
+                            .await?;
+                        Ok::<(), anyhow::Error>(())
+                    })
                 })
-            }).await;
+                .await;
             Ok(())
-        }.boxed()
+        }
+        .boxed()
     }
-    fn on_item_started(&self, item: &ImageSaveQueueRow) -> futures::future::BoxFuture<'static, Result<()> > {
+    fn on_item_started(
+        &self,
+        item: &ImageSaveQueueRow,
+    ) -> futures::future::BoxFuture<'static, Result<()>> {
         let manager = Arc::clone(&self.manager);
         let item = item.clone();
         async move {
-            let msg = format!("id={} src_type={:?} src=\"{}\" dst=\"{}\"", item.id.value, item.src_type, item.src, item.dst_path);
-            let _ = manager.run(|repos| {
-                let msg = msg.clone();
-                Box::pin(async move {
-                    use domain::repository::native_host_log::NativeHostLogRepository as _;
-                    repos.host_log().insert_log(HostLogLevel::Info, HostLogType::ImageQueueItemStarted, msg.as_str()).await?;
-                    Ok::<(), anyhow::Error>(())
+            let msg = format!(
+                "id={} src_type={:?} src=\"{}\" dst=\"{}\"",
+                item.id.value, item.src_type, item.src, item.dst_path
+            );
+            let _ = manager
+                .run(|repos| {
+                    let msg = msg.clone();
+                    Box::pin(async move {
+                        use domain::repository::native_host_log::NativeHostLogRepository as _;
+                        repos
+                            .host_log()
+                            .insert_log(
+                                HostLogLevel::Info,
+                                HostLogType::ImageQueueItemStarted,
+                                msg.as_str(),
+                            )
+                            .await?;
+                        Ok::<(), anyhow::Error>(())
+                    })
                 })
-            }).await;
+                .await;
             Ok(())
-        }.boxed()
+        }
+        .boxed()
     }
-    fn on_item_succeeded(&self, item: &ImageSaveQueueRow) -> futures::future::BoxFuture<'static, Result<()> > {
+    fn on_item_succeeded(
+        &self,
+        item: &ImageSaveQueueRow,
+    ) -> futures::future::BoxFuture<'static, Result<()>> {
         let manager = Arc::clone(&self.manager);
         let item = item.clone();
         async move {
-            let msg = format!("id={} src_type={:?} src=\"{}\" dst=\"{}\"", item.id.value, item.src_type, item.src, item.dst_path);
-            let _ = manager.run(|repos| {
-                let msg = msg.clone();
-                Box::pin(async move {
-                    use domain::repository::native_host_log::NativeHostLogRepository as _;
-                    repos.host_log().insert_log(HostLogLevel::Info, HostLogType::ImageQueueItemSucceeded, msg.as_str()).await?;
-                    Ok::<(), anyhow::Error>(())
+            let msg = format!(
+                "id={} src_type={:?} src=\"{}\" dst=\"{}\"",
+                item.id.value, item.src_type, item.src, item.dst_path
+            );
+            let _ = manager
+                .run(|repos| {
+                    let msg = msg.clone();
+                    Box::pin(async move {
+                        use domain::repository::native_host_log::NativeHostLogRepository as _;
+                        repos
+                            .host_log()
+                            .insert_log(
+                                HostLogLevel::Info,
+                                HostLogType::ImageQueueItemSucceeded,
+                                msg.as_str(),
+                            )
+                            .await?;
+                        Ok::<(), anyhow::Error>(())
+                    })
                 })
-            }).await;
+                .await;
             Ok(())
-        }.boxed()
+        }
+        .boxed()
     }
-    fn on_item_failed(&self, item: &ImageSaveQueueRow, error_message: &str) -> futures::future::BoxFuture<'static, Result<()> > {
+    fn on_item_failed(
+        &self,
+        item: &ImageSaveQueueRow,
+        error_message: &str,
+    ) -> futures::future::BoxFuture<'static, Result<()>> {
         let manager = Arc::clone(&self.manager);
         let item = item.clone();
         let error_message = error_message.to_string();
         async move {
-            let msg = format!("id={} src_type={:?} src=\"{}\" dst=\"{}\" err=\"{}\"", item.id.value, item.src_type, item.src, item.dst_path, error_message);
-            let _ = manager.run(|repos| {
-                let msg = msg.clone();
-                Box::pin(async move {
-                    use domain::repository::native_host_log::NativeHostLogRepository as _;
-                    repos.host_log().insert_log(HostLogLevel::Error, HostLogType::ImageQueueItemFailed, msg.as_str()).await?;
-                    Ok::<(), anyhow::Error>(())
+            let msg = format!(
+                "id={} src_type={:?} src=\"{}\" dst=\"{}\" err=\"{}\"",
+                item.id.value, item.src_type, item.src, item.dst_path, error_message
+            );
+            let _ = manager
+                .run(|repos| {
+                    let msg = msg.clone();
+                    Box::pin(async move {
+                        use domain::repository::native_host_log::NativeHostLogRepository as _;
+                        repos
+                            .host_log()
+                            .insert_log(
+                                HostLogLevel::Error,
+                                HostLogType::ImageQueueItemFailed,
+                                msg.as_str(),
+                            )
+                            .await?;
+                        Ok::<(), anyhow::Error>(())
+                    })
                 })
-            }).await;
+                .await;
             Ok(())
-        }.boxed()
+        }
+        .boxed()
     }
 }
 
@@ -127,36 +204,66 @@ where
     fn on_worker_started(&self) -> futures::future::BoxFuture<'static, Result<()>> {
         let pubsub = self.pubsub.clone();
         async move {
-            let _ = pubsub.notify("imageQueueWorkerStarted", ImageQueueWorkerStatusPayload::new("started".into()));
+            let _ = pubsub.notify(
+                "imageQueueWorkerStarted",
+                ImageQueueWorkerStatusPayload::new("started".into()),
+            );
             Ok(())
-        }.boxed()
+        }
+        .boxed()
     }
     fn on_worker_finished(&self) -> futures::future::BoxFuture<'static, Result<()>> {
         let pubsub = self.pubsub.clone();
         async move {
-            let _ = pubsub.notify("imageQueueWorkerFinished", ImageQueueWorkerStatusPayload::new("finished".into()));
+            let _ = pubsub.notify(
+                "imageQueueWorkerFinished",
+                ImageQueueWorkerStatusPayload::new("finished".into()),
+            );
             Ok(())
-        }.boxed()
+        }
+        .boxed()
     }
-    fn on_item_started(&self, item: &ImageSaveQueueRow) -> futures::future::BoxFuture<'static, Result<()> > {
+    fn on_item_started(
+        &self,
+        item: &ImageSaveQueueRow,
+    ) -> futures::future::BoxFuture<'static, Result<()>> {
         let pubsub = self.pubsub.clone();
         let item = item.clone();
         async move {
-            let payload = ImageQueueItemPayload::new(item.id.value as i64, item.src.clone(), item.src_type as i32, item.dst_path.clone());
+            let payload = ImageQueueItemPayload::new(
+                item.id.value as i64,
+                item.src.clone(),
+                item.src_type as i32,
+                item.dst_path.clone(),
+            );
             let _ = pubsub.notify("imageQueueItemStarted", payload);
             Ok(())
-        }.boxed()
+        }
+        .boxed()
     }
-    fn on_item_succeeded(&self, item: &ImageSaveQueueRow) -> futures::future::BoxFuture<'static, Result<()> > {
+    fn on_item_succeeded(
+        &self,
+        item: &ImageSaveQueueRow,
+    ) -> futures::future::BoxFuture<'static, Result<()>> {
         let pubsub = self.pubsub.clone();
         let item = item.clone();
         async move {
-            let payload = ImageQueueItemPayload::new(item.id.value as i64, item.src.clone(), item.src_type as i32, item.dst_path.clone());
+            let payload = ImageQueueItemPayload::new(
+                item.id.value as i64,
+                item.src.clone(),
+                item.src_type as i32,
+                item.dst_path.clone(),
+            );
             let _ = pubsub.notify("imageQueueItemSucceeded", payload);
             Ok(())
-        }.boxed()
+        }
+        .boxed()
     }
-    fn on_item_failed(&self, item: &ImageSaveQueueRow, error_message: &str) -> futures::future::BoxFuture<'static, Result<()> > {
+    fn on_item_failed(
+        &self,
+        item: &ImageSaveQueueRow,
+        error_message: &str,
+    ) -> futures::future::BoxFuture<'static, Result<()>> {
         let pubsub = self.pubsub.clone();
         let item = item.clone();
         let error_message = error_message.to_string();
@@ -164,7 +271,8 @@ where
             let payload = ImageQueueItemErrorPayload::new(item.id.value as i64, error_message);
             let _ = pubsub.notify("imageQueueItemFailed", payload);
             Ok(())
-        }.boxed()
+        }
+        .boxed()
     }
 }
 
@@ -177,42 +285,65 @@ impl ImageQueueWorkerEventHandler for ImageQueueCompositeHandler {
     fn on_worker_started(&self) -> futures::future::BoxFuture<'static, Result<()>> {
         let handlers = self.handlers.clone();
         async move {
-            for h in &handlers { let _ = h.on_worker_started().await; }
+            for h in &handlers {
+                let _ = h.on_worker_started().await;
+            }
             Ok(())
-        }.boxed()
+        }
+        .boxed()
     }
     fn on_worker_finished(&self) -> futures::future::BoxFuture<'static, Result<()>> {
         let handlers = self.handlers.clone();
         async move {
-            for h in &handlers { let _ = h.on_worker_finished().await; }
+            for h in &handlers {
+                let _ = h.on_worker_finished().await;
+            }
             Ok(())
-        }.boxed()
+        }
+        .boxed()
     }
-    fn on_item_started(&self, item: &ImageSaveQueueRow) -> futures::future::BoxFuture<'static, Result<()> > {
+    fn on_item_started(
+        &self,
+        item: &ImageSaveQueueRow,
+    ) -> futures::future::BoxFuture<'static, Result<()>> {
         let handlers = self.handlers.clone();
         let item = item.clone();
         async move {
-            for h in &handlers { let _ = h.on_item_started(&item).await; }
+            for h in &handlers {
+                let _ = h.on_item_started(&item).await;
+            }
             Ok(())
-        }.boxed()
+        }
+        .boxed()
     }
-    fn on_item_succeeded(&self, item: &ImageSaveQueueRow) -> futures::future::BoxFuture<'static, Result<()> > {
+    fn on_item_succeeded(
+        &self,
+        item: &ImageSaveQueueRow,
+    ) -> futures::future::BoxFuture<'static, Result<()>> {
         let handlers = self.handlers.clone();
         let item = item.clone();
         async move {
-            for h in &handlers { let _ = h.on_item_succeeded(&item).await; }
+            for h in &handlers {
+                let _ = h.on_item_succeeded(&item).await;
+            }
             Ok(())
-        }.boxed()
+        }
+        .boxed()
     }
-    fn on_item_failed(&self, item: &ImageSaveQueueRow, error_message: &str) -> futures::future::BoxFuture<'static, Result<()> > {
+    fn on_item_failed(
+        &self,
+        item: &ImageSaveQueueRow,
+        error_message: &str,
+    ) -> futures::future::BoxFuture<'static, Result<()>> {
         let handlers = self.handlers.clone();
         let item = item.clone();
         let error_message = error_message.to_string();
         async move {
-            for h in &handlers { let _ = h.on_item_failed(&item, &error_message).await; }
+            for h in &handlers {
+                let _ = h.on_item_failed(&item, &error_message).await;
+            }
             Ok(())
-        }.boxed()
+        }
+        .boxed()
     }
 }
-
-

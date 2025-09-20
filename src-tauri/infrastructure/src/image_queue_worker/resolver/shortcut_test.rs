@@ -3,21 +3,46 @@ use std::collections::HashMap;
 use domain::file::LnkMetadata;
 use domain::service::save_path_resolver::DirsSavePathResolver;
 use domain::windows::shell_link::MockShellLink;
-use domain::windows::{WindowsExt, process::MockProcessWindows, proctail::MockProcTail, proctail_manager::MockProcTailManagerTrait};
+use domain::windows::{
+    process::MockProcessWindows, proctail::MockProcTail,
+    proctail_manager::MockProcTailManagerTrait, WindowsExt,
+};
 
 use super::shortcut::resolve;
 
-struct TestWindows { process: MockProcessWindows, proctail: MockProcTail, proctail_manager: MockProcTailManagerTrait, shell_link: MockShellLink }
-impl TestWindows { fn new(shell_link: MockShellLink) -> Self { Self { process: MockProcessWindows::new(), proctail: MockProcTail::new(), proctail_manager: MockProcTailManagerTrait::new(), shell_link } } }
+struct TestWindows {
+    process: MockProcessWindows,
+    proctail: MockProcTail,
+    proctail_manager: MockProcTailManagerTrait,
+    shell_link: MockShellLink,
+}
+impl TestWindows {
+    fn new(shell_link: MockShellLink) -> Self {
+        Self {
+            process: MockProcessWindows::new(),
+            proctail: MockProcTail::new(),
+            proctail_manager: MockProcTailManagerTrait::new(),
+            shell_link,
+        }
+    }
+}
 impl WindowsExt for TestWindows {
     type ProcessWindows = MockProcessWindows;
     type ProcTail = MockProcTail;
     type ProcTailManager = MockProcTailManagerTrait;
     type ShellLink = MockShellLink;
-    fn process(&self) -> &Self::ProcessWindows { &self.process }
-    fn proctail(&self) -> &Self::ProcTail { &self.proctail }
-    fn proctail_manager(&self) -> &Self::ProcTailManager { &self.proctail_manager }
-    fn shell_link(&self) -> &Self::ShellLink { &self.shell_link }
+    fn process(&self) -> &Self::ProcessWindows {
+        &self.process
+    }
+    fn proctail(&self) -> &Self::ProcTail {
+        &self.proctail
+    }
+    fn proctail_manager(&self) -> &Self::ProcTailManager {
+        &self.proctail_manager
+    }
+    fn shell_link(&self) -> &Self::ShellLink {
+        &self.shell_link
+    }
 }
 
 #[test]
@@ -35,7 +60,13 @@ fn shortcut_メタにicoなら一時png() {
     mock.expect_get_lnk_metadatas().returning(move |paths| {
         let mut map = HashMap::new();
         let key = paths[0].clone();
-        map.insert(key, LnkMetadata { path: "C:/app/app.exe".into(), icon: ico_path.clone() });
+        map.insert(
+            key,
+            LnkMetadata {
+                path: "C:/app/app.exe".into(),
+                icon: ico_path.clone(),
+            },
+        );
         Ok(map)
     });
     let win = TestWindows::new(mock);
@@ -55,23 +86,34 @@ fn shortcut_メタpngならそのまま() {
     mock.expect_get_lnk_metadatas().returning(|paths| {
         let mut map = HashMap::new();
         let key = paths[0].clone();
-        map.insert(key, LnkMetadata { path: "C:/app/app.exe".into(), icon: "C:/images/icon.png".into() });
+        map.insert(
+            key,
+            LnkMetadata {
+                path: "C:/app/app.exe".into(),
+                icon: "C:/images/icon.png".into(),
+            },
+        );
         Ok(map)
     });
     let win = TestWindows::new(mock);
     let resolver = DirsSavePathResolver::default();
     let res = resolve(&win, &resolver, "C:/links/app.lnk");
-    match res { Ok(super::super::types::SourceDecision::FallbackDefaultAndSkip { .. }) => {}, _ => panic!("unexpected") }
+    match res {
+        Ok(super::super::types::SourceDecision::FallbackDefaultAndSkip { .. }) => {}
+        _ => panic!("unexpected"),
+    }
 }
 
 #[test]
 fn shortcut_情報なしはskip() {
     let mut mock = MockShellLink::new();
-    mock.expect_get_lnk_metadatas().returning(|_| Ok(HashMap::new()));
+    mock.expect_get_lnk_metadatas()
+        .returning(|_| Ok(HashMap::new()));
     let win = TestWindows::new(mock);
     let resolver = DirsSavePathResolver::default();
     let res = resolve(&win, &resolver, "C:/links/app.lnk");
-    match res { Ok(super::super::types::SourceDecision::FallbackDefaultAndSkip { .. }) => {}, _ => panic!("unexpected") }
+    match res {
+        Ok(super::super::types::SourceDecision::FallbackDefaultAndSkip { .. }) => {}
+        _ => panic!("unexpected"),
+    }
 }
-
-

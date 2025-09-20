@@ -12,5 +12,3 @@ impl NativeMessagingHostClientFactory for NativeMessagingHostClientFactoryImpl {
         Ok(NativeMessagingHostClientImpl::new(native_host_path))
     }
 }
-
-

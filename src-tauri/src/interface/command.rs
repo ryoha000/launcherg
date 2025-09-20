@@ -8,23 +8,14 @@ use super::models::parent_dmm_pack::DmmPackKeysVm;
 use super::{
     error::CommandError,
     models::{
-        collection::CollectionElement,
-        save_image_queue::ImageSaveQueueRowVm,
-        work_details::WorkDetailsVm,
-        work_omit::WorkOmitItemVm,
+        collection::CollectionElement, save_image_queue::ImageSaveQueueRowVm,
+        work_details::WorkDetailsVm, work_omit::WorkOmitItemVm,
     },
     module::{Modules, ModulesExt},
 };
-use domain::extension::{SyncStatus, ExtensionConfig};
-use domain::windows::shell_link::ShellLink as _;
-use domain::windows::proctail::{
-    HealthCheckResult, ProcTailEvent, ServiceStatus, WatchTarget,
-};
-use domain::windows::proctail_manager::{ProcTailManagerStatus, ProcTailVersion};
-use domain::windows::WindowsExt as _;
 use crate::{
     domain::{
-        collection::{ScannedGameElement},
+        collection::ScannedGameElement,
         distance::get_comparable_distance,
         file::{get_file_created_at_sync, normalize},
         pubsub::{ProgressLivePayload, ProgressPayload, PubSubService},
@@ -32,7 +23,12 @@ use crate::{
     },
     usecase::models::collection::CreateCollectionElementDetail,
 };
-use domain::{native_host_log::{HostLogLevel, HostLogType}};
+use domain::extension::{ExtensionConfig, SyncStatus};
+use domain::native_host_log::{HostLogLevel, HostLogType};
+use domain::windows::proctail::{HealthCheckResult, ProcTailEvent, ServiceStatus, WatchTarget};
+use domain::windows::proctail_manager::{ProcTailManagerStatus, ProcTailVersion};
+use domain::windows::shell_link::ShellLink as _;
+use domain::windows::WindowsExt as _;
 
 #[tauri::command]
 pub async fn create_elements_in_pc(
@@ -114,11 +110,7 @@ pub async fn create_elements_in_pc(
         {
             modules
                 .image_use_case()
-                .save_icon_by_paths(
-                    &cid,
-                    &scanned.exe_path,
-                    &scanned.lnk_path,
-                )
+                .save_icon_by_paths(&cid, &scanned.exe_path, &scanned.lnk_path)
                 .await?;
         }
     }
@@ -174,7 +166,10 @@ pub async fn scan_start(
     roots: Vec<String>,
     use_cache: Option<bool>,
 ) -> anyhow::Result<Vec<String>, CommandError> {
-    let roots: Vec<std::path::PathBuf> = roots.into_iter().map(|s| std::path::PathBuf::from(s)).collect();
+    let roots: Vec<std::path::PathBuf> = roots
+        .into_iter()
+        .map(|s| std::path::PathBuf::from(s))
+        .collect();
     let gamenames = modules
         .work_pipeline_use_case()
         .start(roots, use_cache.unwrap_or(false))
@@ -184,12 +179,13 @@ pub async fn scan_start(
     // 非同期で画像キューをドレイン（応答はすでに返す）
     let runner = modules.image_queue_runner().clone();
     tauri::async_runtime::spawn(async move {
-        let _ = domain::service::image_queue_drain::ImageQueueDrainService::drain_until_empty(&*runner).await;
+        let _ =
+            domain::service::image_queue_drain::ImageQueueDrainService::drain_until_empty(&*runner)
+                .await;
     });
 
     Ok(gamenames)
 }
-
 
 #[tauri::command]
 pub async fn get_nearest_key_and_distance(
@@ -349,7 +345,10 @@ pub async fn launch_work(
     is_run_as_admin: bool,
     work_lnk_id: i32,
 ) -> anyhow::Result<Option<u32>, CommandError> {
-    Ok(modules.work_use_case().launch_work(is_run_as_admin, work_lnk_id).await?)
+    Ok(modules
+        .work_use_case()
+        .launch_work(is_run_as_admin, work_lnk_id)
+        .await?)
 }
 
 #[tauri::command]
@@ -467,12 +466,10 @@ pub async fn get_erogamescape_id_by_collection_id(
     modules: State<'_, Arc<Modules>>,
     collection_element_id: i32,
 ) -> anyhow::Result<Option<i32>, CommandError> {
-    Ok(
-        modules
-            .collection_use_case()
-            .get_erogamescape_id_by_collection_id(&Id::new(collection_element_id))
-            .await?,
-    )
+    Ok(modules
+        .collection_use_case()
+        .get_erogamescape_id_by_collection_id(&Id::new(collection_element_id))
+        .await?)
 }
 
 #[tauri::command]
@@ -553,7 +550,9 @@ pub async fn get_game_candidates(
     let info = domain::game_matcher::extract_file_info(&filepath)
         .map_err(|e| anyhow::anyhow!(e.to_string()))?;
     let mut queries: Vec<String> = Vec::new();
-    if !info.skip_filename { queries.push(info.filename); }
+    if !info.skip_filename {
+        queries.push(info.filename);
+    }
     queries.push(info.parent_dir);
     let result = modules
         .game_matcher()
@@ -622,9 +621,7 @@ pub async fn save_screenshot_by_pid(
     work_id: i32,
     process_id: u32,
 ) -> anyhow::Result<String, CommandError> {
-    let upload_path = modules
-        .file_use_case()
-        .get_new_upload_image_path(work_id)?;
+    let upload_path = modules.file_use_case().get_new_upload_image_path(work_id)?;
     modules
         .process_use_case()
         .save_screenshot_by_pid(process_id, &upload_path)
@@ -806,7 +803,8 @@ pub async fn open_url(handle: AppHandle, url: String) -> anyhow::Result<(), Comm
     #[allow(deprecated)]
     let shell = handle.shell();
     #[allow(deprecated)]
-    shell.open(url, None)
+    shell
+        .open(url, None)
         .map_err(|e| anyhow::anyhow!("Failed to open URL: {}", e))?;
     Ok(())
 }
@@ -824,16 +822,18 @@ pub async fn link_installed_game(
     Ok(())
 }
 
-
 // バッチ同期とステータス管理のコマンド
 
 #[tauri::command]
 pub async fn get_sync_status(
     modules: State<'_, Arc<Modules>>,
 ) -> anyhow::Result<SyncStatus, CommandError> {
-    let status = modules.extension_manager_use_case().check_extension_connection().await
+    let status = modules
+        .extension_manager_use_case()
+        .check_extension_connection()
+        .await
         .map_err(|e| anyhow::anyhow!("拡張機能の接続確認に失敗: {}", e))?;
-    
+
     Ok(status)
 }
 
@@ -888,7 +888,10 @@ pub async fn get_native_host_logs(
         _ => None,
     };
 
-    let items = modules.host_log_use_case().list_logs(limit, offset, level, typ).await?;
+    let items = modules
+        .host_log_use_case()
+        .list_logs(limit, offset, level, typ)
+        .await?;
     let total = modules.host_log_use_case().count_logs(level, typ).await?;
 
     Ok(HostLogsResponse {
@@ -911,9 +914,12 @@ pub async fn set_extension_config(
     config: ExtensionConfig,
     modules: State<'_, Arc<Modules>>,
 ) -> anyhow::Result<String, CommandError> {
-    let result = modules.extension_manager_use_case().set_extension_config(&config).await
+    let result = modules
+        .extension_manager_use_case()
+        .set_extension_config(&config)
+        .await
         .map_err(|e| anyhow::anyhow!("拡張機能設定の更新に失敗: {}", e))?;
-    
+
     Ok(result)
 }
 
@@ -922,11 +928,13 @@ pub async fn generate_extension_package(
     handle: AppHandle,
 ) -> anyhow::Result<usecase::extension_installer::ExtensionPackageInfo, CommandError> {
     use usecase::extension_installer::ExtensionInstallerUseCase;
-    
+
     let installer = ExtensionInstallerUseCase::new(Arc::new(handle));
-    let package_info = installer.generate_extension_package().await
+    let package_info = installer
+        .generate_extension_package()
+        .await
         .map_err(|e| anyhow::anyhow!("拡張機能パッケージの生成に失敗: {}", e))?;
-    
+
     Ok(package_info)
 }
 
@@ -936,11 +944,13 @@ pub async fn setup_native_messaging_host(
     extension_id: Option<String>,
 ) -> anyhow::Result<String, CommandError> {
     use usecase::extension_installer::ExtensionInstallerUseCase;
-    
+
     let installer = ExtensionInstallerUseCase::new(Arc::new(handle));
-    let result = installer.setup_native_messaging_host(extension_id).await
+    let result = installer
+        .setup_native_messaging_host(extension_id)
+        .await
         .map_err(|e| anyhow::anyhow!("Native Messaging Hostのセットアップに失敗: {}", e))?;
-    
+
     Ok(result)
 }
 
@@ -949,16 +959,19 @@ pub async fn get_extension_package_info(
     handle: AppHandle,
 ) -> anyhow::Result<Option<usecase::extension_installer::ExtensionPackageInfo>, CommandError> {
     use usecase::extension_installer::ExtensionInstallerUseCase;
-    
+
     let installer = ExtensionInstallerUseCase::new(Arc::new(handle));
-    
+
     if installer.is_package_available() {
-        let manifest_info = installer.get_extension_manifest_info().await
+        let manifest_info = installer
+            .get_extension_manifest_info()
+            .await
             .map_err(|e| anyhow::anyhow!("拡張機能情報の取得に失敗: {}", e))?;
         let package_path = installer.get_package_path();
-        let _package_size = installer.get_package_size()
+        let _package_size = installer
+            .get_package_size()
             .map_err(|e| anyhow::anyhow!("パッケージサイズの取得に失敗: {}", e))?;
-            
+
         Ok(Some(usecase::extension_installer::ExtensionPackageInfo {
             version: manifest_info.version.clone(),
             package_path: package_path.to_string_lossy().to_string(),
@@ -974,11 +987,13 @@ pub async fn copy_extension_for_development(
     handle: AppHandle,
 ) -> anyhow::Result<String, CommandError> {
     use usecase::extension_installer::ExtensionInstallerUseCase;
-    
+
     let installer = ExtensionInstallerUseCase::new(Arc::new(handle));
-    let dev_path = installer.copy_extension_for_development().await
+    let dev_path = installer
+        .copy_extension_for_development()
+        .await
         .map_err(|e| anyhow::anyhow!("開発用拡張機能のコピーに失敗: {}", e))?;
-    
+
     Ok(dev_path)
 }
 
@@ -987,9 +1002,9 @@ pub async fn get_dev_extension_info(
     handle: AppHandle,
 ) -> anyhow::Result<Option<String>, CommandError> {
     use usecase::extension_installer::ExtensionInstallerUseCase;
-    
+
     let installer = ExtensionInstallerUseCase::new(Arc::new(handle));
-    
+
     if installer.is_dev_extension_available() {
         let dev_path = installer.get_dev_extension_path();
         Ok(Some(dev_path.to_string_lossy().to_string()))
@@ -1003,43 +1018,57 @@ pub async fn check_registry_keys(
     handle: AppHandle,
 ) -> anyhow::Result<Vec<usecase::extension_installer::RegistryKeyInfo>, CommandError> {
     use usecase::extension_installer::ExtensionInstallerUseCase;
-    
+
     let installer = ExtensionInstallerUseCase::new(Arc::new(handle));
-    let result = installer.check_registry_keys()
+    let result = installer
+        .check_registry_keys()
         .map_err(|e| anyhow::anyhow!("Failed to check registry keys: {}", e))?;
-    
+
     Ok(result)
 }
 
 #[tauri::command]
-pub async fn remove_registry_keys(
-    handle: AppHandle,
-) -> anyhow::Result<Vec<String>, CommandError> {
+pub async fn remove_registry_keys(handle: AppHandle) -> anyhow::Result<Vec<String>, CommandError> {
     use usecase::extension_installer::ExtensionInstallerUseCase;
-    
+
     let installer = ExtensionInstallerUseCase::new(Arc::new(handle));
-    let result = installer.remove_registry_keys()
+    let result = installer
+        .remove_registry_keys()
         .map_err(|e| anyhow::anyhow!("Failed to remove registry keys: {}", e))?;
-    
+
     Ok(result)
 }
 
 // ========== Work Omit ==========
 
 #[tauri::command]
-pub async fn work_omit_add(modules: State<'_, Arc<Modules>>, work_id: i32) -> anyhow::Result<(), CommandError> {
-    modules.work_omit_use_case().add(domain::Id::new(work_id)).await?;
+pub async fn work_omit_add(
+    modules: State<'_, Arc<Modules>>,
+    work_id: i32,
+) -> anyhow::Result<(), CommandError> {
+    modules
+        .work_omit_use_case()
+        .add(domain::Id::new(work_id))
+        .await?;
     Ok(())
 }
 
 #[tauri::command]
-pub async fn work_omit_remove(modules: State<'_, Arc<Modules>>, work_id: i32) -> anyhow::Result<(), CommandError> {
-    modules.work_omit_use_case().remove(domain::Id::new(work_id)).await?;
+pub async fn work_omit_remove(
+    modules: State<'_, Arc<Modules>>,
+    work_id: i32,
+) -> anyhow::Result<(), CommandError> {
+    modules
+        .work_omit_use_case()
+        .remove(domain::Id::new(work_id))
+        .await?;
     Ok(())
 }
 
 #[tauri::command]
-pub async fn work_omit_all(modules: State<'_, Arc<Modules>>) -> anyhow::Result<Vec<WorkOmitItemVm>, CommandError> {
+pub async fn work_omit_all(
+    modules: State<'_, Arc<Modules>>,
+) -> anyhow::Result<Vec<WorkOmitItemVm>, CommandError> {
     let list = modules.work_omit_use_case().list().await?;
     Ok(list.into_iter().map(|e| e.into()).collect())
 }
@@ -1047,33 +1076,55 @@ pub async fn work_omit_all(modules: State<'_, Arc<Modules>>) -> anyhow::Result<V
 // ========== DMM Work Pack ==========
 
 #[tauri::command]
-pub async fn work_pack_add(modules: State<'_, Arc<Modules>>, work_id: i32) -> anyhow::Result<(), CommandError> {
-    modules.dmm_pack_use_case().add(domain::Id::new(work_id)).await?;
+pub async fn work_pack_add(
+    modules: State<'_, Arc<Modules>>,
+    work_id: i32,
+) -> anyhow::Result<(), CommandError> {
+    modules
+        .dmm_pack_use_case()
+        .add(domain::Id::new(work_id))
+        .await?;
     Ok(())
 }
 
 #[tauri::command]
-pub async fn work_pack_remove(modules: State<'_, Arc<Modules>>, work_id: i32) -> anyhow::Result<(), CommandError> {
-    modules.dmm_pack_use_case().remove(domain::Id::new(work_id)).await?;
+pub async fn work_pack_remove(
+    modules: State<'_, Arc<Modules>>,
+    work_id: i32,
+) -> anyhow::Result<(), CommandError> {
+    modules
+        .dmm_pack_use_case()
+        .remove(domain::Id::new(work_id))
+        .await?;
     Ok(())
 }
 
 #[tauri::command]
-pub async fn work_pack_all(modules: State<'_, Arc<Modules>>) -> anyhow::Result<Vec<i32>, CommandError> {
+pub async fn work_pack_all(
+    modules: State<'_, Arc<Modules>>,
+) -> anyhow::Result<Vec<i32>, CommandError> {
     let list = modules.dmm_pack_use_case().list().await?;
     Ok(list.into_iter().map(|e| e.work_id.value).collect())
 }
 
 // ========== WorkDetails ==========
 #[tauri::command]
-pub async fn get_work_details_all(modules: State<'_, Arc<Modules>>) -> anyhow::Result<Vec<WorkDetailsVm>, CommandError> {
+pub async fn get_work_details_all(
+    modules: State<'_, Arc<Modules>>,
+) -> anyhow::Result<Vec<WorkDetailsVm>, CommandError> {
     let rows = modules.work_use_case().list_all_details().await?;
     Ok(rows.into_iter().map(|w| w.into()).collect())
 }
 
 #[tauri::command]
-pub async fn get_work_details_by_collection_element(modules: State<'_, Arc<Modules>>, collection_element_id: i32) -> anyhow::Result<Option<WorkDetailsVm>, CommandError> {
-    let row = modules.work_use_case().find_details_by_collection_element_id(collection_element_id).await?;
+pub async fn get_work_details_by_collection_element(
+    modules: State<'_, Arc<Modules>>,
+    collection_element_id: i32,
+) -> anyhow::Result<Option<WorkDetailsVm>, CommandError> {
+    let row = modules
+        .work_use_case()
+        .find_details_by_collection_element_id(collection_element_id)
+        .await?;
     Ok(row.map(|w| w.into()))
 }
 
@@ -1088,12 +1139,12 @@ pub async fn get_parent_dmm_pack_keys(
         .get_parent_dmm_pack_work_id(work_id)
         .await?;
     if let Some(pid) = parent_id {
-        if let Some(dmm) = modules
-            .work_use_case()
-            .get_dmm_work_by_work_id(pid)
-            .await?
-        {
-            return Ok(Some(DmmPackKeysVm { store_id: dmm.store_id, category: dmm.category, subcategory: dmm.subcategory }));
+        if let Some(dmm) = modules.work_use_case().get_dmm_work_by_work_id(pid).await? {
+            return Ok(Some(DmmPackKeysVm {
+                store_id: dmm.store_id,
+                category: dmm.category,
+                subcategory: dmm.subcategory,
+            }));
         }
     }
     Ok(None)
@@ -1114,8 +1165,12 @@ pub async fn get_image_save_queue(
     request: Option<GetImageSaveQueueRequest>,
 ) -> anyhow::Result<Vec<ImageSaveQueueRowVm>, CommandError> {
     let limit = request.as_ref().and_then(|r| r.limit).unwrap_or(500);
-    let status = request.and_then(|r| r.status).unwrap_or_else(|| "unfinished".to_string());
-    let rows = modules.image_queue_use_case().list(status.as_str() == "unfinished", limit).await?;
+    let status = request
+        .and_then(|r| r.status)
+        .unwrap_or_else(|| "unfinished".to_string());
+    let rows = modules
+        .image_queue_use_case()
+        .list(status.as_str() == "unfinished", limit)
+        .await?;
     Ok(rows.into_iter().map(|r| r.into()).collect())
 }
-

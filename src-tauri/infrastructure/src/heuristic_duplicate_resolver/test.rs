@@ -1,5 +1,5 @@
-use domain::scan::{ResolvedWork, WorkCandidate, CandidateKind, DuplicateResolver};
 use crate::heuristic_duplicate_resolver::HeuristicDuplicateResolver;
+use domain::scan::{CandidateKind, DuplicateResolver, ResolvedWork, WorkCandidate};
 
 fn rw(path: &str, title: &str, egs_id: i32) -> ResolvedWork {
     rwd(path, title, egs_id, 0.5)
@@ -7,7 +7,10 @@ fn rw(path: &str, title: &str, egs_id: i32) -> ResolvedWork {
 
 fn rwd(path: &str, title: &str, egs_id: i32, distance: f32) -> ResolvedWork {
     ResolvedWork {
-        candidate: WorkCandidate { path: std::path::PathBuf::from(path), kind: CandidateKind::Exe },
+        candidate: WorkCandidate {
+            path: std::path::PathBuf::from(path),
+            kind: CandidateKind::Exe,
+        },
         title: title.to_string(),
         egs_id,
         distance,
@@ -102,5 +105,3 @@ fn 空のファイル名キーが混在してもパニックしない() {
     assert_eq!(out.len(), 1);
     assert!(out[0].candidate.path.ends_with("pieces.exe"));
 }
-
-

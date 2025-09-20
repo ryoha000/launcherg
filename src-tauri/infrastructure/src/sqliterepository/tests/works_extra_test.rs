@@ -1,5 +1,5 @@
 use super::TestDatabase;
-use domain::repository::{RepositoriesExt, works::WorkRepository};
+use domain::repository::{works::WorkRepository, RepositoriesExt};
 use domain::works::NewWork;
 
 #[tokio::test]
@@ -16,5 +16,3 @@ async fn work_repository_normal_flows() {
         assert!(found.is_some());
     }
 }
-
-

@@ -4,16 +4,20 @@ mod tests {
     use mockall::predicate::*;
     use std::sync::Arc;
 
+    use crate::repositorymock::TestRepositories;
+    use crate::windowsmock::MockWindowsExtMock;
+    use crate::{collection::CollectionUseCase, error::UseCaseError};
     use domain::{
         collection::{
-            CollectionElement, CollectionElementInfo, CollectionElementInstall, CollectionElementPaths, CollectionElementThumbnail, NewCollectionElement, NewCollectionElementInfo, ScannedGameElement
-        }, repository::collection::MockCollectionRepository, service::save_path_resolver::DirsSavePathResolver,
+            CollectionElement, CollectionElementInfo, CollectionElementInstall,
+            CollectionElementPaths, CollectionElementThumbnail, NewCollectionElement,
+            NewCollectionElementInfo, ScannedGameElement,
+        },
+        repository::collection::MockCollectionRepository,
+        service::save_path_resolver::DirsSavePathResolver,
         thumbnail::MockThumbnailService,
-        Id
+        Id,
     };
-    use crate::repositorymock::TestRepositories;
-    use crate::{collection::CollectionUseCase, error::UseCaseError};
-    use crate::windowsmock::MockWindowsExtMock;
 
     fn create_test_element_id(id: i32) -> Id<CollectionElement> {
         Id::new(id)
@@ -81,9 +85,23 @@ mod tests {
         }
     }
 
-    fn setup_use_case(mock_repositories: TestRepositories) -> CollectionUseCase<crate::repositorymock::TestRepositoryManager, TestRepositories, MockThumbnailService, MockWindowsExtMock> {
+    fn setup_use_case(
+        mock_repositories: TestRepositories,
+    ) -> CollectionUseCase<
+        crate::repositorymock::TestRepositoryManager,
+        TestRepositories,
+        MockThumbnailService,
+        MockWindowsExtMock,
+    > {
         let resolver = Arc::new(DirsSavePathResolver::default());
-        let use_case = CollectionUseCase::new(Arc::new(crate::repositorymock::TestRepositoryManager::new(mock_repositories)), resolver.clone(), Arc::new(MockThumbnailService::new()), Arc::new(MockWindowsExtMock::new()));
+        let use_case = CollectionUseCase::new(
+            Arc::new(crate::repositorymock::TestRepositoryManager::new(
+                mock_repositories,
+            )),
+            resolver.clone(),
+            Arc::new(MockThumbnailService::new()),
+            Arc::new(MockWindowsExtMock::new()),
+        );
         use_case
     }
 

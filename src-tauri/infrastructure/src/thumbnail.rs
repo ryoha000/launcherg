@@ -1,13 +1,21 @@
-use std::{fs, io::{BufWriter, Write}, num::NonZeroU32, path::Path};
+use std::{
+    fs,
+    io::{BufWriter, Write},
+    num::NonZeroU32,
+    path::Path,
+};
 
 use anyhow::Context as _;
 use fast_image_resize as fr;
 use image::{io::Reader as ImageReader, ColorType, ImageEncoder};
 
-use domain::{collection::CollectionElement, Id, thumbnail::ThumbnailService};
-use domain::service::save_path_resolver::{SavePathResolver, DirsSavePathResolver};
+use domain::service::save_path_resolver::{DirsSavePathResolver, SavePathResolver};
+use domain::{collection::CollectionElement, thumbnail::ThumbnailService, Id};
 
-pub fn build_thumbnail_paths(id: &Id<CollectionElement>, src_url: &str) -> anyhow::Result<(String, String)> {
+pub fn build_thumbnail_paths(
+    id: &Id<CollectionElement>,
+    src_url: &str,
+) -> anyhow::Result<(String, String)> {
     // 互換: 既存の呼び出し用（今後は SavePathResolver へ移行）
     let resolver = DirsSavePathResolver::default();
     let resized = resolver.thumbnail_png_path(id.value);
@@ -29,17 +37,27 @@ pub async fn download_to_file(url: &str, path: &str) -> anyhow::Result<()> {
 }
 
 pub fn resize_image(src: &str, dst: &str, dst_width_px: u32) -> anyhow::Result<()> {
-    let img = ImageReader::open(src).context("open image failed")?.decode().context("decode image failed")?;
+    let img = ImageReader::open(src)
+        .context("open image failed")?
+        .decode()
+        .context("decode image failed")?;
     let width = NonZeroU32::new(img.width()).ok_or_else(|| anyhow::anyhow!("invalid width"))?;
     let height = NonZeroU32::new(img.height()).ok_or_else(|| anyhow::anyhow!("invalid height"))?;
-    let mut src_image = fr::Image::from_vec_u8(width, height, img.to_rgba8().into_raw(), fr::PixelType::U8x4)?;
+    let mut src_image = fr::Image::from_vec_u8(
+        width,
+        height,
+        img.to_rgba8().into_raw(),
+        fr::PixelType::U8x4,
+    )?;
 
     let alpha_mul_div = fr::MulDiv::default();
     alpha_mul_div.multiply_alpha_inplace(&mut src_image.view_mut())?;
 
-    let dst_width = NonZeroU32::new(dst_width_px).ok_or_else(|| anyhow::anyhow!("invalid dst width"))?;
-    let dst_height = NonZeroU32::new((height.get() as f32 / width.get() as f32 * dst_width_px as f32) as u32)
-        .ok_or_else(|| anyhow::anyhow!("invalid dst height"))?;
+    let dst_width =
+        NonZeroU32::new(dst_width_px).ok_or_else(|| anyhow::anyhow!("invalid dst width"))?;
+    let dst_height =
+        NonZeroU32::new((height.get() as f32 / width.get() as f32 * dst_width_px as f32) as u32)
+            .ok_or_else(|| anyhow::anyhow!("invalid dst height"))?;
     let mut dst_image = fr::Image::new(dst_width, dst_height, src_image.pixel_type());
     let mut dst_view = dst_image.view_mut();
     let mut resizer = fr::Resizer::new(fr::ResizeAlg::Convolution(fr::FilterType::Box));
@@ -57,7 +75,11 @@ pub fn resize_image(src: &str, dst: &str, dst_width_px: u32) -> anyhow::Result<(
     Ok(())
 }
 
-pub async fn save_thumbnail(id: &Id<CollectionElement>, url: &str, width: u32) -> anyhow::Result<()> {
+pub async fn save_thumbnail(
+    id: &Id<CollectionElement>,
+    url: &str,
+    width: u32,
+) -> anyhow::Result<()> {
     if url.is_empty() {
         return Ok(());
     }
@@ -76,7 +98,9 @@ pub struct ThumbnailServiceImpl {
 }
 
 impl ThumbnailServiceImpl {
-    pub fn new(resolver: std::sync::Arc<dyn SavePathResolver>) -> Self { Self { resolver } }
+    pub fn new(resolver: std::sync::Arc<dyn SavePathResolver>) -> Self {
+        Self { resolver }
+    }
 }
 
 impl ThumbnailService for ThumbnailServiceImpl {
@@ -84,7 +108,10 @@ impl ThumbnailService for ThumbnailServiceImpl {
         save_thumbnail(id, url, 400).await
     }
 
-    async fn get_thumbnail_size(&self, id: &Id<CollectionElement>) -> anyhow::Result<Option<(u32, u32)>> {
+    async fn get_thumbnail_size(
+        &self,
+        id: &Id<CollectionElement>,
+    ) -> anyhow::Result<Option<(u32, u32)>> {
         let resized = self.resolver.thumbnail_png_path(id.value);
         if !Path::new(&resized).exists() {
             return Ok(None);

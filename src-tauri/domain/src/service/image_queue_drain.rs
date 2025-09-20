@@ -3,5 +3,3 @@
 pub trait ImageQueueDrainService {
     async fn drain_until_empty(&self) -> anyhow::Result<()>;
 }
-
-

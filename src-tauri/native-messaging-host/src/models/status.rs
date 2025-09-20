@@ -32,4 +32,3 @@ pub struct TimestampTs {
 pub struct ConfigUpdateResultTs {
     pub message: String,
 }
-

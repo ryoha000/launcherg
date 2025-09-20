@@ -13,17 +13,17 @@ mod embedded {
     embed_migrations!("./src/migrations");
 }
 
-mod works_test;
 mod all_game_cache_test;
+mod collection_test;
+mod dmm_work_pack_test;
 mod explored_cache_test;
-mod save_image_queue_test;
 mod native_host_log_test;
+mod save_image_queue_test;
+mod work_lnk_test;
 mod work_omit_test;
 mod work_parent_packs_test;
-mod dmm_work_pack_test;
-mod collection_test;
 mod works_extra_test;
-mod work_lnk_test;
+mod works_test;
 
 pub struct TestDatabase {
     pub pool: Pool<Sqlite>,
@@ -50,12 +50,13 @@ impl TestDatabase {
             .set_abort_divergent(false)
             .run(&mut conf)?;
 
-        Ok(Self { pool, _temp_file: temp_file })
+        Ok(Self {
+            pool,
+            _temp_file: temp_file,
+        })
     }
 
     pub fn sqlite_repository(&self) -> SqliteRepositories {
         SqliteRepositories::new_from_pool(Arc::new(self.pool.clone()))
     }
 }
-
-

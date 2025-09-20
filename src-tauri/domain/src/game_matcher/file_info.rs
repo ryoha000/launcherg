@@ -1,6 +1,5 @@
- 
-use super::normalizer::normalize;
 use super::config::{is_not_game, remove_unnecessary_words};
+use super::normalizer::normalize;
 
 /// ファイルパスから抽出されるマッチング用の情報
 #[derive(Debug, Clone, PartialEq)]
@@ -44,20 +43,23 @@ where
     // ファイル名を取得（拡張子なし）
     let filename = get_file_name_without_extension(filepath_buf.as_path())
         .ok_or(anyhow::anyhow!("cannot get filename"))?;
-    
+
     let normalized_filename = normalize(&filename);
-    
+
     // ゲーム以外のファイルは除外
     if is_not_game(&parent_dir) {
         return Err(anyhow::anyhow!("parent_dir is not a game. {}", parent_dir));
     }
     if is_not_game(&normalized_filename) {
-        return Err(anyhow::anyhow!("file is not a game. {}", normalized_filename));
+        return Err(anyhow::anyhow!(
+            "file is not a game. {}",
+            normalized_filename
+        ));
     }
-    
+
     // 不要な語句を除去
     let cleaned_filename = remove_unnecessary_words(&normalized_filename);
-    
+
     // 汎用的すぎるファイル名の場合はファイル名マッチングをスキップ
     let skip_filename = cleaned_filename == "game" || cleaned_filename == "start";
 
@@ -86,7 +88,8 @@ mod tests {
 
     #[test]
     fn test_extract_file_info() {
-        let result = extract_file_info("W:\\others\\software\\Whirlpool\\pieces\\pieces.exe").unwrap();
+        let result =
+            extract_file_info("W:\\others\\software\\Whirlpool\\pieces\\pieces.exe").unwrap();
         assert_eq!(result.filename, "pieces");
         assert_eq!(result.parent_dir, "pieces");
         assert!(!result.skip_filename);

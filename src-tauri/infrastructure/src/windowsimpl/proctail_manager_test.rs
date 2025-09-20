@@ -1,7 +1,9 @@
 #[cfg(test)]
 mod tests {
     use super::super::proctail_manager::*;
-    use domain::windows::proctail_manager::{ProcTailManagerStatus, ProcTailVersion, ProcTailManagerError};
+    use domain::windows::proctail_manager::{
+        ProcTailManagerError, ProcTailManagerStatus, ProcTailVersion,
+    };
     use std::sync::Arc;
     use tempfile::TempDir;
     use wiremock::matchers::{method, path};

@@ -6,7 +6,7 @@ pub struct SyncStatus {
     /// 最後の同期時刻（optional）
     pub last_sync: Option<pbjson_types::Timestamp>,
     /// 同期したゲーム総数
-    pub total_synced: u32, 
+    pub total_synced: u32,
     /// 接続済み拡張機能のリスト
     pub connected_extensions: Vec<String>,
     /// Native Messaging Hostが動作中かどうか
@@ -60,12 +60,16 @@ pub enum ExtensionConnectionStatus {
 pub trait NativeMessagingHostClient {
     /// ヘルスチェックを実行
     async fn health_check(&self) -> Result<bool, Box<dyn std::error::Error + Send + Sync>>;
-    
+
     /// 同期ステータスを取得
-    async fn get_sync_status(&self) -> Result<SyncStatus, Box<dyn std::error::Error + Send + Sync>>;
-    
+    async fn get_sync_status(&self)
+        -> Result<SyncStatus, Box<dyn std::error::Error + Send + Sync>>;
+
     /// 拡張機能設定を更新
-    async fn set_config(&self, config: &ExtensionConfig) -> Result<String, Box<dyn std::error::Error + Send + Sync>>;
+    async fn set_config(
+        &self,
+        config: &ExtensionConfig,
+    ) -> Result<String, Box<dyn std::error::Error + Send + Sync>>;
 }
 
 /// Native Messaging Hostクライアントを生成するファクトリのトレイト

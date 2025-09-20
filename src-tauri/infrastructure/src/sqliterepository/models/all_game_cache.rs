@@ -20,4 +20,3 @@ impl TryFrom<AllGameCacheTable> for AllGameCacheOne {
         })
     }
 }
-

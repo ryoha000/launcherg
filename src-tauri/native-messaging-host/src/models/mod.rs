@@ -1,6 +1,5 @@
 pub mod common;
-pub mod sync;
+pub mod downloads;
 pub mod packs;
 pub mod status;
-pub mod downloads;
-
+pub mod sync;

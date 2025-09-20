@@ -7,7 +7,7 @@ use sqlx::{
 };
 use tauri::AppHandle;
 
-use domain::service::save_path_resolver::{SavePathResolver, DirsSavePathResolver};
+use domain::service::save_path_resolver::{DirsSavePathResolver, SavePathResolver};
 
 #[derive(Clone)]
 pub struct Db(pub(crate) Arc<Pool<Sqlite>>);
@@ -46,10 +46,7 @@ impl Db {
     }
 
     pub async fn from_path(db_file_path: &str) -> Db {
-        let db_filename = Path::new(db_file_path)
-            .to_str()
-            .unwrap()
-            .to_string();
+        let db_filename = Path::new(db_file_path).to_str().unwrap().to_string();
         let pool = SqlitePoolOptions::new()
             .max_connections(256)
             .connect_with(
@@ -75,5 +72,7 @@ impl Db {
         Db(Arc::new(pool))
     }
 
-    pub fn pool_arc(&self) -> Arc<Pool<Sqlite>> { self.0.clone() }
+    pub fn pool_arc(&self) -> Arc<Pool<Sqlite>> {
+        self.0.clone()
+    }
 }

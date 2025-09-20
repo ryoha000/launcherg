@@ -1,14 +1,14 @@
+use derive_new::new;
+use serde::{Deserialize, Serialize};
+use std::io::Write;
 use std::path::{Path, PathBuf};
 use std::process::Command;
-use std::{fs, io};
-use serde::{Deserialize, Serialize};
-use derive_new::new;
 use std::sync::Arc;
+use std::{fs, io};
 use tauri::AppHandle;
-use std::io::Write;
 use tempfile::NamedTempFile;
 
-use domain::service::save_path_resolver::{SavePathResolver, DirsSavePathResolver};
+use domain::service::save_path_resolver::{DirsSavePathResolver, SavePathResolver};
 
 #[cfg(target_os = "windows")]
 use winreg::enums::*;
@@ -29,8 +29,10 @@ impl AppConfigProvider for AppHandle {
 
 const BROWSER_EXTENSION_DIR: &str = "browser-extension";
 const EXTENSION_PACKAGE_NAME: &str = "launcherg-extension.zip";
-const CHROME_REGISTRY_KEY: &str = "SOFTWARE\\Google\\Chrome\\NativeMessagingHosts\\moe.ryoha.launcherg.extension_host";
-const EDGE_REGISTRY_KEY: &str = "SOFTWARE\\Microsoft\\Edge\\NativeMessagingHosts\\moe.ryoha.launcherg.extension_host";
+const CHROME_REGISTRY_KEY: &str =
+    "SOFTWARE\\Google\\Chrome\\NativeMessagingHosts\\moe.ryoha.launcherg.extension_host";
+const EDGE_REGISTRY_KEY: &str =
+    "SOFTWARE\\Microsoft\\Edge\\NativeMessagingHosts\\moe.ryoha.launcherg.extension_host";
 
 // PowerShellスクリプトを文字列として埋め込み
 const INSTALL_SCRIPT: &str = r#"# Native Messaging Host インストールスクリプト (Windows)
@@ -343,7 +345,9 @@ impl<T: AppConfigProvider> ExtensionInstallerUseCase<T> {
     }
 
     /// 拡張機能のmanifest.jsonを読み込んでメタデータを取得
-    pub async fn get_extension_manifest_info(&self) -> Result<ExtensionManifestInfo, ExtensionInstallerError> {
+    pub async fn get_extension_manifest_info(
+        &self,
+    ) -> Result<ExtensionManifestInfo, ExtensionInstallerError> {
         let source_dir = self.get_extension_source_dir();
         let manifest_path = source_dir.join("manifest.json");
 
@@ -355,21 +359,24 @@ impl<T: AppConfigProvider> ExtensionInstallerUseCase<T> {
             self.calculate_extension_id_from_key(key)?
         } else {
             return Err(ExtensionInstallerError::Package(
-                "Extension key is required in manifest.json".to_string()
+                "Extension key is required in manifest.json".to_string(),
             ));
         };
 
         Ok(ExtensionManifestInfo {
-            name: manifest.get("name")
+            name: manifest
+                .get("name")
                 .and_then(|n| n.as_str())
                 .unwrap_or("Launcherg DL Store Sync")
                 .to_string(),
-            version: manifest.get("version")
+            version: manifest
+                .get("version")
                 .and_then(|v| v.as_str())
                 .unwrap_or("1.0.0")
                 .to_string(),
             extension_id,
-            description: manifest.get("description")
+            description: manifest
+                .get("description")
                 .and_then(|d| d.as_str())
                 .unwrap_or("")
                 .to_string(),
@@ -377,7 +384,9 @@ impl<T: AppConfigProvider> ExtensionInstallerUseCase<T> {
     }
 
     /// 拡張機能をビルドしてZIPパッケージを生成
-    pub async fn generate_extension_package(&self) -> Result<ExtensionPackageInfo, ExtensionInstallerError> {
+    pub async fn generate_extension_package(
+        &self,
+    ) -> Result<ExtensionPackageInfo, ExtensionInstallerError> {
         let source_dir = self.get_extension_source_dir();
         let package_dir = self.get_package_dir();
         let package_path = self.get_package_path();
@@ -391,17 +400,19 @@ impl<T: AppConfigProvider> ExtensionInstallerUseCase<T> {
         }
 
         // Windows環境でのnpmコマンド名を決定
-        let npm_cmd = if cfg!(target_os = "windows") { "npm.cmd" } else { "npm" };
-        
+        let npm_cmd = if cfg!(target_os = "windows") {
+            "npm.cmd"
+        } else {
+            "npm"
+        };
+
         // npmの利用可能性をチェック
-        let npm_check = Command::new(npm_cmd)
-            .args(&["--version"])
-            .output();
-            
+        let npm_check = Command::new(npm_cmd).args(&["--version"]).output();
+
         match npm_check {
             Ok(output) if output.status.success() => {
                 // npm利用可能
-            },
+            }
             _ => {
                 return Err(ExtensionInstallerError::Build(
                     "npm が見つかりません。Node.js がインストールされていることを確認してください。".to_string()
@@ -417,7 +428,10 @@ impl<T: AppConfigProvider> ExtensionInstallerUseCase<T> {
 
         if !npm_install.status.success() {
             let error_msg = String::from_utf8_lossy(&npm_install.stderr);
-            return Err(ExtensionInstallerError::Build(format!("npm install failed: {}", error_msg)));
+            return Err(ExtensionInstallerError::Build(format!(
+                "npm install failed: {}",
+                error_msg
+            )));
         }
 
         // npm run build
@@ -428,13 +442,18 @@ impl<T: AppConfigProvider> ExtensionInstallerUseCase<T> {
 
         if !npm_build.status.success() {
             let error_msg = String::from_utf8_lossy(&npm_build.stderr);
-            return Err(ExtensionInstallerError::Build(format!("npm run build failed: {}", error_msg)));
+            return Err(ExtensionInstallerError::Build(format!(
+                "npm run build failed: {}",
+                error_msg
+            )));
         }
 
         // distディレクトリをZIPに圧縮
         let dist_dir = source_dir.join("dist");
         if !dist_dir.exists() {
-            return Err(ExtensionInstallerError::Package("dist directory not found after build".to_string()));
+            return Err(ExtensionInstallerError::Package(
+                "dist directory not found after build".to_string(),
+            ));
         }
 
         self.create_zip_from_directory(&dist_dir, &package_path)?;
@@ -450,7 +469,11 @@ impl<T: AppConfigProvider> ExtensionInstallerUseCase<T> {
     }
 
     /// ディレクトリをZIPファイルに圧縮
-    fn create_zip_from_directory(&self, source_dir: &Path, output_path: &Path) -> Result<(), ExtensionInstallerError> {
+    fn create_zip_from_directory(
+        &self,
+        source_dir: &Path,
+        output_path: &Path,
+    ) -> Result<(), ExtensionInstallerError> {
         let file = fs::File::create(output_path)?;
         let mut zip = zip::ZipWriter::new(file);
 
@@ -502,29 +525,43 @@ impl<T: AppConfigProvider> ExtensionInstallerUseCase<T> {
     }
 
     /// 公開鍵からExtension IDを計算
-    fn calculate_extension_id_from_key(&self, _key: &str) -> Result<String, ExtensionInstallerError> {
+    fn calculate_extension_id_from_key(
+        &self,
+        _key: &str,
+    ) -> Result<String, ExtensionInstallerError> {
         // 実際の計算は複雑なため、一旦エラーを返す
         // 本来はSHA256ハッシュの計算が必要
         return Err(ExtensionInstallerError::Package(
-            "Extension ID calculation not implemented. Please specify extension ID manually.".to_string()
+            "Extension ID calculation not implemented. Please specify extension ID manually."
+                .to_string(),
         ));
     }
 
     /// PowerShellスクリプトを実行してNative Messaging Hostをセットアップ
-    pub async fn setup_native_messaging_host(&self, extension_id: Option<String>) -> Result<String, ExtensionInstallerError> {
+    pub async fn setup_native_messaging_host(
+        &self,
+        extension_id: Option<String>,
+    ) -> Result<String, ExtensionInstallerError> {
         let source_dir = self.get_extension_source_dir();
-        let parent_dir = source_dir.parent()
-            .ok_or_else(|| ExtensionInstallerError::PowerShell("Cannot find parent directory".to_string()))?;
+        let parent_dir = source_dir.parent().ok_or_else(|| {
+            ExtensionInstallerError::PowerShell("Cannot find parent directory".to_string())
+        })?;
         let tauri_dir = parent_dir.join("src-tauri");
 
         // Native Messaging Hostの実行ファイルが存在するかチェック
         let exe_path = tauri_dir.join("native-messaging-host.exe");
-        let target_exe_path = tauri_dir.join("target").join("release").join("native-messaging-host.exe");
-        let debug_exe_path = tauri_dir.join("target").join("debug").join("native-messaging-host.exe");
+        let target_exe_path = tauri_dir
+            .join("target")
+            .join("release")
+            .join("native-messaging-host.exe");
+        let debug_exe_path = tauri_dir
+            .join("target")
+            .join("debug")
+            .join("native-messaging-host.exe");
 
         if !exe_path.exists() && !target_exe_path.exists() && !debug_exe_path.exists() {
             println!("Native Messaging Host executable not found, building...");
-            
+
             // Cargoでnative-messaging-hostをビルド
             let cargo_build = Command::new("cargo")
                 .args(&["build", "--release", "--bin", "native-messaging-host"])
@@ -533,9 +570,10 @@ impl<T: AppConfigProvider> ExtensionInstallerUseCase<T> {
 
             if !cargo_build.status.success() {
                 let error_msg = String::from_utf8_lossy(&cargo_build.stderr);
-                return Err(ExtensionInstallerError::Build(
-                    format!("Failed to build native-messaging-host: {}", error_msg)
-                ));
+                return Err(ExtensionInstallerError::Build(format!(
+                    "Failed to build native-messaging-host: {}",
+                    error_msg
+                )));
             }
 
             // ビルドされた実行ファイルをtauriディレクトリにコピー
@@ -544,7 +582,7 @@ impl<T: AppConfigProvider> ExtensionInstallerUseCase<T> {
                 println!("Copied native-messaging-host.exe to tauri directory");
             } else {
                 return Err(ExtensionInstallerError::Build(
-                    "Built executable not found in target/release directory".to_string()
+                    "Built executable not found in target/release directory".to_string(),
                 ));
             }
         }
@@ -554,8 +592,12 @@ impl<T: AppConfigProvider> ExtensionInstallerUseCase<T> {
             // Extension IDが指定されている場合は、直接インストールスクリプトを実行
             println!("Executing PowerShell script with Extension ID: {}", ext_id);
             // スクリプト内の$PSScriptRootを実際のパスに置換
-            INSTALL_SCRIPT.replace("$PSScriptRoot", tauri_dir.to_str().unwrap())
-                .replace("[Parameter(Mandatory=$true)]", "[Parameter(Mandatory=$false)]")
+            INSTALL_SCRIPT
+                .replace("$PSScriptRoot", tauri_dir.to_str().unwrap())
+                .replace(
+                    "[Parameter(Mandatory=$true)]",
+                    "[Parameter(Mandatory=$false)]",
+                )
                 + &format!("\n$ExtensionId = '{}'", ext_id)
         } else {
             // Extension IDが指定されていない場合は、auto-installスクリプトを使用
@@ -563,35 +605,38 @@ impl<T: AppConfigProvider> ExtensionInstallerUseCase<T> {
             // スクリプト内の$PSScriptRootを実際のパスに置換
             AUTO_INSTALL_SCRIPT.replace("$PSScriptRoot", tauri_dir.to_str().unwrap())
         };
-        
+
         // 一時ファイルにスクリプトを書き込み
         let mut temp_script = NamedTempFile::new()?;
         temp_script.write_all(script_content.as_bytes())?;
         temp_script.flush()?;
         let temp_script_path = temp_script.path();
-        
+
         let output = Command::new("powershell")
             .args(&[
                 "-NoProfile",
-                "-ExecutionPolicy", "Bypass",
+                "-ExecutionPolicy",
+                "Bypass",
                 "-File",
-                temp_script_path.to_str().unwrap()
+                temp_script_path.to_str().unwrap(),
             ])
             .output()?;
 
         let stdout = String::from_utf8_lossy(&output.stdout);
         let stderr = String::from_utf8_lossy(&output.stderr);
-        
+
         println!("PowerShell output:");
         println!("Exit code: {}", output.status.code().unwrap_or(-1));
         println!("Stdout: {}", stdout);
         println!("Stderr: {}", stderr);
 
         if !output.status.success() {
-            return Err(ExtensionInstallerError::PowerShell(
-                format!("PowerShell script failed:\nExit code: {}\nStdout: {}\nStderr: {}", 
-                    output.status.code().unwrap_or(-1), stdout, stderr)
-            ));
+            return Err(ExtensionInstallerError::PowerShell(format!(
+                "PowerShell script failed:\nExit code: {}\nStdout: {}\nStderr: {}",
+                output.status.code().unwrap_or(-1),
+                stdout,
+                stderr
+            )));
         }
 
         Ok(format!("セットアップが完了しました:\n{}", stdout))
@@ -606,7 +651,9 @@ impl<T: AppConfigProvider> ExtensionInstallerUseCase<T> {
     pub fn get_package_size(&self) -> Result<u64, ExtensionInstallerError> {
         let package_path = self.get_package_path();
         if !package_path.exists() {
-            return Err(ExtensionInstallerError::Package("Package file not found".to_string()));
+            return Err(ExtensionInstallerError::Package(
+                "Package file not found".to_string(),
+            ));
         }
 
         let metadata = fs::metadata(&package_path)?;
@@ -617,10 +664,10 @@ impl<T: AppConfigProvider> ExtensionInstallerUseCase<T> {
     pub async fn copy_extension_for_development(&self) -> Result<String, ExtensionInstallerError> {
         let source_dir = self.get_extension_source_dir();
         let package_dir = self.get_package_dir();
-        
+
         // 配布用ディレクトリを作成
         let dev_extension_dir = package_dir.join("dev-extension");
-        
+
         // 既存のディレクトリがあれば削除
         if dev_extension_dir.exists() {
             fs::remove_dir_all(&dev_extension_dir)?;
@@ -628,17 +675,19 @@ impl<T: AppConfigProvider> ExtensionInstallerUseCase<T> {
         fs::create_dir_all(&dev_extension_dir)?;
 
         // Windows環境でのnpmコマンド名を決定
-        let npm_cmd = if cfg!(target_os = "windows") { "npm.cmd" } else { "npm" };
-        
+        let npm_cmd = if cfg!(target_os = "windows") {
+            "npm.cmd"
+        } else {
+            "npm"
+        };
+
         // npmの利用可能性をチェック
-        let npm_check = Command::new(npm_cmd)
-            .args(&["--version"])
-            .output();
-            
+        let npm_check = Command::new(npm_cmd).args(&["--version"]).output();
+
         match npm_check {
             Ok(output) if output.status.success() => {
                 // npm利用可能
-            },
+            }
             _ => {
                 return Err(ExtensionInstallerError::Build(
                     "npm が見つかりません。Node.js がインストールされていることを確認してください。".to_string()
@@ -654,7 +703,10 @@ impl<T: AppConfigProvider> ExtensionInstallerUseCase<T> {
 
         if !npm_install.status.success() {
             let error_msg = String::from_utf8_lossy(&npm_install.stderr);
-            return Err(ExtensionInstallerError::Build(format!("npm install failed: {}", error_msg)));
+            return Err(ExtensionInstallerError::Build(format!(
+                "npm install failed: {}",
+                error_msg
+            )));
         }
 
         let npm_build = Command::new(npm_cmd)
@@ -664,13 +716,18 @@ impl<T: AppConfigProvider> ExtensionInstallerUseCase<T> {
 
         if !npm_build.status.success() {
             let error_msg = String::from_utf8_lossy(&npm_build.stderr);
-            return Err(ExtensionInstallerError::Build(format!("npm run build failed: {}", error_msg)));
+            return Err(ExtensionInstallerError::Build(format!(
+                "npm run build failed: {}",
+                error_msg
+            )));
         }
 
         // distディレクトリの存在確認
         let dist_dir = source_dir.join("dist");
         if !dist_dir.exists() {
-            return Err(ExtensionInstallerError::Package("dist directory not found after build".to_string()));
+            return Err(ExtensionInstallerError::Package(
+                "dist directory not found after build".to_string(),
+            ));
         }
 
         // distディレクトリの内容を再帰的にコピー
@@ -680,7 +737,11 @@ impl<T: AppConfigProvider> ExtensionInstallerUseCase<T> {
     }
 
     /// ディレクトリの内容を再帰的にコピー
-    fn copy_directory_contents(&self, src: &Path, dst: &Path) -> Result<(), ExtensionInstallerError> {
+    fn copy_directory_contents(
+        &self,
+        src: &Path,
+        dst: &Path,
+    ) -> Result<(), ExtensionInstallerError> {
         for entry in fs::read_dir(src)? {
             let entry = entry?;
             let src_path = entry.path();
@@ -707,15 +768,15 @@ impl<T: AppConfigProvider> ExtensionInstallerUseCase<T> {
         let dev_path = self.get_dev_extension_path();
         dev_path.exists() && dev_path.join("manifest.json").exists()
     }
-    
+
     /// レジストリキーの状態を確認
     #[cfg(target_os = "windows")]
     pub fn check_registry_keys(&self) -> Result<Vec<RegistryKeyInfo>, ExtensionInstallerError> {
         let chrome_key = CHROME_REGISTRY_KEY;
         let edge_key = EDGE_REGISTRY_KEY;
-        
+
         let mut results = Vec::new();
-        
+
         // Chrome レジストリキーを確認
         let hkcu = RegKey::predef(HKEY_CURRENT_USER);
         let chrome_info = match hkcu.open_subkey(chrome_key) {
@@ -727,16 +788,16 @@ impl<T: AppConfigProvider> ExtensionInstallerUseCase<T> {
                     value: value.ok(),
                     exists: true,
                 }
-            },
+            }
             Err(_) => RegistryKeyInfo {
                 browser: "Chrome".to_string(),
                 key_path: format!("HKCU\\{}", chrome_key),
                 value: None,
                 exists: false,
-            }
+            },
         };
         results.push(chrome_info);
-        
+
         // Edge レジストリキーを確認
         let edge_info = match hkcu.open_subkey(edge_key) {
             Ok(subkey) => {
@@ -747,28 +808,28 @@ impl<T: AppConfigProvider> ExtensionInstallerUseCase<T> {
                     value: value.ok(),
                     exists: true,
                 }
-            },
+            }
             Err(_) => RegistryKeyInfo {
                 browser: "Edge".to_string(),
                 key_path: format!("HKCU\\{}", edge_key),
                 value: None,
                 exists: false,
-            }
+            },
         };
         results.push(edge_info);
-        
+
         Ok(results)
     }
-    
+
     /// レジストリキーを削除
     #[cfg(target_os = "windows")]
     pub fn remove_registry_keys(&self) -> Result<Vec<String>, ExtensionInstallerError> {
         let chrome_key = CHROME_REGISTRY_KEY;
         let edge_key = EDGE_REGISTRY_KEY;
-        
+
         let mut results = Vec::new();
         let hkcu = RegKey::predef(HKEY_CURRENT_USER);
-        
+
         // Chrome レジストリキーを削除
         match hkcu.delete_subkey(chrome_key) {
             Ok(_) => results.push("Chrome registry key removed successfully".to_string()),
@@ -780,7 +841,7 @@ impl<T: AppConfigProvider> ExtensionInstallerUseCase<T> {
                 }
             }
         }
-        
+
         // Edge レジストリキーを削除
         match hkcu.delete_subkey(edge_key) {
             Ok(_) => results.push("Edge registry key removed successfully".to_string()),
@@ -792,14 +853,15 @@ impl<T: AppConfigProvider> ExtensionInstallerUseCase<T> {
                 }
             }
         }
-        
+
         // インストール済みマニフェストファイルも削除
         let source_dir = self.get_extension_source_dir();
-        let parent_dir = source_dir.parent()
-            .ok_or_else(|| ExtensionInstallerError::PowerShell("Cannot find parent directory".to_string()))?;
+        let parent_dir = source_dir.parent().ok_or_else(|| {
+            ExtensionInstallerError::PowerShell("Cannot find parent directory".to_string())
+        })?;
         let tauri_dir = parent_dir.join("src-tauri");
         let installed_manifest_path = tauri_dir.join("native-messaging-manifest-installed.json");
-        
+
         if installed_manifest_path.exists() {
             match fs::remove_file(&installed_manifest_path) {
                 Ok(_) => results.push("Installed manifest file removed".to_string()),
@@ -808,17 +870,21 @@ impl<T: AppConfigProvider> ExtensionInstallerUseCase<T> {
         } else {
             results.push("Installed manifest file not found".to_string());
         }
-        
+
         Ok(results)
     }
-    
+
     #[cfg(not(target_os = "windows"))]
     pub fn check_registry_keys(&self) -> Result<Vec<RegistryKeyInfo>, ExtensionInstallerError> {
-        Err(ExtensionInstallerError::PowerShell("Registry operations are only supported on Windows".to_string()))
+        Err(ExtensionInstallerError::PowerShell(
+            "Registry operations are only supported on Windows".to_string(),
+        ))
     }
-    
+
     #[cfg(not(target_os = "windows"))]
     pub fn remove_registry_keys(&self) -> Result<Vec<String>, ExtensionInstallerError> {
-        Err(ExtensionInstallerError::PowerShell("Registry operations are only supported on Windows".to_string()))
+        Err(ExtensionInstallerError::PowerShell(
+            "Registry operations are only supported on Windows".to_string(),
+        ))
     }
 }

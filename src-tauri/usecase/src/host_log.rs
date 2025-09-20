@@ -1,10 +1,10 @@
 use std::sync::Arc;
 
 use derive_new::new;
-use domain::{
-    native_host_log::{HostLogLevel, HostLogType, NativeHostLogRow},
+use domain::native_host_log::{HostLogLevel, HostLogType, NativeHostLogRow};
+use domain::repository::{
+    manager::RepositoryManager, native_host_log::NativeHostLogRepository, RepositoriesExt,
 };
-use domain::repository::{native_host_log::NativeHostLogRepository, RepositoriesExt, manager::RepositoryManager};
 use std::marker::PhantomData;
 
 #[derive(new)]
@@ -29,7 +29,11 @@ where
         level: Option<HostLogLevel>,
         typ: Option<HostLogType>,
     ) -> anyhow::Result<Vec<NativeHostLogRow>> {
-        self.manager.run(move |repos| Box::pin(async move { repos.host_log().list_logs(limit, offset, level, typ).await })).await
+        self.manager
+            .run(move |repos| {
+                Box::pin(async move { repos.host_log().list_logs(limit, offset, level, typ).await })
+            })
+            .await
     }
 
     pub async fn count_logs(
@@ -37,8 +41,10 @@ where
         level: Option<HostLogLevel>,
         typ: Option<HostLogType>,
     ) -> anyhow::Result<i64> {
-        self.manager.run(move |repos| Box::pin(async move { repos.host_log().count_logs(level, typ).await })).await
+        self.manager
+            .run(move |repos| {
+                Box::pin(async move { repos.host_log().count_logs(level, typ).await })
+            })
+            .await
     }
 }
-
-

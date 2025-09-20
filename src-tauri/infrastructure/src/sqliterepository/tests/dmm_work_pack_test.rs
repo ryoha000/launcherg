@@ -1,5 +1,7 @@
 use super::TestDatabase;
-use domain::repository::{RepositoriesExt, dmm_work_pack::DmmPackRepository, works::WorkRepository};
+use domain::repository::{
+    dmm_work_pack::DmmPackRepository, works::WorkRepository, RepositoriesExt,
+};
 use domain::works::NewWork;
 
 #[tokio::test]
@@ -8,7 +10,10 @@ async fn dmm_work_pack_normal_flows() {
     let repo = test_db.sqlite_repository();
 
     // prepare work
-    let wid = { let mut r = repo.work(); r.upsert(&NewWork { title: "W".into() }).await.unwrap() };
+    let wid = {
+        let mut r = repo.work();
+        r.upsert(&NewWork { title: "W".into() }).await.unwrap()
+    };
 
     // add
     {
@@ -31,5 +36,3 @@ async fn dmm_work_pack_normal_flows() {
         assert!(!r.exists(wid).await.unwrap());
     }
 }
-
-

@@ -3,11 +3,11 @@ mod tests {
     use mockall::predicate::*;
     use std::sync::Arc;
 
+    use crate::explored_cache::ExploredCacheUseCase;
+    use crate::repositorymock::TestRepositories;
     use domain::{
         explored_cache::ExploredCache, repository::explored_cache::MockExploredCacheRepository,
     };
-    use crate::repositorymock::TestRepositories;
-    use crate::explored_cache::ExploredCacheUseCase;
 
     fn create_test_explored_cache() -> ExploredCache {
         vec![
@@ -23,20 +23,17 @@ mod tests {
     async fn test_get_cache_success() {
         let mut mock_repo = MockExploredCacheRepository::new();
         let expected_cache = create_test_explored_cache();
-        mock_repo
-            .expect_get_all()
-            .times(1)
-            .returning(move || {
-                let value = expected_cache.clone();
-                Box::pin(async move {
-                    Ok::<_, anyhow::Error>(value)
-                })
-            });
+        mock_repo.expect_get_all().times(1).returning(move || {
+            let value = expected_cache.clone();
+            Box::pin(async move { Ok::<_, anyhow::Error>(value) })
+        });
 
         let mut mock_repositories = TestRepositories::default();
         mock_repositories.explored_cache = Arc::new(tauri::async_runtime::Mutex::new(mock_repo));
 
-        let use_case = ExploredCacheUseCase::new(Arc::new(crate::repositorymock::TestRepositoryManager::new(mock_repositories)));
+        let use_case = ExploredCacheUseCase::new(Arc::new(
+            crate::repositorymock::TestRepositoryManager::new(mock_repositories),
+        ));
 
         let result = use_case.get_cache().await;
         assert!(result.is_ok());
@@ -49,20 +46,17 @@ mod tests {
     async fn test_get_cache_empty() {
         let mut mock_repo = MockExploredCacheRepository::new();
         let empty_cache: ExploredCache = vec![].into_iter().collect();
-        mock_repo
-            .expect_get_all()
-            .times(1)
-            .returning(move || {
-                let value = empty_cache.clone();
-                Box::pin(async move {
-                    Ok::<_, anyhow::Error>(value)
-                })
-            });
+        mock_repo.expect_get_all().times(1).returning(move || {
+            let value = empty_cache.clone();
+            Box::pin(async move { Ok::<_, anyhow::Error>(value) })
+        });
 
         let mut mock_repositories = TestRepositories::default();
         mock_repositories.explored_cache = Arc::new(tauri::async_runtime::Mutex::new(mock_repo));
 
-        let use_case = ExploredCacheUseCase::new(Arc::new(crate::repositorymock::TestRepositoryManager::new(mock_repositories)));
+        let use_case = ExploredCacheUseCase::new(Arc::new(
+            crate::repositorymock::TestRepositoryManager::new(mock_repositories),
+        ));
 
         let result = use_case.get_cache().await;
         assert!(result.is_ok());
@@ -75,15 +69,10 @@ mod tests {
         let mut mock_repo = MockExploredCacheRepository::new();
         let existing_cache: ExploredCache =
             vec!["/path/to/game1".to_string()].into_iter().collect();
-        mock_repo
-            .expect_get_all()
-            .times(1)
-            .returning(move || {
-                let value = existing_cache.clone();
-                Box::pin(async move {
-                    Ok::<_, anyhow::Error>(value)
-                })
-            });
+        mock_repo.expect_get_all().times(1).returning(move || {
+            let value = existing_cache.clone();
+            Box::pin(async move { Ok::<_, anyhow::Error>(value) })
+        });
         mock_repo
             .expect_add()
             .with(eq(vec![
@@ -98,7 +87,9 @@ mod tests {
         let mut mock_repositories = TestRepositories::default();
         mock_repositories.explored_cache = Arc::new(tauri::async_runtime::Mutex::new(mock_repo));
 
-        let use_case = ExploredCacheUseCase::new(Arc::new(crate::repositorymock::TestRepositoryManager::new(mock_repositories)));
+        let use_case = ExploredCacheUseCase::new(Arc::new(
+            crate::repositorymock::TestRepositoryManager::new(mock_repositories),
+        ));
         let adding_paths = vec![
             "/path/to/game1".to_string(), // already exists, should be filtered out
             "/path/to/game2".to_string(),
@@ -116,15 +107,10 @@ mod tests {
             vec!["/path/to/game1".to_string(), "/path/to/game2".to_string()]
                 .into_iter()
                 .collect();
-        mock_repo
-            .expect_get_all()
-            .times(1)
-            .returning(move || {
-                let value = existing_cache.clone();
-                Box::pin(async move {
-                    Ok::<_, anyhow::Error>(value)
-                })
-            });
+        mock_repo.expect_get_all().times(1).returning(move || {
+            let value = existing_cache.clone();
+            Box::pin(async move { Ok::<_, anyhow::Error>(value) })
+        });
         mock_repo
             .expect_add()
             .with(eq(vec![].into_iter().collect::<ExploredCache>()))
@@ -134,7 +120,9 @@ mod tests {
         let mut mock_repositories = TestRepositories::default();
         mock_repositories.explored_cache = Arc::new(tauri::async_runtime::Mutex::new(mock_repo));
 
-        let use_case = ExploredCacheUseCase::new(Arc::new(crate::repositorymock::TestRepositoryManager::new(mock_repositories)));
+        let use_case = ExploredCacheUseCase::new(Arc::new(
+            crate::repositorymock::TestRepositoryManager::new(mock_repositories),
+        ));
         let adding_paths = vec!["/path/to/game1".to_string(), "/path/to/game2".to_string()];
 
         let result = use_case.add_cache(adding_paths).await;
@@ -145,15 +133,10 @@ mod tests {
     async fn test_add_cache_empty_input() {
         let mut mock_repo = MockExploredCacheRepository::new();
         let existing_cache = create_test_explored_cache();
-        mock_repo
-            .expect_get_all()
-            .times(1)
-            .returning(move || {
-                let value = existing_cache.clone();
-                Box::pin(async move {
-                    Ok::<_, anyhow::Error>(value)
-                })
-            });
+        mock_repo.expect_get_all().times(1).returning(move || {
+            let value = existing_cache.clone();
+            Box::pin(async move { Ok::<_, anyhow::Error>(value) })
+        });
         mock_repo
             .expect_add()
             .with(eq(vec![].into_iter().collect::<ExploredCache>()))
@@ -163,7 +146,9 @@ mod tests {
         let mut mock_repositories = TestRepositories::default();
         mock_repositories.explored_cache = Arc::new(tauri::async_runtime::Mutex::new(mock_repo));
 
-        let use_case = ExploredCacheUseCase::new(Arc::new(crate::repositorymock::TestRepositoryManager::new(mock_repositories)));
+        let use_case = ExploredCacheUseCase::new(Arc::new(
+            crate::repositorymock::TestRepositoryManager::new(mock_repositories),
+        ));
         let adding_paths = vec![];
 
         let result = use_case.add_cache(adding_paths).await;
@@ -174,15 +159,10 @@ mod tests {
     async fn test_add_cache_to_empty_cache() {
         let mut mock_repo = MockExploredCacheRepository::new();
         let empty_cache: ExploredCache = vec![].into_iter().collect();
-        mock_repo
-            .expect_get_all()
-            .times(1)
-            .returning(move || {
-                let value = empty_cache.clone();
-                Box::pin(async move {
-                    Ok::<_, anyhow::Error>(value)
-                })
-            });
+        mock_repo.expect_get_all().times(1).returning(move || {
+            let value = empty_cache.clone();
+            Box::pin(async move { Ok::<_, anyhow::Error>(value) })
+        });
         mock_repo
             .expect_add()
             .with(eq(vec![
@@ -197,7 +177,9 @@ mod tests {
         let mut mock_repositories = TestRepositories::default();
         mock_repositories.explored_cache = Arc::new(tauri::async_runtime::Mutex::new(mock_repo));
 
-        let use_case = ExploredCacheUseCase::new(Arc::new(crate::repositorymock::TestRepositoryManager::new(mock_repositories)));
+        let use_case = ExploredCacheUseCase::new(Arc::new(
+            crate::repositorymock::TestRepositoryManager::new(mock_repositories),
+        ));
         let adding_paths = vec!["/path/to/game1".to_string(), "/path/to/game2".to_string()];
 
         let result = use_case.add_cache(adding_paths).await;
@@ -207,15 +189,16 @@ mod tests {
     #[tokio::test]
     async fn test_repository_get_error_propagation() {
         let mut mock_repo = MockExploredCacheRepository::new();
-        mock_repo
-            .expect_get_all()
-            .times(1)
-            .returning(|| Box::pin(async move { Err::<_, anyhow::Error>(anyhow::anyhow!("Database error")) }));
+        mock_repo.expect_get_all().times(1).returning(|| {
+            Box::pin(async move { Err::<_, anyhow::Error>(anyhow::anyhow!("Database error")) })
+        });
 
         let mut mock_repositories = TestRepositories::default();
         mock_repositories.explored_cache = Arc::new(tauri::async_runtime::Mutex::new(mock_repo));
 
-        let use_case = ExploredCacheUseCase::new(Arc::new(crate::repositorymock::TestRepositoryManager::new(mock_repositories)));
+        let use_case = ExploredCacheUseCase::new(Arc::new(
+            crate::repositorymock::TestRepositoryManager::new(mock_repositories),
+        ));
 
         let result = use_case.get_cache().await;
         assert!(result.is_err());
@@ -225,25 +208,24 @@ mod tests {
     async fn test_repository_add_error_propagation() {
         let mut mock_repo = MockExploredCacheRepository::new();
         let existing_cache: ExploredCache = vec![].into_iter().collect();
-        mock_repo
-            .expect_get_all()
-            .times(1)
-            .returning(move || {
-                let value = existing_cache.clone();
-                Box::pin(async move {
-                    Ok::<_, anyhow::Error>(value)
-                })
-            });
+        mock_repo.expect_get_all().times(1).returning(move || {
+            let value = existing_cache.clone();
+            Box::pin(async move { Ok::<_, anyhow::Error>(value) })
+        });
         mock_repo
             .expect_add()
             .with(always())
             .times(1)
-            .returning(|_| Box::pin(async move { Err::<_, anyhow::Error>(anyhow::anyhow!("Database error")) }));
+            .returning(|_| {
+                Box::pin(async move { Err::<_, anyhow::Error>(anyhow::anyhow!("Database error")) })
+            });
 
         let mut mock_repositories = TestRepositories::default();
         mock_repositories.explored_cache = Arc::new(tauri::async_runtime::Mutex::new(mock_repo));
 
-        let use_case = ExploredCacheUseCase::new(Arc::new(crate::repositorymock::TestRepositoryManager::new(mock_repositories)));
+        let use_case = ExploredCacheUseCase::new(Arc::new(
+            crate::repositorymock::TestRepositoryManager::new(mock_repositories),
+        ));
         let adding_paths = vec!["/path/to/game1".to_string()];
 
         let result = use_case.add_cache(adding_paths).await;

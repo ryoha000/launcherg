@@ -13,11 +13,7 @@ pub struct LnkMetadata {
     pub icon: String,
 }
 
-use std::{
-    fs,
-    io::Write,
-    sync::Arc,
-};
+use std::{fs, io::Write, sync::Arc};
 
 use chrono::{DateTime, Local};
 use serde::{Deserialize, Serialize};
@@ -25,16 +21,11 @@ use tauri::{async_runtime::JoinHandle, AppHandle};
 use tauri_plugin_shell::process::CommandEvent;
 use tauri_plugin_shell::ShellExt;
 use walkdir::WalkDir;
-use windows::{
-    core::PCWSTR,
-};
+use windows::core::PCWSTR;
 
-use crate::service::save_path_resolver::{SavePathResolver, DirsSavePathResolver};
+use crate::service::save_path_resolver::{DirsSavePathResolver, SavePathResolver};
 
-use super::{
-    collection::CollectionElement,
-    Id,
-};
+use super::{collection::CollectionElement, Id};
 
 trait WString {
     #[allow(dead_code)]

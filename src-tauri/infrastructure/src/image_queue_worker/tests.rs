@@ -9,13 +9,16 @@ use domain::save_image_queue::{ImagePreprocess, ImageSaveQueueRow};
 use domain::Id;
 use std::sync::{Arc, Mutex};
 
-use domain::file::LnkMetadata;
-use domain::save_image_queue::ImageSrcType;
-use domain::service::save_path_resolver::{SavePathResolver, DirsSavePathResolver};
-use domain::windows::shell_link::MockShellLink;
-use domain::windows::{ process::MockProcessWindows, proctail::MockProcTail, proctail_manager::MockProcTailManagerTrait, WindowsExt };
 use crate::image_queue_worker::handler::{ImageQueueHostLogHandler, ImageQueuePubSubHandler};
+use domain::file::LnkMetadata;
 use domain::pubsub::PubSubService;
+use domain::save_image_queue::ImageSrcType;
+use domain::service::save_path_resolver::{DirsSavePathResolver, SavePathResolver};
+use domain::windows::shell_link::MockShellLink;
+use domain::windows::{
+    process::MockProcessWindows, proctail::MockProcTail,
+    proctail_manager::MockProcTailManagerTrait, WindowsExt,
+};
 
 use super::{resolver, types::SourceDecision};
 
@@ -83,8 +86,13 @@ async fn handle_http_download_のテスト() {
 
     #[derive(Clone)]
     enum Kind {
-        Download { path: &'static str, body: &'static [u8] },
-        ErrorInvalidUrl { url: &'static str },
+        Download {
+            path: &'static str,
+            body: &'static [u8],
+        },
+        ErrorInvalidUrl {
+            url: &'static str,
+        },
     }
 
     struct Case {
@@ -95,11 +103,16 @@ async fn handle_http_download_のテスト() {
     let cases = vec![
         Case {
             name: "png をダウンロード",
-            kind: Kind::Download { path: "/img.png", body: b"hello-image" },
+            kind: Kind::Download {
+                path: "/img.png",
+                body: b"hello-image",
+            },
         },
         Case {
             name: "HTTP 不正はエラー",
-            kind: Kind::ErrorInvalidUrl { url: "http://127.0.0.1:9/does-not-exist" },
+            kind: Kind::ErrorInvalidUrl {
+                url: "http://127.0.0.1:9/does-not-exist",
+            },
         },
     ];
 
@@ -109,12 +122,16 @@ async fn handle_http_download_のテスト() {
             Kind::Download { path, body } => {
                 wiremock::Mock::given(wiremock::matchers::method("GET"))
                     .and(wiremock::matchers::path(path))
-                    .respond_with(wiremock::ResponseTemplate::new(200).set_body_bytes(body.to_vec()))
+                    .respond_with(
+                        wiremock::ResponseTemplate::new(200).set_body_bytes(body.to_vec()),
+                    )
                     .mount(&server)
                     .await;
 
                 let url = format!("{}{}", &server.uri(), path);
-                let p = resolver::url::resolve_to_tmp(&resolver, &url).await.unwrap();
+                let p = resolver::url::resolve_to_tmp(&resolver, &url)
+                    .await
+                    .unwrap();
                 assert!(Path::new(&p).exists(), "{}", c.name);
                 let read = std::fs::read(&p).unwrap();
                 assert_eq!(read, body, "{}", c.name);
@@ -149,9 +166,17 @@ fn handle_shortcut_のテスト() {
     // Arrange
     #[derive(Clone)]
     enum MetaKind {
-        IconIco { meta_path: String, meta_icon: String },
-        IconEmpty { meta_path: String },
-        IconPng { meta_path: String, meta_icon: String },
+        IconIco {
+            meta_path: String,
+            meta_icon: String,
+        },
+        IconEmpty {
+            meta_path: String,
+        },
+        IconPng {
+            meta_path: String,
+            meta_icon: String,
+        },
         MetaError,
         MissingKey,
     }
@@ -173,28 +198,51 @@ fn handle_shortcut_のテスト() {
     let cases = vec![
         Case {
             name: "icon が .ico の場合は一時 png を返す",
-            meta: MetaKind::IconIco { meta_path: "C:/Program Files/App/app.exe".to_string(), meta_icon: ico_path.clone() },
+            meta: MetaKind::IconIco {
+                meta_path: "C:/Program Files/App/app.exe".to_string(),
+                meta_icon: ico_path.clone(),
+            },
         },
         Case {
             name: "icon 空ならデフォルトを書き出して Skip",
-            meta: MetaKind::IconEmpty { meta_path: "C:/Program Files/App/app.exe".to_string() },
+            meta: MetaKind::IconEmpty {
+                meta_path: "C:/Program Files/App/app.exe".to_string(),
+            },
         },
         Case {
             name: "meta icon が png はフォールバック",
-            meta: MetaKind::IconPng { meta_path: "C:/Program Files/App/app.exe".to_string(), meta_icon: "C:/images/icon.png".to_string() },
+            meta: MetaKind::IconPng {
+                meta_path: "C:/Program Files/App/app.exe".to_string(),
+                meta_icon: "C:/images/icon.png".to_string(),
+            },
         },
-        Case { name: "メタ取得エラーなら Skip とデフォルト書き出し", meta: MetaKind::MetaError },
-        Case { name: "メタにキーが無いなら Skip とデフォルト書き出し", meta: MetaKind::MissingKey },
+        Case {
+            name: "メタ取得エラーなら Skip とデフォルト書き出し",
+            meta: MetaKind::MetaError,
+        },
+        Case {
+            name: "メタにキーが無いなら Skip とデフォルト書き出し",
+            meta: MetaKind::MissingKey,
+        },
     ];
 
     for (i, c) in cases.into_iter().enumerate() {
         let mut mock = MockShellLink::new();
         match c.meta.clone() {
-            MetaKind::IconIco { meta_path, meta_icon } => {
+            MetaKind::IconIco {
+                meta_path,
+                meta_icon,
+            } => {
                 mock.expect_get_lnk_metadatas().returning(move |paths| {
                     let mut map = HashMap::new();
                     let key = paths[0].clone();
-                    map.insert(key, LnkMetadata { path: meta_path.to_string(), icon: meta_icon.to_string() });
+                    map.insert(
+                        key,
+                        LnkMetadata {
+                            path: meta_path.to_string(),
+                            icon: meta_icon.to_string(),
+                        },
+                    );
                     Ok(map)
                 });
             }
@@ -202,23 +250,40 @@ fn handle_shortcut_のテスト() {
                 mock.expect_get_lnk_metadatas().returning(move |paths| {
                     let mut map = HashMap::new();
                     let key = paths[0].clone();
-                    map.insert(key, LnkMetadata { path: meta_path.to_string(), icon: "".to_string() });
+                    map.insert(
+                        key,
+                        LnkMetadata {
+                            path: meta_path.to_string(),
+                            icon: "".to_string(),
+                        },
+                    );
                     Ok(map)
                 });
             }
-            MetaKind::IconPng { meta_path, meta_icon } => {
+            MetaKind::IconPng {
+                meta_path,
+                meta_icon,
+            } => {
                 mock.expect_get_lnk_metadatas().returning(move |paths| {
                     let mut map = HashMap::new();
                     let key = paths[0].clone();
-                    map.insert(key, LnkMetadata { path: meta_path.to_string(), icon: meta_icon.to_string() });
+                    map.insert(
+                        key,
+                        LnkMetadata {
+                            path: meta_path.to_string(),
+                            icon: meta_icon.to_string(),
+                        },
+                    );
                     Ok(map)
                 });
             }
             MetaKind::MetaError => {
-                mock.expect_get_lnk_metadatas().returning(|_| Err(anyhow::anyhow!("get meta failed")));
+                mock.expect_get_lnk_metadatas()
+                    .returning(|_| Err(anyhow::anyhow!("get meta failed")));
             }
             MetaKind::MissingKey => {
-                mock.expect_get_lnk_metadatas().returning(|_| Ok(HashMap::new()));
+                mock.expect_get_lnk_metadatas()
+                    .returning(|_| Ok(HashMap::new()));
             }
         }
 
@@ -294,10 +359,10 @@ async fn resolve_local_src_path_のテスト() {
 
     #[derive(Clone, Debug)]
     enum Expect {
-        PathExists,                  // 返ったパスが存在することだけ検証（例: URL）
-        PathEquals(&'static str),    // 返ったパスが期待文字列と一致
-        Skip,                        // Skip が返る（既定アイコンの書き出しは worker 側）
-        Error,                       // エラーであること
+        PathExists,               // 返ったパスが存在することだけ検証（例: URL）
+        PathEquals(&'static str), // 返ったパスが期待文字列と一致
+        Skip,                     // Skip が返る（既定アイコンの書き出しは worker 側）
+        Error,                    // エラーであること
     }
 
     struct Case {
@@ -308,11 +373,35 @@ async fn resolve_local_src_path_のテスト() {
 
     let url_ok = format!("{}/a.png", server.uri());
     let cases = vec![
-        Case { name: "HTTP はダウンロードして一時パス", arrange: Arrange::UrlOk, expect: Expect::PathExists },
-        Case { name: "Path はそのまま返す", arrange: Arrange::Path { src: "C:/x.png" }, expect: Expect::PathEquals("C:/x.png") },
-        Case { name: "Shortcut は png はフォールバック", arrange: Arrange::ShortcutPng, expect: Expect::Skip },
-        Case { name: "Exe は sidecar の挙動により Path または Skip", arrange: Arrange::ExeNotExists { exe: "C:/not-exists/app.exe" }, expect: Expect::Skip },
-        Case { name: "HTTP 失敗はエラー", arrange: Arrange::UrlBad { url: "http://127.0.0.1:9/" }, expect: Expect::Error },
+        Case {
+            name: "HTTP はダウンロードして一時パス",
+            arrange: Arrange::UrlOk,
+            expect: Expect::PathExists,
+        },
+        Case {
+            name: "Path はそのまま返す",
+            arrange: Arrange::Path { src: "C:/x.png" },
+            expect: Expect::PathEquals("C:/x.png"),
+        },
+        Case {
+            name: "Shortcut は png はフォールバック",
+            arrange: Arrange::ShortcutPng,
+            expect: Expect::Skip,
+        },
+        Case {
+            name: "Exe は sidecar の挙動により Path または Skip",
+            arrange: Arrange::ExeNotExists {
+                exe: "C:/not-exists/app.exe",
+            },
+            expect: Expect::Skip,
+        },
+        Case {
+            name: "HTTP 失敗はエラー",
+            arrange: Arrange::UrlBad {
+                url: "http://127.0.0.1:9/",
+            },
+            expect: Expect::Error,
+        },
     ];
 
     for (i, c) in cases.into_iter().enumerate() {
@@ -323,26 +412,52 @@ async fn resolve_local_src_path_のテスト() {
                 mock.expect_get_lnk_metadatas().returning(|paths| {
                     let mut map = HashMap::new();
                     let key = paths[0].clone();
-                    map.insert(key, LnkMetadata { path: "C:/Program Files/App/app.exe".to_string(), icon: "C:/images/icon.png".to_string() });
+                    map.insert(
+                        key,
+                        LnkMetadata {
+                            path: "C:/Program Files/App/app.exe".to_string(),
+                            icon: "C:/images/icon.png".to_string(),
+                        },
+                    );
                     Ok(map)
                 });
             }
             _ => {
-                mock.expect_get_lnk_metadatas().returning(|_| Ok(HashMap::new()));
+                mock.expect_get_lnk_metadatas()
+                    .returning(|_| Ok(HashMap::new()));
             }
         }
         let win = TestWindows::new(mock);
         let _dst_dir = TempDir::new().unwrap();
-        let _dst_path = TempDir::new().unwrap().path().join(format!("dst_{}.png", i));
+        let _dst_path = TempDir::new()
+            .unwrap()
+            .path()
+            .join(format!("dst_{}.png", i));
         let _dst = _dst_path.to_string_lossy();
 
         // Act
         let res = match c.arrange.clone() {
-            Arrange::UrlOk => resolver::resolve_source(&win, &resolver, &url_ok, ImageSrcType::Url).await,
-            Arrange::Path { src } => resolver::resolve_source(&win, &resolver, src, ImageSrcType::Path).await,
-            Arrange::ShortcutPng => resolver::resolve_source(&win, &resolver, "C:/links/app.lnk", ImageSrcType::Shortcut).await,
-            Arrange::ExeNotExists { exe } => resolver::resolve_source(&win, &resolver, exe, ImageSrcType::Exe).await,
-            Arrange::UrlBad { url } => resolver::resolve_source(&win, &resolver, url, ImageSrcType::Url).await,
+            Arrange::UrlOk => {
+                resolver::resolve_source(&win, &resolver, &url_ok, ImageSrcType::Url).await
+            }
+            Arrange::Path { src } => {
+                resolver::resolve_source(&win, &resolver, src, ImageSrcType::Path).await
+            }
+            Arrange::ShortcutPng => {
+                resolver::resolve_source(
+                    &win,
+                    &resolver,
+                    "C:/links/app.lnk",
+                    ImageSrcType::Shortcut,
+                )
+                .await
+            }
+            Arrange::ExeNotExists { exe } => {
+                resolver::resolve_source(&win, &resolver, exe, ImageSrcType::Exe).await
+            }
+            Arrange::UrlBad { url } => {
+                resolver::resolve_source(&win, &resolver, url, ImageSrcType::Url).await
+            }
         };
 
         // Assert
@@ -391,7 +506,8 @@ async fn resolve_local_src_pathに実際のファイルを渡してアイコン�
         let exe_dir = std::env::current_exe()
             .ok()
             .and_then(|p| p.parent().map(|p| p.to_path_buf()))
-            .ok_or_else(|| anyhow::anyhow!("failed to resolve current exe directory")).unwrap();
+            .ok_or_else(|| anyhow::anyhow!("failed to resolve current exe directory"))
+            .unwrap();
         let dst = exe_dir.join("extract-icon.exe");
         const BYTES: &[u8] = include_bytes!("../../../bin/extract-icon-x86_64-pc-windows-msvc.exe");
         if !dst.exists() {
@@ -418,16 +534,28 @@ async fn resolve_local_src_pathに実際のファイルを渡してアイコン�
     }
 
     let cases = vec![
-        Case { name: "入力がlnkの場合", src_path: lnk.to_string_lossy().to_string(), src_type: ImageSrcType::Shortcut },
-        Case { name: "入力がexeの場合", src_path: exe.to_string_lossy().to_string(), src_type: ImageSrcType::Exe },
-        Case { name: "入力がurlの場合", src_path: url.to_string_lossy().to_string(), src_type: ImageSrcType::Shortcut },
+        Case {
+            name: "入力がlnkの場合",
+            src_path: lnk.to_string_lossy().to_string(),
+            src_type: ImageSrcType::Shortcut,
+        },
+        Case {
+            name: "入力がexeの場合",
+            src_path: exe.to_string_lossy().to_string(),
+            src_type: ImageSrcType::Exe,
+        },
+        Case {
+            name: "入力がurlの場合",
+            src_path: url.to_string_lossy().to_string(),
+            src_type: ImageSrcType::Shortcut,
+        },
     ];
 
     let resolver = Arc::new(DirsSavePathResolver::default());
 
     let windows = RealWindows::new();
 
-    for c in cases { 
+    for c in cases {
         // Act
         let result = resolver::resolve_source(&windows, &*resolver, &c.src_path, c.src_type).await;
 
@@ -644,9 +772,15 @@ async fn drain_until_empty_url経由_一時ファイル削除される() {
 async fn drain_until_empty_イベントハンドラ_pubsub通知が発火する() {
     // Arrange
     #[derive(Clone, Default)]
-    struct MockPubSub { events: std::sync::Arc<std::sync::Mutex<Vec<(String, serde_json::Value)>>> }
+    struct MockPubSub {
+        events: std::sync::Arc<std::sync::Mutex<Vec<(String, serde_json::Value)>>>,
+    }
     impl PubSubService for MockPubSub {
-        fn notify<T: serde::Serialize + Clone>(&self, event: &str, payload: T) -> Result<(), anyhow::Error> {
+        fn notify<T: serde::Serialize + Clone>(
+            &self,
+            event: &str,
+            payload: T,
+        ) -> Result<(), anyhow::Error> {
             let v = serde_json::to_value(payload)?;
             self.events.lock().unwrap().push((event.to_string(), v));
             Ok(())
@@ -665,7 +799,14 @@ async fn drain_until_empty_イベントハンドラ_pubsub通知が発火する(
     write_small_png(&src.to_string_lossy(), 10, 10);
     let dst = tmp.path().join("dst_pubsub.png");
 
-    let row = ImageSaveQueueRow { id: Id::new(101), src: src.to_string_lossy().to_string(), src_type: ImageSrcType::Path, dst_path: dst.to_string_lossy().to_string(), preprocess: ImagePreprocess::None, last_error: None };
+    let row = ImageSaveQueueRow {
+        id: Id::new(101),
+        src: src.to_string_lossy().to_string(),
+        src_type: ImageSrcType::Path,
+        dst_path: dst.to_string_lossy().to_string(),
+        preprocess: ImagePreprocess::None,
+        last_error: None,
+    };
 
     // list/mark expectations
     let counter = std::sync::Arc::new(std::sync::Mutex::new(0));
@@ -679,17 +820,22 @@ async fn drain_until_empty_イベントハンドラ_pubsub通知が発火する(
             *n += 1;
             std::pin::Pin::from(Box::new(async move { Ok(ret) }))
         });
-        iq.expect_mark_finished().times(1).returning(|_| std::pin::Pin::from(Box::new(async { Ok(()) })));
+        iq.expect_mark_finished()
+            .times(1)
+            .returning(|_| std::pin::Pin::from(Box::new(async { Ok(()) })));
         iq.expect_mark_failed().times(0);
     }
 
     let mut mock = MockShellLink::new();
-    mock.expect_get_lnk_metadatas().returning(|_| Ok(std::collections::HashMap::new()));
+    mock.expect_get_lnk_metadatas()
+        .returning(|_| Ok(std::collections::HashMap::new()));
     let windows = std::sync::Arc::new(TestWindows::new(mock));
 
     let pubsub = MockPubSub::default();
     let handler = std::sync::Arc::new(ImageQueuePubSubHandler::new(pubsub.clone()));
-    let worker = crate::image_queue_worker::ImageQueueWorker::new_with_event_handler(manager, resolver, windows, handler);
+    let worker = crate::image_queue_worker::ImageQueueWorker::new_with_event_handler(
+        manager, resolver, windows, handler,
+    );
 
     // Act
     worker.drain_until_empty().await.unwrap();
@@ -698,8 +844,17 @@ async fn drain_until_empty_イベントハンドラ_pubsub通知が発火する(
     let events = pubsub.events.lock().unwrap();
     let names: Vec<String> = events.iter().map(|(n, _)| n.clone()).collect();
     // 最低限必要なイベント名が含まれること
-    for expected in ["imageQueueWorkerStarted", "imageQueueItemStarted", "imageQueueItemSucceeded", "imageQueueWorkerFinished"] {
-        assert!(names.iter().any(|n| n == expected), "missing event: {}", expected);
+    for expected in [
+        "imageQueueWorkerStarted",
+        "imageQueueItemStarted",
+        "imageQueueItemSucceeded",
+        "imageQueueWorkerFinished",
+    ] {
+        assert!(
+            names.iter().any(|n| n == expected),
+            "missing event: {}",
+            expected
+        );
     }
 }
 
@@ -717,7 +872,14 @@ async fn drain_until_empty_イベントハンドラ_host_log_が書き込まれ�
     let src = src_dir.path().join("src_hostlog.png");
     write_small_png(&src.to_string_lossy(), 10, 10);
     let dst = tmp.path().join("dst_hostlog.png");
-    let row = ImageSaveQueueRow { id: Id::new(102), src: src.to_string_lossy().to_string(), src_type: ImageSrcType::Path, dst_path: dst.to_string_lossy().to_string(), preprocess: ImagePreprocess::None, last_error: None };
+    let row = ImageSaveQueueRow {
+        id: Id::new(102),
+        src: src.to_string_lossy().to_string(),
+        src_type: ImageSrcType::Path,
+        dst_path: dst.to_string_lossy().to_string(),
+        preprocess: ImagePreprocess::None,
+        last_error: None,
+    };
 
     let counter = std::sync::Arc::new(std::sync::Mutex::new(0));
     {
@@ -730,21 +892,29 @@ async fn drain_until_empty_イベントハンドラ_host_log_が書き込まれ�
             *n += 1;
             std::pin::Pin::from(Box::new(async move { Ok(ret) }))
         });
-        iq.expect_mark_finished().times(1).returning(|_| std::pin::Pin::from(Box::new(async { Ok(()) })));
+        iq.expect_mark_finished()
+            .times(1)
+            .returning(|_| std::pin::Pin::from(Box::new(async { Ok(()) })));
         iq.expect_mark_failed().times(0);
     }
     {
         // 4回のログ呼び出し（開始/アイテム開始/成功/終了）を期待
         let mut host_log = repos.host_log.lock().await;
-        host_log.expect_insert_log().times(4).returning(|_, _, _| std::pin::Pin::from(Box::new(async { Ok(()) })));
+        host_log
+            .expect_insert_log()
+            .times(4)
+            .returning(|_, _, _| std::pin::Pin::from(Box::new(async { Ok(()) })));
     }
 
     let mut mock = MockShellLink::new();
-    mock.expect_get_lnk_metadatas().returning(|_| Ok(std::collections::HashMap::new()));
+    mock.expect_get_lnk_metadatas()
+        .returning(|_| Ok(std::collections::HashMap::new()));
     let windows = std::sync::Arc::new(TestWindows::new(mock));
 
     let handler = std::sync::Arc::new(ImageQueueHostLogHandler::new(manager.clone()));
-    let worker = crate::image_queue_worker::ImageQueueWorker::new_with_event_handler(manager, resolver, windows, handler);
+    let worker = crate::image_queue_worker::ImageQueueWorker::new_with_event_handler(
+        manager, resolver, windows, handler,
+    );
 
     // Act & Assert
     worker.drain_until_empty().await.unwrap();

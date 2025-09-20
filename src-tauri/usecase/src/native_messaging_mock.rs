@@ -8,5 +8,3 @@ mockall::mock! {
         async fn set_config(&self, config: &domain::extension::ExtensionConfig) -> Result<String, Box<dyn std::error::Error + Send + Sync>>;
     }
 }
-
-

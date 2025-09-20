@@ -9,7 +9,12 @@ pub struct WorkCandidate {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
-pub enum CandidateKind { Exe, Shortcut, Folder, Other }
+pub enum CandidateKind {
+    Exe,
+    Shortcut,
+    Folder,
+    Other,
+}
 
 #[derive(new, Clone, Debug, PartialEq)]
 pub struct ResolvedWork {
@@ -60,7 +65,9 @@ pub trait FileSystem {
 
 #[trait_variant::make(Send)]
 #[mockall::automock]
-pub trait MetadataExtractor { fn enrich(&self, c: WorkCandidate) -> anyhow::Result<WorkCandidateOrResolvedWork>; }
+pub trait MetadataExtractor {
+    fn enrich(&self, c: WorkCandidate) -> anyhow::Result<WorkCandidateOrResolvedWork>;
+}
 
 pub enum WorkCandidateOrResolvedWork {
     Candidate(WorkCandidate),
@@ -69,30 +76,6 @@ pub enum WorkCandidateOrResolvedWork {
 
 #[trait_variant::make(Send)]
 #[mockall::automock]
-pub trait DuplicateResolver { fn resolve(&self, items: Vec<ResolvedWork>) -> Vec<ResolvedWork>; }
-
-// FSM スケッチ型
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum ScanState { Idle, EnumeratingRoots, WalkingFs, Classifying, Enriching, Deduping, Persisting, PostProcessing, Finished, Aborted(String) }
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum ScanEvent {
-    Start,
-    BatchReady { phase: &'static str, count: usize },
-    BatchProcessed { phase: &'static str, took_ms: u128 },
-    FatalError(String),
-    Cancel,
+pub trait DuplicateResolver {
+    fn resolve(&self, items: Vec<ResolvedWork>) -> Vec<ResolvedWork>;
 }
-
-#[derive(Debug, Clone, PartialEq)]
-pub enum ItemState {
-    Pending(WorkCandidate),
-    Enriching(WorkCandidate),
-    Validating(ResolvedWork),
-    ReadyForPersist(ResolvedWork),
-    Skipped { reason: String },
-    DroppedDuplicate { key: String },
-    Completed(PersistedWork),
-}
-
-

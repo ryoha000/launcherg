@@ -2,22 +2,32 @@ use std::sync::Arc;
 
 use derive_new::new;
 
-use domain::{collection::CollectionElement, thumbnail::ThumbnailService, icon::IconService, Id};
-use domain::windows::WindowsExt;
+use domain::service::save_path_resolver::{DirsSavePathResolver, SavePathResolver};
 use domain::windows::shell_link::ShellLink as _;
+use domain::windows::WindowsExt;
+use domain::{collection::CollectionElement, icon::IconService, thumbnail::ThumbnailService, Id};
 use tauri::AppHandle;
-use domain::service::save_path_resolver::{SavePathResolver, DirsSavePathResolver};
 
 #[derive(new)]
-pub struct ImageUseCase<TS: ThumbnailService, IS: IconService, W: WindowsExt + Send + Sync + 'static> {
+pub struct ImageUseCase<
+    TS: ThumbnailService,
+    IS: IconService,
+    W: WindowsExt + Send + Sync + 'static,
+> {
     thumbnail_service: Arc<TS>,
     icon_service: Arc<IS>,
     resolver: Arc<dyn SavePathResolver>,
     windows: Arc<W>,
 }
 
-impl<TS: ThumbnailService, IS: IconService, W: WindowsExt + Send + Sync + 'static> ImageUseCase<TS, IS, W> {
-    pub async fn save_thumbnail(&self, id: &Id<CollectionElement>, url: &str) -> anyhow::Result<()> {
+impl<TS: ThumbnailService, IS: IconService, W: WindowsExt + Send + Sync + 'static>
+    ImageUseCase<TS, IS, W>
+{
+    pub async fn save_thumbnail(
+        &self,
+        id: &Id<CollectionElement>,
+        url: &str,
+    ) -> anyhow::Result<()> {
         self.thumbnail_service.save_thumbnail(id, url).await
     }
 
@@ -39,7 +49,11 @@ impl<TS: ThumbnailService, IS: IconService, W: WindowsExt + Send + Sync + 'stati
     }
 
     // icon
-    async fn save_icon_from_path(&self, id: &Id<CollectionElement>, source_path: &str) -> anyhow::Result<()> {
+    async fn save_icon_from_path(
+        &self,
+        id: &Id<CollectionElement>,
+        source_path: &str,
+    ) -> anyhow::Result<()> {
         self.icon_service.save_icon_from_path(id, source_path).await
     }
 
@@ -58,7 +72,10 @@ impl<TS: ThumbnailService, IS: IconService, W: WindowsExt + Send + Sync + 'stati
         if let Some(path) = exe_path.as_ref() {
             icon_source = Some(path.clone());
         } else if let Some(lnk) = lnk_path.as_ref() {
-            let metadatas = self.windows.shell_link().get_lnk_metadatas(vec![lnk.clone()])?;
+            let metadatas = self
+                .windows
+                .shell_link()
+                .get_lnk_metadatas(vec![lnk.clone()])?;
             if let Some(metadata) = metadatas.get(lnk) {
                 if metadata.icon.to_lowercase().ends_with("ico") {
                     icon_source = Some(metadata.icon.clone());
@@ -75,7 +92,11 @@ impl<TS: ThumbnailService, IS: IconService, W: WindowsExt + Send + Sync + 'stati
     }
 
     // 既存PNGを上書き（ユーザー指定PNG用）
-    pub async fn overwrite_icon_png(&self, id: &Id<CollectionElement>, png_path: &str) -> anyhow::Result<()> {
+    pub async fn overwrite_icon_png(
+        &self,
+        id: &Id<CollectionElement>,
+        png_path: &str,
+    ) -> anyhow::Result<()> {
         let dst = self.resolver.icon_png_path(id.value);
         std::fs::copy(png_path, dst)?;
         Ok(())

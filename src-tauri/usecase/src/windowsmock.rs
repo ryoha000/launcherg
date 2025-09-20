@@ -38,5 +38,3 @@ mockall::mock! {
         fn shell_link(&self) -> &domain::windows::shell_link::MockShellLink;
     }
 }
-
-

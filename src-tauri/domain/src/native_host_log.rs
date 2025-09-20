@@ -2,7 +2,12 @@ use crate::Id;
 use chrono::{DateTime, Local};
 
 #[derive(Debug, Clone, Copy)]
-pub enum HostLogLevel { Debug = 0, Info = 1, Warn = 2, Error = 3 }
+pub enum HostLogLevel {
+    Debug = 0,
+    Info = 1,
+    Warn = 2,
+    Error = 3,
+}
 
 #[derive(Debug, Clone, Copy)]
 pub enum HostLogType {
@@ -27,5 +32,3 @@ pub struct NativeHostLogRow {
     pub message: String,
     pub created_at: DateTime<Local>,
 }
-
-

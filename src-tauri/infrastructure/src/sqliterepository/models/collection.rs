@@ -1,12 +1,12 @@
-use chrono::{Local};
+use chrono::Local;
 use sqlx::types::chrono::NaiveDateTime;
 use sqlx::FromRow;
 
 use domain::{
     collection::{
-        CollectionElement, CollectionElementInfo, CollectionElementInstall, CollectionElementLike,
-        CollectionElementPaths, CollectionElementPlay, CollectionElementThumbnail,
-        CollectionElementErogamescape,
+        CollectionElement, CollectionElementErogamescape, CollectionElementInfo,
+        CollectionElementInstall, CollectionElementLike, CollectionElementPaths,
+        CollectionElementPlay, CollectionElementThumbnail,
     },
     Id,
 };
@@ -292,7 +292,15 @@ impl From<CollectionElementDetailsRow> for CollectionElement {
         );
 
         if let Some(info_id) = r.info_id {
-            if let (Some(gamename_ruby), Some(brandname), Some(brandname_ruby), Some(sellday), Some(is_nukige), Some(created), Some(updated)) = (
+            if let (
+                Some(gamename_ruby),
+                Some(brandname),
+                Some(brandname_ruby),
+                Some(sellday),
+                Some(is_nukige),
+                Some(created),
+                Some(updated),
+            ) = (
                 r.info_gamename_ruby,
                 r.info_brandname,
                 r.info_brandname_ruby,
@@ -329,7 +337,11 @@ impl From<CollectionElementDetailsRow> for CollectionElement {
         }
 
         if let Some(install_id) = r.install_id {
-            if let (Some(install_at), Some(created), Some(updated)) = (r.install_install_at, r.install_created_at, r.install_updated_at) {
+            if let (Some(install_at), Some(created), Some(updated)) = (
+                r.install_install_at,
+                r.install_created_at,
+                r.install_updated_at,
+            ) {
                 element.install = Some(CollectionElementInstall::new(
                     Id::new(install_id),
                     id.clone(),
@@ -341,7 +353,9 @@ impl From<CollectionElementDetailsRow> for CollectionElement {
         }
 
         if let Some(play_id) = r.play_id {
-            if let (Some(last_play_at), Some(created), Some(updated)) = (r.play_last_play_at, r.play_created_at, r.play_updated_at) {
+            if let (Some(last_play_at), Some(created), Some(updated)) =
+                (r.play_last_play_at, r.play_created_at, r.play_updated_at)
+            {
                 element.play = Some(CollectionElementPlay::new(
                     Id::new(play_id),
                     id.clone(),
@@ -353,7 +367,9 @@ impl From<CollectionElementDetailsRow> for CollectionElement {
         }
 
         if let Some(like_id) = r.like_id {
-            if let (Some(like_at), Some(created), Some(updated)) = (r.like_like_at, r.like_created_at, r.like_updated_at) {
+            if let (Some(like_at), Some(created), Some(updated)) =
+                (r.like_like_at, r.like_created_at, r.like_updated_at)
+            {
                 element.like = Some(CollectionElementLike::new(
                     Id::new(like_id),
                     id.clone(),
@@ -365,7 +381,8 @@ impl From<CollectionElementDetailsRow> for CollectionElement {
         }
 
         if let Some(thumbnail_id) = r.thumbnail_id {
-            if let (Some(created), Some(updated)) = (r.thumbnail_created_at, r.thumbnail_updated_at) {
+            if let (Some(created), Some(updated)) = (r.thumbnail_created_at, r.thumbnail_updated_at)
+            {
                 element.thumbnail = Some(CollectionElementThumbnail::new(
                     Id::new(thumbnail_id),
                     id.clone(),
@@ -378,7 +395,9 @@ impl From<CollectionElementDetailsRow> for CollectionElement {
         }
 
         if let Some(egs_row_id) = r.egs_id {
-            if let (Some(egs_id), Some(created), Some(updated)) = (r.egs_erogamescape_id, r.egs_created_at, r.egs_updated_at) {
+            if let (Some(egs_id), Some(created), Some(updated)) =
+                (r.egs_erogamescape_id, r.egs_created_at, r.egs_updated_at)
+            {
                 element.erogamescape = Some(CollectionElementErogamescape::new(
                     Id::new(egs_row_id),
                     id.clone(),
@@ -392,4 +411,3 @@ impl From<CollectionElementDetailsRow> for CollectionElement {
         element
     }
 }
-

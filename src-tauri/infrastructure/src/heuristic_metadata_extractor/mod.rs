@@ -1,20 +1,19 @@
 use std::sync::Arc;
 
+use domain::game_matcher::{extract_file_info, GameMatcher};
 use domain::scan::{MetadataExtractor, ResolvedWork, WorkCandidate, WorkCandidateOrResolvedWork};
-use domain::game_matcher::{GameMatcher, extract_file_info};
 
-pub struct HeuristicMetadataExtractor
-{
+pub struct HeuristicMetadataExtractor {
     matcher: Arc<dyn GameMatcher + Send + Sync>,
 }
 
-impl HeuristicMetadataExtractor
-{
-    pub fn new(matcher: Arc<dyn GameMatcher + Send + Sync>) -> Self { Self { matcher } }
+impl HeuristicMetadataExtractor {
+    pub fn new(matcher: Arc<dyn GameMatcher + Send + Sync>) -> Self {
+        Self { matcher }
+    }
 }
 
-impl MetadataExtractor for HeuristicMetadataExtractor
-{
+impl MetadataExtractor for HeuristicMetadataExtractor {
     fn enrich(&self, c: WorkCandidate) -> anyhow::Result<WorkCandidateOrResolvedWork> {
         // GameMatcher を用いてファイルパスから EGS 候補を同定
         // ファイル情報抽出（正規化含む）
@@ -34,7 +33,12 @@ impl MetadataExtractor for HeuristicMetadataExtractor
 
         match erogame_scape_game {
             Some((one, distance)) => {
-                return Ok(WorkCandidateOrResolvedWork::Resolved(ResolvedWork::new(c, one.gamename, one.id, distance)));
+                return Ok(WorkCandidateOrResolvedWork::Resolved(ResolvedWork::new(
+                    c,
+                    one.gamename,
+                    one.id,
+                    distance,
+                )));
             }
             None => {
                 return Ok(WorkCandidateOrResolvedWork::Candidate(c));
@@ -45,4 +49,3 @@ impl MetadataExtractor for HeuristicMetadataExtractor
 
 #[cfg(test)]
 mod test;
-

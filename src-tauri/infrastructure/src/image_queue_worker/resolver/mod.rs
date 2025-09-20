@@ -2,20 +2,20 @@ use domain::save_image_queue::ImageSrcType;
 use domain::service::save_path_resolver::SavePathResolver;
 use domain::windows::WindowsExt;
 
-use crate::image_queue_worker::types::{LocalSource, SourceDecision, Cleanup};
+use crate::image_queue_worker::types::{Cleanup, LocalSource, SourceDecision};
 
-pub mod url;
-pub mod path;
-pub mod shortcut;
 pub mod exe;
 #[cfg(test)]
-mod url_test;
+mod exe_test;
+pub mod path;
 #[cfg(test)]
 mod path_test;
+pub mod shortcut;
 #[cfg(test)]
 mod shortcut_test;
+pub mod url;
 #[cfg(test)]
-mod exe_test;
+mod url_test;
 
 pub async fn resolve_source<W: WindowsExt>(
     windows: &W,
@@ -27,7 +27,10 @@ pub async fn resolve_source<W: WindowsExt>(
         ImageSrcType::Url => {
             let tmp = url::resolve_to_tmp(resolver, src).await?;
             let cleanup_path = tmp.clone();
-            SourceDecision::Use(LocalSource::new(tmp, Cleanup::DeleteOnDrop { path: cleanup_path }))
+            SourceDecision::Use(LocalSource::new(
+                tmp,
+                Cleanup::DeleteOnDrop { path: cleanup_path },
+            ))
         }
         ImageSrcType::Path => {
             SourceDecision::Use(LocalSource::new(path::resolve(src), Cleanup::None))
@@ -49,7 +52,10 @@ pub async fn resolve_source_with_shortcut_metas<W: WindowsExt>(
         ImageSrcType::Url => {
             let tmp = url::resolve_to_tmp(resolver, src).await?;
             let cleanup_path = tmp.clone();
-            SourceDecision::Use(LocalSource::new(tmp, Cleanup::DeleteOnDrop { path: cleanup_path }))
+            SourceDecision::Use(LocalSource::new(
+                tmp,
+                Cleanup::DeleteOnDrop { path: cleanup_path },
+            ))
         }
         ImageSrcType::Path => {
             SourceDecision::Use(LocalSource::new(path::resolve(src), Cleanup::None))
@@ -64,5 +70,3 @@ pub async fn resolve_source_with_shortcut_metas<W: WindowsExt>(
         ImageSrcType::Exe => exe::resolve(resolver, src)?,
     })
 }
-
-

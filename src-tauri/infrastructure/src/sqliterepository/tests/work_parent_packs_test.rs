@@ -1,5 +1,7 @@
 use super::TestDatabase;
-use domain::repository::{RepositoriesExt, work_parent_packs::WorkParentPacksRepository, works::WorkRepository};
+use domain::repository::{
+    work_parent_packs::WorkParentPacksRepository, works::WorkRepository, RepositoriesExt,
+};
 use domain::works::NewWork;
 
 #[tokio::test]
@@ -31,8 +33,18 @@ async fn work_parent_packs_find_parent_id_should_return_parent() {
     // prepare works
     let (child, parent) = {
         let mut r = repo.work();
-        let c = r.upsert(&NewWork { title: "Child".into() }).await.unwrap();
-        let p = r.upsert(&NewWork { title: "Parent".into() }).await.unwrap();
+        let c = r
+            .upsert(&NewWork {
+                title: "Child".into(),
+            })
+            .await
+            .unwrap();
+        let p = r
+            .upsert(&NewWork {
+                title: "Parent".into(),
+            })
+            .await
+            .unwrap();
         (c, p)
     };
 
@@ -48,10 +60,14 @@ async fn work_parent_packs_find_parent_id_should_return_parent() {
     // no link case
     {
         let mut r = repo.work_parent_packs();
-        let orphan = repo.work().upsert(&NewWork { title: "Orphan".into() }).await.unwrap();
+        let orphan = repo
+            .work()
+            .upsert(&NewWork {
+                title: "Orphan".into(),
+            })
+            .await
+            .unwrap();
         let none = r.find_parent_id(orphan).await.unwrap();
         assert!(none.is_none());
     }
 }
-
-

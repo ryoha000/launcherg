@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 use tauri::AppHandle;
 
 use crate::domain;
-use domain::service::save_path_resolver::{SavePathResolver, DirsSavePathResolver};
+use domain::service::save_path_resolver::{DirsSavePathResolver, SavePathResolver};
 
 #[derive(new, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -50,7 +50,10 @@ pub struct DlsiteInfo {
 }
 
 impl CollectionElement {
-    pub fn from_domain(_handle: &Arc<AppHandle>, st: domain::collection::CollectionElement) -> Self {
+    pub fn from_domain(
+        _handle: &Arc<AppHandle>,
+        st: domain::collection::CollectionElement,
+    ) -> Self {
         let (gamename_ruby, brandname, brandname_ruby, sellday, is_nukige) =
             if let Some(info) = &st.info {
                 (

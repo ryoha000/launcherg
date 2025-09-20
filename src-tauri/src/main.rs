@@ -2,14 +2,20 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 mod interface;
-pub mod domain { pub use ::domain::*; }
-pub mod infrastructure { pub use ::infrastructure::*; }
-pub mod usecase { pub use ::usecase::*; }
+pub mod domain {
+    pub use ::domain::*;
+}
+pub mod infrastructure {
+    pub use ::infrastructure::*;
+}
+pub mod usecase {
+    pub use ::usecase::*;
+}
 
 use std::sync::Arc;
 
-use domain::service::save_path_resolver::{SavePathResolver, DirsSavePathResolver};
 use ::infrastructure::sqliterepository::driver::Db;
+use domain::service::save_path_resolver::{DirsSavePathResolver, SavePathResolver};
 use interface::{command, module::Modules};
 use tauri::{async_runtime::block_on, Manager};
 use tauri_plugin_log::{Target, TargetKind};

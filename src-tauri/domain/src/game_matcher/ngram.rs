@@ -5,7 +5,9 @@ use crate::all_game_cache::AllGameCache;
 pub type BigramKey = u64;
 
 #[inline]
-pub fn encode_bigram(a: char, b: char) -> BigramKey { ((a as u64) << 32) | (b as u64) }
+pub fn encode_bigram(a: char, b: char) -> BigramKey {
+    ((a as u64) << 32) | (b as u64)
+}
 
 #[derive(Debug, Clone)]
 pub struct NGramIndex {
@@ -25,7 +27,9 @@ impl NGramIndex {
             id_to_len.insert(g.id, g.gamename.chars().count());
             id_to_pos.insert(g.id, pos);
             let chars: Vec<char> = g.gamename.chars().collect();
-            if chars.len() < q { continue; }
+            if chars.len() < q {
+                continue;
+            }
             let mut seen: HashSet<BigramKey> = HashSet::new();
             for i in 0..(chars.len() - (q - 1)) {
                 let k = encode_bigram(chars[i], chars[i + 1]);
@@ -40,10 +44,20 @@ impl NGramIndex {
             v.dedup();
         }
 
-        Self { q, postings, id_to_len, id_to_pos }
+        Self {
+            q,
+            postings,
+            id_to_len,
+            id_to_pos,
+        }
     }
 
-    pub fn filter_candidates(&self, query: &str, min_similarity: f32, ignore_game_ids: &[i32]) -> Vec<i32> {
+    pub fn filter_candidates(
+        &self,
+        query: &str,
+        min_similarity: f32,
+        ignore_game_ids: &[i32],
+    ) -> Vec<i32> {
         let q = self.q;
         let query_chars: Vec<char> = query.chars().collect();
         let query_len = query_chars.len();
@@ -59,11 +73,19 @@ impl NGramIndex {
         // d_max を算出
         let calc_dmax = |ly: usize| -> usize {
             let max_len = query_len.max(ly);
-            if max_len == 0 { return 0; }
+            if max_len == 0 {
+                return 0;
+            }
             let raw = (1.0 - min_similarity) * (max_len as f32);
             let mut d = raw.floor() as isize;
-            if (raw - (d as f32)).abs() < 1e-6 { d -= 1; }
-            if d < 0 { 0 } else { d as usize }
+            if (raw - (d as f32)).abs() < 1e-6 {
+                d -= 1;
+            }
+            if d < 0 {
+                0
+            } else {
+                d as usize
+            }
         };
 
         // 重複 q-gram を排除した overlap 集計
@@ -78,17 +100,21 @@ impl NGramIndex {
 
         let mut candidates: Vec<i32> = Vec::new();
         for (&id, &overlap) in overlap_counts.iter() {
-            if ignore_game_ids.contains(&id) { continue; }
+            if ignore_game_ids.contains(&id) {
+                continue;
+            }
             let ly = *self.id_to_len.get(&id).unwrap_or(&0);
             let dmax = calc_dmax(ly);
             let ly_q = ly.saturating_sub(q - 1);
             let lq_unique = grams.len();
             let mut t = (lq_unique.min(ly_q) as isize) - (q as isize * dmax as isize);
-            if t <= 0 { t = 0; }
-            if (overlap as isize) >= t { candidates.push(id); }
+            if t <= 0 {
+                t = 0;
+            }
+            if (overlap as isize) >= t {
+                candidates.push(id);
+            }
         }
         candidates
     }
 }
-
-

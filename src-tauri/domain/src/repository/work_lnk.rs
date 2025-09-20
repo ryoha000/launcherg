@@ -1,5 +1,5 @@
+use crate::{works::Work, Id};
 use anyhow::Result;
-use crate::{Id, works::Work};
 
 #[derive(Clone, Debug)]
 pub struct WorkLnk {
@@ -22,5 +22,3 @@ pub trait WorkLnkRepository {
     async fn insert(&mut self, new_lnk: &NewWorkLnk) -> Result<Id<WorkLnk>>;
     async fn delete(&mut self, id: Id<WorkLnk>) -> Result<()>;
 }
-
-

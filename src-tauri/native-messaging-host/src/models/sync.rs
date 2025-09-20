@@ -56,4 +56,3 @@ pub struct SyncBatchResultTs {
     pub errors: Vec<String>,
     pub synced_games: Vec<String>,
 }
-

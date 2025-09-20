@@ -1,10 +1,13 @@
-use derive_new::new;
 use chrono::Utc;
+use derive_new::new;
 
 use super::error::UseCaseError;
 use domain::{
-    pubsub::{PubSubService, ExtensionConnectionPayload},
-    extension::{SyncStatus, ExtensionConnectionStatus, ExtensionConfig, NativeMessagingHostClient, NativeMessagingHostClientFactory},
+    extension::{
+        ExtensionConfig, ExtensionConnectionStatus, NativeMessagingHostClient,
+        NativeMessagingHostClientFactory, SyncStatus,
+    },
+    pubsub::{ExtensionConnectionPayload, PubSubService},
 };
 use std::sync::Arc;
 
@@ -24,7 +27,9 @@ impl<P: PubSubService, F: NativeMessagingHostClientFactory> ExtensionManagerUseC
             error_message: None,
             timestamp: Utc::now(),
         };
-        let _ = self.pubsub.notify("extension-connection-status", connecting_payload);
+        let _ = self
+            .pubsub
+            .notify("extension-connection-status", connecting_payload);
 
         // Native Messaging Hostクライアントを作成
         let native_messaging_client = match self.create_native_messaging_client() {
@@ -36,8 +41,10 @@ impl<P: PubSubService, F: NativeMessagingHostClientFactory> ExtensionManagerUseC
                     error_message: Some(e.to_string()),
                     timestamp: Utc::now(),
                 };
-                let _ = self.pubsub.notify("extension-connection-status", result_payload);
-                
+                let _ = self
+                    .pubsub
+                    .notify("extension-connection-status", result_payload);
+
                 return Ok(SyncStatus {
                     last_sync: None,
                     total_synced: 0,
@@ -62,7 +69,9 @@ impl<P: PubSubService, F: NativeMessagingHostClientFactory> ExtensionManagerUseC
                                 error_message: None,
                                 timestamp: Utc::now(),
                             };
-                            let _ = self.pubsub.notify("extension-connection-status", result_payload);
+                            let _ = self
+                                .pubsub
+                                .notify("extension-connection-status", result_payload);
                             Ok(status)
                         }
                         Err(e) => {
@@ -72,14 +81,17 @@ impl<P: PubSubService, F: NativeMessagingHostClientFactory> ExtensionManagerUseC
                                 error_message: Some(e.to_string()),
                                 timestamp: Utc::now(),
                             };
-                            let _ = self.pubsub.notify("extension-connection-status", result_payload);
-                            
+                            let _ = self
+                                .pubsub
+                                .notify("extension-connection-status", result_payload);
+
                             Ok(SyncStatus {
                                 last_sync: None,
                                 total_synced: 0,
                                 connected_extensions: vec![],
                                 is_running: false,
-                                connection_status: ExtensionConnectionStatus::CommunicationError as i32,
+                                connection_status: ExtensionConnectionStatus::CommunicationError
+                                    as i32,
                                 error_message: e.to_string(),
                             })
                         }
@@ -91,8 +103,10 @@ impl<P: PubSubService, F: NativeMessagingHostClientFactory> ExtensionManagerUseC
                         error_message: Some("Health check failed".to_string()),
                         timestamp: Utc::now(),
                     };
-                    let _ = self.pubsub.notify("extension-connection-status", result_payload);
-                    
+                    let _ = self
+                        .pubsub
+                        .notify("extension-connection-status", result_payload);
+
                     Ok(SyncStatus {
                         last_sync: None,
                         total_synced: 0,
@@ -110,14 +124,16 @@ impl<P: PubSubService, F: NativeMessagingHostClientFactory> ExtensionManagerUseC
                     s if s.contains("startup") => "host_startup_failed",
                     _ => "unknown_error",
                 };
-                
+
                 let result_payload = ExtensionConnectionPayload {
                     connection_status: connection_status.to_string(),
                     is_running: false,
                     error_message: Some(e.to_string()),
                     timestamp: Utc::now(),
                 };
-                let _ = self.pubsub.notify("extension-connection-status", result_payload);
+                let _ = self
+                    .pubsub
+                    .notify("extension-connection-status", result_payload);
 
                 Ok(SyncStatus {
                     last_sync: None,
@@ -126,8 +142,12 @@ impl<P: PubSubService, F: NativeMessagingHostClientFactory> ExtensionManagerUseC
                     is_running: false,
                     connection_status: match connection_status {
                         "host_not_found" => ExtensionConnectionStatus::HostNotFound as i32,
-                        "health_check_timeout" => ExtensionConnectionStatus::HealthCheckTimeout as i32,
-                        "host_startup_failed" => ExtensionConnectionStatus::HostStartupFailed as i32,
+                        "health_check_timeout" => {
+                            ExtensionConnectionStatus::HealthCheckTimeout as i32
+                        }
+                        "host_startup_failed" => {
+                            ExtensionConnectionStatus::HostStartupFailed as i32
+                        }
                         _ => ExtensionConnectionStatus::UnknownError as i32,
                     },
                     error_message: e.to_string(),
@@ -137,10 +157,14 @@ impl<P: PubSubService, F: NativeMessagingHostClientFactory> ExtensionManagerUseC
     }
 
     /// 拡張機能設定を更新
-    pub async fn set_extension_config(&self, config: &ExtensionConfig) -> Result<String, UseCaseError> {
-        let native_messaging_client = self.create_native_messaging_client()
+    pub async fn set_extension_config(
+        &self,
+        config: &ExtensionConfig,
+    ) -> Result<String, UseCaseError> {
+        let native_messaging_client = self
+            .create_native_messaging_client()
             .map_err(|e| UseCaseError::NativeHostProcessError(e.to_string()))?;
-            
+
         match native_messaging_client.set_config(config).await {
             Ok(message) => Ok(message),
             Err(e) => Err(UseCaseError::NativeHostProcessError(e.to_string())),
@@ -148,8 +172,9 @@ impl<P: PubSubService, F: NativeMessagingHostClientFactory> ExtensionManagerUseC
     }
 
     /// Native Messaging Hostクライアントを作成
-    fn create_native_messaging_client(&self) -> Result<F::Client, Box<dyn std::error::Error + Send + Sync>> {
+    fn create_native_messaging_client(
+        &self,
+    ) -> Result<F::Client, Box<dyn std::error::Error + Send + Sync>> {
         self.factory.create()
     }
 }
-

@@ -60,5 +60,3 @@ pub struct WorkDetails {
     pub is_dmm_pack: bool,
     pub latest_download_path: Option<WorkDownloadPath>,
 }
-
-

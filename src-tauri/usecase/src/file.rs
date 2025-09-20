@@ -1,27 +1,24 @@
 use std::io::prelude::*;
 use std::{collections::HashMap, sync::Arc, time::Instant};
 
-use derive_new::new;
-use tauri::AppHandle;
-use base64::{engine::general_purpose, Engine as _};
-use domain::service::save_path_resolver::SavePathResolver;
 use super::game_identifier::GameIdentifierUseCase;
+use base64::{engine::general_purpose, Engine as _};
+use derive_new::new;
+use domain::service::save_path_resolver::SavePathResolver;
+use tauri::AppHandle;
 
 use domain::all_game_cache::{AllGameCache, AllGameCacheOne};
 use domain::file::{get_file_created_at_sync, PlayHistory};
 use domain::game_matcher::get_file_name_without_extension;
 use domain::pubsub::{ProgressLivePayload, ProgressPayload, PubSubService};
+use domain::windows::shell_link::ShellLink as _;
+use domain::windows::WindowsExt;
 use domain::{
     collection::{CollectionElement, ScannedGameElement},
     distance::get_comparable_distance,
-    file::{
-        get_file_paths_by_exts,
-        normalize,
-    },
+    file::{get_file_paths_by_exts, normalize},
     Id,
 };
-use domain::windows::WindowsExt;
-use domain::windows::shell_link::ShellLink as _;
 
 #[derive(new)]
 pub struct FileUseCase<W: WindowsExt + Send + Sync + 'static> {
@@ -169,7 +166,9 @@ impl<W: WindowsExt + Send + Sync + 'static> FileUseCase<W> {
             let pubsub_clone = Arc::clone(&pubsub);
             tauri::async_runtime::spawn(async move {
                 let identifier = GameIdentifierUseCase::with_default_matcher(all.as_ref().clone());
-                let res = identifier.get_most_probable_candidate(&path)?.map(|v| (v, path));
+                let res = identifier
+                    .get_most_probable_candidate(&path)?
+                    .map(|v| (v, path));
                 if let Err(e) = pubsub_clone.notify("progresslive", ProgressLivePayload::new(None))
                 {
                     return Err(e);
@@ -195,7 +194,11 @@ impl<W: WindowsExt + Send + Sync + 'static> FileUseCase<W> {
         pubsub: Arc<P>,
     ) -> anyhow::Result<Vec<ScannedGameElement>> {
         let start = Instant::now();
-        let all_game_cache_hashmap = all_game_cache.clone().into_iter().map(|pair| (pair.id, pair)).collect::<HashMap<_, _>>();
+        let all_game_cache_hashmap = all_game_cache
+            .clone()
+            .into_iter()
+            .map(|pair| (pair.id, pair))
+            .collect::<HashMap<_, _>>();
 
         let normalized_all_games = Arc::new(
             all_game_cache
@@ -233,7 +236,10 @@ impl<W: WindowsExt + Send + Sync + 'static> FileUseCase<W> {
         for (id, exe_path) in exe_id_path_vec.into_iter() {
             // new collection element
             let install_at = get_file_created_at_sync(&exe_path);
-            let gamename = all_game_cache_hashmap.get(&id).map(|v| v.gamename.clone()).ok_or(anyhow::anyhow!("failed to get gamename {}", id))?;
+            let gamename = all_game_cache_hashmap
+                .get(&id)
+                .map(|v| v.gamename.clone())
+                .ok_or(anyhow::anyhow!("failed to get gamename {}", id))?;
             collection_elements.push(ScannedGameElement::new(
                 id,
                 gamename,
@@ -250,7 +256,13 @@ impl<W: WindowsExt + Send + Sync + 'static> FileUseCase<W> {
                 _install_at = None;
             }
 
-            let gamename = all_game_cache_hashmap.get(erogamescape_id).map(|v| v.gamename.clone()).ok_or(anyhow::anyhow!("failed to get gamename {}", erogamescape_id))?;
+            let gamename = all_game_cache_hashmap
+                .get(erogamescape_id)
+                .map(|v| v.gamename.clone())
+                .ok_or(anyhow::anyhow!(
+                    "failed to get gamename {}",
+                    erogamescape_id
+                ))?;
             collection_elements.push(ScannedGameElement::new(
                 *erogamescape_id,
                 gamename,
@@ -265,11 +277,7 @@ impl<W: WindowsExt + Send + Sync + 'static> FileUseCase<W> {
         // resolver.memos_dir() 配下に UUID.png を生成
         Ok(self.resolver.memo_image_new_png_path(id))
     }
-    pub async fn upload_image(
-        &self,
-        id: i32,
-        base64_image: String,
-    ) -> anyhow::Result<String> {
+    pub async fn upload_image(&self, id: i32, base64_image: String) -> anyhow::Result<String> {
         let path = self.get_new_upload_image_path(id)?;
         let decoded_data = general_purpose::STANDARD_NO_PAD.decode(base64_image)?;
 
@@ -281,7 +289,9 @@ impl<W: WindowsExt + Send + Sync + 'static> FileUseCase<W> {
         &self,
         collection_element_id: &Id<CollectionElement>,
     ) -> anyhow::Result<f32> {
-        let path = self.resolver.play_history_jsonl_path(collection_element_id.value);
+        let path = self
+            .resolver
+            .play_history_jsonl_path(collection_element_id.value);
 
         let exist = std::path::Path::new(&path).exists();
         if !exist {

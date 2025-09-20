@@ -2,13 +2,11 @@ use derive_new::new;
 use std::marker::PhantomData;
 use std::sync::Arc;
 
-use domain::{
-    process::Process, windows::WindowsExt,
-};
-use crate::windowsimpl::shell_link::ShellLinkImpl;
 use crate::windowsimpl::proctail::ProcTailImpl;
 use crate::windowsimpl::proctail_manager::ProcTailManager;
+use crate::windowsimpl::shell_link::ShellLinkImpl;
 use domain::service::save_path_resolver::DirsSavePathResolver;
+use domain::{process::Process, windows::WindowsExt};
 
 #[derive(new)]
 pub struct WindowsImpl<T> {
@@ -40,7 +38,9 @@ impl WindowsExt for Windows {
         &self.proctail_manager
     }
 
-    fn shell_link(&self) -> &Self::ShellLink { &self.shell_link }
+    fn shell_link(&self) -> &Self::ShellLink {
+        &self.shell_link
+    }
 }
 
 impl Windows {

@@ -7,9 +7,13 @@ pub struct WorkParentPackTable {
     pub updated_at: String,
 }
 
-impl TryFrom<crate::sqliterepository::models::work_parent_packs::WorkParentPackTable> for domain::work_parent_pack::WorkParentPack {
+impl TryFrom<crate::sqliterepository::models::work_parent_packs::WorkParentPackTable>
+    for domain::work_parent_pack::WorkParentPack
+{
     type Error = anyhow::Error;
-    fn try_from(v: crate::sqliterepository::models::work_parent_packs::WorkParentPackTable) -> Result<Self, Self::Error> {
+    fn try_from(
+        v: crate::sqliterepository::models::work_parent_packs::WorkParentPackTable,
+    ) -> Result<Self, Self::Error> {
         Ok(domain::work_parent_pack::WorkParentPack {
             id: domain::Id::new(v.id as i32),
             work_id: domain::Id::new(v.work_id as i32),
@@ -19,4 +23,3 @@ impl TryFrom<crate::sqliterepository::models::work_parent_packs::WorkParentPackT
         })
     }
 }
-

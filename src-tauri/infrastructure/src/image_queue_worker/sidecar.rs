@@ -19,9 +19,17 @@ impl ExtractIconRunnerImpl {
             .unwrap_or_else(|| PathBuf::from("extract-icon.exe"))
     }
 
-    pub fn new() -> Self { Self { sidecar_path: Self::resolve_extract_icon_path() } }
+    pub fn new() -> Self {
+        Self {
+            sidecar_path: Self::resolve_extract_icon_path(),
+        }
+    }
 
-    pub fn new_with_sidecar_path<P: Into<PathBuf>>(path: P) -> Self { Self { sidecar_path: path.into() } }
+    pub fn new_with_sidecar_path<P: Into<PathBuf>>(path: P) -> Self {
+        Self {
+            sidecar_path: path.into(),
+        }
+    }
 }
 
 impl ExtractIconRunner for ExtractIconRunnerImpl {
@@ -39,5 +47,3 @@ impl ExtractIconRunner for ExtractIconRunnerImpl {
         }
     }
 }
-
-

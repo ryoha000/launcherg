@@ -9,4 +9,3 @@ pub struct NativeHostLogTable {
     pub message: String,
     pub created_at: NaiveDateTime,
 }
-

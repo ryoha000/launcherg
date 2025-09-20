@@ -45,9 +45,16 @@ pub struct WorkDetailsRow {
 
 impl From<crate::sqliterepository::models::works::WorkDetailsRow> for domain::works::WorkDetails {
     fn from(r: crate::sqliterepository::models::works::WorkDetailsRow) -> Self {
-        use domain::{Id, works::{Work, DmmWork, DlsiteWork}, collection::CollectionElementErogamescape};
+        use domain::{
+            collection::CollectionElementErogamescape,
+            works::{DlsiteWork, DmmWork, Work},
+            Id,
+        };
         let mut details = domain::works::WorkDetails {
-            work: Work { id: Id::new(r.work_id as i32), title: r.work_title.clone() },
+            work: Work {
+                id: Id::new(r.work_id as i32),
+                title: r.work_title.clone(),
+            },
             dmm: None,
             dlsite: None,
             collection_element_id: r.ce_id.map(|v| Id::new(v as i32)),
@@ -114,7 +121,9 @@ impl From<crate::sqliterepository::models::works::WorkDetailsRow> for domain::wo
 
 impl TryFrom<crate::sqliterepository::models::works::DmmWorkTable> for domain::works::DmmWork {
     type Error = anyhow::Error;
-    fn try_from(v: crate::sqliterepository::models::works::DmmWorkTable) -> Result<Self, Self::Error> {
+    fn try_from(
+        v: crate::sqliterepository::models::works::DmmWorkTable,
+    ) -> Result<Self, Self::Error> {
         Ok(domain::works::DmmWork {
             id: domain::Id::new(v.id as i32),
             work_id: domain::Id::new(v.work_id as i32),
@@ -125,9 +134,13 @@ impl TryFrom<crate::sqliterepository::models::works::DmmWorkTable> for domain::w
     }
 }
 
-impl TryFrom<crate::sqliterepository::models::works::DlsiteWorkTable> for domain::works::DlsiteWork {
+impl TryFrom<crate::sqliterepository::models::works::DlsiteWorkTable>
+    for domain::works::DlsiteWork
+{
     type Error = anyhow::Error;
-    fn try_from(v: crate::sqliterepository::models::works::DlsiteWorkTable) -> Result<Self, Self::Error> {
+    fn try_from(
+        v: crate::sqliterepository::models::works::DlsiteWorkTable,
+    ) -> Result<Self, Self::Error> {
         Ok(domain::works::DlsiteWork {
             id: domain::Id::new(v.id as i32),
             work_id: domain::Id::new(v.work_id as i32),
@@ -140,10 +153,12 @@ impl TryFrom<crate::sqliterepository::models::works::DlsiteWorkTable> for domain
 impl TryFrom<crate::sqliterepository::models::works::WorkTable> for domain::works::Work {
     type Error = anyhow::Error;
     fn try_from(v: crate::sqliterepository::models::works::WorkTable) -> Result<Self, Self::Error> {
-        Ok(domain::works::Work { id: domain::Id::new(v.id as i32), title: v.title })
+        Ok(domain::works::Work {
+            id: domain::Id::new(v.id as i32),
+            title: v.title,
+        })
     }
 }
-
 
 #[derive(sqlx::FromRow, Clone)]
 pub struct WorkLnkRow {
@@ -152,7 +167,9 @@ pub struct WorkLnkRow {
     pub lnk_path: String,
 }
 
-impl From<crate::sqliterepository::models::works::WorkLnkRow> for domain::repository::work_lnk::WorkLnk {
+impl From<crate::sqliterepository::models::works::WorkLnkRow>
+    for domain::repository::work_lnk::WorkLnk
+{
     fn from(v: crate::sqliterepository::models::works::WorkLnkRow) -> Self {
         domain::repository::work_lnk::WorkLnk {
             id: domain::Id::new(v.id as i32),
@@ -161,4 +178,3 @@ impl From<crate::sqliterepository::models::works::WorkLnkRow> for domain::reposi
         }
     }
 }
-

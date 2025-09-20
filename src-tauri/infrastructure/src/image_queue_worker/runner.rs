@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use domain::repository::{RepositoriesExt, manager::RepositoryManager};
+use domain::repository::{manager::RepositoryManager, RepositoriesExt};
 use domain::service::image_queue_drain::ImageQueueDrainService;
 use domain::service::save_path_resolver::SavePathResolver;
 use domain::windows::WindowsExt;
@@ -8,7 +8,7 @@ use domain::windows::WindowsExt;
 use super::ImageQueueWorker;
 use domain::service::image_queue_event::ImageQueueWorkerEventHandler;
 
-pub struct ImageQueueRunnerImpl<M, R, W> 
+pub struct ImageQueueRunnerImpl<M, R, W>
 where
     M: RepositoryManager<R>,
     R: RepositoriesExt + Send + Sync + 'static,
@@ -26,7 +26,10 @@ where
 {
     pub fn new(manager: Arc<M>, resolver: Arc<dyn SavePathResolver>, windows: Arc<W>) -> Self {
         let worker = Arc::new(ImageQueueWorker::new(manager, resolver, windows));
-        Self { worker, is_running: std::sync::atomic::AtomicBool::new(false) }
+        Self {
+            worker,
+            is_running: std::sync::atomic::AtomicBool::new(false),
+        }
     }
 
     pub fn new_with_event_handler(
@@ -35,8 +38,13 @@ where
         windows: Arc<W>,
         handler: Arc<dyn ImageQueueWorkerEventHandler + Send + Sync>,
     ) -> Self {
-        let worker = Arc::new(ImageQueueWorker::new_with_event_handler(manager, resolver, windows, handler));
-        Self { worker, is_running: std::sync::atomic::AtomicBool::new(false) }
+        let worker = Arc::new(ImageQueueWorker::new_with_event_handler(
+            manager, resolver, windows, handler,
+        ));
+        Self {
+            worker,
+            is_running: std::sync::atomic::AtomicBool::new(false),
+        }
     }
 }
 
@@ -50,15 +58,19 @@ where
         // Non-blocking single-flight guard
         if self
             .is_running
-            .compare_exchange(false, true, std::sync::atomic::Ordering::AcqRel, std::sync::atomic::Ordering::Relaxed)
+            .compare_exchange(
+                false,
+                true,
+                std::sync::atomic::Ordering::AcqRel,
+                std::sync::atomic::Ordering::Relaxed,
+            )
             .is_err()
         {
             return Ok(());
         }
         let result = self.worker.drain_until_empty().await;
-        self.is_running.store(false, std::sync::atomic::Ordering::Release);
+        self.is_running
+            .store(false, std::sync::atomic::Ordering::Release);
         result
     }
 }
-
-

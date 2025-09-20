@@ -1,19 +1,26 @@
-use domain::{repository::work_download_path::WorkDownloadPathRepository, work_download_path::WorkDownloadPath, works::Work, Id};
 use crate::sqliterepository::sqliterepository::RepositoryImpl;
+use domain::{
+    repository::work_download_path::WorkDownloadPathRepository,
+    work_download_path::WorkDownloadPath, works::Work, Id,
+};
 
 impl WorkDownloadPathRepository for RepositoryImpl<domain::work_download_path::WorkDownloadPath> {
     async fn add(&mut self, work_id: Id<Work>, download_path: &str) -> anyhow::Result<()> {
         let download_path = download_path.to_string();
-        self.executor.with_conn(|conn| {
-            Box::pin(async move {
-                sqlx::query(r#"INSERT INTO work_download_paths (work_id, download_path) VALUES (?, ?)"#)
+        self.executor
+            .with_conn(|conn| {
+                Box::pin(async move {
+                    sqlx::query(
+                        r#"INSERT INTO work_download_paths (work_id, download_path) VALUES (?, ?)"#,
+                    )
                     .bind(work_id.value)
                     .bind(download_path)
                     .execute(conn)
                     .await?;
-                Ok::<(), anyhow::Error>(())
+                    Ok::<(), anyhow::Error>(())
+                })
             })
-        }).await?;
+            .await?;
         Ok(())
     }
 
@@ -26,10 +33,20 @@ impl WorkDownloadPathRepository for RepositoryImpl<domain::work_download_path::W
                     .await?)
             })
         }).await?;
-        Ok(rows.into_iter().map(|(id, work_id, download_path)| WorkDownloadPath { id: Id::new(id as i32), work_id: Id::new(work_id as i32), download_path }).collect())
+        Ok(rows
+            .into_iter()
+            .map(|(id, work_id, download_path)| WorkDownloadPath {
+                id: Id::new(id as i32),
+                work_id: Id::new(work_id as i32),
+                download_path,
+            })
+            .collect())
     }
 
-    async fn latest_by_work(&mut self, work_id: Id<Work>) -> anyhow::Result<Option<WorkDownloadPath>> {
+    async fn latest_by_work(
+        &mut self,
+        work_id: Id<Work>,
+    ) -> anyhow::Result<Option<WorkDownloadPath>> {
         let row: Option<(i64, i64, String)> = self.executor.with_conn(|conn| {
             Box::pin(async move {
                 Ok(sqlx::query_as(r#"SELECT id, work_id, download_path FROM work_download_paths WHERE work_id = ? ORDER BY id DESC LIMIT 1"#)
@@ -38,8 +55,10 @@ impl WorkDownloadPathRepository for RepositoryImpl<domain::work_download_path::W
                     .await?)
             })
         }).await?;
-        Ok(row.map(|(id, work_id, download_path)| WorkDownloadPath { id: Id::new(id as i32), work_id: Id::new(work_id as i32), download_path }))
+        Ok(row.map(|(id, work_id, download_path)| WorkDownloadPath {
+            id: Id::new(id as i32),
+            work_id: Id::new(work_id as i32),
+            download_path,
+        }))
     }
 }
-
-

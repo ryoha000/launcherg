@@ -6,7 +6,9 @@ use domain::windows::process::ProcessWindows;
 use domain::windows::proctail::{
     HealthCheckResult, ProcTail, ProcTailEvent, ServiceStatus, WatchTarget,
 };
-use domain::windows::proctail_manager::{ProcTailManagerStatus, ProcTailVersion, ProcTailManagerTrait};
+use domain::windows::proctail_manager::{
+    ProcTailManagerStatus, ProcTailManagerTrait, ProcTailVersion,
+};
 use domain::windows::WindowsExt;
 
 #[derive(new)]

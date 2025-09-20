@@ -1,5 +1,5 @@
+use crate::{work_download_path::WorkDownloadPath, works::Work, Id};
 use anyhow::Result;
-use crate::{work_download_path::WorkDownloadPath, Id, works::Work};
 
 #[trait_variant::make(Send)]
 #[mockall::automock]

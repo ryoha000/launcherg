@@ -10,7 +10,10 @@ use crate::image_queue_worker::types::SourceDecision;
 fn exe_存在しない場合は_skip() {
     let resolver = DirsSavePathResolver::default();
     let res = resolve(&resolver, "C:/not-exists/app.exe").unwrap();
-    match res { SourceDecision::FallbackDefaultAndSkip { .. } => {}, _ => panic!("expected skip") }
+    match res {
+        SourceDecision::FallbackDefaultAndSkip { .. } => {}
+        _ => panic!("expected skip"),
+    }
 }
 
 #[test]
@@ -22,7 +25,8 @@ fn exe_sidecar成功時_pngの一時パスが返る_クリーンアップ() {
             .and_then(|p| p.parent().map(|p| p.to_path_buf()))
             .expect("resolve current exe dir");
         let dst = exe_dir.join("extract-icon.exe");
-        const BYTES: &[u8] = include_bytes!("../../../../bin/extract-icon-x86_64-pc-windows-msvc.exe");
+        const BYTES: &[u8] =
+            include_bytes!("../../../../bin/extract-icon-x86_64-pc-windows-msvc.exe");
         fs::write(&dst, BYTES).expect("write sidecar");
         dst
     };
@@ -50,5 +54,3 @@ fn exe_sidecar成功時_pngの一時パスが返る_クリーンアップ() {
     }
     let _ = fs::remove_file(&sidecar_dst);
 }
-
-

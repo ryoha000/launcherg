@@ -15,7 +15,12 @@ fn square256_正方形に縮小して中央切り抜きされる() {
     let src = tmp.path().join("src.png");
     let dst = tmp.path().join("dst.png");
     write_small_png(&src.to_string_lossy(), 800, 600);
-    run_preprocess(&src.to_string_lossy(), &dst.to_string_lossy(), ImagePreprocess::ResizeAndCropSquare256).unwrap();
+    run_preprocess(
+        &src.to_string_lossy(),
+        &dst.to_string_lossy(),
+        ImagePreprocess::ResizeAndCropSquare256,
+    )
+    .unwrap();
     assert!(Path::new(&dst).exists());
     let (w, h) = image::image_dimensions(&dst).unwrap();
     assert_eq!((w, h), (256, 256));
@@ -27,7 +32,12 @@ fn resize_width400_幅400にリサイズされる() {
     let src = tmp.path().join("src.png");
     let dst = tmp.path().join("dst.png");
     write_small_png(&src.to_string_lossy(), 1000, 500);
-    run_preprocess(&src.to_string_lossy(), &dst.to_string_lossy(), ImagePreprocess::ResizeForWidth400).unwrap();
+    run_preprocess(
+        &src.to_string_lossy(),
+        &dst.to_string_lossy(),
+        ImagePreprocess::ResizeForWidth400,
+    )
+    .unwrap();
     assert!(Path::new(&dst).exists());
     let (w, _h) = image::image_dimensions(&dst).unwrap();
     assert_eq!(w, 400);
@@ -39,9 +49,12 @@ fn copy_as_is_内容がコピーされる() {
     let src = tmp.path().join("src.png");
     let dst = tmp.path().join("dst.png");
     write_small_png(&src.to_string_lossy(), 16, 16);
-    run_preprocess(&src.to_string_lossy(), &dst.to_string_lossy(), ImagePreprocess::None).unwrap();
+    run_preprocess(
+        &src.to_string_lossy(),
+        &dst.to_string_lossy(),
+        ImagePreprocess::None,
+    )
+    .unwrap();
     assert!(Path::new(&dst).exists());
     assert_eq!(std::fs::read(&src).unwrap(), std::fs::read(&dst).unwrap());
 }
-
-

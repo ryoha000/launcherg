@@ -18,7 +18,12 @@ fn delete_on_drop_スコープ終了で削除される() {
 
     // Act
     {
-        let _local = LocalSource::new(p.to_string_lossy(), Cleanup::DeleteOnDrop { path: p.to_string_lossy().to_string() });
+        let _local = LocalSource::new(
+            p.to_string_lossy(),
+            Cleanup::DeleteOnDrop {
+                path: p.to_string_lossy().to_string(),
+            },
+        );
         // drop at scope end
     }
 
@@ -32,5 +37,3 @@ fn local_source_path_が取得できる() {
     let local = LocalSource::new(p, Cleanup::None);
     assert_eq!(local.path(), p);
 }
-
-

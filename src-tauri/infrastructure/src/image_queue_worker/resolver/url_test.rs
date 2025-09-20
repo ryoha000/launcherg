@@ -25,5 +25,3 @@ async fn http_エラーで失敗する() {
     let res = resolve_to_tmp(&resolver, url).await;
     assert!(res.is_err());
 }
-
-

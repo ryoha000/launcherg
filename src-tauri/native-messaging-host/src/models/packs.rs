@@ -20,4 +20,3 @@ pub struct DmmOmitWorkItemTs {
     pub work_id: i32,
     pub dmm: DmmOmitDmmPartTs,
 }
-

@@ -6,7 +6,7 @@ mod proctail_manager_test;
 #[cfg(test)]
 mod proctail_test;
 mod screenshot;
-pub mod windows;
 pub mod shell_link;
 #[cfg(test)]
 mod tests;
+pub mod windows;

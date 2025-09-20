@@ -2,30 +2,30 @@ pub mod all_game_cache;
 mod all_game_cache_test;
 pub mod collection;
 mod collection_test;
+pub mod dmm_pack;
 pub mod error;
 pub mod explored_cache;
 mod explored_cache_test;
 pub mod extension_installer;
 pub mod extension_manager;
 mod extension_manager_test;
-pub mod image;
 pub mod file;
 mod file_test;
 pub mod game_identifier;
-pub mod models;
-pub mod process;
-pub mod native_host_sync;
-pub mod work_omit;
 pub mod host_log;
-pub mod dmm_pack;
-pub mod work;
-pub mod work_pipeline;
+pub mod image;
 pub mod image_queue;
+pub mod models;
+pub mod native_host_sync;
+#[cfg(test)]
+mod native_messaging_mock;
+pub mod process;
 #[cfg(test)]
 mod repositorymock;
 #[cfg(test)]
 mod windowsmock;
-#[cfg(test)]
-mod native_messaging_mock;
+pub mod work;
+pub mod work_omit;
+pub mod work_pipeline;
 #[cfg(test)]
 mod work_pipeline_test;

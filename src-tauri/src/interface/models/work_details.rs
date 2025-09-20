@@ -49,7 +49,11 @@ impl From<WorkDetails> for WorkDetailsVm {
     fn from(w: WorkDetails) -> Self {
         let resolver = DirsSavePathResolver::default();
         let thumbnail = if let Some(dmm) = w.dmm.as_ref() {
-            Some(resolver.thumbnail_alias_dmm_png_path(&dmm.category, &dmm.subcategory, &dmm.store_id))
+            Some(resolver.thumbnail_alias_dmm_png_path(
+                &dmm.category,
+                &dmm.subcategory,
+                &dmm.store_id,
+            ))
         } else if let Some(dlsite) = w.dlsite.as_ref() {
             Some(resolver.thumbnail_alias_dlsite_png_path(&dlsite.category, &dlsite.store_id))
         } else if let Some(collection_element_id) = w.collection_element_id.as_ref() {
@@ -87,5 +91,3 @@ impl From<WorkDetails> for WorkDetailsVm {
         }
     }
 }
-
-

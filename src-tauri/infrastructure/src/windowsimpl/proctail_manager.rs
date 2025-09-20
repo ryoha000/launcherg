@@ -1,13 +1,13 @@
 use semver::Version;
+use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::{Child, Command};
 use std::sync::Arc;
-use std::fs;
 use sysinfo::{ProcessExt, System, SystemExt};
 use tauri::AppHandle;
 use tokio::sync::Mutex;
 
-use domain::service::save_path_resolver::{SavePathResolver, DirsSavePathResolver};
+use domain::service::save_path_resolver::{DirsSavePathResolver, SavePathResolver};
 pub use domain::windows::proctail_manager::{
     ProcTailManagerError, ProcTailManagerStatus, ProcTailManagerTrait, ProcTailVersion,
 };

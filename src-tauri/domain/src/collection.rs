@@ -1,6 +1,6 @@
 use chrono::{DateTime, Local};
 use derive_new::new;
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
 use super::Id;
 
@@ -31,7 +31,7 @@ pub struct CollectionElementInfo {
     pub brandname: String,
     pub brandname_ruby: String,
     pub sellday: String,
-    pub is_nukige: bool, 
+    pub is_nukige: bool,
     pub created_at: DateTime<Local>,
     pub updated_at: DateTime<Local>,
 }
@@ -155,7 +155,6 @@ pub struct NewCollectionElementThumbnail {
     pub thumbnail_width: Option<i32>,
     pub thumbnail_height: Option<i32>,
 }
-
 
 // DMM マッピング
 #[derive(new, Clone, Debug, PartialEq)]

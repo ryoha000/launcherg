@@ -1,5 +1,5 @@
 use super::TestDatabase;
-use domain::repository::{RepositoriesExt, explored_cache::ExploredCacheRepository};
+use domain::repository::{explored_cache::ExploredCacheRepository, RepositoriesExt};
 use std::collections::HashSet;
 
 #[tokio::test]
@@ -30,5 +30,3 @@ async fn explored_cache_normal_flows() {
         assert_eq!(all.len(), 2);
     }
 }
-
-

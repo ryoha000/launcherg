@@ -54,4 +54,3 @@ pub struct HealthCheckResultTs {
     pub message: String,
     pub version: String,
 }
-

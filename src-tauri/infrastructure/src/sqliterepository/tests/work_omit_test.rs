@@ -1,5 +1,5 @@
 use super::TestDatabase;
-use domain::repository::{RepositoriesExt, work_omit::WorkOmitRepository, works::WorkRepository};
+use domain::repository::{work_omit::WorkOmitRepository, works::WorkRepository, RepositoriesExt};
 use domain::works::NewWork;
 
 #[tokio::test]
@@ -34,5 +34,3 @@ async fn work_omit_normal_flows() {
         assert!(!r.exists(work_id).await.unwrap());
     }
 }
-
-

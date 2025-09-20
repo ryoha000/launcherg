@@ -1,5 +1,5 @@
+use crate::{work_omit::WorkOmit, works::Work, Id};
 use anyhow::Result;
-use crate::{work_omit::WorkOmit, Id, works::Work};
 
 #[trait_variant::make(Send)]
 #[mockall::automock]
@@ -9,5 +9,3 @@ pub trait WorkOmitRepository {
     async fn list(&mut self) -> Result<Vec<WorkOmit>>;
     async fn exists(&mut self, work_id: Id<Work>) -> Result<bool>;
 }
-
-

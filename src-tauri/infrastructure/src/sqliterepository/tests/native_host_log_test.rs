@@ -1,6 +1,6 @@
 use super::TestDatabase;
-use domain::repository::{RepositoriesExt, native_host_log::NativeHostLogRepository};
 use domain::native_host_log::{HostLogLevel, HostLogType};
+use domain::repository::{native_host_log::NativeHostLogRepository, RepositoriesExt};
 
 #[tokio::test]
 async fn native_host_log_normal_flows() {
@@ -10,7 +10,9 @@ async fn native_host_log_normal_flows() {
     // insert
     {
         let mut r = repo.host_log();
-        r.insert_log(HostLogLevel::Debug, HostLogType::Unknown, "hello").await.unwrap();
+        r.insert_log(HostLogLevel::Debug, HostLogType::Unknown, "hello")
+            .await
+            .unwrap();
     }
 
     // list
@@ -28,5 +30,3 @@ async fn native_host_log_normal_flows() {
         assert_eq!(cnt, 1);
     }
 }
-
-

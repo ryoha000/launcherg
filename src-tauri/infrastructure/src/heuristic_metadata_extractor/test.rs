@@ -1,8 +1,8 @@
 use std::sync::Arc;
 
 use domain::all_game_cache::AllGameCacheOne;
-use domain::scan::{WorkCandidate, CandidateKind, WorkCandidateOrResolvedWork, MetadataExtractor};
 use domain::game_matcher::MockGameMatcher;
+use domain::scan::{CandidateKind, MetadataExtractor, WorkCandidate, WorkCandidateOrResolvedWork};
 
 use super::HeuristicMetadataExtractor;
 
@@ -16,7 +16,12 @@ fn 正常系_候補ヒット_最初の候補を採用する() {
     mock.expect_find_candidates()
         .withf(|qs| qs == &vec!["pieces".to_string(), "pieces".to_string()])
         .times(1)
-        .returning_st(|_| vec![(AllGameCacheOne::new(27123, "pieces/渡り鳥のソムニウム".to_string()), 0.95)]);
+        .returning_st(|_| {
+            vec![(
+                AllGameCacheOne::new(27123, "pieces/渡り鳥のソムニウム".to_string()),
+                0.95,
+            )]
+        });
 
     let extractor = HeuristicMetadataExtractor::new(Arc::new(mock));
     let c = wc("W:\\others\\software\\Whirlpool\\pieces\\pieces.exe");
@@ -89,10 +94,12 @@ fn 複数候補時_先頭候補を採用する() {
     mock.expect_find_candidates()
         .withf(|qs| qs == &vec!["pieces".to_string(), "pieces".to_string()])
         .times(1)
-        .returning_st(|_| vec![
-            (AllGameCacheOne::new(1, "A".to_string()), 0.8),
-            (AllGameCacheOne::new(2, "B".to_string()), 0.7),
-        ]);
+        .returning_st(|_| {
+            vec![
+                (AllGameCacheOne::new(1, "A".to_string()), 0.8),
+                (AllGameCacheOne::new(2, "B".to_string()), 0.7),
+            ]
+        });
 
     let extractor = HeuristicMetadataExtractor::new(Arc::new(mock));
     let c = wc("W:\\others\\software\\Whirlpool\\pieces\\pieces.exe");
@@ -108,5 +115,3 @@ fn 複数候補時_先頭候補を採用する() {
         _ => panic!("expected Resolved"),
     }
 }
-
-

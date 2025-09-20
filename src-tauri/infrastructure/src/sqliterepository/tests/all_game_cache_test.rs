@@ -1,6 +1,6 @@
 use super::TestDatabase;
-use domain::repository::{RepositoriesExt, all_game_cache::AllGameCacheRepository};
 use domain::all_game_cache::NewAllGameCacheOne;
+use domain::repository::{all_game_cache::AllGameCacheRepository, RepositoriesExt};
 
 #[tokio::test]
 async fn all_game_cache_normal_flows() {
@@ -13,7 +13,9 @@ async fn all_game_cache_normal_flows() {
         r.update(vec![
             NewAllGameCacheOne::new(1, "game1".into(), "http://example.com/1.png".into()),
             NewAllGameCacheOne::new(2, "game2".into(), "http://example.com/2.png".into()),
-        ]).await.unwrap();
+        ])
+        .await
+        .unwrap();
     }
 
     // get_all
@@ -28,8 +30,12 @@ async fn all_game_cache_normal_flows() {
         let mut r = repo.all_game_cache();
         let rows = r.get_by_ids(vec![1, 2]).await.unwrap();
         assert_eq!(rows.len(), 2);
-        assert!(rows.iter().any(|v| v.id == 1 && v.thumbnail_url.ends_with("1.png")));
-        assert!(rows.iter().any(|v| v.id == 2 && v.thumbnail_url.ends_with("2.png")));
+        assert!(rows
+            .iter()
+            .any(|v| v.id == 1 && v.thumbnail_url.ends_with("1.png")));
+        assert!(rows
+            .iter()
+            .any(|v| v.id == 2 && v.thumbnail_url.ends_with("2.png")));
     }
 
     // get_last_updated
@@ -54,5 +60,3 @@ async fn all_game_cache_normal_flows() {
         assert_eq!(rest.len(), 1);
     }
 }
-
-

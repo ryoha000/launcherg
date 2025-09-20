@@ -2,12 +2,17 @@
 mod tests {
     use std::{collections::HashMap, sync::Arc};
 
-    use domain::{all_game_cache::AllGameCacheOne, service::save_path_resolver::DirsSavePathResolver};
     use crate::file::FileUseCase;
     use crate::windowsmock::MockWindowsExtMock;
+    use domain::{
+        all_game_cache::AllGameCacheOne, service::save_path_resolver::DirsSavePathResolver,
+    };
 
     fn get_use_case() -> FileUseCase<MockWindowsExtMock> {
-        FileUseCase::new(Arc::new(DirsSavePathResolver::default()), Arc::new(MockWindowsExtMock::new()))
+        FileUseCase::new(
+            Arc::new(DirsSavePathResolver::default()),
+            Arc::new(MockWindowsExtMock::new()),
+        )
     }
 
     const GAMENAME: &str = "gamename";

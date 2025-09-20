@@ -18,10 +18,12 @@ fn japanese_char_pool() -> Vec<char> {
 }
 
 fn random_japanese_string(rng: &mut impl Rng, len: usize, pool: &[char]) -> String {
-    (0..len).map(|_| {
-        let idx = rng.gen_range(0..pool.len());
-        pool[idx]
-    }).collect()
+    (0..len)
+        .map(|_| {
+            let idx = rng.gen_range(0..pool.len());
+            pool[idx]
+        })
+        .collect()
 }
 
 fn build_cache(num: usize, name_len: usize, pool: &[char]) -> AllGameCache {
@@ -35,20 +37,30 @@ fn build_cache(num: usize, name_len: usize, pool: &[char]) -> AllGameCache {
 }
 
 fn mutate_similar(name: &str, rng: &mut impl Rng, pool: &[char]) -> String {
-    if name.is_empty() { return name.to_string(); }
+    if name.is_empty() {
+        return name.to_string();
+    }
     let mut chars: Vec<char> = name.chars().collect();
     let pos = rng.gen_range(0..chars.len());
     let mut new_c = chars[pos];
     // 別文字になるまで選び直す
     for _ in 0..4 {
         let idx = rng.gen_range(0..pool.len());
-        if pool[idx] != chars[pos] { new_c = pool[idx]; break; }
+        if pool[idx] != chars[pos] {
+            new_c = pool[idx];
+            break;
+        }
     }
     chars[pos] = new_c;
     chars.into_iter().collect()
 }
 
-fn build_queries(cache: &AllGameCache, total: usize, name_len: usize, pool: &[char]) -> Vec<String> {
+fn build_queries(
+    cache: &AllGameCache,
+    total: usize,
+    name_len: usize,
+    pool: &[char],
+) -> Vec<String> {
     let mut rng = rand::thread_rng();
     let mut queries: Vec<String> = (0..total)
         .map(|_| random_japanese_string(&mut rng, name_len, pool))
@@ -64,7 +76,11 @@ fn build_queries(cache: &AllGameCache, total: usize, name_len: usize, pool: &[ch
         let game_idx = rng.gen_range(0..cache.len());
         let target = &cache[game_idx].gamename;
         // 半々で厳密一致 or 近似
-        let q = if i % 2 == 0 { target.clone() } else { mutate_similar(target, &mut rng, pool) };
+        let q = if i % 2 == 0 {
+            target.clone()
+        } else {
+            mutate_similar(target, &mut rng, pool)
+        };
         queries[idx] = q;
     }
     queries
@@ -72,7 +88,9 @@ fn build_queries(cache: &AllGameCache, total: usize, name_len: usize, pool: &[ch
 
 fn bench_find_candidates(c: &mut Criterion) {
     let mut group = c.benchmark_group("matcher_find_candidates_mixed");
-    group.sample_size(10).measurement_time(Duration::from_secs(10));
+    group
+        .sample_size(10)
+        .measurement_time(Duration::from_secs(10));
 
     // 固定: キャッシュ 40,000 件、日本語名 20 文字
     let name_len = 20;
@@ -102,5 +120,3 @@ fn bench_find_candidates(c: &mut Criterion) {
 
 criterion_group!(benches, bench_find_candidates);
 criterion_main!(benches);
-
-

@@ -1,8 +1,8 @@
-use domain::repository::{RepositoriesExt, manager::RepositoryManager};
-use sqlx::{Pool, Sqlite};
-use sqlx::pool::PoolConnection;
+use domain::repository::{manager::RepositoryManager, RepositoriesExt};
 use futures::future::BoxFuture;
 use futures::FutureExt;
+use sqlx::pool::PoolConnection;
+use sqlx::{Pool, Sqlite};
 use std::marker::PhantomData;
 use std::sync::Arc;
 use tokio::sync::Mutex;
@@ -15,8 +15,10 @@ pub enum RepositoryExecutor {
 impl RepositoryExecutor {
     pub async fn with_conn<F, T>(&self, f: F) -> Result<T, anyhow::Error>
     where
-        F: for<'c> FnOnce(&'c mut PoolConnection<Sqlite>)
-              -> BoxFuture<'c, Result<T, anyhow::Error>> + Send,
+        F: for<'c> FnOnce(
+                &'c mut PoolConnection<Sqlite>,
+            ) -> BoxFuture<'c, Result<T, anyhow::Error>>
+            + Send,
         T: Send,
     {
         match self {
@@ -71,19 +73,45 @@ impl RepositoriesExt for SqliteRepositories {
     type WorkDownloadPathRepo = RepositoryImpl<domain::work_download_path::WorkDownloadPath>;
     type WorkLnkRepo = RepositoryImpl<domain::repository::work_lnk::WorkLnk>;
 
-    fn work(&self) -> Self::WorkRepo { self.work.clone() }
-    fn dmm_work(&self) -> Self::DmmWorkRepo { self.dmm_work.clone() }
-    fn dlsite_work(&self) -> Self::DlsiteWorkRepo { self.dlsite_work.clone() }
-    fn all_game_cache(&self) -> Self::AllGameCacheRepo { self.all_game_cache.clone() }
-    fn explored_cache(&self) -> Self::ExploredCacheRepo { self.explored_cache.clone() }
-    fn image_queue(&self) -> Self::ImageQueueRepo { self.image_queue.clone() }
-    fn host_log(&self) -> Self::HostLogRepo { self.host_log.clone() }
-    fn work_omit(&self) -> Self::WorkOmitRepo { self.work_omit.clone() }
-    fn work_parent_packs(&self) -> Self::WorkParentPacksRepo { self.work_parent_packs.clone() }
-    fn dmm_pack(&self) -> Self::DmmPackRepo { self.dmm_pack.clone() }
-    fn collection(&self) -> Self::CollectionRepo { self.collection.clone() }
-    fn work_download_path(&self) -> Self::WorkDownloadPathRepo { self.work_download_path.clone() }
-    fn work_lnk(&self) -> Self::WorkLnkRepo { self.work_lnk.clone() }
+    fn work(&self) -> Self::WorkRepo {
+        self.work.clone()
+    }
+    fn dmm_work(&self) -> Self::DmmWorkRepo {
+        self.dmm_work.clone()
+    }
+    fn dlsite_work(&self) -> Self::DlsiteWorkRepo {
+        self.dlsite_work.clone()
+    }
+    fn all_game_cache(&self) -> Self::AllGameCacheRepo {
+        self.all_game_cache.clone()
+    }
+    fn explored_cache(&self) -> Self::ExploredCacheRepo {
+        self.explored_cache.clone()
+    }
+    fn image_queue(&self) -> Self::ImageQueueRepo {
+        self.image_queue.clone()
+    }
+    fn host_log(&self) -> Self::HostLogRepo {
+        self.host_log.clone()
+    }
+    fn work_omit(&self) -> Self::WorkOmitRepo {
+        self.work_omit.clone()
+    }
+    fn work_parent_packs(&self) -> Self::WorkParentPacksRepo {
+        self.work_parent_packs.clone()
+    }
+    fn dmm_pack(&self) -> Self::DmmPackRepo {
+        self.dmm_pack.clone()
+    }
+    fn collection(&self) -> Self::CollectionRepo {
+        self.collection.clone()
+    }
+    fn work_download_path(&self) -> Self::WorkDownloadPathRepo {
+        self.work_download_path.clone()
+    }
+    fn work_lnk(&self) -> Self::WorkLnkRepo {
+        self.work_lnk.clone()
+    }
 }
 
 impl SqliteRepositories {
@@ -100,13 +128,13 @@ impl SqliteRepositories {
         Self::new(Arc::new(exec))
     }
     fn new(executor: Arc<RepositoryExecutor>) -> Self {
-        Self { 
-            executor:executor.clone(),
+        Self {
+            executor: executor.clone(),
 
             work: RepositoryImpl::new(executor.clone()),
-            dmm_work: RepositoryImpl::new(executor.clone()), 
-            dlsite_work: RepositoryImpl::new(executor.clone()), 
-            all_game_cache: RepositoryImpl::new(executor.clone()), 
+            dmm_work: RepositoryImpl::new(executor.clone()),
+            dlsite_work: RepositoryImpl::new(executor.clone()),
+            all_game_cache: RepositoryImpl::new(executor.clone()),
             explored_cache: RepositoryImpl::new(executor.clone()),
             image_queue: RepositoryImpl::new(executor.clone()),
             host_log: RepositoryImpl::new(executor.clone()),
@@ -125,16 +153,24 @@ pub struct SqliteRepositoryManager {
 }
 
 impl SqliteRepositoryManager {
-    pub fn new(pool: Arc<Pool<Sqlite>>) -> Self { Self { pool } }
+    pub fn new(pool: Arc<Pool<Sqlite>>) -> Self {
+        Self { pool }
+    }
 }
 
 impl RepositoryManager<SqliteRepositories> for SqliteRepositoryManager {
-    fn run<'a, T: Send + 'a>(&'a self, f: impl FnOnce(SqliteRepositories) -> BoxFuture<'a, anyhow::Result<T>> + Send + 'a) -> BoxFuture<'a, anyhow::Result<T>> {
+    fn run<'a, T: Send + 'a>(
+        &'a self,
+        f: impl FnOnce(SqliteRepositories) -> BoxFuture<'a, anyhow::Result<T>> + Send + 'a,
+    ) -> BoxFuture<'a, anyhow::Result<T>> {
         let repos = SqliteRepositories::new_from_pool(self.pool.clone());
         async move { f(repos).await }.boxed()
     }
 
-    fn run_in_transaction<'a, T: Send + 'a>(&'a self, f: impl FnOnce(SqliteRepositories) -> BoxFuture<'a, anyhow::Result<T>> + Send + 'a) -> BoxFuture<'a, anyhow::Result<T>> {
+    fn run_in_transaction<'a, T: Send + 'a>(
+        &'a self,
+        f: impl FnOnce(SqliteRepositories) -> BoxFuture<'a, anyhow::Result<T>> + Send + 'a,
+    ) -> BoxFuture<'a, anyhow::Result<T>> {
         let pool = self.pool.clone();
         async move {
             let mut conn = pool.acquire().await?;
@@ -154,6 +190,7 @@ impl RepositoryManager<SqliteRepositories> for SqliteRepositoryManager {
                     Err(e)
                 }
             }
-        }.boxed()
+        }
+        .boxed()
     }
 }

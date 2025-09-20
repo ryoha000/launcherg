@@ -1,13 +1,13 @@
-pub mod types;
-pub mod preprocess;
-pub mod sidecar;
-pub mod resolver;
-mod worker;
-pub mod runner;
 pub mod handler;
+pub mod preprocess;
+pub mod resolver;
+pub mod runner;
+pub mod sidecar;
+pub mod types;
+mod worker;
 
-pub use worker::ImageQueueWorker;
 pub use runner::ImageQueueRunnerImpl;
+pub use worker::ImageQueueWorker;
 
 #[cfg(test)]
 mod tests;

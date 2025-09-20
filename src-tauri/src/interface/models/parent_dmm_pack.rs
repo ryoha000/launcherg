@@ -7,5 +7,3 @@ pub struct DmmPackKeysVm {
     pub category: String,
     pub subcategory: String,
 }
-
-

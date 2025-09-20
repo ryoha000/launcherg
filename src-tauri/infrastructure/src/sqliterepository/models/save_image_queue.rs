@@ -9,4 +9,3 @@ pub struct SaveImageQueueTable {
     pub preprocess: i64,
     pub last_error: Option<String>,
 }
-

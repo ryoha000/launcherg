@@ -9,8 +9,9 @@ pub struct DmmWorkPackVm {
 
 impl From<crate::domain::dmm_work_pack::DmmWorkPack> for DmmWorkPackVm {
     fn from(value: crate::domain::dmm_work_pack::DmmWorkPack) -> Self {
-        Self { id: value.id.value, work_id: value.work_id.value }
+        Self {
+            id: value.id.value,
+            work_id: value.work_id.value,
+        }
     }
 }
-
-

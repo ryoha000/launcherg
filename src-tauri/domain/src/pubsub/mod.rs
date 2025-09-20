@@ -1,6 +1,6 @@
+use chrono::{DateTime, Utc};
 use derive_new::new;
 use serde::Serialize;
-use chrono::{DateTime, Utc};
 
 #[derive(new, Clone, Serialize)]
 pub struct ProgressPayload {

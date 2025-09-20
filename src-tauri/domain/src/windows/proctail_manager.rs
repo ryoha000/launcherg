@@ -44,4 +44,3 @@ pub trait ProcTailManagerTrait {
     async fn stop_proctail(&self) -> Result<(), ProcTailManagerError>;
     async fn is_running(&self) -> bool;
 }
-

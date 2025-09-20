@@ -18,8 +18,15 @@ pub struct LocalSource {
 }
 
 impl LocalSource {
-    pub fn new<P: Into<String>>(path: P, cleanup: Cleanup) -> Self { Self { path: path.into(), _cleanup: cleanup } }
-    pub fn path(&self) -> &str { &self.path }
+    pub fn new<P: Into<String>>(path: P, cleanup: Cleanup) -> Self {
+        Self {
+            path: path.into(),
+            _cleanup: cleanup,
+        }
+    }
+    pub fn path(&self) -> &str {
+        &self.path
+    }
 }
 
 /// 一時ファイルのクリーンアップ戦略
@@ -27,7 +34,9 @@ impl LocalSource {
 pub enum Cleanup {
     None,
     /// Drop 時に指定パスを削除
-    DeleteOnDrop { path: String },
+    DeleteOnDrop {
+        path: String,
+    },
 }
 
 impl Drop for Cleanup {
@@ -43,5 +52,3 @@ impl Drop for Cleanup {
         }
     }
 }
-
-
