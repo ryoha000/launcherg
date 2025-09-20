@@ -5,8 +5,8 @@ version: '3'
 tasks:
   init:
     cmds:
-      - go install github.com/go-task/task/v3/cmd/task@latest
-      - cargo install typeshare-cli
+      - pwsh.exe -NoProfile -Command "go install github.com/go-task/task/v3/cmd/task@latest"
+      - pwsh.exe -NoProfile -Command "cargo install typeshare-cli"
 
   # check
   check:
@@ -27,8 +27,8 @@ tasks:
     dir: browser-extension/background
     description: ブラウザ拡張機能のバックグラウンドスクリプトをチェック
     cmds:
-      - pnpm run build
-      - pnpm run test
+      - pwsh.exe -NoProfile -Command "pnpm run build"
+      - pwsh.exe -NoProfile -Command "pnpm run test"
   check:browser-extension:content-scripts:
     dir: browser-extension/content-scripts
     description: ブラウザ拡張機能のコンテンツスクリプトをすべてチェック
@@ -39,20 +39,20 @@ tasks:
     dir: browser-extension/content-scripts/dmm
     description: ブラウザ拡張機能のDMMコンテンツスクリプトをチェック
     cmds:
-      - pnpm run build
-      - pnpm run test
+      - pwsh.exe -NoProfile -Command "pnpm run build"
+      - pwsh.exe -NoProfile -Command "pnpm run test"
   check:browser-extension:content-scripts:dlsite:
     dir: browser-extension/content-scripts/dlsite
     description: ブラウザ拡張機能のDLsiteコンテンツスクリプトをチェック
     cmds:
-      - pnpm run build
-      - pnpm run test
+      - pwsh.exe -NoProfile -Command "pnpm run build"
+      - pwsh.exe -NoProfile -Command "pnpm run test"
   check:browser-extension:shared:
     dir: browser-extension/shared
     description: ブラウザ拡張機能の共有パッケージをチェック
     cmds:
-      - pnpm run build
-      - pnpm run test
+      - pwsh.exe -NoProfile -Command "pnpm run build"
+      - pwsh.exe -NoProfile -Command "pnpm run test"
 
   # check:tauri
   check:tauri:
@@ -63,31 +63,31 @@ tasks:
   check:tauri:frontend:
     description: Tauriのフロントエンドをチェック
     cmds:
-      - npm run format
-      - npm run lint
-      - npm run check
-      - npm run test
+      - pwsh.exe -NoProfile -Command "npm run format"
+      - pwsh.exe -NoProfile -Command "npm run lint"
+      - pwsh.exe -NoProfile -Command "npm run check"
+      - pwsh.exe -NoProfile -Command "npm run test"
   check:tauri:rust:
     description: TauriのRustコードをチェック
     dir: src-tauri
     cmds:
-      - cargo check
-      - cargo test --workspace
+      - pwsh.exe -NoProfile -Command "cargo check"
+      - pwsh.exe -NoProfile -Command "cargo test --workspace"
 
   # bench
   bench:tauri:domain:
     description: domain クレートのベンチマークを実行
     dir: src-tauri
     cmds:
-      - cargo bench -p domain
+      - pwsh.exe -NoProfile -Command "cargo bench -p domain"
 
   # check:src-tauri:native-messaging-host
   check:native-messaging-host:
     dir: src-tauri/native-messaging-host
     description: Native Messaging Hostをチェック
     cmds:
-      - cargo check
-      - cargo test
+      - pwsh.exe -NoProfile -Command "cargo check"
+      - pwsh.exe -NoProfile -Command "cargo test"
 
   # build
   build:extension:
@@ -98,12 +98,12 @@ tasks:
   build:extension:native-messaging-host:
     description: build src-tauri/native-messaging-host
     cmds:
-      - node scripts/build-native-host.js
+      - pwsh.exe -NoProfile -Command "node scripts/build-native-host.js"
   build:extension:browser-extension:
     dir: browser-extension
     description: build browser-extension
     cmds:
-      - pnpm run build
+      - pwsh.exe -NoProfile -Command "pnpm run build"
 
   # gen
   gen:
@@ -112,4 +112,4 @@ tasks:
       - gen:native-messaging
   gen:native-messaging:
     cmds:
-      - typeshare ./src-tauri/native-messaging-host/src/models --lang=typescript --output-file=./browser-extension/shared/src/typeshare/native-messaging.ts
+      - pwsh.exe -NoProfile -Command "typeshare ./src-tauri/native-messaging-host/src/models --lang=typescript --output-file=./browser-extension/shared/src/typeshare/native-messaging.ts"
