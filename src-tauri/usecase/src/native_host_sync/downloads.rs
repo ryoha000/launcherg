@@ -1,6 +1,7 @@
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use domain::{Id, repository::{RepositoriesExt, manager::RepositoryManager, works::{DmmWorkRepository, DlsiteWorkRepository}, work_download_path::WorkDownloadPathRepository}, service::save_path_resolver::SavePathResolver};
+use chrono::Local;
 
 pub struct DownloadsUseCase<U, R>
 where U: RepositoryManager<R> + Send + Sync + 'static, R: RepositoriesExt + Send + Sync + 'static {
@@ -70,9 +71,9 @@ where U: RepositoryManager<R> + Send + Sync + 'static, R: RepositoriesExt + Send
         let src = Path::new(filename);
         let name = src.file_name().and_then(|s| s.to_str()).unwrap_or("download");
         let lower = name.to_lowercase();
+        // 決定: 保存先は `${work_id}_yyyymmddhhmmss`（存在時は `_2` 以降）
+        let dst_dir = self.make_unique_work_subdir(&dst_root, work_id.clone()).await?;
         if lower.ends_with(".zip") {
-            let stem = name.trim_end_matches(".zip");
-            let dst_dir = dst_root.join(stem);
             std::fs::create_dir_all(&dst_dir).ok();
             #[cfg(target_os = "windows")]
             {
@@ -83,7 +84,6 @@ where U: RepositoryManager<R> + Send + Sync + 'static, R: RepositoriesExt + Send
             }
             self.save_download_path(work_id, &dst_dir.to_string_lossy()).await?;
         } else if src.is_dir() {
-            let dst_dir = dst_root.join(name);
             std::fs::create_dir_all(&dst_root).ok();
             let _ = std::fs::rename(src, &dst_dir);
             self.save_download_path(work_id, &dst_dir.to_string_lossy()).await?;
@@ -99,18 +99,42 @@ where U: RepositoryManager<R> + Send + Sync + 'static, R: RepositoriesExt + Send
     pub async fn handle_split(&self, items: &[String], work_id: Option<Id<domain::works::Work>>) -> anyhow::Result<()> {
         let dst_root = PathBuf::from(self.downloaded_games_dir());
         std::fs::create_dir_all(&dst_root).ok();
+        // 保存先は `${work_id}_yyyymmddhhmmss`（存在時は `_2` 以降）
+        let dst_dir = self.make_unique_work_subdir(&dst_root, work_id.clone()).await?;
+        std::fs::create_dir_all(&dst_dir).ok();
         if let Some(exe) = items.iter().find(|p| p.to_lowercase().ends_with(".exe")) {
             #[cfg(target_os = "windows")]
             {
                 let _ = std::process::Command::new(exe)
-                    .args([&format!("-d{}", dst_root.display()), "-s"]) // -d に空白不可
+                    .args([&format!("-d{}", dst_dir.display()), "-s"]) // -d に空白不可
                     .current_dir(Path::new(exe).parent().unwrap_or(Path::new(".")))
                     .status();
             }
-            self.save_download_path(work_id, &dst_root.to_string_lossy()).await?;
+            self.save_download_path(work_id, &dst_dir.to_string_lossy()).await?;
             Ok(())
         } else {
             anyhow::bail!("no executable found")
+        }
+    }
+
+    /// `${work_id}_yyyymmddhhmmss` 形式のサブディレクトリを作成し、既存時は `_2`, `_3` ... を付けて一意化して返す。
+    async fn make_unique_work_subdir(&self, dst_root: &Path, work_id: Option<Id<domain::works::Work>>) -> anyhow::Result<PathBuf> {
+        let wid = work_id.map(|w| w.value).unwrap_or(0);
+        let now = Local::now();
+        let ts = now.format("%Y%m%d%H%M%S").to_string();
+        let base_name = format!("{}_{}", wid, ts);
+        let mut candidate = dst_root.join(&base_name);
+        if !candidate.exists() {
+            return Ok(candidate);
+        }
+        let mut suffix = 2;
+        loop {
+            let name = format!("{}_{}", base_name, suffix);
+            candidate = dst_root.join(&name);
+            if !candidate.exists() {
+                return Ok(candidate);
+            }
+            suffix += 1;
         }
     }
 }

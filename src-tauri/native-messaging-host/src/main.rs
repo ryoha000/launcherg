@@ -5,7 +5,7 @@ use std::sync::Arc;
 use tokio::io::{self as tokio_io, AsyncReadExt, AsyncWriteExt};
 use serde_json;
 use thiserror::Error;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::fs;
 
 use domain::repository::{manager::RepositoryManager, native_host_log::NativeHostLogRepository, RepositoriesExt};
@@ -199,6 +199,7 @@ async fn handle_downloads_completed(ctx: &AppCtx, request: &DownloadsCompletedRe
         if let Err(e) = usecase.handle_single(&item.filename, work_id).await {
             return err(request_id, format!("{}", e));
         }
+        cleanup_download_paths([item.filename.as_str()]);
         return ok(request_id, NativeResponseCase::HealthCheckResult(HealthCheckResultTs { message: "OK".into(), version: env!("CARGO_PKG_VERSION").into() }));
     }
 
@@ -208,10 +209,41 @@ async fn handle_downloads_completed(ctx: &AppCtx, request: &DownloadsCompletedRe
         if let Err(e) = usecase.handle_split(&paths, work_id).await {
             return err(request_id, format!("{}", e));
         }
+        cleanup_download_paths(paths.iter().map(|p| p.as_str()));
         return ok(request_id, NativeResponseCase::HealthCheckResult(HealthCheckResultTs { message: "OK".into(), version: env!("CARGO_PKG_VERSION").into() }));
     }
 
     ok(request_id, NativeResponseCase::HealthCheckResult(HealthCheckResultTs { message: "NOOP".into(), version: env!("CARGO_PKG_VERSION").into() }))
+}
+
+fn cleanup_download_paths<I>(paths: I)
+where
+    I: IntoIterator,
+    I::Item: AsRef<str>,
+{
+    for item in paths {
+        let path_str = item.as_ref();
+        let path = Path::new(path_str);
+        match fs::metadata(path) {
+            Ok(metadata) => {
+                let remove_result = if metadata.is_dir() {
+                    fs::remove_dir_all(path)
+                } else {
+                    fs::remove_file(path)
+                };
+                if let Err(e) = remove_result {
+                    if e.kind() != ErrorKind::NotFound {
+                        log::warn!("failed to remove downloaded item: {} ({})", path.display(), e);
+                    }
+                }
+            }
+            Err(e) => {
+                if e.kind() != ErrorKind::NotFound {
+                    log::warn!("failed to inspect downloaded item: {} ({})", path.display(), e);
+                }
+            }
+        }
+    }
 }
 
 async fn handle_sync_dmm_games(ctx: &AppCtx, request: &DmmSyncGamesRequestTs, request_id: &str) -> NativeResponseTs {
@@ -781,4 +813,3 @@ mod tests {
         match resp.response { Some(NativeResponseCase::DmmOmitWorks(v)) => assert!(v.is_empty()), _ => panic!("unexpected") }
     }
 }
-
