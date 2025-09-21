@@ -1,5 +1,6 @@
 <script lang='ts'>
   import type { RegistryKeyInfo } from '@/lib/command'
+  import type { EventPayloadMap } from '@/lib/event/types'
   import { listen } from '@tauri-apps/api/event'
   import { onMount } from 'svelte'
   import Button from '@/components/UI/Button.svelte'
@@ -257,20 +258,19 @@
 
     const setupListener = async () => {
       // PubSubイベントリスナーを設定
-      unlisten = await listen('extension-connection-status', (event) => {
-        const payload = event.payload as any
+      unlisten = await listen<EventPayloadMap['extension-connection-status']>('extension-connection-status', ({ payload }) => {
         // console.log('Extension connection status update:', payload)
 
         // 状態を更新
-        detailedConnectionStatus = payload.connection_status
-        errorMessage = payload.error_message
-        extensionStatus = payload.is_running ? 'connected' : 'disconnected'
+        detailedConnectionStatus = payload.connectionStatus
+        errorMessage = payload.errorMessage ?? null
+        extensionStatus = payload.isRunning ? 'connected' : 'disconnected'
 
         // UI更新のために時刻を記録
         if (syncStatus) {
-          syncStatus.connection_status = payload.connection_status
-          syncStatus.error_message = payload.error_message
-          syncStatus.is_running = payload.is_running
+          syncStatus.connection_status = payload.connectionStatus
+          syncStatus.error_message = payload.errorMessage ?? null
+          syncStatus.is_running = payload.isRunning
         }
       })
 

@@ -1,4 +1,4 @@
-import type { DownloadIntentTs, NativeMessageTs } from '@launcherg/shared/typeshare/native-messaging'
+import type { NativeMessageTs } from '@launcherg/shared/typeshare/native-messaging'
 import type { HandlerContext } from '../shared/types'
 import { incrementCompletedAndPushItem, logger, readAllDownloadIntents, removeDownloadIntent, stripDownloadItemFields, toDownloadIntentTs } from '@launcherg/shared'
 

@@ -4,7 +4,7 @@ mod tests {
     use std::collections::HashSet;
     use std::{path::PathBuf, sync::Arc, sync::Mutex};
 
-    use domain::pubsub::PubSubService;
+    use domain::pubsub::{PubSubEvent, PubSubService};
     use domain::scan::{
         CandidateKind, MockDuplicateResolver, MockFileSystem, MockMetadataExtractor, ResolvedWork,
         WorkCandidate, WorkCandidateOrResolvedWork,
@@ -17,16 +17,11 @@ mod tests {
 
     #[derive(Clone, Default)]
     struct MockPubSub {
-        events: Arc<Mutex<Vec<(String, serde_json::Value)>>>,
+        events: Arc<Mutex<Vec<PubSubEvent>>>,
     }
     impl PubSubService for MockPubSub {
-        fn notify<T: serde::Serialize + Clone>(
-            &self,
-            event: &str,
-            payload: T,
-        ) -> Result<(), anyhow::Error> {
-            let val = serde_json::to_value(payload)?;
-            self.events.lock().unwrap().push((event.to_string(), val));
+        fn notify(&self, event: PubSubEvent) -> Result<(), anyhow::Error> {
+            self.events.lock().unwrap().push(event);
             Ok(())
         }
     }
@@ -124,12 +119,16 @@ mod tests {
             ]))
             .await;
         let events = pubsub.events.lock().unwrap();
-        assert!(events
-            .iter()
-            .any(|(k, v)| k == "scanEnrichResult" && v.get("status").unwrap() == "candidate"));
-        assert!(events
-            .iter()
-            .any(|(k, v)| k == "scanEnrichResult" && v.get("status").unwrap() == "resolved"));
+        assert!(events.iter().any(|event| matches!(
+            event,
+            PubSubEvent::ScanEnrichResult(payload)
+                if payload.status == "candidate"
+        )));
+        assert!(events.iter().any(|event| matches!(
+            event,
+            PubSubEvent::ScanEnrichResult(payload)
+                if payload.status == "resolved"
+        )));
     }
 
     // dedup は重複数のみ通知
@@ -229,9 +228,10 @@ mod tests {
         let (_deduped, dup) = uc.deduplicate_and_notify(resolved, 2);
         assert_eq!(dup, 1);
         let events = pubsub.events.lock().unwrap();
-        assert!(events
-            .iter()
-            .any(|(ev, v)| ev == "scanDedup" && v.get("removedCount").unwrap() == 1));
+        assert!(events.iter().any(|event| matches!(
+            event,
+            PubSubEvent::ScanDedup(payload) if payload.removed_count == 1
+        )));
     }
 
     // persist

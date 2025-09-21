@@ -11,7 +11,7 @@ use std::sync::{Arc, Mutex};
 
 use crate::image_queue_worker::handler::{ImageQueueHostLogHandler, ImageQueuePubSubHandler};
 use domain::file::LnkMetadata;
-use domain::pubsub::PubSubService;
+use domain::pubsub::{PubSubEvent, PubSubService};
 use domain::save_image_queue::ImageSrcType;
 use domain::service::save_path_resolver::{DirsSavePathResolver, SavePathResolver};
 use domain::windows::shell_link::MockShellLink;
@@ -773,16 +773,11 @@ async fn drain_until_empty_イベントハンドラ_pubsub通知が発火する(
     // Arrange
     #[derive(Clone, Default)]
     struct MockPubSub {
-        events: std::sync::Arc<std::sync::Mutex<Vec<(String, serde_json::Value)>>>,
+        events: std::sync::Arc<std::sync::Mutex<Vec<PubSubEvent>>>,
     }
     impl PubSubService for MockPubSub {
-        fn notify<T: serde::Serialize + Clone>(
-            &self,
-            event: &str,
-            payload: T,
-        ) -> Result<(), anyhow::Error> {
-            let v = serde_json::to_value(payload)?;
-            self.events.lock().unwrap().push((event.to_string(), v));
+        fn notify(&self, event: PubSubEvent) -> Result<(), anyhow::Error> {
+            self.events.lock().unwrap().push(event);
             Ok(())
         }
     }
@@ -842,7 +837,7 @@ async fn drain_until_empty_イベントハンドラ_pubsub通知が発火する(
 
     // Assert
     let events = pubsub.events.lock().unwrap();
-    let names: Vec<String> = events.iter().map(|(n, _)| n.clone()).collect();
+    let names: Vec<&'static str> = events.iter().map(PubSubEvent::event_name).collect();
     // 最低限必要なイベント名が含まれること
     for expected in [
         "imageQueueWorkerStarted",
@@ -851,7 +846,7 @@ async fn drain_until_empty_イベントハンドラ_pubsub通知が発火する(
         "imageQueueWorkerFinished",
     ] {
         assert!(
-            names.iter().any(|n| n == expected),
+            names.iter().any(|n| *n == expected),
             "missing event: {}",
             expected
         );

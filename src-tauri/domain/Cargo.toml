@@ -27,6 +27,7 @@ dirs = { workspace = true }
 mockall = { workspace = true }
 futures = { workspace = true }
 trait-variant = "0.1"
+typeshare = "1"
 
 [dev-dependencies]
 mockall = { workspace = true }

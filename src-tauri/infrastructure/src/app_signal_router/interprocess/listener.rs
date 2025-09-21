@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use anyhow::{Context, Result};
 use domain::{
-    pubsub::PubSubService,
+    pubsub::{PubSubEvent, PubSubService},
     service::app_signal_router::{AppSignal, AppSignalEvent},
 };
 use interprocess::local_socket::{
@@ -82,12 +82,12 @@ where
     let signal = read_signal(&mut stream).await?;
 
     pubsub
-        .notify(APP_SIGNAL_EVENT, signal.clone())
+        .notify(PubSubEvent::AppSignal(signal.clone().into()))
         .with_context(|| format!("failed to emit {APP_SIGNAL_EVENT}"))?;
 
     if matches!(&signal.event, AppSignalEvent::SyncRequested { .. }) {
         pubsub
-            .notify(APP_SIGNAL_SYNC_REQUESTED_EVENT, signal.clone())
+            .notify(PubSubEvent::AppSignalSyncRequested(signal.clone().into()))
             .with_context(|| format!("failed to emit {APP_SIGNAL_SYNC_REQUESTED_EVENT}"))?;
     }
 

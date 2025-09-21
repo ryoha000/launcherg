@@ -110,6 +110,10 @@ tasks:
     description: gen
     deps:
       - gen:native-messaging
+      - gen:pubsub
   gen:native-messaging:
     cmds:
       - pwsh.exe -NoProfile -Command "typeshare ./src-tauri/native-messaging-host/src/models --lang=typescript --output-file=./browser-extension/shared/src/typeshare/native-messaging.ts"
+  gen:pubsub:
+    cmds:
+      - pwsh.exe -NoProfile -Command "typeshare ./src-tauri/domain/src/pubsub/event.rs --lang=typescript --output-file=./src/lib/typeshare/pubsub.ts"

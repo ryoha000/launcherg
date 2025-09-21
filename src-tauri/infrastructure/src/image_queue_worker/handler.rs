@@ -8,7 +8,7 @@ use domain::{
     native_host_log::{HostLogLevel, HostLogType},
     pubsub::{
         ImageQueueItemErrorPayload, ImageQueueItemPayload, ImageQueueWorkerStatusPayload,
-        PubSubService,
+        PubSubEvent, PubSubService,
     },
     repository::{manager::RepositoryManager, RepositoriesExt},
     save_image_queue::ImageSaveQueueRow,
@@ -204,10 +204,9 @@ where
     fn on_worker_started(&self) -> futures::future::BoxFuture<'static, Result<()>> {
         let pubsub = self.pubsub.clone();
         async move {
-            let _ = pubsub.notify(
-                "imageQueueWorkerStarted",
+            let _ = pubsub.notify(PubSubEvent::ImageQueueWorkerStarted(
                 ImageQueueWorkerStatusPayload::new("started".into()),
-            );
+            ));
             Ok(())
         }
         .boxed()
@@ -215,10 +214,9 @@ where
     fn on_worker_finished(&self) -> futures::future::BoxFuture<'static, Result<()>> {
         let pubsub = self.pubsub.clone();
         async move {
-            let _ = pubsub.notify(
-                "imageQueueWorkerFinished",
+            let _ = pubsub.notify(PubSubEvent::ImageQueueWorkerFinished(
                 ImageQueueWorkerStatusPayload::new("finished".into()),
-            );
+            ));
             Ok(())
         }
         .boxed()
@@ -231,12 +229,12 @@ where
         let item = item.clone();
         async move {
             let payload = ImageQueueItemPayload::new(
-                item.id.value as i64,
+                item.id.value.to_string(),
                 item.src.clone(),
                 item.src_type as i32,
                 item.dst_path.clone(),
             );
-            let _ = pubsub.notify("imageQueueItemStarted", payload);
+            let _ = pubsub.notify(PubSubEvent::ImageQueueItemStarted(payload));
             Ok(())
         }
         .boxed()
@@ -249,12 +247,12 @@ where
         let item = item.clone();
         async move {
             let payload = ImageQueueItemPayload::new(
-                item.id.value as i64,
+                item.id.value.to_string(),
                 item.src.clone(),
                 item.src_type as i32,
                 item.dst_path.clone(),
             );
-            let _ = pubsub.notify("imageQueueItemSucceeded", payload);
+            let _ = pubsub.notify(PubSubEvent::ImageQueueItemSucceeded(payload));
             Ok(())
         }
         .boxed()
@@ -268,8 +266,8 @@ where
         let item = item.clone();
         let error_message = error_message.to_string();
         async move {
-            let payload = ImageQueueItemErrorPayload::new(item.id.value as i64, error_message);
-            let _ = pubsub.notify("imageQueueItemFailed", payload);
+            let payload = ImageQueueItemErrorPayload::new(item.id.value.to_string(), error_message);
+            let _ = pubsub.notify(PubSubEvent::ImageQueueItemFailed(payload));
             Ok(())
         }
         .boxed()

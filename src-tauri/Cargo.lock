@@ -1326,6 +1326,7 @@ dependencies = [
  "tempfile",
  "thiserror 1.0.69",
  "trait-variant",
+ "typeshare",
  "url",
  "uuid",
  "walkdir",

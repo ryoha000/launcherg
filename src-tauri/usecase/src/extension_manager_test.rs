@@ -2,18 +2,14 @@
 mod tests {
     use crate::extension_manager::ExtensionManagerUseCase;
     use domain::extension::NativeMessagingHostClientFactory;
-    use domain::pubsub::PubSubService;
+    use domain::pubsub::{PubSubEvent, PubSubService};
 
     // モックPubSub実装
     #[derive(Clone)]
     struct MockPubSub;
 
     impl PubSubService for MockPubSub {
-        fn notify<T: serde::Serialize + Clone>(
-            &self,
-            _event: &str,
-            _payload: T,
-        ) -> Result<(), anyhow::Error> {
+        fn notify(&self, _event: PubSubEvent) -> Result<(), anyhow::Error> {
             // テスト用なので何もしない
             Ok(())
         }

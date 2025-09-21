@@ -3,7 +3,7 @@ use std::sync::atomic::{AtomicI32, Ordering};
 use std::{marker::PhantomData, sync::Arc};
 
 use domain::collection::CollectionElement;
-use domain::pubsub::{DedupResultPayload, EnrichResultPayload, PubSubService};
+use domain::pubsub::{DedupResultPayload, EnrichResultPayload, PubSubEvent, PubSubService};
 use domain::repository::{
     all_game_cache::AllGameCacheRepository as _, collection::CollectionRepository as _,
     explored_cache::ExploredCacheRepository as _, manager::RepositoryManager,
@@ -169,29 +169,27 @@ where
                             match &v {
                                 WorkCandidateOrResolvedWork::Candidate(c) => {
                                     let path = c.path.to_string_lossy().to_string();
-                                    let _ = pubsub.notify(
-                                        "scanEnrichResult",
+                                    let _ = pubsub.notify(PubSubEvent::ScanEnrichResult(
                                         EnrichResultPayload::new(
                                             "candidate".into(),
                                             path,
                                             None,
                                             None,
                                         ),
-                                    );
+                                    ));
                                 }
                                 WorkCandidateOrResolvedWork::Resolved(r) => {
                                     let path = r.candidate.path.to_string_lossy().to_string();
                                     let title = r.title.clone();
                                     let egs_id = r.egs_id;
-                                    let _ = pubsub.notify(
-                                        "scanEnrichResult",
+                                    let _ = pubsub.notify(PubSubEvent::ScanEnrichResult(
                                         EnrichResultPayload::new(
                                             "resolved".into(),
                                             path,
                                             Some(title),
                                             Some(egs_id),
                                         ),
-                                    );
+                                    ));
                                 }
                             }
                             Some(v)
@@ -232,7 +230,7 @@ where
         let duplicates = recognized_len.saturating_sub(deduped.len());
         let _ = self
             .pubsub
-            .notify("scanDedup", DedupResultPayload::new(duplicates as i32));
+            .notify(PubSubEvent::ScanDedup(DedupResultPayload::new(duplicates as i32)));
         (deduped, duplicates)
     }
 

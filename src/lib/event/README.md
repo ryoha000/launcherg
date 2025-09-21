@@ -84,16 +84,9 @@ export function useImportProgress() {
 
 ## 型定義
 
-サポートされているイベント:
+サポートされているイベントは Rust 側の `PubSubEvent` enum (`domain/src/pubsub/event.rs`) を `typeshare` で生成した型（`src/lib/typeshare/pubsub.ts`）から自動的に import しており、`EventPayloadMap` はその union から導出されています。
 
-```typescript
-export interface EventPayloadMap {
-  progress: ProgressPayload // { message: string }
-  progresslive: ProgressLivePayload // { max: number | null }
-}
-```
-
-新しいイベント型を追加する場合は、`types.ts`の`EventPayloadMap`にエントリを追加してください。
+新しいイベント型を追加する場合は Rust の `PubSubEvent` を更新し、`task gen:pubsub` を実行して TypeScript を再生成してください。
 
 ## 特徴
 

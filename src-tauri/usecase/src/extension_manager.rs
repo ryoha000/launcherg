@@ -7,7 +7,7 @@ use domain::{
         ExtensionConfig, ExtensionConnectionStatus, NativeMessagingHostClient,
         NativeMessagingHostClientFactory, SyncStatus,
     },
-    pubsub::{ExtensionConnectionPayload, PubSubService},
+    pubsub::{ExtensionConnectionPayload, PubSubEvent, PubSubService},
 };
 use std::sync::Arc;
 
@@ -29,7 +29,7 @@ impl<P: PubSubService, F: NativeMessagingHostClientFactory> ExtensionManagerUseC
         };
         let _ = self
             .pubsub
-            .notify("extension-connection-status", connecting_payload);
+            .notify(PubSubEvent::ExtensionConnectionStatus(connecting_payload));
 
         // Native Messaging Hostクライアントを作成
         let native_messaging_client = match self.create_native_messaging_client() {
@@ -43,7 +43,7 @@ impl<P: PubSubService, F: NativeMessagingHostClientFactory> ExtensionManagerUseC
                 };
                 let _ = self
                     .pubsub
-                    .notify("extension-connection-status", result_payload);
+                    .notify(PubSubEvent::ExtensionConnectionStatus(result_payload));
 
                 return Ok(SyncStatus {
                     last_sync: None,
@@ -71,7 +71,7 @@ impl<P: PubSubService, F: NativeMessagingHostClientFactory> ExtensionManagerUseC
                             };
                             let _ = self
                                 .pubsub
-                                .notify("extension-connection-status", result_payload);
+                                .notify(PubSubEvent::ExtensionConnectionStatus(result_payload));
                             Ok(status)
                         }
                         Err(e) => {
@@ -83,7 +83,7 @@ impl<P: PubSubService, F: NativeMessagingHostClientFactory> ExtensionManagerUseC
                             };
                             let _ = self
                                 .pubsub
-                                .notify("extension-connection-status", result_payload);
+                                .notify(PubSubEvent::ExtensionConnectionStatus(result_payload));
 
                             Ok(SyncStatus {
                                 last_sync: None,
@@ -105,7 +105,7 @@ impl<P: PubSubService, F: NativeMessagingHostClientFactory> ExtensionManagerUseC
                     };
                     let _ = self
                         .pubsub
-                        .notify("extension-connection-status", result_payload);
+                        .notify(PubSubEvent::ExtensionConnectionStatus(result_payload));
 
                     Ok(SyncStatus {
                         last_sync: None,
@@ -133,7 +133,7 @@ impl<P: PubSubService, F: NativeMessagingHostClientFactory> ExtensionManagerUseC
                 };
                 let _ = self
                     .pubsub
-                    .notify("extension-connection-status", result_payload);
+                    .notify(PubSubEvent::ExtensionConnectionStatus(result_payload));
 
                 Ok(SyncStatus {
                     last_sync: None,

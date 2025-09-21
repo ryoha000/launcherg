@@ -4,6 +4,8 @@ mod tests {
     use crate::app_signal_router::test_support::{test_lock, TestEndpoint};
     use anyhow::{Error, Result};
     use chrono::Utc;
+    #[cfg(not(windows))]
+    use domain::pubsub::PubSubEvent;
     use domain::service::app_signal_router::{
         AppSignal, AppSignalEvent, AppSignalRouter, AppSignalSource,
     };
@@ -20,8 +22,6 @@ mod tests {
         test_support::{RecordingPubSub, TempDirEnvGuard},
         APP_SIGNAL_EVENT, APP_SIGNAL_SYNC_REQUESTED_EVENT,
     };
-    #[cfg(not(windows))]
-    use serde_json::from_value;
     #[cfg(not(windows))]
     use std::sync::Arc;
     #[cfg(not(windows))]
@@ -100,11 +100,17 @@ mod tests {
 
         let events = pubsub.wait_for_events(2).await?;
         assert_eq!(events.len(), 2);
-        assert_eq!(events[0].0, APP_SIGNAL_EVENT);
-        assert_eq!(events[1].0, APP_SIGNAL_SYNC_REQUESTED_EVENT);
+        assert_eq!(events[0].event_name(), APP_SIGNAL_EVENT);
+        assert_eq!(events[1].event_name(), APP_SIGNAL_SYNC_REQUESTED_EVENT);
 
-        let first: AppSignal = serde_json::from_value(events[0].1.clone())?;
-        let second: AppSignal = serde_json::from_value(events[1].1.clone())?;
+        let first: AppSignal = match &events[0] {
+            PubSubEvent::AppSignal(payload) => payload.clone().into(),
+            _ => unreachable!(),
+        };
+        let second: AppSignal = match &events[1] {
+            PubSubEvent::AppSignalSyncRequested(payload) => payload.clone().into(),
+            _ => unreachable!(),
+        };
         assert_eq!(first, signal);
         assert_eq!(second, signal);
 

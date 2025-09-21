@@ -5,12 +5,12 @@ mod tests {
     use crate::app_signal_router::{APP_SIGNAL_EVENT, APP_SIGNAL_SYNC_REQUESTED_EVENT};
     use anyhow::{Error, Result};
     use chrono::Utc;
+    use domain::pubsub::PubSubEvent;
     use domain::service::app_signal_router::{AppSignal, AppSignalEvent, AppSignalSource};
     use interprocess::local_socket::{
         tokio::Stream,
         traits::tokio::{Listener as _, Stream as _},
     };
-    use serde_json::from_value;
     use std::future::Future;
     use std::sync::Arc;
     use tokio::io::AsyncWriteExt;
@@ -117,10 +117,16 @@ mod tests {
 
         let events = pubsub.events();
         assert_eq!(events.len(), 2);
-        assert_eq!(events[0].0, APP_SIGNAL_EVENT);
-        assert_eq!(events[1].0, APP_SIGNAL_SYNC_REQUESTED_EVENT);
-        let first_signal: AppSignal = from_value(events[0].1.clone())?;
-        let second_signal: AppSignal = from_value(events[1].1.clone())?;
+        assert_eq!(events[0].event_name(), APP_SIGNAL_EVENT);
+        assert_eq!(events[1].event_name(), APP_SIGNAL_SYNC_REQUESTED_EVENT);
+        let first_signal: AppSignal = match &events[0] {
+            PubSubEvent::AppSignal(payload) => payload.clone().into(),
+            _ => unreachable!(),
+        };
+        let second_signal: AppSignal = match &events[1] {
+            PubSubEvent::AppSignalSyncRequested(payload) => payload.clone().into(),
+            _ => unreachable!(),
+        };
         assert_eq!(first_signal, signal);
         assert_eq!(second_signal, signal);
 

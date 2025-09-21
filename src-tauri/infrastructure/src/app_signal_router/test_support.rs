@@ -15,9 +15,7 @@ use interprocess::local_socket::{GenericFilePath, ToFsName};
 #[cfg(windows)]
 use interprocess::local_socket::{GenericNamespaced, ToNsName};
 
-use domain::pubsub::PubSubService;
-use serde::Serialize;
-use serde_json::Value;
+use domain::pubsub::{PubSubEvent, PubSubService};
 use tokio::sync::Notify;
 
 /// グローバルに共有するテスト用ロック。
@@ -150,7 +148,7 @@ impl TestEndpoint {
 
 /// `PubSubService` の通知内容を記録するテスト用実装。
 pub(crate) struct RecordingPubSub {
-    events: Mutex<Vec<(String, Value)>>,
+    events: Mutex<Vec<PubSubEvent>>,
     fail_for: Option<String>,
     notifier: Notify,
 }
@@ -172,12 +170,12 @@ impl RecordingPubSub {
         }
     }
 
-    pub(crate) fn events(&self) -> Vec<(String, Value)> {
+    pub(crate) fn events(&self) -> Vec<PubSubEvent> {
         self.events.lock().expect("poisoned events").clone()
     }
 
     #[cfg(not(windows))]
-    pub(crate) async fn wait_for_events(&self, expected: usize) -> Result<Vec<(String, Value)>> {
+    pub(crate) async fn wait_for_events(&self, expected: usize) -> Result<Vec<PubSubEvent>> {
         use tokio::time::{Duration, Instant};
 
         let deadline = Instant::now() + Duration::from_secs(1);
@@ -213,14 +211,13 @@ impl Default for RecordingPubSub {
 }
 
 impl PubSubService for RecordingPubSub {
-    fn notify<T: Serialize + Clone>(&self, event: &str, payload: T) -> Result<(), anyhow::Error> {
-        if self.fail_for.as_deref() == Some(event) {
-            return Err(anyhow::anyhow!("forced failure for {event}"));
+    fn notify(&self, event: PubSubEvent) -> Result<(), anyhow::Error> {
+        if self.fail_for.as_deref() == Some(event.event_name()) {
+            return Err(anyhow::anyhow!("forced failure for {}", event.event_name()));
         }
-        let value = serde_json::to_value(payload)?;
         {
             let mut events = self.events.lock().expect("poisoned events");
-            events.push((event.to_string(), value));
+            events.push(event);
         }
         self.notifier.notify_waiters();
         Ok(())
