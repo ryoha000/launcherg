@@ -23,6 +23,12 @@ async function extractAndSync(): Promise<void> {
     return
   }
 
+  const rootElement = document.getElementById('mylibrary')
+  if (!shouldExtract(window.location.hostname, rootElement)) {
+    log.debug('Skip extraction: target container not found')
+    return
+  }
+
   isExtracting = true
 
   try {
