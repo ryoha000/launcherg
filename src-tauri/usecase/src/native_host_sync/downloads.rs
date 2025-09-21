@@ -85,10 +85,7 @@ where
         if let Some(id) = maybe {
             Ok(id)
         } else {
-            anyhow::bail!(format!(
-                "dmm work not found: store_id={}",
-                store_id
-            ))
+            anyhow::bail!(format!("dmm work not found: store_id={}", store_id))
         }
     }
 
@@ -117,10 +114,7 @@ where
         if let Some(id) = maybe {
             Ok(id)
         } else {
-            anyhow::bail!(format!(
-                "dlsite work not found: store_id={}",
-                store_id
-            ))
+            anyhow::bail!(format!("dlsite work not found: store_id={}", store_id))
         }
     }
 

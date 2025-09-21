@@ -20,7 +20,7 @@ mod tests {
     use crate::app_signal_router::{
         interprocess::listener::spawn_listener,
         test_support::{RecordingPubSub, TempDirEnvGuard},
-        APP_SIGNAL_EVENT, APP_SIGNAL_REFETCH_WORK_EVENT, APP_SIGNAL_REFETCH_WORKS_EVENT,
+        APP_SIGNAL_EVENT, APP_SIGNAL_REFETCH_WORKS_EVENT, APP_SIGNAL_REFETCH_WORK_EVENT,
         APP_SIGNAL_SHOW_ERROR_MESSAGE_EVENT, APP_SIGNAL_SHOW_MESSAGE_EVENT,
     };
     #[cfg(not(windows))]

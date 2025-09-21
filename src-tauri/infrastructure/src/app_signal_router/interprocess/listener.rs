@@ -13,8 +13,8 @@ use interprocess::local_socket::{
 use tokio::{fs, io::AsyncReadExt};
 
 use crate::app_signal_router::{
-    endpoint::AppSignalEndpoint, APP_SIGNAL_EVENT, APP_SIGNAL_REFETCH_WORK_EVENT,
-    APP_SIGNAL_REFETCH_WORKS_EVENT, APP_SIGNAL_SHOW_ERROR_MESSAGE_EVENT,
+    endpoint::AppSignalEndpoint, APP_SIGNAL_EVENT, APP_SIGNAL_REFETCH_WORKS_EVENT,
+    APP_SIGNAL_REFETCH_WORK_EVENT, APP_SIGNAL_SHOW_ERROR_MESSAGE_EVENT,
     APP_SIGNAL_SHOW_MESSAGE_EVENT,
 };
 
@@ -95,7 +95,9 @@ where
         }
         AppSignalEvent::ShowErrorMessage { .. } => {
             pubsub
-                .notify(PubSubEvent::AppSignalShowErrorMessage(signal.clone().into()))
+                .notify(PubSubEvent::AppSignalShowErrorMessage(
+                    signal.clone().into(),
+                ))
                 .with_context(|| format!("failed to emit {APP_SIGNAL_SHOW_ERROR_MESSAGE_EVENT}"))?;
         }
         AppSignalEvent::RefetchWork { .. } => {

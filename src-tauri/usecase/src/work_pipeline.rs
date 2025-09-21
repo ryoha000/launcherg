@@ -230,7 +230,9 @@ where
         let duplicates = recognized_len.saturating_sub(deduped.len());
         let _ = self
             .pubsub
-            .notify(PubSubEvent::ScanDedup(DedupResultPayload::new(duplicates as i32)));
+            .notify(PubSubEvent::ScanDedup(DedupResultPayload::new(
+                duplicates as i32,
+            )));
         (deduped, duplicates)
     }
 

@@ -341,18 +341,12 @@ async fn handle_downloads_completed(
                 Ok(v) => v,
                 Err(e) => {
                     let msg = e.to_string();
-                    if let Err(dispatch_err) = dispatch_show_error_message(
-                        &ctx.app_signal_router,
-                        msg.clone(),
-                    )
-                    .await
+                    if let Err(dispatch_err) =
+                        dispatch_show_error_message(&ctx.app_signal_router, msg.clone()).await
                     {
                         log_app_signal_dispatch_failure(
                             &ctx,
-                            format!(
-                                "dispatch_show_error_message request_id={}",
-                                request_id
-                            ),
+                            format!("dispatch_show_error_message request_id={}", request_id),
                             dispatch_err,
                         )
                         .await;
@@ -366,18 +360,12 @@ async fn handle_downloads_completed(
                 Ok(v) => v,
                 Err(e) => {
                     let msg = e.to_string();
-                    if let Err(dispatch_err) = dispatch_show_error_message(
-                        &ctx.app_signal_router,
-                        msg.clone(),
-                    )
-                    .await
+                    if let Err(dispatch_err) =
+                        dispatch_show_error_message(&ctx.app_signal_router, msg.clone()).await
                     {
                         log_app_signal_dispatch_failure(
                             &ctx,
-                            format!(
-                                "dispatch_show_error_message request_id={}",
-                                request_id
-                            ),
+                            format!("dispatch_show_error_message request_id={}", request_id),
                             dispatch_err,
                         )
                         .await;
@@ -393,18 +381,12 @@ async fn handle_downloads_completed(
         let item = &request.items[0];
         if let Err(e) = usecase.handle_single(&item.filename, work_id.clone()).await {
             let msg = e.to_string();
-            if let Err(dispatch_err) = dispatch_show_error_message(
-                &ctx.app_signal_router,
-                msg.clone(),
-            )
-            .await
+            if let Err(dispatch_err) =
+                dispatch_show_error_message(&ctx.app_signal_router, msg.clone()).await
             {
                 log_app_signal_dispatch_failure(
                     &ctx,
-                    format!(
-                        "dispatch_show_error_message request_id={}",
-                        request_id
-                    ),
+                    format!("dispatch_show_error_message request_id={}", request_id),
                     dispatch_err,
                 )
                 .await;
@@ -434,18 +416,12 @@ async fn handle_downloads_completed(
         let paths: Vec<String> = request.items.iter().map(|i| i.filename.clone()).collect();
         if let Err(e) = usecase.handle_split(&paths, work_id.clone()).await {
             let msg = e.to_string();
-            if let Err(dispatch_err) = dispatch_show_error_message(
-                &ctx.app_signal_router,
-                msg.clone(),
-            )
-            .await
+            if let Err(dispatch_err) =
+                dispatch_show_error_message(&ctx.app_signal_router, msg.clone()).await
             {
                 log_app_signal_dispatch_failure(
                     &ctx,
-                    format!(
-                        "dispatch_show_error_message request_id={}",
-                        request_id
-                    ),
+                    format!("dispatch_show_error_message request_id={}", request_id),
                     dispatch_err,
                 )
                 .await;
@@ -539,9 +515,7 @@ async fn dispatch_refetch_work(
     router.dispatch(signal).await
 }
 
-async fn dispatch_refetch_works(
-    router: &Arc<InterprocessAppSignalRouter>,
-) -> anyhow::Result<()> {
+async fn dispatch_refetch_works(router: &Arc<InterprocessAppSignalRouter>) -> anyhow::Result<()> {
     let signal = AppSignal {
         source: AppSignalSource::NativeMessagingHost,
         event: AppSignalEvent::RefetchWorks,
@@ -603,12 +577,7 @@ async fn handle_sync_dmm_games(
                 synced_games: input_ids.clone(),
             };
             if let Err(err) = dispatch_refetch_works(&ctx.app_signal_router).await {
-                log_app_signal_dispatch_failure(
-                    &ctx,
-                    "dispatch_refetch_works",
-                    err,
-                )
-                .await;
+                log_app_signal_dispatch_failure(&ctx, "dispatch_refetch_works", err).await;
             }
             ok(request_id, NativeResponseCase::SyncGamesResult(result))
         }
@@ -620,11 +589,8 @@ async fn handle_sync_dmm_games(
                 errors: vec![err_msg.clone()],
                 synced_games: input_ids,
             };
-            if let Err(dispatch_err) = dispatch_show_error_message(
-                &ctx.app_signal_router,
-                err_msg.clone(),
-            )
-            .await
+            if let Err(dispatch_err) =
+                dispatch_show_error_message(&ctx.app_signal_router, err_msg.clone()).await
             {
                 log_app_signal_dispatch_failure(
                     &ctx,
@@ -657,12 +623,7 @@ async fn handle_sync_dlsite_games(
                 synced_games: input_ids.clone(),
             };
             if let Err(err) = dispatch_refetch_works(&ctx.app_signal_router).await {
-                log_app_signal_dispatch_failure(
-                    &ctx,
-                    "dispatch_refetch_works",
-                    err,
-                )
-                .await;
+                log_app_signal_dispatch_failure(&ctx, "dispatch_refetch_works", err).await;
             }
             ok(request_id, NativeResponseCase::SyncGamesResult(result))
         }
@@ -674,11 +635,8 @@ async fn handle_sync_dlsite_games(
                 errors: vec![err_msg.clone()],
                 synced_games: input_ids,
             };
-            if let Err(dispatch_err) = dispatch_show_error_message(
-                &ctx.app_signal_router,
-                err_msg.clone(),
-            )
-            .await
+            if let Err(dispatch_err) =
+                dispatch_show_error_message(&ctx.app_signal_router, err_msg.clone()).await
             {
                 log_app_signal_dispatch_failure(
                     &ctx,

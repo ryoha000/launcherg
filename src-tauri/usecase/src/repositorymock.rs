@@ -182,11 +182,7 @@ impl domain::repository::works::DmmWorkRepository for TestRepositories {
         &mut self,
         store_id: &str,
     ) -> anyhow::Result<Option<domain::works::DmmWork>> {
-        self.dmm_work
-            .lock()
-            .await
-            .find_by_store_id(store_id)
-            .await
+        self.dmm_work.lock().await.find_by_store_id(store_id).await
     }
     async fn find_by_store_keys(
         &mut self,

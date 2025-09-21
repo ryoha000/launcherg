@@ -3,7 +3,7 @@ mod tests {
     use super::super::{handle_stream, read_signal};
     use crate::app_signal_router::test_support::{test_lock, RecordingPubSub, TestEndpoint};
     use crate::app_signal_router::{
-        APP_SIGNAL_EVENT, APP_SIGNAL_REFETCH_WORK_EVENT, APP_SIGNAL_REFETCH_WORKS_EVENT,
+        APP_SIGNAL_EVENT, APP_SIGNAL_REFETCH_WORKS_EVENT, APP_SIGNAL_REFETCH_WORK_EVENT,
         APP_SIGNAL_SHOW_ERROR_MESSAGE_EVENT, APP_SIGNAL_SHOW_MESSAGE_EVENT,
     };
     use anyhow::{Error, Result};

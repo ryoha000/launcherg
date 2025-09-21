@@ -45,11 +45,7 @@ async fn dmm_works_upsert_and_find_by_store_key() {
     assert_eq!(w.category, "software");
     assert_eq!(w.subcategory, "game");
 
-    let found_by_store_id = repo
-        .dmm_work()
-        .find_by_store_id("SID-1")
-        .await
-        .unwrap();
+    let found_by_store_id = repo.dmm_work().find_by_store_id("SID-1").await.unwrap();
     assert!(found_by_store_id.is_some());
     assert_eq!(found_by_store_id.unwrap().store_id, "SID-1");
 
@@ -76,11 +72,7 @@ async fn dmm_works_upsert_and_find_by_store_key() {
     assert!(w2.work_id.value > 0);
     assert_eq!(w2.subcategory, "utility");
 
-    let updated_by_store_id = repo
-        .dmm_work()
-        .find_by_store_id("SID-1")
-        .await
-        .unwrap();
+    let updated_by_store_id = repo.dmm_work().find_by_store_id("SID-1").await.unwrap();
     assert!(updated_by_store_id.is_some());
     assert_eq!(updated_by_store_id.unwrap().subcategory, "utility");
 }
@@ -168,11 +160,7 @@ async fn dlsite_works_upsert_and_find_by_store_key() {
     assert_eq!(w.store_id, "RJ123");
     assert_eq!(w.category, "software");
 
-    let found_by_store_id = repo
-        .dlsite_work()
-        .find_by_store_id("RJ123")
-        .await
-        .unwrap();
+    let found_by_store_id = repo.dlsite_work().find_by_store_id("RJ123").await.unwrap();
     assert!(found_by_store_id.is_some());
     assert_eq!(found_by_store_id.unwrap().category, "software");
 
@@ -198,11 +186,7 @@ async fn dlsite_works_upsert_and_find_by_store_key() {
     assert!(w2.work_id.value > 0);
     assert_eq!(w2.category, "doujin");
 
-    let updated_by_store_id = repo
-        .dlsite_work()
-        .find_by_store_id("RJ123")
-        .await
-        .unwrap();
+    let updated_by_store_id = repo.dlsite_work().find_by_store_id("RJ123").await.unwrap();
     assert!(updated_by_store_id.is_some());
     assert_eq!(updated_by_store_id.unwrap().category, "doujin");
 }

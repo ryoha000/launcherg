@@ -273,10 +273,7 @@ impl DmmWorkRepository for RepositoryImpl<domain::works::DmmWork> {
         Ok(row.map(|t| t.try_into()).transpose()?)
     }
 
-    async fn find_by_store_id(
-        &mut self,
-        store_id: &str,
-    ) -> anyhow::Result<Option<DmmWork>> {
+    async fn find_by_store_id(&mut self, store_id: &str) -> anyhow::Result<Option<DmmWork>> {
         let store_id = store_id.to_string();
         let row = self
             .executor
@@ -427,10 +424,7 @@ impl DlsiteWorkRepository for RepositoryImpl<domain::works::DlsiteWork> {
         Ok(row.map(|t| t.try_into()).transpose()?)
     }
 
-    async fn find_by_store_id(
-        &mut self,
-        store_id: &str,
-    ) -> anyhow::Result<Option<DlsiteWork>> {
+    async fn find_by_store_id(&mut self, store_id: &str) -> anyhow::Result<Option<DlsiteWork>> {
         let store_id = store_id.to_string();
         let row = self
             .executor
