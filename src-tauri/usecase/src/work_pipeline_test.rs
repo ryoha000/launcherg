@@ -31,6 +31,15 @@ mod tests {
         }
     }
 
+    fn default_linker() -> Arc<MockWorkLinker> {
+        let mut linker = MockWorkLinker::new();
+        linker
+            .expect_ensure_links()
+            .times(0..)
+            .returning(|_| Box::pin(async { Ok::<_, anyhow::Error>(()) }));
+        Arc::new(linker)
+    }
+
     // smoke
     #[tokio::test]
     async fn Start_空ストリームでもエラーなく完了する() {
@@ -60,7 +69,7 @@ mod tests {
         }
         let manager = Arc::new(TestRepositoryManager::new(repos));
 
-        let linker = Arc::new(MockWorkLinker::new());
+        let linker = default_linker();
         let uc: WorkPipelineUseCase<_, _, _, _, _, _, _> = WorkPipelineUseCase::new(
             manager,
             pubsub.clone(),
@@ -98,7 +107,7 @@ mod tests {
         d.expect_resolve().returning(|items| items);
         let dedup = Arc::new(d);
         let manager = Arc::new(TestRepositoryManager::new(TestRepositories::default()));
-        let linker = Arc::new(MockWorkLinker::new());
+        let linker = default_linker();
         let uc: WorkPipelineUseCase<_, _, _, _, _, _, _> = WorkPipelineUseCase::new(
             manager,
             pubsub.clone(),
@@ -137,7 +146,7 @@ mod tests {
         let extractor = Arc::new(MockMetadataExtractor::new());
         let dedup = Arc::new(MockDuplicateResolver::new());
         let manager = Arc::new(TestRepositoryManager::new(TestRepositories::default()));
-        let linker = Arc::new(MockWorkLinker::new());
+        let linker = default_linker();
         let uc: WorkPipelineUseCase<_, _, _, _, _, _, _> = WorkPipelineUseCase::new(
             manager,
             pubsub,
@@ -169,7 +178,7 @@ mod tests {
                 .returning(|| Box::pin(async move { Ok::<_, anyhow::Error>(HashSet::new()) }));
         }
         let manager = Arc::new(TestRepositoryManager::new(repos));
-        let linker = Arc::new(MockWorkLinker::new());
+        let linker = default_linker();
         let uc: WorkPipelineUseCase<_, _, _, _, _, _, _> = WorkPipelineUseCase::new(
             manager,
             pubsub,
@@ -193,7 +202,7 @@ mod tests {
             .returning(|items| items.into_iter().take(1).collect());
         let dedup = Arc::new(d);
         let manager = Arc::new(TestRepositoryManager::new(TestRepositories::default()));
-        let linker = Arc::new(MockWorkLinker::new());
+        let linker = default_linker();
         let uc: WorkPipelineUseCase<_, _, _, _, _, _, _> = WorkPipelineUseCase::new(
             manager,
             pubsub.clone(),
@@ -263,7 +272,7 @@ mod tests {
             });
         }
         let manager = Arc::new(TestRepositoryManager::new(repos));
-        let linker = Arc::new(MockWorkLinker::new());
+        let linker = default_linker();
         let uc: WorkPipelineUseCase<_, _, _, _, _, _, _> = WorkPipelineUseCase::new(
             manager,
             pubsub,
@@ -330,7 +339,7 @@ mod tests {
             });
         }
         let manager = Arc::new(TestRepositoryManager::new(repos));
-        let linker = Arc::new(MockWorkLinker::new());
+        let linker = default_linker();
         let uc: WorkPipelineUseCase<_, _, _, _, _, _, _> = WorkPipelineUseCase::new(
             manager,
             pubsub,
@@ -379,7 +388,7 @@ mod tests {
                 .returning(|_| Box::pin(async { Ok::<_, anyhow::Error>(vec![]) }));
         }
         let manager = Arc::new(TestRepositoryManager::new(repos));
-        let linker = Arc::new(MockWorkLinker::new());
+        let linker = default_linker();
         let uc: WorkPipelineUseCase<_, _, _, _, _, _, _> = WorkPipelineUseCase::new(
             manager,
             pubsub.clone(),
@@ -422,7 +431,7 @@ mod tests {
             });
         }
         let manager = Arc::new(TestRepositoryManager::new(repos));
-        let linker = Arc::new(MockWorkLinker::new());
+        let linker = default_linker();
         let uc: WorkPipelineUseCase<_, _, _, _, _, _, _> = WorkPipelineUseCase::new(
             manager,
             pubsub,
@@ -452,7 +461,7 @@ mod tests {
                 .returning(|| Box::pin(async { Ok::<_, anyhow::Error>(vec![]) }));
         }
         let manager = Arc::new(TestRepositoryManager::new(repos));
-        let linker = Arc::new(MockWorkLinker::new());
+        let linker = default_linker();
         let uc: WorkPipelineUseCase<_, _, _, _, _, _, _> = WorkPipelineUseCase::new(
             manager,
             pubsub,

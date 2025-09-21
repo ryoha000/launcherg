@@ -1,34 +1,50 @@
 mod models;
 
-use std::io::ErrorKind;
-use std::sync::Arc;
-use tokio::io::{self as tokio_io, AsyncReadExt, AsyncWriteExt};
 use serde_json;
-use thiserror::Error;
-use std::path::{Path, PathBuf};
 use std::fs;
+use std::io::ErrorKind;
+use std::path::{Path, PathBuf};
+use std::sync::Arc;
+use thiserror::Error;
+use tokio::io::{self as tokio_io, AsyncReadExt, AsyncWriteExt};
 
-use domain::repository::{manager::RepositoryManager, native_host_log::NativeHostLogRepository, RepositoriesExt};
 use domain::native_host_log::{HostLogLevel, HostLogType};
-use models::{
-    common::{NativeMessageCase, NativeMessageTs, NativeResponseCase, NativeResponseTs, HealthCheckRequestTs, HealthCheckResultTs},
-    sync::{DmmSyncGamesRequestTs, DlsiteSyncGamesRequestTs, SyncBatchResultTs},
-    packs::{GetDmmOmitWorksRequestTs, DmmOmitWorkItemTs, DmmOmitDmmPartTs},
-    downloads::DownloadsCompletedRequestTs,
+use domain::repository::{
+    manager::RepositoryManager, native_host_log::NativeHostLogRepository, RepositoriesExt,
 };
+use domain::service::save_path_resolver::{DirsSavePathResolver, SavePathResolver};
 use infrastructure::{
-    sqliterepository::{driver::Db as RepoDb, sqliterepository::SqliteRepositoryManager, sqliterepository::SqliteRepositories},
+    heuristic_duplicate_resolver::HeuristicDuplicateResolver,
     image_queue_worker::ImageQueueWorker,
+    local_file_system::LocalFileSystem,
+    sqliterepository::{
+        driver::Db as RepoDb, sqliterepository::SqliteRepositories,
+        sqliterepository::SqliteRepositoryManager,
+    },
     windowsimpl::windows::Windows,
+    work_linker::WorkLinkerImpl,
 };
-use usecase::native_host_sync::{NativeHostSyncUseCase, DmmSyncGameParam, DlsiteSyncGameParam, EgsInfo};
+use models::{
+    common::{
+        HealthCheckRequestTs, HealthCheckResultTs, NativeMessageCase, NativeMessageTs,
+        NativeResponseCase, NativeResponseTs,
+    },
+    downloads::DownloadsCompletedRequestTs,
+    packs::{DmmOmitDmmPartTs, DmmOmitWorkItemTs, GetDmmOmitWorksRequestTs},
+    sync::{DlsiteSyncGamesRequestTs, DmmSyncGamesRequestTs, SyncBatchResultTs},
+};
 use usecase::native_host_sync::downloads::DownloadsUseCase;
-use domain::service::save_path_resolver::{SavePathResolver, DirsSavePathResolver};
+use usecase::native_host_sync::{
+    DlsiteSyncGameParam, DmmSyncGameParam, EgsInfo, NativeHostSyncUseCase,
+};
 
 struct AppCtx {
     manager: Arc<SqliteRepositoryManager>,
     sync_usecase: NativeHostSyncUseCase<SqliteRepositoryManager, SqliteRepositories>,
     resolver: Arc<dyn SavePathResolver>,
+    fs: Arc<LocalFileSystem>,
+    dedup: Arc<HeuristicDuplicateResolver>,
+    work_linker: Arc<WorkLinkerImpl<SqliteRepositoryManager, SqliteRepositories, Windows>>,
 }
 
 type HostResult<T> = Result<T, HostError>;
@@ -46,7 +62,10 @@ enum HostError {
 }
 
 fn anyhow_chain_to_string(err: &anyhow::Error) -> String {
-    err.chain().map(|e| e.to_string()).collect::<Vec<_>>().join(": ")
+    err.chain()
+        .map(|e| e.to_string())
+        .collect::<Vec<_>>()
+        .join(": ")
 }
 
 async fn read_framed() -> HostResult<Option<Vec<u8>>> {
@@ -83,7 +102,21 @@ async fn main() {
     let repo_db = RepoDb::from_path(&db_path).await;
     let repo_manager = Arc::new(SqliteRepositoryManager::new(repo_db.pool_arc()));
     let sync_usecase = NativeHostSyncUseCase::new(repo_manager.clone(), resolver.clone());
-    let ctx = AppCtx { manager: repo_manager, sync_usecase, resolver };
+    let fs = Arc::new(LocalFileSystem::default());
+    let dedup = Arc::new(HeuristicDuplicateResolver);
+    let work_linker = Arc::new(WorkLinkerImpl::new(
+        repo_manager.clone(),
+        resolver.clone(),
+        Arc::new(Windows::new()),
+    ));
+    let ctx = AppCtx {
+        manager: repo_manager,
+        sync_usecase,
+        resolver,
+        fs,
+        dedup,
+        work_linker,
+    };
 
     log::info!("Native Messaging Host started");
 
@@ -128,70 +161,173 @@ async fn handle_message(ctx: &AppCtx) -> HostResult<bool> {
         }
     };
 
-    let _ = ctx.manager.run(|repos| {
-        let log_message = format!("id: {}, request: {:?}", &message.request_id, &message.message);
-        Box::pin(async move {
-            repos.host_log().insert_log(HostLogLevel::Info, HostLogType::ReceiveRequest, log_message.as_str()).await?;
-            Ok::<(), anyhow::Error>(())
+    let _ = ctx
+        .manager
+        .run(|repos| {
+            let log_message = format!(
+                "id: {}, request: {:?}",
+                &message.request_id, &message.message
+            );
+            Box::pin(async move {
+                repos
+                    .host_log()
+                    .insert_log(
+                        HostLogLevel::Info,
+                        HostLogType::ReceiveRequest,
+                        log_message.as_str(),
+                    )
+                    .await?;
+                Ok::<(), anyhow::Error>(())
+            })
         })
-    }).await;
+        .await;
 
     let response = match &message.message {
-        NativeMessageCase::SyncDmmGames(req) => handle_sync_dmm_games(ctx, req, &message.request_id).await,
-        NativeMessageCase::SyncDlsiteGames(req) => handle_sync_dlsite_games(ctx, req, &message.request_id).await,
-        NativeMessageCase::GetDmmOmitWorks(req) => handle_get_dmm_omit_works(ctx, req, &message.request_id).await,
-        NativeMessageCase::DownloadsCompleted(req) => handle_downloads_completed(ctx, req, &message.request_id).await,
-        NativeMessageCase::GetStatus(_) => NativeResponseTs { success: false, error: "GetStatus is not supported".to_string(), request_id: message.request_id.clone(), response: None },
-        NativeMessageCase::SetConfig(_) => NativeResponseTs { success: false, error: "SetConfig is not supported".to_string(), request_id: message.request_id.clone(), response: None },
-        NativeMessageCase::HealthCheck(_) => handle_health_check(&HealthCheckRequestTs {}, &message.request_id),
+        NativeMessageCase::SyncDmmGames(req) => {
+            handle_sync_dmm_games(ctx, req, &message.request_id).await
+        }
+        NativeMessageCase::SyncDlsiteGames(req) => {
+            handle_sync_dlsite_games(ctx, req, &message.request_id).await
+        }
+        NativeMessageCase::GetDmmOmitWorks(req) => {
+            handle_get_dmm_omit_works(ctx, req, &message.request_id).await
+        }
+        NativeMessageCase::DownloadsCompleted(req) => {
+            handle_downloads_completed(ctx, req, &message.request_id).await
+        }
+        NativeMessageCase::GetStatus(_) => NativeResponseTs {
+            success: false,
+            error: "GetStatus is not supported".to_string(),
+            request_id: message.request_id.clone(),
+            response: None,
+        },
+        NativeMessageCase::SetConfig(_) => NativeResponseTs {
+            success: false,
+            error: "SetConfig is not supported".to_string(),
+            request_id: message.request_id.clone(),
+            response: None,
+        },
+        NativeMessageCase::HealthCheck(_) => {
+            handle_health_check(&HealthCheckRequestTs {}, &message.request_id)
+        }
     };
 
     send_response_json(&response).await?;
 
-    let _ = ctx.manager.run(|repos| {
-        let log_message = format!("id: {}, response: {:?}", &message.request_id, &response);
-        Box::pin(async move {
-            repos.host_log().insert_log(HostLogLevel::Info, HostLogType::Response, log_message.as_str()).await?;
-            Ok::<(), anyhow::Error>(())
+    let _ = ctx
+        .manager
+        .run(|repos| {
+            let log_message = format!("id: {}, response: {:?}", &message.request_id, &response);
+            Box::pin(async move {
+                repos
+                    .host_log()
+                    .insert_log(
+                        HostLogLevel::Info,
+                        HostLogType::Response,
+                        log_message.as_str(),
+                    )
+                    .await?;
+                Ok::<(), anyhow::Error>(())
+            })
         })
-    }).await;
+        .await;
 
     // 画像キューの drain は同期時のみ
     match &message.message {
         NativeMessageCase::SyncDmmGames(_) | NativeMessageCase::SyncDlsiteGames(_) => {
             // Native Messaging Host 側では HostLog を使用
-            let handler = std::sync::Arc::new(infrastructure::image_queue_worker::handler::ImageQueueHostLogHandler::new(ctx.manager.clone()));
-            let worker = ImageQueueWorker::new_with_event_handler(ctx.manager.clone(), ctx.resolver.clone(), Arc::new(Windows::new()), handler);
+            let handler = std::sync::Arc::new(
+                infrastructure::image_queue_worker::handler::ImageQueueHostLogHandler::new(
+                    ctx.manager.clone(),
+                ),
+            );
+            let worker = ImageQueueWorker::new_with_event_handler(
+                ctx.manager.clone(),
+                ctx.resolver.clone(),
+                Arc::new(Windows::new()),
+                handler,
+            );
             let _ = worker.drain_until_empty().await;
             return Ok(false);
         }
         _ => {}
     }
 
-    let _ = ctx.manager.run(|repos| {
-        let log_message = format!("end process image queue. id: {}, message: {:?}", &message.request_id, &message.message);
-        Box::pin(async move {
-            repos.host_log().insert_log(HostLogLevel::Info, HostLogType::EndProcessImageQueue, log_message.as_str()).await?;
-            Ok::<(), anyhow::Error>(())
+    let _ = ctx
+        .manager
+        .run(|repos| {
+            let log_message = format!(
+                "end process image queue. id: {}, message: {:?}",
+                &message.request_id, &message.message
+            );
+            Box::pin(async move {
+                repos
+                    .host_log()
+                    .insert_log(
+                        HostLogLevel::Info,
+                        HostLogType::EndProcessImageQueue,
+                        log_message.as_str(),
+                    )
+                    .await?;
+                Ok::<(), anyhow::Error>(())
+            })
         })
-    }).await;
+        .await;
 
     Ok(true)
 }
-async fn handle_downloads_completed(ctx: &AppCtx, request: &DownloadsCompletedRequestTs, request_id: &str) -> NativeResponseTs {
-    let usecase: DownloadsUseCase<SqliteRepositoryManager, SqliteRepositories> = DownloadsUseCase::new(ctx.manager.clone(), ctx.resolver.clone());
+async fn handle_downloads_completed(
+    ctx: &AppCtx,
+    request: &DownloadsCompletedRequestTs,
+    request_id: &str,
+) -> NativeResponseTs {
+    let usecase: DownloadsUseCase<
+        SqliteRepositoryManager,
+        SqliteRepositories,
+        LocalFileSystem,
+        HeuristicDuplicateResolver,
+        WorkLinkerImpl<SqliteRepositoryManager, SqliteRepositories, Windows>,
+    > = DownloadsUseCase::new(
+        ctx.manager.clone(),
+        ctx.resolver.clone(),
+        ctx.fs.clone(),
+        ctx.dedup.clone(),
+        ctx.work_linker.clone(),
+    );
 
     // helper: resolve work_id from intent (DMM / DLsite)
     let work_id = if let Some(intent) = &request.intent {
         match intent {
-            models::downloads::DownloadIntentTs::Dmm { game_store_id, game_category, game_subcategory, .. } => {
-                match usecase.resolve_dmm_work_id(game_store_id, game_category, game_subcategory).await { Ok(v) => v, Err(_) => None }
-            },
-            models::downloads::DownloadIntentTs::Dlsite { game_store_id, game_category } => {
-                match usecase.resolve_dlsite_work_id(game_store_id, game_category).await { Ok(v) => Some(v), Err(_) => None }
-            },
+            models::downloads::DownloadIntentTs::Dmm {
+                game_store_id,
+                game_category,
+                game_subcategory,
+                ..
+            } => {
+                match usecase
+                    .resolve_dmm_work_id(game_store_id, game_category, game_subcategory)
+                    .await
+                {
+                    Ok(v) => v,
+                    Err(_) => None,
+                }
+            }
+            models::downloads::DownloadIntentTs::Dlsite {
+                game_store_id,
+                game_category,
+            } => {
+                match usecase
+                    .resolve_dlsite_work_id(game_store_id, game_category)
+                    .await
+                {
+                    Ok(v) => Some(v),
+                    Err(_) => None,
+                }
+            }
         }
-    } else { None };
+    } else {
+        None
+    };
 
     // items == 1
     if request.items.len() == 1 {
@@ -200,7 +336,13 @@ async fn handle_downloads_completed(ctx: &AppCtx, request: &DownloadsCompletedRe
             return err(request_id, format!("{}", e));
         }
         cleanup_download_paths([item.filename.as_str()]);
-        return ok(request_id, NativeResponseCase::HealthCheckResult(HealthCheckResultTs { message: "OK".into(), version: env!("CARGO_PKG_VERSION").into() }));
+        return ok(
+            request_id,
+            NativeResponseCase::HealthCheckResult(HealthCheckResultTs {
+                message: "OK".into(),
+                version: env!("CARGO_PKG_VERSION").into(),
+            }),
+        );
     }
 
     // items >= 2 (split)
@@ -210,10 +352,22 @@ async fn handle_downloads_completed(ctx: &AppCtx, request: &DownloadsCompletedRe
             return err(request_id, format!("{}", e));
         }
         cleanup_download_paths(paths.iter().map(|p| p.as_str()));
-        return ok(request_id, NativeResponseCase::HealthCheckResult(HealthCheckResultTs { message: "OK".into(), version: env!("CARGO_PKG_VERSION").into() }));
+        return ok(
+            request_id,
+            NativeResponseCase::HealthCheckResult(HealthCheckResultTs {
+                message: "OK".into(),
+                version: env!("CARGO_PKG_VERSION").into(),
+            }),
+        );
     }
 
-    ok(request_id, NativeResponseCase::HealthCheckResult(HealthCheckResultTs { message: "NOOP".into(), version: env!("CARGO_PKG_VERSION").into() }))
+    ok(
+        request_id,
+        NativeResponseCase::HealthCheckResult(HealthCheckResultTs {
+            message: "NOOP".into(),
+            version: env!("CARGO_PKG_VERSION").into(),
+        }),
+    )
 }
 
 fn cleanup_download_paths<I>(paths: I)
@@ -233,24 +387,41 @@ where
                 };
                 if let Err(e) = remove_result {
                     if e.kind() != ErrorKind::NotFound {
-                        log::warn!("failed to remove downloaded item: {} ({})", path.display(), e);
+                        log::warn!(
+                            "failed to remove downloaded item: {} ({})",
+                            path.display(),
+                            e
+                        );
                     }
                 }
             }
             Err(e) => {
                 if e.kind() != ErrorKind::NotFound {
-                    log::warn!("failed to inspect downloaded item: {} ({})", path.display(), e);
+                    log::warn!(
+                        "failed to inspect downloaded item: {} ({})",
+                        path.display(),
+                        e
+                    );
                 }
             }
         }
     }
 }
 
-async fn handle_sync_dmm_games(ctx: &AppCtx, request: &DmmSyncGamesRequestTs, request_id: &str) -> NativeResponseTs {
+async fn handle_sync_dmm_games(
+    ctx: &AppCtx,
+    request: &DmmSyncGamesRequestTs,
+    request_id: &str,
+) -> NativeResponseTs {
     let (input_ids, params) = to_dmm_params(request);
     match ctx.sync_usecase.sync_dmm_games(params).await {
         Ok(success_count) => {
-            let result = SyncBatchResultTs { success_count, error_count: 0, errors: vec![], synced_games: input_ids.clone() };
+            let result = SyncBatchResultTs {
+                success_count,
+                error_count: 0,
+                errors: vec![],
+                synced_games: input_ids.clone(),
+            };
             ok(request_id, NativeResponseCase::SyncGamesResult(result))
         }
         Err(e) => {
@@ -261,16 +432,29 @@ async fn handle_sync_dmm_games(ctx: &AppCtx, request: &DmmSyncGamesRequestTs, re
                 errors: vec![err_msg.clone()],
                 synced_games: input_ids,
             };
-            fail_with_body(request_id, err_msg, NativeResponseCase::SyncGamesResult(result))
+            fail_with_body(
+                request_id,
+                err_msg,
+                NativeResponseCase::SyncGamesResult(result),
+            )
         }
     }
 }
 
-async fn handle_sync_dlsite_games(ctx: &AppCtx, request: &DlsiteSyncGamesRequestTs, request_id: &str) -> NativeResponseTs {
+async fn handle_sync_dlsite_games(
+    ctx: &AppCtx,
+    request: &DlsiteSyncGamesRequestTs,
+    request_id: &str,
+) -> NativeResponseTs {
     let (input_ids, params) = to_dlsite_params(request);
     match ctx.sync_usecase.sync_dlsite_games(params).await {
         Ok(success_count) => {
-            let result = SyncBatchResultTs { success_count, error_count: 0, errors: vec![], synced_games: input_ids.clone() };
+            let result = SyncBatchResultTs {
+                success_count,
+                error_count: 0,
+                errors: vec![],
+                synced_games: input_ids.clone(),
+            };
             ok(request_id, NativeResponseCase::SyncGamesResult(result))
         }
         Err(e) => {
@@ -281,23 +465,36 @@ async fn handle_sync_dlsite_games(ctx: &AppCtx, request: &DlsiteSyncGamesRequest
                 errors: vec![err_msg.clone()],
                 synced_games: input_ids,
             };
-            fail_with_body(request_id, err_msg, NativeResponseCase::SyncGamesResult(result))
+            fail_with_body(
+                request_id,
+                err_msg,
+                NativeResponseCase::SyncGamesResult(result),
+            )
         }
     }
 }
 
-async fn handle_get_dmm_omit_works(ctx: &AppCtx, _request: &GetDmmOmitWorksRequestTs, request_id: &str) -> NativeResponseTs {
+async fn handle_get_dmm_omit_works(
+    ctx: &AppCtx,
+    _request: &GetDmmOmitWorksRequestTs,
+    request_id: &str,
+) -> NativeResponseTs {
     match ctx.sync_usecase.list_dmm_omit_works().await {
         Ok(items) => {
-            let list: Vec<DmmOmitWorkItemTs> = items.into_iter().map(|it| DmmOmitWorkItemTs {
-                work_id: it.work_id,
-                dmm: DmmOmitDmmPartTs { store_id: it.store_id, category: it.category, subcategory: it.subcategory },
-            }).collect();
+            let list: Vec<DmmOmitWorkItemTs> = items
+                .into_iter()
+                .map(|it| DmmOmitWorkItemTs {
+                    work_id: it.work_id,
+                    dmm: DmmOmitDmmPartTs {
+                        store_id: it.store_id,
+                        category: it.category,
+                        subcategory: it.subcategory,
+                    },
+                })
+                .collect();
             ok(request_id, NativeResponseCase::DmmOmitWorks(list))
         }
-        Err(e) => {
-            err(request_id, anyhow_chain_to_string(&e))
-        }
+        Err(e) => err(request_id, anyhow_chain_to_string(&e)),
     }
 }
 
@@ -365,7 +562,11 @@ fn ensure_extract_icon_sidecar() -> anyhow::Result<PathBuf> {
     Ok(dst)
 }
 
-fn fail_with_body(request_id: &str, msg: impl Into<String>, body: NativeResponseCase) -> NativeResponseTs {
+fn fail_with_body(
+    request_id: &str,
+    msg: impl Into<String>,
+    body: NativeResponseCase,
+) -> NativeResponseTs {
     NativeResponseTs {
         success: false,
         error: msg.into(),
@@ -423,20 +624,24 @@ fn to_dlsite_params(request: &DlsiteSyncGamesRequestTs) -> (Vec<String>, Vec<Dls
 #[cfg(test)]
 mod tests {
     use super::*;
+    use domain::collection::NewCollectionElementInfo;
+    use domain::repository::collection::CollectionRepository;
+    use domain::repository::manager::RepositoryManager;
+    use domain::repository::works::{DmmWorkRepository, WorkRepository};
+    use domain::repository::RepositoriesExt;
+    use domain::works::{NewDmmWork, NewWork, WorkDetails};
+    use rand::Rng;
     use std::future::Future;
     use std::pin::Pin;
     use std::sync::Arc as StdArc;
-    use domain::collection::NewCollectionElementInfo;
-    use domain::repository::RepositoriesExt;
-    use domain::repository::collection::CollectionRepository;
-    use domain::repository::works::{DmmWorkRepository, WorkRepository};
-    use domain::works::{NewDmmWork, NewWork, WorkDetails};
-    use domain::repository::manager::RepositoryManager;
-    use rand::Rng;
 
     async fn setup_db() -> RepoDb {
         let rng = rand::rng();
-        let suffix: String = rng.sample_iter(rand::distr::Alphanumeric).take(16).map(char::from).collect();
+        let suffix: String = rng
+            .sample_iter(rand::distr::Alphanumeric)
+            .take(16)
+            .map(char::from)
+            .collect();
         let tmp = std::env::temp_dir().join(format!("launcherg-int-{}.db3", suffix));
         let tmp_str = tmp.to_string_lossy().to_string().replace("\\", "/");
         RepoDb::from_path(&tmp_str).await
@@ -451,36 +656,67 @@ mod tests {
         let usecase = NativeHostSyncUseCase::new(repo_manager.clone(), resolver.clone());
 
         // まず parent 用の work を1件作成し、その work_id を後続で参照
-        let parent_work_id: i32 = repo_manager.run(|repos| {
-            Box::pin(async move {
-                // work を先に作成
-                let mut work_repo = repos.work();
-                let work_id = work_repo.upsert(&NewWork { title: "Parent Pack".into() }).await?.value;
-                // dmm_work を紐付け
-                let mut dmm = repos.dmm_work();
-                let id = dmm.upsert(&NewDmmWork { store_id: "PARENT_SID".to_string(), category: "game".to_string(), subcategory: "pack".to_string(), work_id: domain::Id::new(work_id) }).await?;
-                Ok::<i32, anyhow::Error>(id.value)
+        let parent_work_id: i32 = repo_manager
+            .run(|repos| {
+                Box::pin(async move {
+                    // work を先に作成
+                    let mut work_repo = repos.work();
+                    let work_id = work_repo
+                        .upsert(&NewWork {
+                            title: "Parent Pack".into(),
+                        })
+                        .await?
+                        .value;
+                    // dmm_work を紐付け
+                    let mut dmm = repos.dmm_work();
+                    let id = dmm
+                        .upsert(&NewDmmWork {
+                            store_id: "PARENT_SID".to_string(),
+                            category: "game".to_string(),
+                            subcategory: "pack".to_string(),
+                            work_id: domain::Id::new(work_id),
+                        })
+                        .await?;
+                    Ok::<i32, anyhow::Error>(id.value)
+                })
             })
-        }).await.unwrap();
+            .await
+            .unwrap();
 
         // 1000件のDMM Workを事前投入
         let categories = ["game", "doujin"]; // 適当
         let subcategories = ["pc", "rpg", "adv", "act"]; // 適当
-        repo_manager.run(|repos| {
-            Box::pin(async move {
-                let mut dmm = repos.dmm_work();
-                for i in 0..1000 {
-                    let store_id = format!("SID{:04}", i);
-                    let category = categories[(i as usize) % categories.len()].to_string();
-                    let subcategory = subcategories[(i as usize) % subcategories.len()].to_string();
-                    // work を先に用意
-                    let mut work_repo = repos.work();
-                    let work_id = work_repo.upsert(&NewWork { title: format!("Game {:04}", i) }).await?.value;
-                    let _ = dmm.upsert(&NewDmmWork { store_id, category, subcategory, work_id: domain::Id::new(work_id) }).await?;
-                }
-                Ok::<(), anyhow::Error>(())
+        repo_manager
+            .run(|repos| {
+                Box::pin(async move {
+                    let mut dmm = repos.dmm_work();
+                    for i in 0..1000 {
+                        let store_id = format!("SID{:04}", i);
+                        let category = categories[(i as usize) % categories.len()].to_string();
+                        let subcategory =
+                            subcategories[(i as usize) % subcategories.len()].to_string();
+                        // work を先に用意
+                        let mut work_repo = repos.work();
+                        let work_id = work_repo
+                            .upsert(&NewWork {
+                                title: format!("Game {:04}", i),
+                            })
+                            .await?
+                            .value;
+                        let _ = dmm
+                            .upsert(&NewDmmWork {
+                                store_id,
+                                category,
+                                subcategory,
+                                work_id: domain::Id::new(work_id),
+                            })
+                            .await?;
+                    }
+                    Ok::<(), anyhow::Error>(())
+                })
             })
-        }).await.unwrap();
+            .await
+            .unwrap();
 
         // 入力生成: 半分はEGSあり、うち10件はparent_pack_work_idを設定
         let mut params: Vec<DmmSyncGameParam> = Vec::with_capacity(1000);
@@ -488,9 +724,29 @@ mod tests {
             let store_id = format!("SID{:04}", i);
             let category = categories[(i as usize) % categories.len()].to_string();
             let subcategory = subcategories[(i as usize) % subcategories.len()].to_string();
-            let egs = if i % 2 == 0 { Some(EgsInfo { erogamescape_id: 100000 + i, gamename: format!("EGS Name {:04}", i), gamename_ruby: "r".into(), brandname: "b".into(), brandname_ruby: "br".into(), sellday: "2024".into(), is_nukige: false }) } else { None };
+            let egs = if i % 2 == 0 {
+                Some(EgsInfo {
+                    erogamescape_id: 100000 + i,
+                    gamename: format!("EGS Name {:04}", i),
+                    gamename_ruby: "r".into(),
+                    brandname: "b".into(),
+                    brandname_ruby: "br".into(),
+                    sellday: "2024".into(),
+                    is_nukige: false,
+                })
+            } else {
+                None
+            };
             let parent = if i < 10 { Some(parent_work_id) } else { None };
-            params.push(DmmSyncGameParam { store_id, category, subcategory, gamename: format!("Game {:04}", i), egs, image_url: String::new(), parent_pack_work_id: parent });
+            params.push(DmmSyncGameParam {
+                store_id,
+                category,
+                subcategory,
+                gamename: format!("Game {:04}", i),
+                egs,
+                image_url: String::new(),
+                parent_pack_work_id: parent,
+            });
         }
 
         // 実行と時間計測
@@ -502,7 +758,11 @@ mod tests {
         println!("synced: {}", synced);
         println!("elapsed: {:?}", elapsed);
         assert_eq!(synced, 1000, "同期件数が一致すること");
-        assert!(elapsed.as_secs_f64() < 20.0, "1000件同期が20秒未満で終わること。実測: {:?}", elapsed);
+        assert!(
+            elapsed.as_secs_f64() < 20.0,
+            "1000件同期が20秒未満で終わること。実測: {:?}",
+            elapsed
+        );
     }
 
     #[tokio::test]
@@ -523,25 +783,66 @@ mod tests {
         struct TestCase {
             pub name: String,
             pub params: Vec<SyncGameParam>,
-            pub setup: Box<dyn Fn(Arc<SqliteRepositoryManager>) -> Pin<Box<dyn Future<Output = ()> + Send>> + Send + Sync>,
+            pub setup: Box<
+                dyn Fn(Arc<SqliteRepositoryManager>) -> Pin<Box<dyn Future<Output = ()> + Send>>
+                    + Send
+                    + Sync,
+            >,
             pub assertions: Box<dyn Fn(Vec<WorkDetails>) -> bool + Send + Sync>,
         }
 
-        let egs = EgsInfo { erogamescape_id: 1, gamename: "Game 1".to_string(), gamename_ruby: "ゲームイチ".to_string(), brandname: "りょはそふと".to_string(), brandname_ruby: "リョハソフト".to_string(), sellday: "2025-01-01".to_string(), is_nukige: false };
+        let egs = EgsInfo {
+            erogamescape_id: 1,
+            gamename: "Game 1".to_string(),
+            gamename_ruby: "ゲームイチ".to_string(),
+            brandname: "りょはそふと".to_string(),
+            brandname_ruby: "リョハソフト".to_string(),
+            sellday: "2025-01-01".to_string(),
+            is_nukige: false,
+        };
 
-        let dmm_param_egs = DmmSyncGameParam { store_id: "SID1".to_string(), category: "game".to_string(), subcategory: "pc".to_string(), gamename: "Game 1".to_string(), egs: Some(egs.clone()), image_url: "https://example.com/image1_ps.jpg".to_string(), parent_pack_work_id: None };
-        let dmm_param = DmmSyncGameParam { store_id: "SID2".to_string(), category: "game".to_string(), subcategory: "pc".to_string(), gamename: "Game 2".to_string(), egs: None, image_url: "https://example.com/image2_ps.jpg".to_string(), parent_pack_work_id: None };
-        
-        let dlsite_param_egs = DlsiteSyncGameParam { store_id: "RJ1".to_string(), category: "doujin".to_string(), gamename: "Game 1".to_string(), egs: Some(egs.clone()), image_url: "https://example.com/resize/images2/image1.jpg".to_string() };
-        let dlsite_param = DlsiteSyncGameParam { store_id: "RJ2".to_string(), category: "doujin".to_string(), gamename: "Game 2".to_string(), egs: None, image_url: "https://example.com/resize/images2/image2.jpg".to_string() };
+        let dmm_param_egs = DmmSyncGameParam {
+            store_id: "SID1".to_string(),
+            category: "game".to_string(),
+            subcategory: "pc".to_string(),
+            gamename: "Game 1".to_string(),
+            egs: Some(egs.clone()),
+            image_url: "https://example.com/image1_ps.jpg".to_string(),
+            parent_pack_work_id: None,
+        };
+        let dmm_param = DmmSyncGameParam {
+            store_id: "SID2".to_string(),
+            category: "game".to_string(),
+            subcategory: "pc".to_string(),
+            gamename: "Game 2".to_string(),
+            egs: None,
+            image_url: "https://example.com/image2_ps.jpg".to_string(),
+            parent_pack_work_id: None,
+        };
+
+        let dlsite_param_egs = DlsiteSyncGameParam {
+            store_id: "RJ1".to_string(),
+            category: "doujin".to_string(),
+            gamename: "Game 1".to_string(),
+            egs: Some(egs.clone()),
+            image_url: "https://example.com/resize/images2/image1.jpg".to_string(),
+        };
+        let dlsite_param = DlsiteSyncGameParam {
+            store_id: "RJ2".to_string(),
+            category: "doujin".to_string(),
+            gamename: "Game 2".to_string(),
+            egs: None,
+            image_url: "https://example.com/resize/images2/image2.jpg".to_string(),
+        };
 
         let test_cases = vec![
             TestCase {
                 name: "DMM でのみ管理".to_string(),
-                params: vec![
-                    SyncGameParam::Dmm(vec![dmm_param_egs.clone(), dmm_param.clone()]),
-                ],
-                setup: Box::new(|_| { Box::pin(async move { () }) }),
+                params: vec![SyncGameParam::Dmm(vec![
+                    dmm_param_egs.clone(),
+                    dmm_param.clone(),
+                ])],
+                setup: Box::new(|_| Box::pin(async move { () })),
                 assertions: Box::new(|works| {
                     // 2件存在し、両方 dmm に紐づく、SID1 は EGS が紐づいている、SID2 は EGS が紐づいていない
                     assert_eq!(works.len(), 2);
@@ -562,10 +863,11 @@ mod tests {
             },
             TestCase {
                 name: "DLsite でのみ管理".to_string(),
-                params: vec![
-                    SyncGameParam::Dlsite(vec![dlsite_param_egs.clone(), dlsite_param.clone()]),
-                ],
-                setup: Box::new(|_| { Box::pin(async move { () }) }),
+                params: vec![SyncGameParam::Dlsite(vec![
+                    dlsite_param_egs.clone(),
+                    dlsite_param.clone(),
+                ])],
+                setup: Box::new(|_| Box::pin(async move { () })),
                 assertions: Box::new(|works| {
                     // 2件存在し、両方 dlsite に紐づく、RJ1 は EGS が紐づいている、RJ2 は EGS が紐づいていない
                     assert_eq!(works.len(), 2);
@@ -590,7 +892,7 @@ mod tests {
                     SyncGameParam::Dmm(vec![dmm_param_egs.clone()]),
                     SyncGameParam::Dlsite(vec![dlsite_param_egs.clone()]),
                 ],
-                setup: Box::new(|_| { Box::pin(async move { () }) }),
+                setup: Box::new(|_| Box::pin(async move { () })),
                 assertions: Box::new(|works| {
                     // 1件存在し、dmm, dlsite, egs が紐づく
                     assert_eq!(works.len(), 1);
@@ -608,7 +910,7 @@ mod tests {
                     SyncGameParam::Dlsite(vec![dlsite_param_egs.clone()]),
                     SyncGameParam::Dmm(vec![dmm_param_egs.clone()]),
                 ],
-                setup: Box::new(|_| { Box::pin(async move { () }) }),
+                setup: Box::new(|_| Box::pin(async move { () })),
                 assertions: Box::new(|works| {
                     // 1件存在し、dmm, dlsite, egs が紐づく
                     assert_eq!(works.len(), 1);
@@ -621,21 +923,38 @@ mod tests {
                 }),
             },
             TestCase {
-                name: "collection_element に紐づいているときに DMM の登録(erogamescape_id が既存)".to_string(),
-                params: vec![
-                    SyncGameParam::Dmm(vec![dmm_param_egs.clone()]),
-                ],
-                setup: Box::new(|manager| { Box::pin(async move {
-                    manager.run(|repos| {
-                        Box::pin(async move {
-                            let cid = repos.collection().allocate_new_collection_element_id("Game 1").await?;
-                            repos.collection().upsert_erogamescape_map(&cid, 1).await?;
-                            repos.collection().upsert_collection_element_info(&NewCollectionElementInfo { collection_element_id: cid, gamename_ruby: "ゲームイチ".to_string(), brandname: "りょはそふと".to_string(), brandname_ruby: "リョハソフト".to_string(), sellday: "2025-01-01".to_string(), is_nukige: false }).await?;
+                name: "collection_element に紐づいているときに DMM の登録(erogamescape_id が既存)"
+                    .to_string(),
+                params: vec![SyncGameParam::Dmm(vec![dmm_param_egs.clone()])],
+                setup: Box::new(|manager| {
+                    Box::pin(async move {
+                        manager
+                            .run(|repos| {
+                                Box::pin(async move {
+                                    let cid = repos
+                                        .collection()
+                                        .allocate_new_collection_element_id("Game 1")
+                                        .await?;
+                                    repos.collection().upsert_erogamescape_map(&cid, 1).await?;
+                                    repos
+                                        .collection()
+                                        .upsert_collection_element_info(&NewCollectionElementInfo {
+                                            collection_element_id: cid,
+                                            gamename_ruby: "ゲームイチ".to_string(),
+                                            brandname: "りょはそふと".to_string(),
+                                            brandname_ruby: "リョハソフト".to_string(),
+                                            sellday: "2025-01-01".to_string(),
+                                            is_nukige: false,
+                                        })
+                                        .await?;
 
-                            Ok(())
-                        })
-                    }).await.unwrap();
-                }) }),
+                                    Ok(())
+                                })
+                            })
+                            .await
+                            .unwrap();
+                    })
+                }),
                 assertions: Box::new(|works| {
                     // 1件存在し、dmm, egs が紐づく
                     assert_eq!(works.len(), 1);
@@ -648,21 +967,39 @@ mod tests {
                 }),
             },
             TestCase {
-                name: "collection_element に紐づいているときに DLsite の登録(erogamescape_id が既存)".to_string(),
-                params: vec![
-                    SyncGameParam::Dlsite(vec![dlsite_param_egs.clone()]),
-                ],
-                setup: Box::new(|manager| { Box::pin(async move {
-                    manager.run(|repos| {
-                        Box::pin(async move {
-                            let cid = repos.collection().allocate_new_collection_element_id("Game 1").await?;
-                            repos.collection().upsert_erogamescape_map(&cid, 1).await?;
-                            repos.collection().upsert_collection_element_info(&NewCollectionElementInfo { collection_element_id: cid, gamename_ruby: "ゲームイチ".to_string(), brandname: "りょはそふと".to_string(), brandname_ruby: "リョハソフト".to_string(), sellday: "2025-01-01".to_string(), is_nukige: false }).await?;
+                name:
+                    "collection_element に紐づいているときに DLsite の登録(erogamescape_id が既存)"
+                        .to_string(),
+                params: vec![SyncGameParam::Dlsite(vec![dlsite_param_egs.clone()])],
+                setup: Box::new(|manager| {
+                    Box::pin(async move {
+                        manager
+                            .run(|repos| {
+                                Box::pin(async move {
+                                    let cid = repos
+                                        .collection()
+                                        .allocate_new_collection_element_id("Game 1")
+                                        .await?;
+                                    repos.collection().upsert_erogamescape_map(&cid, 1).await?;
+                                    repos
+                                        .collection()
+                                        .upsert_collection_element_info(&NewCollectionElementInfo {
+                                            collection_element_id: cid,
+                                            gamename_ruby: "ゲームイチ".to_string(),
+                                            brandname: "りょはそふと".to_string(),
+                                            brandname_ruby: "リョハソフト".to_string(),
+                                            sellday: "2025-01-01".to_string(),
+                                            is_nukige: false,
+                                        })
+                                        .await?;
 
-                            Ok(())
-                        })
-                    }).await.unwrap();
-                }) }),
+                                    Ok(())
+                                })
+                            })
+                            .await
+                            .unwrap();
+                    })
+                }),
                 assertions: Box::new(|works| {
                     // 1件存在し、dlsite, egs が紐づく
                     assert_eq!(works.len(), 1);
@@ -684,12 +1021,15 @@ mod tests {
             (test_case.setup)(repo_manager.clone()).await;
 
             // 同じDBを使いまわしていないか確認
-            let works = repo_manager.run(|repos| {
-                Box::pin(async move {
-                    let works = repos.work().list_all_details().await?;
-                    Ok::<Vec<WorkDetails>, anyhow::Error>(works)
+            let works = repo_manager
+                .run(|repos| {
+                    Box::pin(async move {
+                        let works = repos.work().list_all_details().await?;
+                        Ok::<Vec<WorkDetails>, anyhow::Error>(works)
+                    })
                 })
-            }).await.unwrap();
+                .await
+                .unwrap();
             assert!(works.is_empty());
 
             for param in test_case.params {
@@ -702,12 +1042,15 @@ mod tests {
                     }
                 }
             }
-            let works = repo_manager.run(|repos| {
-                Box::pin(async move {
-                    let mut work_repo = repos.work();
-                    work_repo.list_all_details().await
+            let works = repo_manager
+                .run(|repos| {
+                    Box::pin(async move {
+                        let mut work_repo = repos.work();
+                        work_repo.list_all_details().await
+                    })
                 })
-            }).await.unwrap();
+                .await
+                .unwrap();
             assert!((test_case.assertions)(works), "{}", test_case.name);
         }
     }
@@ -727,24 +1070,50 @@ mod tests {
 
     #[test]
     fn ステータス未対応_エラー() {
-        let resp = NativeResponseTs { success: false, error: "GetStatus is not supported".into(), request_id: "x".into(), response: None };
+        let resp = NativeResponseTs {
+            success: false,
+            error: "GetStatus is not supported".into(),
+            request_id: "x".into(),
+            response: None,
+        };
         assert!(!resp.success);
         assert!(resp.error.contains("not supported"));
     }
 
     #[test]
     fn セット未対応_エラー() {
-        let resp = NativeResponseTs { success: false, error: "SetConfig is not supported".into(), request_id: "x".into(), response: None };
+        let resp = NativeResponseTs {
+            success: false,
+            error: "SetConfig is not supported".into(),
+            request_id: "x".into(),
+            response: None,
+        };
         assert!(!resp.success);
         assert!(resp.error.contains("not supported"));
     }
 
     #[test]
     fn dmmパラメータ変換_フィールド一致() {
-        let req = DmmSyncGamesRequestTs { games: vec![models::sync::DmmGameTs {
-            id: "SID1".into(), category: "game".into(), subcategory: "pc".into(), title: "T".into(),
-            image_url: "u".into(), egs_info: Some(models::sync::EgsInfoTs { erogamescape_id: 1, gamename: "G".into(), gamename_ruby: "r".into(), brandname: "b".into(), brandname_ruby: "br".into(), sellday: "s".into(), is_nukige: false }), parent_pack_work_id: Some(10)
-        }], extension_id: "ext".into() };
+        let req = DmmSyncGamesRequestTs {
+            games: vec![models::sync::DmmGameTs {
+                id: "SID1".into(),
+                category: "game".into(),
+                subcategory: "pc".into(),
+                title: "T".into(),
+                image_url: "u".into(),
+                egs_info: Some(models::sync::EgsInfoTs {
+                    erogamescape_id: 1,
+                    gamename: "G".into(),
+                    gamename_ruby: "r".into(),
+                    brandname: "b".into(),
+                    brandname_ruby: "br".into(),
+                    sellday: "s".into(),
+                    is_nukige: false,
+                }),
+                parent_pack_work_id: Some(10),
+            }],
+            extension_id: "ext".into(),
+        };
         let (ids, params) = to_dmm_params(&req);
         assert_eq!(ids, vec!["SID1".to_string()]);
         assert_eq!(params[0].store_id, "SID1");
@@ -757,10 +1126,16 @@ mod tests {
 
     #[test]
     fn dlsiteパラメータ変換_フィールド一致() {
-        let req = DlsiteSyncGamesRequestTs { games: vec![models::sync::DlsiteGameTs {
-            id: "RJ1".into(), category: "doujin".into(), title: "T".into(), image_url: "u".into(),
-            egs_info: None
-        }], extension_id: "ext".into() };
+        let req = DlsiteSyncGamesRequestTs {
+            games: vec![models::sync::DlsiteGameTs {
+                id: "RJ1".into(),
+                category: "doujin".into(),
+                title: "T".into(),
+                image_url: "u".into(),
+                egs_info: None,
+            }],
+            extension_id: "ext".into(),
+        };
         let (ids, params) = to_dlsite_params(&req);
         assert_eq!(ids, vec!["RJ1".to_string()]);
         assert_eq!(params[0].store_id, "RJ1");
@@ -771,45 +1146,131 @@ mod tests {
 
     #[tokio::test]
     async fn 同期dmm_空入力_0件() {
-        let tmp = std::env::temp_dir().join(format!("launcherg-dmm-empty-{}.db3", std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_millis()));
+        let tmp = std::env::temp_dir().join(format!(
+            "launcherg-dmm-empty-{}.db3",
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_millis()
+        ));
         let tmp_str = tmp.to_string_lossy().to_string().replace("\\", "/");
         let db = RepoDb::from_path(&tmp_str).await;
         let repo_manager = StdArc::new(SqliteRepositoryManager::new(db.pool_arc()));
         let resolver = Arc::new(DirsSavePathResolver::default());
         let usecase = NativeHostSyncUseCase::new(repo_manager.clone(), resolver.clone());
-        let ctx = AppCtx { manager: repo_manager, sync_usecase: usecase, resolver };
-        let req = DmmSyncGamesRequestTs { games: vec![], extension_id: "ext".into() };
+        let fs = Arc::new(LocalFileSystem::default());
+        let dedup = Arc::new(HeuristicDuplicateResolver);
+        let work_linker = Arc::new(WorkLinkerImpl::new(
+            repo_manager.clone(),
+            resolver.clone(),
+            Arc::new(Windows::new()),
+        ));
+        let ctx = AppCtx {
+            manager: repo_manager,
+            sync_usecase: usecase,
+            resolver,
+            fs,
+            dedup,
+            work_linker,
+        };
+        let req = DmmSyncGamesRequestTs {
+            games: vec![],
+            extension_id: "ext".into(),
+        };
         let resp = handle_sync_dmm_games(&ctx, &req, "r1").await;
         assert!(resp.success);
-        if let Some(NativeResponseCase::SyncGamesResult(r)) = resp.response { assert_eq!(r.success_count, 0); assert!(r.synced_games.is_empty()); } else { panic!("unexpected"); }
+        if let Some(NativeResponseCase::SyncGamesResult(r)) = resp.response {
+            assert_eq!(r.success_count, 0);
+            assert!(r.synced_games.is_empty());
+        } else {
+            panic!("unexpected");
+        }
     }
 
     #[tokio::test]
     async fn 同期dlsite_空入力_0件() {
-        let tmp = std::env::temp_dir().join(format!("launcherg-dl-empty-{}.db3", std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_millis()));
+        let tmp = std::env::temp_dir().join(format!(
+            "launcherg-dl-empty-{}.db3",
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_millis()
+        ));
         let tmp_str = tmp.to_string_lossy().to_string().replace("\\", "/");
         let db = RepoDb::from_path(&tmp_str).await;
         let repo_manager = StdArc::new(SqliteRepositoryManager::new(db.pool_arc()));
         let resolver = Arc::new(DirsSavePathResolver::default());
         let usecase = NativeHostSyncUseCase::new(repo_manager.clone(), resolver.clone());
-        let ctx = AppCtx { manager: repo_manager, sync_usecase: usecase, resolver };
-        let req = DlsiteSyncGamesRequestTs { games: vec![], extension_id: "ext".into() };
+        let fs = Arc::new(LocalFileSystem::default());
+        let dedup = Arc::new(HeuristicDuplicateResolver);
+        let work_linker = Arc::new(WorkLinkerImpl::new(
+            repo_manager.clone(),
+            resolver.clone(),
+            Arc::new(Windows::new()),
+        ));
+        let ctx = AppCtx {
+            manager: repo_manager,
+            sync_usecase: usecase,
+            resolver,
+            fs,
+            dedup,
+            work_linker,
+        };
+        let req = DlsiteSyncGamesRequestTs {
+            games: vec![],
+            extension_id: "ext".into(),
+        };
         let resp = handle_sync_dlsite_games(&ctx, &req, "r1").await;
         assert!(resp.success);
-        if let Some(NativeResponseCase::SyncGamesResult(r)) = resp.response { assert_eq!(r.success_count, 0); assert!(r.synced_games.is_empty()); } else { panic!("unexpected"); }
+        if let Some(NativeResponseCase::SyncGamesResult(r)) = resp.response {
+            assert_eq!(r.success_count, 0);
+            assert!(r.synced_games.is_empty());
+        } else {
+            panic!("unexpected");
+        }
     }
 
     #[tokio::test]
     async fn 省略作品一覧_空配列() {
-        let tmp = std::env::temp_dir().join(format!("launcherg-omit-empty-{}.db3", std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_millis()));
+        let tmp = std::env::temp_dir().join(format!(
+            "launcherg-omit-empty-{}.db3",
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_millis()
+        ));
         let tmp_str = tmp.to_string_lossy().to_string().replace("\\", "/");
         let db = RepoDb::from_path(&tmp_str).await;
         let repo_manager = StdArc::new(SqliteRepositoryManager::new(db.pool_arc()));
         let resolver = Arc::new(DirsSavePathResolver::default());
         let usecase = NativeHostSyncUseCase::new(repo_manager.clone(), resolver.clone());
-        let ctx = AppCtx { manager: repo_manager, sync_usecase: usecase, resolver };
-        let resp = handle_get_dmm_omit_works(&ctx, &GetDmmOmitWorksRequestTs { extension_id: "ext".into() }, "r2").await;
+        let fs = Arc::new(LocalFileSystem::default());
+        let dedup = Arc::new(HeuristicDuplicateResolver);
+        let work_linker = Arc::new(WorkLinkerImpl::new(
+            repo_manager.clone(),
+            resolver.clone(),
+            Arc::new(Windows::new()),
+        ));
+        let ctx = AppCtx {
+            manager: repo_manager,
+            sync_usecase: usecase,
+            resolver,
+            fs,
+            dedup,
+            work_linker,
+        };
+        let resp = handle_get_dmm_omit_works(
+            &ctx,
+            &GetDmmOmitWorksRequestTs {
+                extension_id: "ext".into(),
+            },
+            "r2",
+        )
+        .await;
         assert!(resp.success);
-        match resp.response { Some(NativeResponseCase::DmmOmitWorks(v)) => assert!(v.is_empty()), _ => panic!("unexpected") }
+        match resp.response {
+            Some(NativeResponseCase::DmmOmitWorks(v)) => assert!(v.is_empty()),
+            _ => panic!("unexpected"),
+        }
     }
 }
