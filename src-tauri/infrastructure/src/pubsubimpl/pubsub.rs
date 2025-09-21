@@ -63,8 +63,11 @@ impl PubSubService for PubSub {
                 self.emit("imageQueueItemFailed", payload)
             }
             PubSubEvent::AppSignal(payload) => self.emit("appSignal", payload),
-            PubSubEvent::AppSignalSyncRequested(payload) => {
-                self.emit("appSignal:syncRequested", payload)
+            PubSubEvent::AppSignalShowMessage(payload) => {
+                self.emit("appSignal:showMessage", payload)
+            }
+            PubSubEvent::AppSignalShowErrorMessage(payload) => {
+                self.emit("appSignal:showErrorMessage", payload)
             }
         }
     }

@@ -20,7 +20,7 @@ mod tests {
     use crate::app_signal_router::{
         interprocess::listener::spawn_listener,
         test_support::{RecordingPubSub, TempDirEnvGuard},
-        APP_SIGNAL_EVENT, APP_SIGNAL_SYNC_REQUESTED_EVENT,
+        APP_SIGNAL_EVENT, APP_SIGNAL_SHOW_ERROR_MESSAGE_EVENT, APP_SIGNAL_SHOW_MESSAGE_EVENT,
     };
     #[cfg(not(windows))]
     use std::sync::Arc;
@@ -41,8 +41,19 @@ mod tests {
     fn sample_signal() -> AppSignal {
         AppSignal {
             source: AppSignalSource::NativeMessagingHost,
-            event: AppSignalEvent::SyncRequested {
-                message: Some("integration".to_string()),
+            event: AppSignalEvent::ShowMessage {
+                message: "integration".to_string(),
+            },
+            issued_at: Utc::now(),
+        }
+    }
+
+    #[cfg(not(windows))]
+    fn sample_error_signal() -> AppSignal {
+        AppSignal {
+            source: AppSignalSource::NativeMessagingHost,
+            event: AppSignalEvent::ShowErrorMessage {
+                message: "integration".to_string(),
             },
             issued_at: Utc::now(),
         }
@@ -101,19 +112,53 @@ mod tests {
         let events = pubsub.wait_for_events(2).await?;
         assert_eq!(events.len(), 2);
         assert_eq!(events[0].event_name(), APP_SIGNAL_EVENT);
-        assert_eq!(events[1].event_name(), APP_SIGNAL_SYNC_REQUESTED_EVENT);
+        assert_eq!(events[1].event_name(), APP_SIGNAL_SHOW_MESSAGE_EVENT);
 
         let first: AppSignal = match &events[0] {
             PubSubEvent::AppSignal(payload) => payload.clone().into(),
             _ => unreachable!(),
         };
         let second: AppSignal = match &events[1] {
-            PubSubEvent::AppSignalSyncRequested(payload) => payload.clone().into(),
+            PubSubEvent::AppSignalShowMessage(payload) => payload.clone().into(),
             _ => unreachable!(),
         };
         assert_eq!(first, signal);
         assert_eq!(second, signal);
 
+        Ok(())
+    }
+
+    #[cfg(not(windows))]
+    #[tokio::test]
+    async fn listener_client_エラーイベント統合テスト() -> Result<()> {
+        let _lock = test_lock();
+        let env_guard = TempDirEnvGuard::new()?;
+        let pubsub = Arc::new(RecordingPubSub::new());
+        spawn_listener(Arc::clone(&pubsub))?;
+
+        sleep(Duration::from_millis(50)).await;
+
+        let router = InterprocessAppSignalRouter::new();
+        let signal = sample_error_signal();
+        router.dispatch(signal.clone()).await?;
+
+        let events = pubsub.wait_for_events(2).await?;
+        assert_eq!(events.len(), 2);
+        assert_eq!(events[0].event_name(), APP_SIGNAL_EVENT);
+        assert_eq!(events[1].event_name(), APP_SIGNAL_SHOW_ERROR_MESSAGE_EVENT);
+
+        let first: AppSignal = match &events[0] {
+            PubSubEvent::AppSignal(payload) => payload.clone().into(),
+            _ => unreachable!(),
+        };
+        let second: AppSignal = match &events[1] {
+            PubSubEvent::AppSignalShowErrorMessage(payload) => payload.clone().into(),
+            _ => unreachable!(),
+        };
+        assert_eq!(first, signal);
+        assert_eq!(second, signal);
+
+        drop(env_guard);
         Ok(())
     }
 }

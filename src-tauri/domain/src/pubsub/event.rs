@@ -130,6 +130,12 @@ pub enum AppSignalSourcePayload {
 #[derive(Clone, Serialize)]
 #[serde(tag = "type", content = "payload", rename_all = "camelCase")]
 pub enum AppSignalEventPayload {
+    ShowErrorMessage {
+        message: String,
+    },
+    ShowMessage {
+        message: String,
+    },
     SyncRequested {
         #[serde(default)]
         message: Option<String>,
@@ -155,6 +161,12 @@ impl From<AppSignalSourcePayload> for AppSignalSource {
 impl From<AppSignalEvent> for AppSignalEventPayload {
     fn from(value: AppSignalEvent) -> Self {
         match value {
+            AppSignalEvent::ShowErrorMessage { message } => {
+                AppSignalEventPayload::ShowErrorMessage { message }
+            }
+            AppSignalEvent::ShowMessage { message } => {
+                AppSignalEventPayload::ShowMessage { message }
+            }
             AppSignalEvent::SyncRequested { message } => {
                 AppSignalEventPayload::SyncRequested { message }
             }
@@ -165,6 +177,12 @@ impl From<AppSignalEvent> for AppSignalEventPayload {
 impl From<AppSignalEventPayload> for AppSignalEvent {
     fn from(value: AppSignalEventPayload) -> Self {
         match value {
+            AppSignalEventPayload::ShowErrorMessage { message } => {
+                AppSignalEvent::ShowErrorMessage { message }
+            }
+            AppSignalEventPayload::ShowMessage { message } => {
+                AppSignalEvent::ShowMessage { message }
+            }
             AppSignalEventPayload::SyncRequested { message } => {
                 AppSignalEvent::SyncRequested { message }
             }
@@ -226,8 +244,10 @@ pub enum PubSubEvent {
     ImageQueueItemFailed(ImageQueueItemErrorPayload),
     #[serde(rename = "appSignal")]
     AppSignal(AppSignalPayload),
-    #[serde(rename = "appSignal:syncRequested")]
-    AppSignalSyncRequested(AppSignalPayload),
+    #[serde(rename = "appSignal:showMessage")]
+    AppSignalShowMessage(AppSignalPayload),
+    #[serde(rename = "appSignal:showErrorMessage")]
+    AppSignalShowErrorMessage(AppSignalPayload),
 }
 
 impl PubSubEvent {
@@ -248,7 +268,8 @@ impl PubSubEvent {
             PubSubEvent::ImageQueueItemSucceeded(..) => "imageQueueItemSucceeded",
             PubSubEvent::ImageQueueItemFailed(..) => "imageQueueItemFailed",
             PubSubEvent::AppSignal(..) => "appSignal",
-            PubSubEvent::AppSignalSyncRequested(..) => "appSignal:syncRequested",
+            PubSubEvent::AppSignalShowMessage(..) => "appSignal:showMessage",
+            PubSubEvent::AppSignalShowErrorMessage(..) => "appSignal:showErrorMessage",
         }
     }
 }

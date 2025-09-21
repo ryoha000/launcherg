@@ -13,7 +13,8 @@ use interprocess::local_socket::{
 use tokio::{fs, io::AsyncReadExt};
 
 use crate::app_signal_router::{
-    endpoint::AppSignalEndpoint, APP_SIGNAL_EVENT, APP_SIGNAL_SYNC_REQUESTED_EVENT,
+    endpoint::AppSignalEndpoint, APP_SIGNAL_EVENT, APP_SIGNAL_SHOW_ERROR_MESSAGE_EVENT,
+    APP_SIGNAL_SHOW_MESSAGE_EVENT,
 };
 
 pub fn spawn_listener<P>(pubsub: Arc<P>) -> Result<()>
@@ -85,10 +86,18 @@ where
         .notify(PubSubEvent::AppSignal(signal.clone().into()))
         .with_context(|| format!("failed to emit {APP_SIGNAL_EVENT}"))?;
 
-    if matches!(&signal.event, AppSignalEvent::SyncRequested { .. }) {
-        pubsub
-            .notify(PubSubEvent::AppSignalSyncRequested(signal.clone().into()))
-            .with_context(|| format!("failed to emit {APP_SIGNAL_SYNC_REQUESTED_EVENT}"))?;
+    match &signal.event {
+        AppSignalEvent::ShowMessage { .. } => {
+            pubsub
+                .notify(PubSubEvent::AppSignalShowMessage(signal.clone().into()))
+                .with_context(|| format!("failed to emit {APP_SIGNAL_SHOW_MESSAGE_EVENT}"))?;
+        }
+        AppSignalEvent::ShowErrorMessage { .. } => {
+            pubsub
+                .notify(PubSubEvent::AppSignalShowErrorMessage(signal.clone().into()))
+                .with_context(|| format!("failed to emit {APP_SIGNAL_SHOW_ERROR_MESSAGE_EVENT}"))?;
+        }
+        AppSignalEvent::SyncRequested { .. } => {}
     }
 
     Ok(())

@@ -168,6 +168,10 @@ async fn handle_message(ctx: &AppCtx) -> HostResult<bool> {
         }
     };
 
+    if let Err(err) = notify_app_signal(&ctx.app_signal_router, &message.message).await {
+        log::debug!("app signal dispatch failed: {err}");
+    }
+
     let _ = ctx
         .manager
         .run(|repos| {
@@ -239,12 +243,6 @@ async fn handle_message(ctx: &AppCtx) -> HostResult<bool> {
         })
         .await;
 
-    if response.success {
-        if let Err(err) = notify_app_signal(&ctx.app_signal_router, &message.message).await {
-            log::debug!("app signal dispatch failed: {err}");
-        }
-    }
-
     // 画像キューの drain は同期時のみ
     match &message.message {
         NativeMessageCase::SyncDmmGames(_) | NativeMessageCase::SyncDlsiteGames(_) => {
@@ -313,13 +311,35 @@ async fn handle_downloads_completed(
         models::downloads::DownloadIntentTs::Dmm { game_store_id, .. } => {
             match usecase.resolve_dmm_work_id(game_store_id).await {
                 Ok(v) => v,
-                Err(e) => return err(request_id, e.to_string()),
+                Err(e) => {
+                    let msg = e.to_string();
+                    if let Err(dispatch_err) = dispatch_show_error_message(
+                        &ctx.app_signal_router,
+                        msg.clone(),
+                    )
+                    .await
+                    {
+                        log::debug!("app signal dispatch failed: {dispatch_err}");
+                    }
+                    return err(request_id, msg);
+                }
             }
         }
         models::downloads::DownloadIntentTs::Dlsite { game_store_id, .. } => {
             match usecase.resolve_dlsite_work_id(game_store_id).await {
                 Ok(v) => v,
-                Err(e) => return err(request_id, e.to_string()),
+                Err(e) => {
+                    let msg = e.to_string();
+                    if let Err(dispatch_err) = dispatch_show_error_message(
+                        &ctx.app_signal_router,
+                        msg.clone(),
+                    )
+                    .await
+                    {
+                        log::debug!("app signal dispatch failed: {dispatch_err}");
+                    }
+                    return err(request_id, msg);
+                }
             }
         }
     };
@@ -327,10 +347,27 @@ async fn handle_downloads_completed(
     // items == 1
     if request.items.len() == 1 {
         let item = &request.items[0];
-        if let Err(e) = usecase.handle_single(&item.filename, work_id).await {
-            return err(request_id, format!("{}", e));
+        if let Err(e) = usecase.handle_single(&item.filename, work_id.clone()).await {
+            let msg = e.to_string();
+            if let Err(dispatch_err) = dispatch_show_error_message(
+                &ctx.app_signal_router,
+                msg.clone(),
+            )
+            .await
+            {
+                log::debug!("app signal dispatch failed: {dispatch_err}");
+            }
+            return err(request_id, msg);
         }
         cleanup_download_paths([item.filename.as_str()]);
+        if let Err(err) = dispatch_show_message(
+            &ctx.app_signal_router,
+            format!("RefetchWork({})", work_id.value),
+        )
+        .await
+        {
+            log::debug!("app signal dispatch failed: {err}");
+        }
         return ok(
             request_id,
             NativeResponseCase::HealthCheckResult(HealthCheckResultTs {
@@ -343,10 +380,27 @@ async fn handle_downloads_completed(
     // items >= 2 (split)
     if request.items.len() >= 2 {
         let paths: Vec<String> = request.items.iter().map(|i| i.filename.clone()).collect();
-        if let Err(e) = usecase.handle_split(&paths, work_id).await {
-            return err(request_id, format!("{}", e));
+        if let Err(e) = usecase.handle_split(&paths, work_id.clone()).await {
+            let msg = e.to_string();
+            if let Err(dispatch_err) = dispatch_show_error_message(
+                &ctx.app_signal_router,
+                msg.clone(),
+            )
+            .await
+            {
+                log::debug!("app signal dispatch failed: {dispatch_err}");
+            }
+            return err(request_id, msg);
         }
         cleanup_download_paths(paths.iter().map(|p| p.as_str()));
+        if let Err(err) = dispatch_show_message(
+            &ctx.app_signal_router,
+            format!("RefetchWork({})", work_id.value),
+        )
+        .await
+        {
+            log::debug!("app signal dispatch failed: {err}");
+        }
         return ok(
             request_id,
             NativeResponseCase::HealthCheckResult(HealthCheckResultTs {
@@ -354,6 +408,15 @@ async fn handle_downloads_completed(
                 version: env!("CARGO_PKG_VERSION").into(),
             }),
         );
+    }
+
+    if let Err(err) = dispatch_show_message(
+        &ctx.app_signal_router,
+        format!("RefetchWork({})", work_id.value),
+    )
+    .await
+    {
+        log::debug!("app signal dispatch failed: {err}");
     }
 
     ok(
@@ -377,17 +440,34 @@ async fn notify_app_signal(
     };
 
     if let Some(reason) = reason {
-        let signal = AppSignal {
-            source: AppSignalSource::NativeMessagingHost,
-            event: AppSignalEvent::SyncRequested {
-                message: Some(reason.to_string()),
-            },
-            issued_at: Utc::now(),
-        };
-        router.dispatch(signal).await?;
+        dispatch_show_message(router, reason.to_string()).await?;
     }
 
     Ok(())
+}
+
+async fn dispatch_show_message(
+    router: &Arc<InterprocessAppSignalRouter>,
+    message: String,
+) -> anyhow::Result<()> {
+    let signal = AppSignal {
+        source: AppSignalSource::NativeMessagingHost,
+        event: AppSignalEvent::ShowMessage { message },
+        issued_at: Utc::now(),
+    };
+    router.dispatch(signal).await
+}
+
+async fn dispatch_show_error_message(
+    router: &Arc<InterprocessAppSignalRouter>,
+    message: String,
+) -> anyhow::Result<()> {
+    let signal = AppSignal {
+        source: AppSignalSource::NativeMessagingHost,
+        event: AppSignalEvent::ShowErrorMessage { message },
+        issued_at: Utc::now(),
+    };
+    router.dispatch(signal).await
 }
 
 fn cleanup_download_paths<I>(paths: I)
@@ -442,6 +522,9 @@ async fn handle_sync_dmm_games(
                 errors: vec![],
                 synced_games: input_ids.clone(),
             };
+            if let Err(err) = dispatch_show_message(&ctx.app_signal_router, "RefetchWorks()".to_string()).await {
+                log::debug!("app signal dispatch failed: {err}");
+            }
             ok(request_id, NativeResponseCase::SyncGamesResult(result))
         }
         Err(e) => {
@@ -452,6 +535,14 @@ async fn handle_sync_dmm_games(
                 errors: vec![err_msg.clone()],
                 synced_games: input_ids,
             };
+            if let Err(dispatch_err) = dispatch_show_error_message(
+                &ctx.app_signal_router,
+                err_msg.clone(),
+            )
+            .await
+            {
+                log::debug!("app signal dispatch failed: {dispatch_err}");
+            }
             fail_with_body(
                 request_id,
                 err_msg,
@@ -475,6 +566,9 @@ async fn handle_sync_dlsite_games(
                 errors: vec![],
                 synced_games: input_ids.clone(),
             };
+            if let Err(err) = dispatch_show_message(&ctx.app_signal_router, "RefetchWorks()".to_string()).await {
+                log::debug!("app signal dispatch failed: {err}");
+            }
             ok(request_id, NativeResponseCase::SyncGamesResult(result))
         }
         Err(e) => {
@@ -485,6 +579,14 @@ async fn handle_sync_dlsite_games(
                 errors: vec![err_msg.clone()],
                 synced_games: input_ids,
             };
+            if let Err(dispatch_err) = dispatch_show_error_message(
+                &ctx.app_signal_router,
+                err_msg.clone(),
+            )
+            .await
+            {
+                log::debug!("app signal dispatch failed: {dispatch_err}");
+            }
             fail_with_body(
                 request_id,
                 err_msg,

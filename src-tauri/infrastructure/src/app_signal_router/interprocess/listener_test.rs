@@ -2,7 +2,9 @@
 mod tests {
     use super::super::{handle_stream, read_signal};
     use crate::app_signal_router::test_support::{test_lock, RecordingPubSub, TestEndpoint};
-    use crate::app_signal_router::{APP_SIGNAL_EVENT, APP_SIGNAL_SYNC_REQUESTED_EVENT};
+    use crate::app_signal_router::{
+        APP_SIGNAL_EVENT, APP_SIGNAL_SHOW_ERROR_MESSAGE_EVENT, APP_SIGNAL_SHOW_MESSAGE_EVENT,
+    };
     use anyhow::{Error, Result};
     use chrono::Utc;
     use domain::pubsub::PubSubEvent;
@@ -15,11 +17,21 @@ mod tests {
     use std::sync::Arc;
     use tokio::io::AsyncWriteExt;
 
-    fn build_signal(message: Option<&str>) -> AppSignal {
+    fn build_signal(message: &str) -> AppSignal {
         AppSignal {
             source: AppSignalSource::NativeMessagingHost,
-            event: AppSignalEvent::SyncRequested {
-                message: message.map(|msg| msg.to_string()),
+            event: AppSignalEvent::ShowMessage {
+                message: message.to_string(),
+            },
+            issued_at: Utc::now(),
+        }
+    }
+
+    fn build_error_signal(message: &str) -> AppSignal {
+        AppSignal {
+            source: AppSignalSource::NativeMessagingHost,
+            event: AppSignalEvent::ShowErrorMessage {
+                message: message.to_string(),
             },
             issued_at: Utc::now(),
         }
@@ -46,7 +58,7 @@ mod tests {
     async fn read_signal_正常入力を復元する() -> Result<()> {
         let _lock = test_lock();
         let endpoint = TestEndpoint::new()?;
-        let signal = build_signal(Some("同期要求"));
+        let signal = build_signal("同期要求");
         let payload = serde_json::to_vec(&signal)?;
         let len = (payload.len() as u32).to_le_bytes();
 
@@ -97,7 +109,7 @@ mod tests {
     async fn handle_stream_sync_同期イベントを二重配送する() -> Result<()> {
         let _lock = test_lock();
         let endpoint = TestEndpoint::new()?;
-        let signal = build_signal(Some("sync"));
+        let signal = build_signal("sync");
         let payload = serde_json::to_vec(&signal)?;
         let len = (payload.len() as u32).to_le_bytes();
 
@@ -118,13 +130,53 @@ mod tests {
         let events = pubsub.events();
         assert_eq!(events.len(), 2);
         assert_eq!(events[0].event_name(), APP_SIGNAL_EVENT);
-        assert_eq!(events[1].event_name(), APP_SIGNAL_SYNC_REQUESTED_EVENT);
+        assert_eq!(events[1].event_name(), APP_SIGNAL_SHOW_MESSAGE_EVENT);
         let first_signal: AppSignal = match &events[0] {
             PubSubEvent::AppSignal(payload) => payload.clone().into(),
             _ => unreachable!(),
         };
         let second_signal: AppSignal = match &events[1] {
-            PubSubEvent::AppSignalSyncRequested(payload) => payload.clone().into(),
+            PubSubEvent::AppSignalShowMessage(payload) => payload.clone().into(),
+            _ => unreachable!(),
+        };
+        assert_eq!(first_signal, signal);
+        assert_eq!(second_signal, signal);
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn handle_stream_error_エラーイベントを二重配送する() -> Result<()> {
+        let _lock = test_lock();
+        let endpoint = TestEndpoint::new()?;
+        let signal = build_error_signal("error");
+        let payload = serde_json::to_vec(&signal)?;
+        let len = (payload.len() as u32).to_le_bytes();
+
+        let (server_stream, writer_handle) =
+            run_pair(&endpoint, move |mut client_stream| async move {
+                client_stream.write_all(&len).await?;
+                client_stream.write_all(&payload).await?;
+                client_stream.flush().await?;
+                Result::<()>::Ok(())
+            })
+            .await?;
+
+        writer_handle.await?;
+
+        let pubsub = Arc::new(RecordingPubSub::new());
+        handle_stream(server_stream, Arc::clone(&pubsub)).await?;
+
+        let events = pubsub.events();
+        assert_eq!(events.len(), 2);
+        assert_eq!(events[0].event_name(), APP_SIGNAL_EVENT);
+        assert_eq!(events[1].event_name(), APP_SIGNAL_SHOW_ERROR_MESSAGE_EVENT);
+        let first_signal: AppSignal = match &events[0] {
+            PubSubEvent::AppSignal(payload) => payload.clone().into(),
+            _ => unreachable!(),
+        };
+        let second_signal: AppSignal = match &events[1] {
+            PubSubEvent::AppSignalShowErrorMessage(payload) => payload.clone().into(),
             _ => unreachable!(),
         };
         assert_eq!(first_signal, signal);
@@ -137,7 +189,7 @@ mod tests {
     async fn handle_stream_notify失敗時_文脈付きエラーを返す() -> Result<()> {
         let _lock = test_lock();
         let endpoint = TestEndpoint::new()?;
-        let signal = build_signal(None);
+        let signal = build_signal("通知");
         let payload = serde_json::to_vec(&signal)?;
         let len = (payload.len() as u32).to_le_bytes();
 

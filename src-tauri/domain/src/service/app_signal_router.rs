@@ -11,6 +11,12 @@ pub enum AppSignalSource {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(tag = "type", rename_all = "camelCase")]
 pub enum AppSignalEvent {
+    ShowErrorMessage {
+        message: String,
+    },
+    ShowMessage {
+        message: String,
+    },
     SyncRequested {
         #[serde(default)]
         message: Option<String>,
