@@ -68,8 +68,9 @@ where
         store_id: &str,
         category: &str,
         subcategory: &str,
-    ) -> anyhow::Result<Option<Id<domain::works::Work>>> {
-        self.manager
+    ) -> anyhow::Result<Id<domain::works::Work>> {
+        let maybe = self
+            .manager
             .run(|repos| {
                 let sid = store_id.to_string();
                 let cat = category.to_string();
@@ -84,7 +85,15 @@ where
                     )
                 })
             })
-            .await
+            .await?;
+        if let Some(id) = maybe {
+            Ok(id)
+        } else {
+            anyhow::bail!(format!(
+                "dmm work not found: store_id={}, category={}, subcategory={}",
+                store_id, category, subcategory
+            ))
+        }
     }
 
     /// DLsite の `store_id` と `category` から対応する作品 ID を検索して返す。
@@ -126,18 +135,16 @@ where
     /// `work_id` が `None` の場合は何もせず成功として返す。
     pub async fn save_download_path(
         &self,
-        work_id: Option<Id<domain::works::Work>>,
+        work_id: Id<domain::works::Work>,
         path: &str,
     ) -> anyhow::Result<()> {
-        if let Some(wid) = work_id {
-            let p = path.to_string();
-            self.manager
-                .run(|repos| {
-                    let p2 = p.clone();
-                    Box::pin(async move { repos.work_download_path().add(wid, &p2).await })
-                })
-                .await?;
-        }
+        let p = path.to_string();
+        self.manager
+            .run(|repos| {
+                let p2 = p.clone();
+                Box::pin(async move { repos.work_download_path().add(work_id, &p2).await })
+            })
+            .await?;
         Ok(())
     }
 
@@ -155,7 +162,7 @@ where
     pub async fn handle_single(
         &self,
         filename: &str,
-        work_id: Option<Id<domain::works::Work>>,
+        work_id: Id<domain::works::Work>,
     ) -> anyhow::Result<PathBuf> {
         let dst_root = PathBuf::from(self.downloaded_games_dir());
         let src = Path::new(filename);
@@ -188,9 +195,7 @@ where
         }
         self.save_download_path(work_id.clone(), &dst_dir.to_string_lossy())
             .await?;
-        if let Some(ref wid) = work_id {
-            self.register_installed_work(wid.clone(), &dst_dir).await?;
-        }
+        self.register_installed_work(work_id, &dst_dir).await?;
         Ok(dst_dir)
     }
 
@@ -200,7 +205,7 @@ where
     pub async fn handle_split(
         &self,
         items: &[String],
-        work_id: Option<Id<domain::works::Work>>,
+        work_id: Id<domain::works::Work>,
     ) -> anyhow::Result<PathBuf> {
         let dst_root = PathBuf::from(self.downloaded_games_dir());
         std::fs::create_dir_all(&dst_root).ok();
@@ -216,9 +221,7 @@ where
                 .status()?;
             self.save_download_path(work_id.clone(), &dst_dir.to_string_lossy())
                 .await?;
-            if let Some(ref wid) = work_id {
-                self.register_installed_work(wid.clone(), &dst_dir).await?;
-            }
+            self.register_installed_work(work_id, &dst_dir).await?;
             Ok(dst_dir)
         } else {
             anyhow::bail!("no executable found")
@@ -229,9 +232,9 @@ where
     async fn make_unique_work_subdir(
         &self,
         dst_root: &Path,
-        work_id: Option<Id<domain::works::Work>>,
+        work_id: Id<domain::works::Work>,
     ) -> anyhow::Result<PathBuf> {
-        let wid = work_id.map(|w| w.value).unwrap_or(0);
+        let wid = work_id.value;
         let now = Local::now();
         let ts = now.format("%Y%m%d%H%M%S").to_string();
         let base_name = format!("{}_{}", wid, ts);
@@ -422,10 +425,7 @@ mod tests {
         std::fs::write(&exe_path, b"dummy").unwrap();
 
         let result_path = uc
-            .handle_single(
-                source_dir.path().to_string_lossy().as_ref(),
-                Some(Id::new(42)),
-            )
+            .handle_single(source_dir.path().to_string_lossy().as_ref(), Id::new(42))
             .await
             .unwrap();
         assert!(result_path.starts_with(temp.path()));

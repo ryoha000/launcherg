@@ -71,7 +71,11 @@ export function setupDownloadsHandler(context: HandlerContext): void {
 
         if (current.completed >= current.expected) {
           // すべて完了: まとめて一度だけ送信
-          const intentUnion: DownloadIntentTs | undefined = toDownloadIntentTs(current)
+          const intentUnion = toDownloadIntentTs(current)
+          if (!intentUnion) {
+            log.error('intent が取得できない、または未定義のためスキップ', { storeId })
+            return
+          }
 
           const aggregateMsg: NativeMessageTs = {
             request_id: context.idGenerator.generate(),
@@ -94,27 +98,7 @@ export function setupDownloadsHandler(context: HandlerContext): void {
         }
       }
       else {
-        // フォールバック: intent が無い/storeId 不明時は単発で送る
-        const fallbackMsg: NativeMessageTs = {
-          request_id: context.idGenerator.generate(),
-          message: {
-            case: 'DownloadsCompleted',
-            value: {
-              extension_id: context.extensionId,
-              items: [{
-                id: item.id,
-                filename: item.filename,
-                mime: item.mime,
-                url: item.url,
-                start_time: item.startTime,
-                end_time: item.endTime,
-              }],
-              intent: undefined,
-            },
-          },
-        }
-        log.info('intent なしのため単発送信', { storeId })
-        await context.nativeMessenger.sendJson(fallbackMsg)
+        log.error('intent が取得できない、または未定義のためスキップ', { storeId })
       }
     }
     catch (e) {

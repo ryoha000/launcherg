@@ -81,7 +81,7 @@ export type DownloadIntentTs =
 export interface DownloadsCompletedRequestTs {
 	extension_id: string;
 	items: DownloadCompletedTs[];
-	intent?: DownloadIntentTs;
+	intent: DownloadIntentTs;
 }
 
 export interface ExtensionConfigTs {

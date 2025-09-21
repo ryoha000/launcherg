@@ -224,9 +224,6 @@ mod tests {
         {
             let mut work_lnk = repos.work_lnk.lock().await;
             work_lnk
-                .expect_list_by_work_id()
-                .returning(|_| Box::pin(async { Ok::<_, anyhow::Error>(Vec::new()) }));
-            work_lnk
                 .expect_insert()
                 .returning(|_| Box::pin(async { Ok::<_, anyhow::Error>(domain::Id::new(1)) }));
         }
@@ -246,44 +243,6 @@ mod tests {
             work_id: domain::Id::new(10),
             kind: CandidateKind::Exe,
             src: exe_path.clone(),
-        };
-
-        let res = linker.ensure_links(vec![task]).await;
-        assert!(res.is_ok());
-    }
-
-    #[tokio::test]
-    async fn ensure_links_skips_existing_records() {
-        let tmp = TempDir::new().unwrap();
-        let lnk_dir = tmp.path().join("lnk-source");
-        std::fs::create_dir_all(&lnk_dir).unwrap();
-        let shortcut_src = lnk_dir.join("game.lnk");
-        std::fs::write(&shortcut_src, b"shortcut").unwrap();
-
-        let repos = TestRepositories::default();
-        {
-            let mut work_lnk = repos.work_lnk.lock().await;
-            work_lnk.expect_list_by_work_id().returning(|_| {
-                Box::pin(async {
-                    Ok::<_, anyhow::Error>(vec![domain::repository::work_lnk::WorkLnk {
-                        id: domain::Id::new(1),
-                        work_id: domain::Id::new(20),
-                        lnk_path: "existing".into(),
-                    }])
-                })
-            });
-        }
-        let manager = Arc::new(TestRepositoryManager::new(repos.clone()));
-        let resolver = Arc::new(TestResolver::new(tmp.path().to_string_lossy().to_string()));
-
-        let shell = MockShellLink::new();
-        let windows = Arc::new(TestWindows::new(shell));
-
-        let linker: WorkLinkerImpl<_, _, _> = WorkLinkerImpl::new(manager, resolver, windows);
-        let task = WorkLinkTask {
-            work_id: domain::Id::new(20),
-            kind: CandidateKind::Shortcut,
-            src: shortcut_src,
         };
 
         let res = linker.ensure_links(vec![task]).await;

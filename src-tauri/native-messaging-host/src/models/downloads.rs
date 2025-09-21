@@ -34,5 +34,5 @@ pub enum DownloadIntentTs {
 pub struct DownloadsCompletedRequestTs {
     pub extension_id: String,
     pub items: Vec<DownloadCompletedTs>,
-    pub intent: Option<DownloadIntentTs>,
+    pub intent: DownloadIntentTs,
 }

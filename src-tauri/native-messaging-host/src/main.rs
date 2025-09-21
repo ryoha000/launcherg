@@ -296,37 +296,33 @@ async fn handle_downloads_completed(
     );
 
     // helper: resolve work_id from intent (DMM / DLsite)
-    let work_id = if let Some(intent) = &request.intent {
-        match intent {
-            models::downloads::DownloadIntentTs::Dmm {
-                game_store_id,
-                game_category,
-                game_subcategory,
-                ..
-            } => {
-                match usecase
-                    .resolve_dmm_work_id(game_store_id, game_category, game_subcategory)
-                    .await
-                {
-                    Ok(v) => v,
-                    Err(_) => None,
-                }
-            }
-            models::downloads::DownloadIntentTs::Dlsite {
-                game_store_id,
-                game_category,
-            } => {
-                match usecase
-                    .resolve_dlsite_work_id(game_store_id, game_category)
-                    .await
-                {
-                    Ok(v) => Some(v),
-                    Err(_) => None,
-                }
+    let work_id = match &request.intent {
+        models::downloads::DownloadIntentTs::Dmm {
+            game_store_id,
+            game_category,
+            game_subcategory,
+            ..
+        } => {
+            match usecase
+                .resolve_dmm_work_id(game_store_id, game_category, game_subcategory)
+                .await
+            {
+                Ok(v) => v,
+                Err(e) => return err(request_id, e.to_string()),
             }
         }
-    } else {
-        None
+        models::downloads::DownloadIntentTs::Dlsite {
+            game_store_id,
+            game_category,
+        } => {
+            match usecase
+                .resolve_dlsite_work_id(game_store_id, game_category)
+                .await
+            {
+                Ok(v) => v,
+                Err(e) => return err(request_id, e.to_string()),
+            }
+        }
     };
 
     // items == 1
