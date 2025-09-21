@@ -9,12 +9,12 @@ use std::sync::Arc;
 use thiserror::Error;
 use tokio::io::{self as tokio_io, AsyncReadExt, AsyncWriteExt};
 
-use domain::service::app_signal_router::{
-    AppSignal, AppSignalEvent, AppSignalRouter, AppSignalSource,
-};
 use domain::native_host_log::{HostLogLevel, HostLogType};
 use domain::repository::{
     manager::RepositoryManager, native_host_log::NativeHostLogRepository, RepositoriesExt,
+};
+use domain::service::app_signal_router::{
+    AppSignal, AppSignalEvent, AppSignalRouter, AppSignalSource,
 };
 use domain::service::save_path_resolver::{DirsSavePathResolver, SavePathResolver};
 use infrastructure::{

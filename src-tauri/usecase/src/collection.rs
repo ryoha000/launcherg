@@ -419,23 +419,6 @@ where
         self.thumbnail_service.save_thumbnail(id, &src_url).await
     }
 
-    pub async fn concurency_save_thumbnails(
-        &self,
-        args: Vec<(Id<CollectionElement>, String)>,
-    ) -> anyhow::Result<()> {
-        use futures::StreamExt as _;
-        futures::stream::iter(args.into_iter())
-            .map(move |(id, url)| async move { self.thumbnail_service.save_thumbnail(&id, &url).await })
-            .buffered(50)
-            .for_each(|res| async move {
-                if let Err(e) = res {
-                    eprintln!("[concurency_save_thumbnails] {}", e);
-                }
-            })
-            .await;
-        Ok(())
-    }
-
     pub async fn delete_collection_element_by_id(
         &self,
         id: &Id<CollectionElement>,

@@ -23,10 +23,10 @@ use crate::{
     },
     usecase::{
         all_game_cache::AllGameCacheUseCase, collection::CollectionUseCase,
-        dmm_pack::DmmPackUseCase, explored_cache::ExploredCacheUseCase,
-        extension_manager::ExtensionManagerUseCase, file::FileUseCase, host_log::HostLogUseCase,
-        image::ImageUseCase, image_queue::ImageQueueUseCase, process::ProcessUseCase,
-        work::WorkUseCase, work_omit::WorkOmitUseCase, work_pipeline::WorkPipelineUseCase,
+        dmm_pack::DmmPackUseCase, extension_manager::ExtensionManagerUseCase, file::FileUseCase,
+        host_log::HostLogUseCase, image::ImageUseCase, image_queue::ImageQueueUseCase,
+        process::ProcessUseCase, work::WorkUseCase, work_omit::WorkOmitUseCase,
+        work_pipeline::WorkPipelineUseCase,
     },
 };
 use domain::game_matcher::{GameMatcher, Matcher as GameMatcherImpl};
@@ -41,10 +41,9 @@ pub struct Modules {
         ThumbnailServiceImpl,
         Windows,
     >,
-    explored_cache_use_case: ExploredCacheUseCase<SqliteRepositoryManager, SqliteRepositories>,
     extension_manager_use_case:
         ExtensionManagerUseCase<PubSub, NativeMessagingHostClientFactoryImpl>,
-    file_use_case: FileUseCase<Windows>,
+    file_use_case: FileUseCase,
     all_game_cache_use_case: AllGameCacheUseCase<SqliteRepositoryManager, SqliteRepositories>,
     process_use_case: ProcessUseCase<Windows>,
     image_use_case: ImageUseCase<ThumbnailServiceImpl, TauriIconServiceImpl, Windows>,
@@ -80,16 +79,13 @@ pub trait ModulesExt {
         ThumbnailServiceImpl,
         Windows,
     >;
-    fn explored_cache_use_case(
-        &self,
-    ) -> &ExploredCacheUseCase<SqliteRepositoryManager, SqliteRepositories>;
     fn extension_manager_use_case(
         &self,
     ) -> &ExtensionManagerUseCase<Self::PubSub, NativeMessagingHostClientFactoryImpl>;
     fn all_game_cache_use_case(
         &self,
     ) -> &AllGameCacheUseCase<SqliteRepositoryManager, SqliteRepositories>;
-    fn file_use_case(&self) -> &FileUseCase<Windows>;
+    fn file_use_case(&self) -> &FileUseCase;
     fn process_use_case(&self) -> &ProcessUseCase<Self::Windows>;
     fn image_use_case(&self) -> &ImageUseCase<ThumbnailServiceImpl, TauriIconServiceImpl, Windows>;
     fn work_omit_use_case(&self) -> &WorkOmitUseCase<SqliteRepositoryManager, SqliteRepositories>;
@@ -132,11 +128,6 @@ impl ModulesExt for Modules {
     > {
         &self.collection_use_case
     }
-    fn explored_cache_use_case(
-        &self,
-    ) -> &ExploredCacheUseCase<SqliteRepositoryManager, SqliteRepositories> {
-        &self.explored_cache_use_case
-    }
     fn extension_manager_use_case(
         &self,
     ) -> &ExtensionManagerUseCase<Self::PubSub, NativeMessagingHostClientFactoryImpl> {
@@ -147,7 +138,7 @@ impl ModulesExt for Modules {
     ) -> &AllGameCacheUseCase<SqliteRepositoryManager, SqliteRepositories> {
         &self.all_game_cache_use_case
     }
-    fn file_use_case(&self) -> &FileUseCase<Windows> {
+    fn file_use_case(&self) -> &FileUseCase {
         &self.file_use_case
     }
     fn process_use_case(&self) -> &ProcessUseCase<Self::Windows> {
@@ -216,14 +207,12 @@ impl Modules {
             thumbs.clone(),
             windows.clone(),
         );
-        let explored_cache_use_case = ExploredCacheUseCase::new(repo_manager.clone());
         let extension_manager_use_case = ExtensionManagerUseCase::new(
             pubsub.clone(),
             Arc::new(NativeMessagingHostClientFactoryImpl),
         );
 
-        let file_use_case: FileUseCase<Windows> =
-            FileUseCase::new(resolver.clone(), windows.clone());
+        let file_use_case: FileUseCase = FileUseCase::new(resolver.clone());
 
         let process_use_case: ProcessUseCase<Windows> = ProcessUseCase::new(windows.clone());
 
@@ -297,7 +286,6 @@ impl Modules {
 
         Self {
             collection_use_case,
-            explored_cache_use_case,
             extension_manager_use_case,
             all_game_cache_use_case,
             file_use_case,

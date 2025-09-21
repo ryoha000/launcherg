@@ -16,7 +16,10 @@ use std::sync::Arc;
 
 use ::infrastructure::sqliterepository::driver::Db;
 use domain::service::save_path_resolver::{DirsSavePathResolver, SavePathResolver};
-use interface::{command, module::{Modules, ModulesExt}};
+use interface::{
+    command,
+    module::{Modules, ModulesExt},
+};
 use tauri::{async_runtime::block_on, Manager};
 use tauri_plugin_log::{Target, TargetKind};
 
@@ -57,9 +60,11 @@ fn main() {
             let modules = Arc::new(block_on(Modules::new(db, &app.handle())));
             app.manage(modules.clone());
 
-            if let Err(err) = infrastructure::app_signal_router::interprocess::listener::spawn_listener(
-                Arc::new(modules.pubsub().clone()),
-            ) {
+            if let Err(err) =
+                infrastructure::app_signal_router::interprocess::listener::spawn_listener(Arc::new(
+                    modules.pubsub().clone(),
+                ))
+            {
                 log::error!("failed to start app signal listener: {err}");
             }
 
@@ -79,14 +84,12 @@ fn main() {
                 .build(),
         )
         .invoke_handler(tauri::generate_handler![
-            command::create_elements_in_pc,
             command::get_nearest_key_and_distance,
             command::upload_image,
             command::upsert_collection_element,
             command::update_collection_element_icon,
             command::get_default_import_dirs,
             command::scan_start,
-            // command::play_game, // removed
             command::get_play_time_minutes,
             command::get_collection_element,
             command::delete_collection_element,

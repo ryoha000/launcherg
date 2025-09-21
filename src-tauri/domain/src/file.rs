@@ -20,7 +20,6 @@ use serde::{Deserialize, Serialize};
 use tauri::{async_runtime::JoinHandle, AppHandle};
 use tauri_plugin_shell::process::CommandEvent;
 use tauri_plugin_shell::ShellExt;
-use walkdir::WalkDir;
 use windows::core::PCWSTR;
 
 use crate::service::save_path_resolver::{DirsSavePathResolver, SavePathResolver};
@@ -60,33 +59,6 @@ pub fn normalize(s: &str) -> String {
         }
     }
     result.to_lowercase()
-}
-
-pub fn get_file_paths_by_exts(
-    explorer_dir_path: String,
-    filter_exts: Vec<String>,
-) -> anyhow::Result<Vec<String>> {
-    let mut link_file_paths = Vec::new();
-
-    for entry in WalkDir::new(explorer_dir_path) {
-        let entry = entry?;
-
-        if entry.file_type().is_file() {
-            let path = entry.path();
-
-            if let Some(extension) = path.extension() {
-                let cmp_ext = extension.to_string_lossy().to_lowercase();
-                for filter_ext in filter_exts.iter() {
-                    if cmp_ext == *filter_ext {
-                        let path_str = path.to_string_lossy().to_string();
-                        link_file_paths.push(path_str);
-                    }
-                }
-            }
-        }
-    }
-
-    Ok(link_file_paths)
 }
 
 pub fn get_url_file_icon_path(url_file_path: &str) -> anyhow::Result<Option<String>> {
