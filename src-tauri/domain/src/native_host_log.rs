@@ -22,6 +22,7 @@ pub enum HostLogType {
     ReceiveRequest = 30,
     Response = 31,
     EndProcessImageQueue = 32,
+    AppSignalDispatchFailed = 33,
 }
 
 #[derive(Debug, Clone)]

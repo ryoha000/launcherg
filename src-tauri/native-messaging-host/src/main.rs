@@ -74,6 +74,34 @@ fn anyhow_chain_to_string(err: &anyhow::Error) -> String {
         .join(": ")
 }
 
+async fn log_app_signal_dispatch_failure(
+    ctx: &AppCtx,
+    action: impl Into<String>,
+    err: anyhow::Error,
+) {
+    let action = action.into();
+    let log_message = format!("{action}: {}", anyhow_chain_to_string(&err));
+    log::warn!("app signal dispatch failed: {log_message}");
+
+    let _ = ctx
+        .manager
+        .run(|repos| {
+            let log_message = log_message.clone();
+            Box::pin(async move {
+                repos
+                    .host_log()
+                    .insert_log(
+                        HostLogLevel::Warn,
+                        HostLogType::AppSignalDispatchFailed,
+                        log_message.as_str(),
+                    )
+                    .await?;
+                Ok::<(), anyhow::Error>(())
+            })
+        })
+        .await;
+}
+
 async fn read_framed() -> HostResult<Option<Vec<u8>>> {
     let mut stdin = tokio_io::stdin();
 
@@ -168,8 +196,8 @@ async fn handle_message(ctx: &AppCtx) -> HostResult<bool> {
         }
     };
 
-    if let Err(err) = notify_app_signal(&ctx.app_signal_router, &message.message).await {
-        log::debug!("app signal dispatch failed: {err}");
+    if let Err(err) = notify_app_signal(&ctx, &message.message).await {
+        log_app_signal_dispatch_failure(&ctx, "notify_app_signal", err).await;
     }
 
     let _ = ctx
@@ -319,7 +347,15 @@ async fn handle_downloads_completed(
                     )
                     .await
                     {
-                        log::debug!("app signal dispatch failed: {dispatch_err}");
+                        log_app_signal_dispatch_failure(
+                            &ctx,
+                            format!(
+                                "dispatch_show_error_message request_id={}",
+                                request_id
+                            ),
+                            dispatch_err,
+                        )
+                        .await;
                     }
                     return err(request_id, msg);
                 }
@@ -336,7 +372,15 @@ async fn handle_downloads_completed(
                     )
                     .await
                     {
-                        log::debug!("app signal dispatch failed: {dispatch_err}");
+                        log_app_signal_dispatch_failure(
+                            &ctx,
+                            format!(
+                                "dispatch_show_error_message request_id={}",
+                                request_id
+                            ),
+                            dispatch_err,
+                        )
+                        .await;
                     }
                     return err(request_id, msg);
                 }
@@ -355,13 +399,26 @@ async fn handle_downloads_completed(
             )
             .await
             {
-                log::debug!("app signal dispatch failed: {dispatch_err}");
+                log_app_signal_dispatch_failure(
+                    &ctx,
+                    format!(
+                        "dispatch_show_error_message request_id={}",
+                        request_id
+                    ),
+                    dispatch_err,
+                )
+                .await;
             }
             return err(request_id, msg);
         }
         cleanup_download_paths([item.filename.as_str()]);
         if let Err(err) = dispatch_refetch_work(&ctx.app_signal_router, work_id.value).await {
-            log::debug!("app signal dispatch failed: {err}");
+            log_app_signal_dispatch_failure(
+                &ctx,
+                format!("dispatch_refetch_work work_id={}", work_id.value),
+                err,
+            )
+            .await;
         }
         return ok(
             request_id,
@@ -383,13 +440,26 @@ async fn handle_downloads_completed(
             )
             .await
             {
-                log::debug!("app signal dispatch failed: {dispatch_err}");
+                log_app_signal_dispatch_failure(
+                    &ctx,
+                    format!(
+                        "dispatch_show_error_message request_id={}",
+                        request_id
+                    ),
+                    dispatch_err,
+                )
+                .await;
             }
             return err(request_id, msg);
         }
         cleanup_download_paths(paths.iter().map(|p| p.as_str()));
         if let Err(err) = dispatch_refetch_work(&ctx.app_signal_router, work_id.value).await {
-            log::debug!("app signal dispatch failed: {err}");
+            log_app_signal_dispatch_failure(
+                &ctx,
+                format!("dispatch_refetch_work work_id={}", work_id.value),
+                err,
+            )
+            .await;
         }
         return ok(
             request_id,
@@ -401,7 +471,12 @@ async fn handle_downloads_completed(
     }
 
     if let Err(err) = dispatch_refetch_work(&ctx.app_signal_router, work_id.value).await {
-        log::debug!("app signal dispatch failed: {err}");
+        log_app_signal_dispatch_failure(
+            &ctx,
+            format!("dispatch_refetch_work work_id={}", work_id.value),
+            err,
+        )
+        .await;
     }
 
     ok(
@@ -413,10 +488,7 @@ async fn handle_downloads_completed(
     )
 }
 
-async fn notify_app_signal(
-    router: &Arc<InterprocessAppSignalRouter>,
-    message: &NativeMessageCase,
-) -> anyhow::Result<()> {
+async fn notify_app_signal(ctx: &AppCtx, message: &NativeMessageCase) -> anyhow::Result<()> {
     let reason = match message {
         NativeMessageCase::SyncDmmGames(_) => Some("syncDmmGames"),
         NativeMessageCase::SyncDlsiteGames(_) => Some("syncDlsiteGames"),
@@ -425,7 +497,7 @@ async fn notify_app_signal(
     };
 
     if let Some(reason) = reason {
-        dispatch_show_message(router, reason.to_string()).await?;
+        dispatch_show_message(&ctx.app_signal_router, reason.to_string()).await?;
     }
 
     Ok(())
@@ -531,7 +603,12 @@ async fn handle_sync_dmm_games(
                 synced_games: input_ids.clone(),
             };
             if let Err(err) = dispatch_refetch_works(&ctx.app_signal_router).await {
-                log::debug!("app signal dispatch failed: {err}");
+                log_app_signal_dispatch_failure(
+                    &ctx,
+                    "dispatch_refetch_works",
+                    err,
+                )
+                .await;
             }
             ok(request_id, NativeResponseCase::SyncGamesResult(result))
         }
@@ -549,7 +626,12 @@ async fn handle_sync_dmm_games(
             )
             .await
             {
-                log::debug!("app signal dispatch failed: {dispatch_err}");
+                log_app_signal_dispatch_failure(
+                    &ctx,
+                    format!("dispatch_show_error_message request_id={}", request_id),
+                    dispatch_err,
+                )
+                .await;
             }
             fail_with_body(
                 request_id,
@@ -575,7 +657,12 @@ async fn handle_sync_dlsite_games(
                 synced_games: input_ids.clone(),
             };
             if let Err(err) = dispatch_refetch_works(&ctx.app_signal_router).await {
-                log::debug!("app signal dispatch failed: {err}");
+                log_app_signal_dispatch_failure(
+                    &ctx,
+                    "dispatch_refetch_works",
+                    err,
+                )
+                .await;
             }
             ok(request_id, NativeResponseCase::SyncGamesResult(result))
         }
@@ -593,7 +680,12 @@ async fn handle_sync_dlsite_games(
             )
             .await
             {
-                log::debug!("app signal dispatch failed: {dispatch_err}");
+                log_app_signal_dispatch_failure(
+                    &ctx,
+                    format!("dispatch_show_error_message request_id={}", request_id),
+                    dispatch_err,
+                )
+                .await;
             }
             fail_with_body(
                 request_id,

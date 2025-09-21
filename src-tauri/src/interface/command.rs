@@ -754,6 +754,10 @@ pub async fn get_native_host_logs(
         Some(20) => Some(HostLogType::ImageQueueItemStarted),
         Some(21) => Some(HostLogType::ImageQueueItemSucceeded),
         Some(22) => Some(HostLogType::ImageQueueItemFailed),
+        Some(30) => Some(HostLogType::ReceiveRequest),
+        Some(31) => Some(HostLogType::Response),
+        Some(32) => Some(HostLogType::EndProcessImageQueue),
+        Some(33) => Some(HostLogType::AppSignalDispatchFailed),
         _ => None,
     };
 
