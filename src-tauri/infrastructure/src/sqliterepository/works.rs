@@ -273,6 +273,32 @@ impl DmmWorkRepository for RepositoryImpl<domain::works::DmmWork> {
         Ok(row.map(|t| t.try_into()).transpose()?)
     }
 
+    async fn find_by_store_id(
+        &mut self,
+        store_id: &str,
+    ) -> anyhow::Result<Option<DmmWork>> {
+        let store_id = store_id.to_string();
+        let row = self
+            .executor
+            .with_conn(|conn| {
+                Box::pin(async move {
+                    let row: Option<crate::sqliterepository::models::works::DmmWorkTable> =
+                        sqlx::query_as(
+                            r#"SELECT w.id as id, w.store_id, w.category, w.subcategory, w.work_id
+                       FROM dmm_works w
+                       WHERE w.store_id=?
+                       LIMIT 1"#,
+                        )
+                        .bind(store_id)
+                        .fetch_optional(conn)
+                        .await?;
+                    Ok(row)
+                })
+            })
+            .await?;
+        Ok(row.map(|t| t.try_into()).transpose()?)
+    }
+
     async fn find_by_store_keys(
         &mut self,
         keys: &[(String, String, String)],
@@ -392,6 +418,32 @@ impl DlsiteWorkRepository for RepositoryImpl<domain::works::DlsiteWork> {
                         )
                         .bind(store_id)
                         .bind(category)
+                        .fetch_optional(conn)
+                        .await?;
+                    Ok(row)
+                })
+            })
+            .await?;
+        Ok(row.map(|t| t.try_into()).transpose()?)
+    }
+
+    async fn find_by_store_id(
+        &mut self,
+        store_id: &str,
+    ) -> anyhow::Result<Option<DlsiteWork>> {
+        let store_id = store_id.to_string();
+        let row = self
+            .executor
+            .with_conn(|conn| {
+                Box::pin(async move {
+                    let row: Option<crate::sqliterepository::models::works::DlsiteWorkTable> =
+                        sqlx::query_as(
+                            r#"SELECT w.id as id, w.store_id, w.category, w.work_id
+                       FROM dlsite_works w
+                       WHERE w.store_id=?
+                       LIMIT 1"#,
+                        )
+                        .bind(store_id)
                         .fetch_optional(conn)
                         .await?;
                     Ok(row)

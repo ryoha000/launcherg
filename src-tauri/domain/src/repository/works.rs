@@ -27,6 +27,10 @@ pub trait DmmWorkRepository {
         category: &str,
         subcategory: &str,
     ) -> Result<Option<DmmWork>>;
+    async fn find_by_store_id(
+        &mut self,
+        store_id: &str,
+    ) -> Result<Option<DmmWork>>;
     async fn find_by_store_keys(
         &mut self,
         keys: &[(String, String, String)],
@@ -43,4 +47,5 @@ pub trait DlsiteWorkRepository {
         store_id: &str,
         category: &str,
     ) -> Result<Option<DlsiteWork>>;
+    async fn find_by_store_id(&mut self, store_id: &str) -> Result<Option<DlsiteWork>>;
 }

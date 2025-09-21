@@ -61,25 +61,21 @@ where
             _marker: std::marker::PhantomData,
         }
     }
-    /// DMM の `store_id`/`category`/`subcategory` から、対応する作品 (`Work`) の ID を検索して返す。
-    /// 見つからない場合は `None` を返す。
+    /// DMM の `store_id` から、対応する作品 (`Work`) の ID を検索して返す。
+    /// 見つからない場合はエラーを返す。
     pub async fn resolve_dmm_work_id(
         &self,
         store_id: &str,
-        category: &str,
-        subcategory: &str,
     ) -> anyhow::Result<Id<domain::works::Work>> {
         let maybe = self
             .manager
             .run(|repos| {
                 let sid = store_id.to_string();
-                let cat = category.to_string();
-                let sub = subcategory.to_string();
                 Box::pin(async move {
                     Ok::<_, anyhow::Error>(
                         repos
                             .dmm_work()
-                            .find_by_store_key(&sid, &cat, &sub)
+                            .find_by_store_id(&sid)
                             .await?
                             .map(|w| w.work_id),
                     )
@@ -90,31 +86,28 @@ where
             Ok(id)
         } else {
             anyhow::bail!(format!(
-                "dmm work not found: store_id={}, category={}, subcategory={}",
-                store_id, category, subcategory
+                "dmm work not found: store_id={}",
+                store_id
             ))
         }
     }
 
-    /// DLsite の `store_id` と `category` から対応する作品 ID を検索して返す。
+    /// DLsite の `store_id` から対応する作品 ID を検索して返す。
     /// 見つからない場合はエラーを返す。
     pub async fn resolve_dlsite_work_id(
         &self,
         store_id: &str,
-        category: &str,
     ) -> anyhow::Result<Id<domain::works::Work>> {
         let sid = store_id.to_string();
-        let cat = category.to_string();
         let maybe = self
             .manager
             .run(move |repos| {
                 let sid2 = sid.clone();
-                let cat2 = cat.clone();
                 Box::pin(async move {
                     Ok::<_, anyhow::Error>(
                         repos
                             .dlsite_work()
-                            .find_by_store_key(&sid2, &cat2)
+                            .find_by_store_id(&sid2)
                             .await?
                             .map(|w| w.work_id),
                     )
@@ -125,8 +118,8 @@ where
             Ok(id)
         } else {
             anyhow::bail!(format!(
-                "dlsite work not found: store_id={}, category={}",
-                store_id, category
+                "dlsite work not found: store_id={}",
+                store_id
             ))
         }
     }

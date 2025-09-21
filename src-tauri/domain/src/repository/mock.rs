@@ -139,6 +139,16 @@ impl crate::repository::works::DmmWorkRepository for TestRepositories {
             .find_by_store_key(store_id, category, subcategory)
             .await
     }
+    async fn find_by_store_id(
+        &mut self,
+        store_id: &str,
+    ) -> anyhow::Result<Option<crate::works::DmmWork>> {
+        self.dmm_work
+            .lock()
+            .await
+            .find_by_store_id(store_id)
+            .await
+    }
     async fn find_by_store_keys(
         &mut self,
         keys: &[(String, String, String)],
@@ -169,6 +179,16 @@ impl crate::repository::works::DlsiteWorkRepository for TestRepositories {
             .lock()
             .await
             .find_by_store_key(store_id, category)
+            .await
+    }
+    async fn find_by_store_id(
+        &mut self,
+        store_id: &str,
+    ) -> anyhow::Result<Option<crate::works::DlsiteWork>> {
+        self.dlsite_work
+            .lock()
+            .await
+            .find_by_store_id(store_id)
             .await
     }
 }
