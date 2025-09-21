@@ -69,6 +69,12 @@ impl PubSubService for PubSub {
             PubSubEvent::AppSignalShowErrorMessage(payload) => {
                 self.emit("appSignal:showErrorMessage", payload)
             }
+            PubSubEvent::AppSignalRefetchWork(payload) => {
+                self.emit("appSignal:refetchWork", payload)
+            }
+            PubSubEvent::AppSignalRefetchWorks(payload) => {
+                self.emit("appSignal:refetchWorks", payload)
+            }
         }
     }
 }

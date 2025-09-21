@@ -3,105 +3,117 @@
 */
 
 export enum AppSignalSourcePayload {
-  NativeMessagingHost = 'nativeMessagingHost',
+	NativeMessagingHost = "nativeMessagingHost",
 }
 
-export interface AppSignalEventPayload {
-  type: 'syncRequested'
-  payload: {
-    message?: string
-  }
-}
+export type AppSignalEventPayload = 
+	| { type: "showErrorMessage", payload: {
+	message: string;
+}}
+	| { type: "showMessage", payload: {
+	message: string;
+}}
+	| { type: "refetchWork", payload: {
+	workId: number;
+}}
+	| { type: "refetchWorks", payload?: undefined }
+	| { type: "syncRequested", payload: {
+	message?: string;
+}};
 
 export interface AppSignalPayload {
-  source: AppSignalSourcePayload
-  event: AppSignalEventPayload
-  issuedAt: string
+	source: AppSignalSourcePayload;
+	event: AppSignalEventPayload;
+	issuedAt: string;
 }
 
 export interface DedupResultPayload {
-  removedCount: number
+	removedCount: number;
 }
 
 export interface EnrichResultPayload {
-  status: string
-  path: string
-  title?: string
-  egsId?: number
+	status: string;
+	path: string;
+	title?: string;
+	egsId?: number;
 }
 
 export interface ExtensionConnectionPayload {
-  connectionStatus: string
-  isRunning: boolean
-  errorMessage?: string
-  timestamp: string
+	connectionStatus: string;
+	isRunning: boolean;
+	errorMessage?: string;
+	timestamp: string;
 }
 
 export interface ImageQueueItemErrorPayload {
-  id: string
-  message: string
+	id: string;
+	message: string;
 }
 
 export interface ImageQueueItemPayload {
-  id: string
-  src: string
-  srcType: number
-  dstPath: string
+	id: string;
+	src: string;
+	srcType: number;
+	dstPath: string;
 }
 
 export interface ImageQueueWorkerStatusPayload {
-  status: string
+	status: string;
 }
 
 export interface ProgressLivePayload {
-  max?: number
+	max?: number;
 }
 
 export interface ProgressPayload {
-  message: string
+	message: string;
 }
 
 export interface ScanLogPayload {
-  level: string
-  message: string
+	level: string;
+	message: string;
 }
 
 export interface ScanPhaseTimingPayload {
-  phase: string
-  durationMs: number
+	phase: string;
+	durationMs: number;
 }
 
 export interface ScanProgressPayload {
-  phase: string
-  processed: number
-  total: number
-  errors: number
-  message?: string
+	phase: string;
+	processed: number;
+	total: number;
+	errors: number;
+	message?: string;
 }
 
 export interface ScanSummaryPayload {
-  durationMs: number
-  found: number
-  recognized: number
-  persisted: number
-  skipped: number
-  duplicates: number
+	durationMs: number;
+	found: number;
+	recognized: number;
+	persisted: number;
+	skipped: number;
+	duplicates: number;
 }
 
-export type PubSubEvent
-  = | { type: 'progress', payload: ProgressPayload }
-    | { type: 'progresslive', payload: ProgressLivePayload }
-    | { type: 'scanProgress', payload: ScanProgressPayload }
-    | { type: 'scanLog', payload: ScanLogPayload }
-    | { type: 'scanSummary', payload: ScanSummaryPayload }
-    | { type: 'scanPhaseTiming', payload: ScanPhaseTimingPayload }
-    | { type: 'scanEnrichResult', payload: EnrichResultPayload }
-    | { type: 'scanDedup', payload: DedupResultPayload }
-    | { type: 'extension-connection-status', payload: ExtensionConnectionPayload }
-    | { type: 'imageQueueWorkerStarted', payload: ImageQueueWorkerStatusPayload }
-    | { type: 'imageQueueWorkerFinished', payload: ImageQueueWorkerStatusPayload }
-    | { type: 'imageQueueItemStarted', payload: ImageQueueItemPayload }
-    | { type: 'imageQueueItemSucceeded', payload: ImageQueueItemPayload }
-    | { type: 'imageQueueItemFailed', payload: ImageQueueItemErrorPayload }
-    | { type: 'appSignal', payload: AppSignalPayload }
-    | { type: 'appSignal:syncRequested', payload: AppSignalPayload }
+export type PubSubEvent = 
+	| { type: "progress", payload: ProgressPayload }
+	| { type: "progresslive", payload: ProgressLivePayload }
+	| { type: "scanProgress", payload: ScanProgressPayload }
+	| { type: "scanLog", payload: ScanLogPayload }
+	| { type: "scanSummary", payload: ScanSummaryPayload }
+	| { type: "scanPhaseTiming", payload: ScanPhaseTimingPayload }
+	| { type: "scanEnrichResult", payload: EnrichResultPayload }
+	| { type: "scanDedup", payload: DedupResultPayload }
+	| { type: "extension-connection-status", payload: ExtensionConnectionPayload }
+	| { type: "imageQueueWorkerStarted", payload: ImageQueueWorkerStatusPayload }
+	| { type: "imageQueueWorkerFinished", payload: ImageQueueWorkerStatusPayload }
+	| { type: "imageQueueItemStarted", payload: ImageQueueItemPayload }
+	| { type: "imageQueueItemSucceeded", payload: ImageQueueItemPayload }
+	| { type: "imageQueueItemFailed", payload: ImageQueueItemErrorPayload }
+	| { type: "appSignal", payload: AppSignalPayload }
+	| { type: "appSignal:showMessage", payload: AppSignalPayload }
+	| { type: "appSignal:showErrorMessage", payload: AppSignalPayload }
+	| { type: "appSignal:refetchWork", payload: AppSignalPayload }
+	| { type: "appSignal:refetchWorks", payload: AppSignalPayload };
+

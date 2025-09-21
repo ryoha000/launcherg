@@ -3,7 +3,8 @@ mod tests {
     use super::super::{handle_stream, read_signal};
     use crate::app_signal_router::test_support::{test_lock, RecordingPubSub, TestEndpoint};
     use crate::app_signal_router::{
-        APP_SIGNAL_EVENT, APP_SIGNAL_SHOW_ERROR_MESSAGE_EVENT, APP_SIGNAL_SHOW_MESSAGE_EVENT,
+        APP_SIGNAL_EVENT, APP_SIGNAL_REFETCH_WORK_EVENT, APP_SIGNAL_REFETCH_WORKS_EVENT,
+        APP_SIGNAL_SHOW_ERROR_MESSAGE_EVENT, APP_SIGNAL_SHOW_MESSAGE_EVENT,
     };
     use anyhow::{Error, Result};
     use chrono::Utc;
@@ -33,6 +34,22 @@ mod tests {
             event: AppSignalEvent::ShowErrorMessage {
                 message: message.to_string(),
             },
+            issued_at: Utc::now(),
+        }
+    }
+
+    fn build_refetch_works_signal() -> AppSignal {
+        AppSignal {
+            source: AppSignalSource::NativeMessagingHost,
+            event: AppSignalEvent::RefetchWorks,
+            issued_at: Utc::now(),
+        }
+    }
+
+    fn build_refetch_work_signal(work_id: i32) -> AppSignal {
+        AppSignal {
+            source: AppSignalSource::NativeMessagingHost,
+            event: AppSignalEvent::RefetchWork { work_id },
             issued_at: Utc::now(),
         }
     }
@@ -177,6 +194,86 @@ mod tests {
         };
         let second_signal: AppSignal = match &events[1] {
             PubSubEvent::AppSignalShowErrorMessage(payload) => payload.clone().into(),
+            _ => unreachable!(),
+        };
+        assert_eq!(first_signal, signal);
+        assert_eq!(second_signal, signal);
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn handle_stream_refetch_リフェッチイベントを二重配送する() -> Result<()> {
+        let _lock = test_lock();
+        let endpoint = TestEndpoint::new()?;
+        let signal = build_refetch_works_signal();
+        let payload = serde_json::to_vec(&signal)?;
+        let len = (payload.len() as u32).to_le_bytes();
+
+        let (server_stream, writer_handle) =
+            run_pair(&endpoint, move |mut client_stream| async move {
+                client_stream.write_all(&len).await?;
+                client_stream.write_all(&payload).await?;
+                client_stream.flush().await?;
+                Result::<()>::Ok(())
+            })
+            .await?;
+
+        writer_handle.await?;
+
+        let pubsub = Arc::new(RecordingPubSub::new());
+        handle_stream(server_stream, Arc::clone(&pubsub)).await?;
+
+        let events = pubsub.events();
+        assert_eq!(events.len(), 2);
+        assert_eq!(events[0].event_name(), APP_SIGNAL_EVENT);
+        assert_eq!(events[1].event_name(), APP_SIGNAL_REFETCH_WORKS_EVENT);
+        let first_signal: AppSignal = match &events[0] {
+            PubSubEvent::AppSignal(payload) => payload.clone().into(),
+            _ => unreachable!(),
+        };
+        let second_signal: AppSignal = match &events[1] {
+            PubSubEvent::AppSignalRefetchWorks(payload) => payload.clone().into(),
+            _ => unreachable!(),
+        };
+        assert_eq!(first_signal, signal);
+        assert_eq!(second_signal, signal);
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn handle_stream_refetch_work_単体リフェッチイベントを二重配送する() -> Result<()> {
+        let _lock = test_lock();
+        let endpoint = TestEndpoint::new()?;
+        let signal = build_refetch_work_signal(42);
+        let payload = serde_json::to_vec(&signal)?;
+        let len = (payload.len() as u32).to_le_bytes();
+
+        let (server_stream, writer_handle) =
+            run_pair(&endpoint, move |mut client_stream| async move {
+                client_stream.write_all(&len).await?;
+                client_stream.write_all(&payload).await?;
+                client_stream.flush().await?;
+                Result::<()>::Ok(())
+            })
+            .await?;
+
+        writer_handle.await?;
+
+        let pubsub = Arc::new(RecordingPubSub::new());
+        handle_stream(server_stream, Arc::clone(&pubsub)).await?;
+
+        let events = pubsub.events();
+        assert_eq!(events.len(), 2);
+        assert_eq!(events[0].event_name(), APP_SIGNAL_EVENT);
+        assert_eq!(events[1].event_name(), APP_SIGNAL_REFETCH_WORK_EVENT);
+        let first_signal: AppSignal = match &events[0] {
+            PubSubEvent::AppSignal(payload) => payload.clone().into(),
+            _ => unreachable!(),
+        };
+        let second_signal: AppSignal = match &events[1] {
+            PubSubEvent::AppSignalRefetchWork(payload) => payload.clone().into(),
             _ => unreachable!(),
         };
         assert_eq!(first_signal, signal);

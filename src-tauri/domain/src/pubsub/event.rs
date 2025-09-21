@@ -136,6 +136,11 @@ pub enum AppSignalEventPayload {
     ShowMessage {
         message: String,
     },
+    RefetchWork {
+        #[serde(rename = "workId")]
+        work_id: i32,
+    },
+    RefetchWorks,
     SyncRequested {
         #[serde(default)]
         message: Option<String>,
@@ -167,6 +172,10 @@ impl From<AppSignalEvent> for AppSignalEventPayload {
             AppSignalEvent::ShowMessage { message } => {
                 AppSignalEventPayload::ShowMessage { message }
             }
+            AppSignalEvent::RefetchWork { work_id } => {
+                AppSignalEventPayload::RefetchWork { work_id }
+            }
+            AppSignalEvent::RefetchWorks => AppSignalEventPayload::RefetchWorks,
             AppSignalEvent::SyncRequested { message } => {
                 AppSignalEventPayload::SyncRequested { message }
             }
@@ -183,6 +192,10 @@ impl From<AppSignalEventPayload> for AppSignalEvent {
             AppSignalEventPayload::ShowMessage { message } => {
                 AppSignalEvent::ShowMessage { message }
             }
+            AppSignalEventPayload::RefetchWork { work_id } => {
+                AppSignalEvent::RefetchWork { work_id }
+            }
+            AppSignalEventPayload::RefetchWorks => AppSignalEvent::RefetchWorks,
             AppSignalEventPayload::SyncRequested { message } => {
                 AppSignalEvent::SyncRequested { message }
             }
@@ -248,6 +261,10 @@ pub enum PubSubEvent {
     AppSignalShowMessage(AppSignalPayload),
     #[serde(rename = "appSignal:showErrorMessage")]
     AppSignalShowErrorMessage(AppSignalPayload),
+    #[serde(rename = "appSignal:refetchWork")]
+    AppSignalRefetchWork(AppSignalPayload),
+    #[serde(rename = "appSignal:refetchWorks")]
+    AppSignalRefetchWorks(AppSignalPayload),
 }
 
 impl PubSubEvent {
@@ -270,6 +287,8 @@ impl PubSubEvent {
             PubSubEvent::AppSignal(..) => "appSignal",
             PubSubEvent::AppSignalShowMessage(..) => "appSignal:showMessage",
             PubSubEvent::AppSignalShowErrorMessage(..) => "appSignal:showErrorMessage",
+            PubSubEvent::AppSignalRefetchWork(..) => "appSignal:refetchWork",
+            PubSubEvent::AppSignalRefetchWorks(..) => "appSignal:refetchWorks",
         }
     }
 }

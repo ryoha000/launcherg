@@ -360,12 +360,7 @@ async fn handle_downloads_completed(
             return err(request_id, msg);
         }
         cleanup_download_paths([item.filename.as_str()]);
-        if let Err(err) = dispatch_show_message(
-            &ctx.app_signal_router,
-            format!("RefetchWork({})", work_id.value),
-        )
-        .await
-        {
+        if let Err(err) = dispatch_refetch_work(&ctx.app_signal_router, work_id.value).await {
             log::debug!("app signal dispatch failed: {err}");
         }
         return ok(
@@ -393,12 +388,7 @@ async fn handle_downloads_completed(
             return err(request_id, msg);
         }
         cleanup_download_paths(paths.iter().map(|p| p.as_str()));
-        if let Err(err) = dispatch_show_message(
-            &ctx.app_signal_router,
-            format!("RefetchWork({})", work_id.value),
-        )
-        .await
-        {
+        if let Err(err) = dispatch_refetch_work(&ctx.app_signal_router, work_id.value).await {
             log::debug!("app signal dispatch failed: {err}");
         }
         return ok(
@@ -410,12 +400,7 @@ async fn handle_downloads_completed(
         );
     }
 
-    if let Err(err) = dispatch_show_message(
-        &ctx.app_signal_router,
-        format!("RefetchWork({})", work_id.value),
-    )
-    .await
-    {
+    if let Err(err) = dispatch_refetch_work(&ctx.app_signal_router, work_id.value).await {
         log::debug!("app signal dispatch failed: {err}");
     }
 
@@ -465,6 +450,29 @@ async fn dispatch_show_error_message(
     let signal = AppSignal {
         source: AppSignalSource::NativeMessagingHost,
         event: AppSignalEvent::ShowErrorMessage { message },
+        issued_at: Utc::now(),
+    };
+    router.dispatch(signal).await
+}
+
+async fn dispatch_refetch_work(
+    router: &Arc<InterprocessAppSignalRouter>,
+    work_id: i32,
+) -> anyhow::Result<()> {
+    let signal = AppSignal {
+        source: AppSignalSource::NativeMessagingHost,
+        event: AppSignalEvent::RefetchWork { work_id },
+        issued_at: Utc::now(),
+    };
+    router.dispatch(signal).await
+}
+
+async fn dispatch_refetch_works(
+    router: &Arc<InterprocessAppSignalRouter>,
+) -> anyhow::Result<()> {
+    let signal = AppSignal {
+        source: AppSignalSource::NativeMessagingHost,
+        event: AppSignalEvent::RefetchWorks,
         issued_at: Utc::now(),
     };
     router.dispatch(signal).await
@@ -522,7 +530,7 @@ async fn handle_sync_dmm_games(
                 errors: vec![],
                 synced_games: input_ids.clone(),
             };
-            if let Err(err) = dispatch_show_message(&ctx.app_signal_router, "RefetchWorks()".to_string()).await {
+            if let Err(err) = dispatch_refetch_works(&ctx.app_signal_router).await {
                 log::debug!("app signal dispatch failed: {err}");
             }
             ok(request_id, NativeResponseCase::SyncGamesResult(result))
@@ -566,7 +574,7 @@ async fn handle_sync_dlsite_games(
                 errors: vec![],
                 synced_games: input_ids.clone(),
             };
-            if let Err(err) = dispatch_show_message(&ctx.app_signal_router, "RefetchWorks()".to_string()).await {
+            if let Err(err) = dispatch_refetch_works(&ctx.app_signal_router).await {
                 log::debug!("app signal dispatch failed: {err}");
             }
             ok(request_id, NativeResponseCase::SyncGamesResult(result))

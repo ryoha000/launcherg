@@ -20,7 +20,8 @@ mod tests {
     use crate::app_signal_router::{
         interprocess::listener::spawn_listener,
         test_support::{RecordingPubSub, TempDirEnvGuard},
-        APP_SIGNAL_EVENT, APP_SIGNAL_SHOW_ERROR_MESSAGE_EVENT, APP_SIGNAL_SHOW_MESSAGE_EVENT,
+        APP_SIGNAL_EVENT, APP_SIGNAL_REFETCH_WORK_EVENT, APP_SIGNAL_REFETCH_WORKS_EVENT,
+        APP_SIGNAL_SHOW_ERROR_MESSAGE_EVENT, APP_SIGNAL_SHOW_MESSAGE_EVENT,
     };
     #[cfg(not(windows))]
     use std::sync::Arc;
@@ -44,6 +45,24 @@ mod tests {
             event: AppSignalEvent::ShowMessage {
                 message: "integration".to_string(),
             },
+            issued_at: Utc::now(),
+        }
+    }
+
+    #[cfg(not(windows))]
+    fn sample_refetch_works_signal() -> AppSignal {
+        AppSignal {
+            source: AppSignalSource::NativeMessagingHost,
+            event: AppSignalEvent::RefetchWorks,
+            issued_at: Utc::now(),
+        }
+    }
+
+    #[cfg(not(windows))]
+    fn sample_refetch_work_signal(work_id: i32) -> AppSignal {
+        AppSignal {
+            source: AppSignalSource::NativeMessagingHost,
+            event: AppSignalEvent::RefetchWork { work_id },
             issued_at: Utc::now(),
         }
     }
@@ -125,6 +144,74 @@ mod tests {
         assert_eq!(first, signal);
         assert_eq!(second, signal);
 
+        Ok(())
+    }
+
+    #[cfg(not(windows))]
+    #[tokio::test]
+    async fn listener_client_リフェッチワークスイベント統合テスト() -> Result<()> {
+        let _lock = test_lock();
+        let env_guard = TempDirEnvGuard::new()?;
+        let pubsub = Arc::new(RecordingPubSub::new());
+        spawn_listener(Arc::clone(&pubsub))?;
+
+        sleep(Duration::from_millis(50)).await;
+
+        let router = InterprocessAppSignalRouter::new();
+        let signal = sample_refetch_works_signal();
+        router.dispatch(signal.clone()).await?;
+
+        let events = pubsub.wait_for_events(2).await?;
+        assert_eq!(events.len(), 2);
+        assert_eq!(events[0].event_name(), APP_SIGNAL_EVENT);
+        assert_eq!(events[1].event_name(), APP_SIGNAL_REFETCH_WORKS_EVENT);
+
+        let first: AppSignal = match &events[0] {
+            PubSubEvent::AppSignal(payload) => payload.clone().into(),
+            _ => unreachable!(),
+        };
+        let second: AppSignal = match &events[1] {
+            PubSubEvent::AppSignalRefetchWorks(payload) => payload.clone().into(),
+            _ => unreachable!(),
+        };
+        assert_eq!(first, signal);
+        assert_eq!(second, signal);
+
+        drop(env_guard);
+        Ok(())
+    }
+
+    #[cfg(not(windows))]
+    #[tokio::test]
+    async fn listener_client_リフェッチワークイベント統合テスト() -> Result<()> {
+        let _lock = test_lock();
+        let env_guard = TempDirEnvGuard::new()?;
+        let pubsub = Arc::new(RecordingPubSub::new());
+        spawn_listener(Arc::clone(&pubsub))?;
+
+        sleep(Duration::from_millis(50)).await;
+
+        let router = InterprocessAppSignalRouter::new();
+        let signal = sample_refetch_work_signal(42);
+        router.dispatch(signal.clone()).await?;
+
+        let events = pubsub.wait_for_events(2).await?;
+        assert_eq!(events.len(), 2);
+        assert_eq!(events[0].event_name(), APP_SIGNAL_EVENT);
+        assert_eq!(events[1].event_name(), APP_SIGNAL_REFETCH_WORK_EVENT);
+
+        let first: AppSignal = match &events[0] {
+            PubSubEvent::AppSignal(payload) => payload.clone().into(),
+            _ => unreachable!(),
+        };
+        let second: AppSignal = match &events[1] {
+            PubSubEvent::AppSignalRefetchWork(payload) => payload.clone().into(),
+            _ => unreachable!(),
+        };
+        assert_eq!(first, signal);
+        assert_eq!(second, signal);
+
+        drop(env_guard);
         Ok(())
     }
 

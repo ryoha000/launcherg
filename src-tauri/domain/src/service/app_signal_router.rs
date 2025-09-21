@@ -17,6 +17,11 @@ pub enum AppSignalEvent {
     ShowMessage {
         message: String,
     },
+    RefetchWork {
+        #[serde(rename = "workId")]
+        work_id: i32,
+    },
+    RefetchWorks,
     SyncRequested {
         #[serde(default)]
         message: Option<String>,
