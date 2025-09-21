@@ -1,11 +1,11 @@
 use std::path::PathBuf;
 
 use anyhow::Result;
-use interprocess::local_socket::{ListenerOptions, Name};
-#[cfg(windows)]
-use interprocess::local_socket::{GenericNamespaced, ToNsName};
 #[cfg(not(windows))]
 use interprocess::local_socket::{GenericFilePath, ToFsName};
+#[cfg(windows)]
+use interprocess::local_socket::{GenericNamespaced, ToNsName};
+use interprocess::local_socket::{ListenerOptions, Name};
 
 #[derive(Debug)]
 pub struct ListenerConfig {
@@ -87,3 +87,7 @@ impl AppSignalEndpoint {
         Ok((name, path))
     }
 }
+
+#[cfg(test)]
+#[path = "endpoint_test.rs"]
+mod endpoint_test;

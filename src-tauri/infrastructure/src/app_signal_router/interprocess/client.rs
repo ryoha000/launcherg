@@ -39,3 +39,7 @@ impl Default for InterprocessAppSignalRouter {
         Self
     }
 }
+
+#[cfg(test)]
+#[path = "client_test.rs"]
+mod client_test;

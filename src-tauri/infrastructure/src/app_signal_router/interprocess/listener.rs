@@ -12,7 +12,9 @@ use interprocess::local_socket::{
 };
 use tokio::{fs, io::AsyncReadExt};
 
-use crate::app_signal_router::{endpoint::AppSignalEndpoint, APP_SIGNAL_EVENT, APP_SIGNAL_SYNC_REQUESTED_EVENT};
+use crate::app_signal_router::{
+    endpoint::AppSignalEndpoint, APP_SIGNAL_EVENT, APP_SIGNAL_SYNC_REQUESTED_EVENT,
+};
 
 pub fn spawn_listener<P>(pubsub: Arc<P>) -> Result<()>
 where
@@ -62,7 +64,10 @@ where
     if let Some(path) = cleanup_path {
         if let Err(err) = fs::remove_file(&path).await {
             if err.kind() != std::io::ErrorKind::NotFound {
-                log::debug!("failed to remove app signal socket {}: {err}", path.display());
+                log::debug!(
+                    "failed to remove app signal socket {}: {err}",
+                    path.display()
+                );
             }
         }
     }
@@ -102,7 +107,11 @@ async fn read_signal(stream: &mut Stream) -> Result<AppSignal> {
         .await
         .with_context(|| "failed to read app signal payload")?;
 
-    let signal: AppSignal = serde_json::from_slice(&payload)
-        .with_context(|| "failed to deserialize app signal")?;
+    let signal: AppSignal =
+        serde_json::from_slice(&payload).with_context(|| "failed to deserialize app signal")?;
     Ok(signal)
 }
+
+#[cfg(test)]
+#[path = "listener_test.rs"]
+mod listener_test;

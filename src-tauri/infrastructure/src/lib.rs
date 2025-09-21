@@ -1,9 +1,9 @@
+pub mod app_signal_router;
 pub mod heuristic_duplicate_resolver;
 pub mod heuristic_metadata_extractor;
 pub mod icon;
 pub mod image_queue_worker;
 pub mod local_file_system;
-pub mod app_signal_router;
 pub mod native_messaging;
 pub mod pubsubimpl;
 pub mod sqliterepository;
