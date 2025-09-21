@@ -71,7 +71,7 @@ tasks:
     description: TauriのRustコードをチェック
     dir: src-tauri
     cmds:
-      - pwsh.exe -NoProfile -Command "cargo check"
+      - pwsh.exe -NoProfile -Command "cargo check --workspace"
       - pwsh.exe -NoProfile -Command "cargo test --workspace"
 
   # bench
@@ -86,8 +86,8 @@ tasks:
     dir: src-tauri/native-messaging-host
     description: Native Messaging Hostをチェック
     cmds:
-      - pwsh.exe -NoProfile -Command "cargo check"
-      - pwsh.exe -NoProfile -Command "cargo test"
+      - pwsh.exe -NoProfile -Command "cargo check --workspace"
+      - pwsh.exe -NoProfile -Command "cargo test --workspace"
 
   # build
   build:extension:
