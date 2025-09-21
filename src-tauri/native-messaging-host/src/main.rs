@@ -1,5 +1,6 @@
 mod models;
 
+use chrono::Utc;
 use serde_json;
 use std::fs;
 use std::io::ErrorKind;
@@ -8,12 +9,16 @@ use std::sync::Arc;
 use thiserror::Error;
 use tokio::io::{self as tokio_io, AsyncReadExt, AsyncWriteExt};
 
+use domain::service::app_signal_router::{
+    AppSignal, AppSignalEvent, AppSignalRouter, AppSignalSource,
+};
 use domain::native_host_log::{HostLogLevel, HostLogType};
 use domain::repository::{
     manager::RepositoryManager, native_host_log::NativeHostLogRepository, RepositoriesExt,
 };
 use domain::service::save_path_resolver::{DirsSavePathResolver, SavePathResolver};
 use infrastructure::{
+    app_signal_router::interprocess::client::InterprocessAppSignalRouter,
     heuristic_duplicate_resolver::HeuristicDuplicateResolver,
     image_queue_worker::ImageQueueWorker,
     local_file_system::LocalFileSystem,
@@ -45,6 +50,7 @@ struct AppCtx {
     fs: Arc<LocalFileSystem>,
     dedup: Arc<HeuristicDuplicateResolver>,
     work_linker: Arc<WorkLinkerImpl<SqliteRepositoryManager, SqliteRepositories, Windows>>,
+    app_signal_router: Arc<InterprocessAppSignalRouter>,
 }
 
 type HostResult<T> = Result<T, HostError>;
@@ -116,6 +122,7 @@ async fn main() {
         fs,
         dedup,
         work_linker,
+        app_signal_router: Arc::new(InterprocessAppSignalRouter::new()),
     };
 
     log::info!("Native Messaging Host started");
@@ -231,6 +238,12 @@ async fn handle_message(ctx: &AppCtx) -> HostResult<bool> {
             })
         })
         .await;
+
+    if response.success {
+        if let Err(err) = notify_app_signal(&ctx.app_signal_router, &message.message).await {
+            log::debug!("app signal dispatch failed: {err}");
+        }
+    }
 
     // 画像キューの drain は同期時のみ
     match &message.message {
@@ -364,6 +377,31 @@ async fn handle_downloads_completed(
             version: env!("CARGO_PKG_VERSION").into(),
         }),
     )
+}
+
+async fn notify_app_signal(
+    router: &Arc<InterprocessAppSignalRouter>,
+    message: &NativeMessageCase,
+) -> anyhow::Result<()> {
+    let reason = match message {
+        NativeMessageCase::SyncDmmGames(_) => Some("syncDmmGames"),
+        NativeMessageCase::SyncDlsiteGames(_) => Some("syncDlsiteGames"),
+        NativeMessageCase::DownloadsCompleted(_) => Some("downloadsCompleted"),
+        _ => None,
+    };
+
+    if let Some(reason) = reason {
+        let signal = AppSignal {
+            source: AppSignalSource::NativeMessagingHost,
+            event: AppSignalEvent::SyncRequested {
+                message: Some(reason.to_string()),
+            },
+            issued_at: Utc::now(),
+        };
+        router.dispatch(signal).await?;
+    }
+
+    Ok(())
 }
 
 fn cleanup_download_paths<I>(paths: I)
@@ -1168,6 +1206,7 @@ mod tests {
             fs,
             dedup,
             work_linker,
+            app_signal_router: Arc::new(InterprocessAppSignalRouter::new()),
         };
         let req = DmmSyncGamesRequestTs {
             games: vec![],
@@ -1211,6 +1250,7 @@ mod tests {
             fs,
             dedup,
             work_linker,
+            app_signal_router: Arc::new(InterprocessAppSignalRouter::new()),
         };
         let req = DlsiteSyncGamesRequestTs {
             games: vec![],
@@ -1254,6 +1294,7 @@ mod tests {
             fs,
             dedup,
             work_linker,
+            app_signal_router: Arc::new(InterprocessAppSignalRouter::new()),
         };
         let resp = handle_get_dmm_omit_works(
             &ctx,
