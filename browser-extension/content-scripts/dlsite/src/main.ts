@@ -31,7 +31,8 @@ function isProcessed(url: string): boolean {
 
 // 抽出と同期を実行するメイン関数
 async function extractAndSync(): Promise<void> {
-  if (shouldExtract(window.location.hostname, null)) {
+  const rootElement = document.getElementById('root')
+  if (!shouldExtract(window.location.hostname, rootElement)) {
     log.debug('Not a target page - skipping extraction')
     return
   }
