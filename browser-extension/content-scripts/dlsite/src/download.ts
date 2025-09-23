@@ -1,5 +1,4 @@
 import { logger, setDownloadIntent, showInPageNotification, waitForPageLoad } from '@launcherg/shared'
-import { extractAllGames, extractGameContainers, extractGameDataFromContainer } from './dom-extractor'
 
 const log = logger('dlsite-download')
 
@@ -97,80 +96,26 @@ export async function clickZipDownloadOnDetail(storeId: string): Promise<void> {
   showInPageNotification('DLsite: ダウンロードを開始しました', 'success')
 }
 
-export async function performNavigateToDetailByStoreId(storeId: string, options?: { maxTries?: number, perTryWaitMs?: number }): Promise<boolean> {
-  const maxTries = options?.maxTries ?? 30
-  const perTryWaitMs = options?.perTryWaitMs ?? 400
-
-  // まず現在描画済みから探す
-  const initial = extractAllGames()
-  const foundInitial = initial.find(g => g.storeId === storeId)
-  if (foundInitial) {
-    const containers = extractGameContainers()
-    for (const el of Array.from(containers)) {
-      const data = extractGameDataFromContainer(el, 0)
-      if (data && data.storeId === storeId) {
-        try {
-          (el as HTMLElement).scrollIntoView({ block: 'center' })
-        }
-        catch {}
-        await new Promise(r => setTimeout(r, 150))
-        ;(el as HTMLElement).click()
-        return true
-      }
-    }
-  }
-
-  // 無限スクロールして探索
-  for (let i = 0; i < maxTries; i++) {
-    try {
-      window.scrollBy({ top: window.innerHeight * 0.9, behavior: 'auto' })
-    }
-    catch {}
-    await new Promise(r => setTimeout(r, perTryWaitMs))
-
-    const containers = extractGameContainers()
-    for (const el of Array.from(containers)) {
-      const data = extractGameDataFromContainer(el, 0)
-      if (data && data.storeId === storeId) {
-        try {
-          (el as HTMLElement).scrollIntoView({ block: 'center' })
-        }
-        catch {}
-        await new Promise(r => setTimeout(r, 50))
-        ;(el as HTMLElement).click()
-        return true
-      }
-    }
-  }
-
-  showInPageNotification('DLsite: 対象作品が見つかりませんでした', 'error')
-  return false
-}
-
 export async function initLaunchergDownloadOnceForUrl(url: string, mark: (url: string) => void, isMarked: (url: string) => boolean): Promise<void> {
-  if (isMarked(url))
-    return
   const p = parseLaunchergParam()
   if (!p || p.type !== 'download')
+    return
+
+  const storeId = p.value.game.storeId
+  if (!storeId)
+    return
+
+  // 詳細ページ以外では何もしない（リダイレクト/無限スクロールを行わない）
+  if (!isDetailPage())
+    return
+
+  if (isMarked(url))
     return
   mark(url)
   log.info('Launcherg download param detected - DLsite flow start')
 
   try {
-    const storeId = p.value.game.storeId
-    if (!storeId)
-      return
-
-    if (isDetailPage()) {
-      await clickZipDownloadOnDetail(storeId)
-    }
-    else {
-      const navigated = await performNavigateToDetailByStoreId(storeId)
-      if (navigated) {
-        await waitForPageLoad(800)
-        await clickZipDownloadOnDetail(storeId)
-      }
-    }
+    await clickZipDownloadOnDetail(storeId)
   }
   finally {
     closeCurrentTab()

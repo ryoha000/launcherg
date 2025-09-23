@@ -61,7 +61,7 @@
         game: { storeId: dlsite.storeId, category: dlsite.category },
       },
     }
-    const url = new URL('https://play.dlsite.com/library')
+    const url = new URL(`https://play.dlsite.com/work/${encodeURIComponent(dlsite.storeId)}/tree`)
     url.searchParams.set('launcherg', JSON.stringify(payload))
     return url.toString()
   })
