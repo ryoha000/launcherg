@@ -12,9 +12,6 @@
       <div class='text-(h3 text-primary) font-logo'>Launcherg</div>
     </div>
   </a>
-  <a href='/store-mapped' use:route class='ml-2'>
-    <ButtonBase appendClass='border-0px px-2 py-1'>審査キュー</ButtonBase>
-  </a>
   <ButtonBase
     onclick={() => showSidebar.set(false)}
     appendClass='ml-auto border-0px p-1 bg-transparent'
