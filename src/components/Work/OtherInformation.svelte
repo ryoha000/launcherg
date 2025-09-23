@@ -30,16 +30,28 @@
         <div class='grid grid-cols-2 gap-2'>
           <div>
             <div>DMM</div>
-            <div>{workDetail.dmm?.storeId}</div>
+            {#if workDetail.dmm}
+              <div>{workDetail.dmm.storeId}/{workDetail.dmm.category}/{workDetail.dmm.subcategory}</div>
+            {:else}
+              <div>未連携</div>
+            {/if}
           </div>
           <div>
             <div>DLsite</div>
-            <div>{workDetail.dlsite?.storeId}</div>
+            {#if workDetail.dlsite}
+              <div>{workDetail.dlsite.storeId}/{workDetail.dlsite.category}</div>
+            {:else}
+              <div>未連携</div>
+            {/if}
           </div>
         </div>
       {/if}
     </OtherInfomationSection>
-    <OtherInfomationSection label='Thumbnail URL' value={workDetail.thumbnail} />
-    <OtherInfomationSection label='Latest Download Path' value={workDetail.latestDownloadPath?.downloadPath} />
+    <OtherInfomationSection label='Thumbnail Path'>
+      <pre class='whitespace-pre-wrap break-all'>{workDetail.thumbnail}</pre>
+    </OtherInfomationSection>
+    <OtherInfomationSection label='Latest Download Path'>
+      <pre class='whitespace-pre-wrap break-all'>{workDetail.latestDownloadPath?.downloadPath}</pre>
+    </OtherInfomationSection>
   </div>
 </Modal>
