@@ -3,8 +3,8 @@ use tauri::AppHandle;
 
 use crate::interface::error::CommandError;
 use crate::interface::module::{Modules, ModulesExt};
-use domain::extension::SyncStatus;
 use domain::extension::ExtensionConfig;
+use domain::extension::SyncStatus;
 
 #[tauri::command]
 pub async fn get_sync_status(
@@ -148,5 +148,3 @@ pub async fn remove_registry_keys(handle: AppHandle) -> anyhow::Result<Vec<Strin
 
     Ok(result)
 }
-
-

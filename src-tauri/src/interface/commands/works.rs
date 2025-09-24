@@ -33,5 +33,3 @@ pub async fn migrate_collection_paths_to_work_lnks(
         .migrate_collection_paths_to_work_lnks()
         .await?)
 }
-
-

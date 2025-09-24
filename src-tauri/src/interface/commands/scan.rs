@@ -29,5 +29,3 @@ pub async fn scan_start(
 
     Ok(gamenames)
 }
-
-

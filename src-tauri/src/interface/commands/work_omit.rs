@@ -36,5 +36,3 @@ pub async fn work_omit_all(
     let list = modules.work_omit_use_case().list().await?;
     Ok(list.into_iter().map(|e| e.into()).collect())
 }
-
-

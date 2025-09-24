@@ -107,5 +107,3 @@ pub async fn proctail_is_service_available(
         .proctail_is_service_available()
         .await?)
 }
-
-

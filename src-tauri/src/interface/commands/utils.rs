@@ -1,8 +1,8 @@
+use domain::windows::shell_link::ShellLink as _;
+use domain::windows::WindowsExt as _;
 use std::sync::Arc;
 use tauri::{AppHandle, State};
 use tauri_plugin_shell::ShellExt;
-use domain::windows::WindowsExt as _;
-use domain::windows::shell_link::ShellLink as _;
 
 use crate::interface::error::CommandError;
 use crate::interface::module::{Modules, ModulesExt};
@@ -97,7 +97,12 @@ pub async fn get_nearest_key_and_distance(
     let key = crate::domain::file::normalize(&key);
     let normalized_kv = calculate_distance_kv
         .into_iter()
-        .map(|v| (crate::domain::file::normalize(&v.0), crate::domain::file::normalize(&v.1)))
+        .map(|v| {
+            (
+                crate::domain::file::normalize(&v.0),
+                crate::domain::file::normalize(&v.1),
+            )
+        })
         .collect::<Vec<(String, String)>>();
 
     for (comp_key, comp_value) in normalized_kv.iter() {
@@ -123,5 +128,3 @@ pub async fn get_nearest_key_and_distance(
         ))),
     }
 }
-
-

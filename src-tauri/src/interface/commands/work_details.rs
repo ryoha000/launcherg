@@ -24,5 +24,3 @@ pub async fn get_work_details_by_collection_element(
         .await?;
     Ok(row.map(|w| w.into()))
 }
-
-

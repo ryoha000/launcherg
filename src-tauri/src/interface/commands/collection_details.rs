@@ -38,5 +38,3 @@ pub async fn get_erogamescape_id_by_collection_id(
         .get_erogamescape_id_by_collection_id(&Id::new(collection_element_id))
         .await?)
 }
-
-

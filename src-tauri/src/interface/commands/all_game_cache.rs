@@ -39,5 +39,3 @@ pub async fn get_game_cache_by_id(
         .await?
         .and_then(|v| Some(v.into())))
 }
-
-

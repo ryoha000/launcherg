@@ -6,7 +6,6 @@ use crate::interface::models::all_game_cache::AllGameCacheOne;
 use crate::interface::models::collection::CollectionElement;
 use crate::interface::module::{Modules, ModulesExt};
 
-use crate::domain::Id as _; // keep path resolution via external crate as well
 use domain::windows::shell_link::ShellLink as _;
 use domain::windows::WindowsExt as _;
 
@@ -178,5 +177,3 @@ pub async fn link_installed_game(
         .await?;
     Ok(())
 }
-
-

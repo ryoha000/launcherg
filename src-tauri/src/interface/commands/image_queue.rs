@@ -27,5 +27,3 @@ pub async fn get_image_save_queue(
         .await?;
     Ok(rows.into_iter().map(|r| r.into()).collect())
 }
-
-

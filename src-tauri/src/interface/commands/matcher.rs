@@ -40,5 +40,3 @@ pub async fn get_game_candidates_by_name(
         .collect();
     Ok(result)
 }
-
-

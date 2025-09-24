@@ -68,5 +68,3 @@ pub async fn proctail_manager_is_running(
         .proctail_manager_is_running()
         .await?)
 }
-
-

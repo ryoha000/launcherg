@@ -45,5 +45,3 @@ pub async fn save_screenshot_by_pid(
         .await?;
     Ok(upload_path)
 }
-
-

@@ -78,5 +78,3 @@ pub async fn get_native_host_logs(
         total,
     })
 }
-
-
