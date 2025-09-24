@@ -464,24 +464,4 @@ where
             .run(|repos| Box::pin(async move { repos.collection().get_all_elements().await }))
             .await
     }
-
-    pub async fn get_collection_ids_by_erogamescape_ids(
-        &self,
-        erogamescape_ids: Vec<i32>,
-    ) -> anyhow::Result<Vec<Id<CollectionElement>>> {
-        self.manager
-            .run(|repos| {
-                Box::pin(async move {
-                    let mut repo = repos.collection();
-                    let mut ids = Vec::new();
-                    for egs_id in erogamescape_ids {
-                        if let Some(id) = repo.get_collection_id_by_erogamescape_id(egs_id).await? {
-                            ids.push(id);
-                        }
-                    }
-                    Ok(ids)
-                })
-            })
-            .await
-    }
 }

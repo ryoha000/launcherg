@@ -92,7 +92,6 @@ fn main() {
             commands::scan::scan_start,
             commands::utils::get_play_time_minutes,
             commands::collection::delete_collection_element,
-            commands::collection::get_collection_ids_by_erogamescape_ids,
             commands::erogamescape::upsert_erogamescape_information,
             commands::erogamescape::get_not_registered_erogamescape_information_ids,
             commands::collection::get_all_elements,

@@ -97,13 +97,6 @@ export async function commandGetNotRegisteredErogamescapeInformationIds() {
   return await invoke<number[]>('get_not_registered_erogamescape_information_ids', {})
 }
 
-// EGS ID -> CollectionElement ID の対応を取得
-export async function commandGetCollectionIdsByErogamescapeIds(erogamescapeIds: number[]) {
-  return await invoke<[number, number][]>('get_collection_ids_by_erogamescape_ids', {
-    erogamescapeIds,
-  })
-}
-
 export interface ErogamescapeInformationInput {
   erogamescapeId: number
   gamenameRuby: string

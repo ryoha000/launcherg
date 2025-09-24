@@ -86,26 +86,6 @@ pub async fn delete_collection_element(
 }
 
 #[tauri::command]
-pub async fn get_collection_ids_by_erogamescape_ids(
-    modules: State<'_, Arc<Modules>>,
-    erogamescape_ids: Vec<i32>,
-) -> anyhow::Result<Vec<(i32, i32)>, CommandError> {
-    let mut pairs: Vec<(i32, i32)> = Vec::new();
-    for egs_id in erogamescape_ids.into_iter() {
-        if let Some(cid) = modules
-            .collection_use_case()
-            .get_collection_ids_by_erogamescape_ids(vec![egs_id])
-            .await?
-            .into_iter()
-            .next()
-        {
-            pairs.push((egs_id, cid.value));
-        }
-    }
-    Ok(pairs)
-}
-
-#[tauri::command]
 pub async fn get_all_elements(
     _handle: AppHandle,
     modules: State<'_, Arc<Modules>>,
