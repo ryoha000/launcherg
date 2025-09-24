@@ -142,16 +142,3 @@ pub async fn update_element_like(
         .update_element_like_at(&Id::new(id), is_like)
         .await?)
 }
-
-#[tauri::command]
-pub async fn link_installed_game(
-    modules: State<'_, Arc<Modules>>,
-    collection_element_id: i32,
-    exe_path: String,
-) -> anyhow::Result<(), CommandError> {
-    modules
-        .collection_use_case()
-        .link_installed_game(Id::new(collection_element_id), exe_path)
-        .await?;
-    Ok(())
-}

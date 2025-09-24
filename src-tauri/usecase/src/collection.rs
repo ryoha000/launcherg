@@ -481,58 +481,6 @@ where
             .await
     }
 
-    pub async fn link_installed_game(
-        &self,
-        collection_element_id: Id<CollectionElement>,
-        exe_path: String,
-    ) -> anyhow::Result<()> {
-        let work_details = self
-            .manager
-            .run(|repos| {
-                Box::pin(async move {
-                    let mut repo = repos.work();
-                    Ok::<Option<domain::works::WorkDetails>, anyhow::Error>(
-                        repo.find_details_by_collection_element_id(collection_element_id.clone())
-                            .await?,
-                    )
-                })
-            })
-            .await?;
-        if let Some(details) = work_details {
-            let work_id = details.work.id;
-            let dst = self.resolver.lnk_new_path(work_id.value);
-            let _ = std::fs::create_dir_all(std::path::Path::new(&dst).parent().unwrap());
-            let _ = self
-                .windows
-                .shell_link()
-                .create_bulk(vec![CreateShortcutRequest {
-                    target_path: exe_path.clone(),
-                    dest_lnk_path: dst.clone(),
-                    working_dir: None,
-                    arguments: None,
-                    icon_path: None,
-                }]);
-            let wid = work_id.clone();
-            self.manager
-                .run(|repos| {
-                    Box::pin(async move {
-                        repos
-                            .work_lnk()
-                            .insert(&NewWorkLnk {
-                                work_id: wid,
-                                lnk_path: dst,
-                            })
-                            .await
-                            .map(|_| ())
-                    })
-                })
-                .await?;
-        }
-
-        Ok(())
-    }
-
-    // EGS ID から collection_element_id 群を解決
     pub async fn get_collection_ids_by_erogamescape_ids(
         &self,
         erogamescape_ids: Vec<i32>,

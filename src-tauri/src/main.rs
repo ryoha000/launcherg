@@ -121,7 +121,6 @@ fn main() {
             commands::process_manager::proctail_manager_stop,
             commands::process_manager::proctail_manager_is_running,
             commands::utils::open_url,
-            commands::collection::link_installed_game,
             commands::matcher::get_game_candidates_by_name,
             commands::extension::get_sync_status,
             commands::extension::set_extension_config,

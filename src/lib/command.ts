@@ -240,16 +240,6 @@ export async function commandOpenUrl(url: string) {
   return await invoke<void>('open_url', { url })
 }
 
-export async function commandLinkInstalledGame(
-  collectionElementId: number,
-  exePath: string,
-) {
-  return await invoke<void>('link_installed_game', {
-    collectionElementId,
-    exePath,
-  })
-}
-
 // 拡張機能連携用の新しいコマンド
 
 export async function commandGetSyncStatus() {
