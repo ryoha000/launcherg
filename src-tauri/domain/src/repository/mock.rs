@@ -18,6 +18,7 @@ pub struct TestRepositories {
     pub work_download_path:
         Arc<Mutex<crate::repository::work_download_path::MockWorkDownloadPathRepository>>,
     pub work_lnk: Arc<Mutex<crate::repository::work_lnk::MockWorkLnkRepository>>,
+    pub work_like: Arc<Mutex<crate::repository::work_like::MockWorkLikeRepository>>,
     pub erogamescape: Arc<Mutex<crate::repository::erogamescape::MockErogamescapeRepository>>,
 }
 
@@ -37,6 +38,7 @@ impl Default for TestRepositories {
             work_parent_packs: Arc::new(Mutex::new(Default::default())),
             work_download_path: Arc::new(Mutex::new(Default::default())),
             work_lnk: Arc::new(Mutex::new(Default::default())),
+            work_like: Arc::new(Mutex::new(Default::default())),
             erogamescape: Arc::new(Mutex::new(Default::default())),
         }
     }
@@ -57,6 +59,7 @@ impl crate::repository::RepositoriesExt for TestRepositories {
     type ErogamescapeRepo = TestRepositories;
     type WorkDownloadPathRepo = TestRepositories;
     type WorkLnkRepo = TestRepositories;
+    type WorkLikeRepo = TestRepositories;
     fn work(&self) -> Self::WorkRepo {
         self.clone()
     }
@@ -97,6 +100,9 @@ impl crate::repository::RepositoriesExt for TestRepositories {
         self.clone()
     }
     fn work_lnk(&self) -> Self::WorkLnkRepo {
+        self.clone()
+    }
+    fn work_like(&self) -> Self::WorkLikeRepo {
         self.clone()
     }
 }
@@ -421,47 +427,7 @@ impl crate::repository::collection::CollectionRepository for TestRepositories {
             .update_element_last_play_at_by_id(id, last_play_at)
             .await
     }
-    async fn upsert_collection_element_like(
-        &mut self,
-        like: &crate::collection::NewCollectionElementLike,
-    ) -> anyhow::Result<()> {
-        self.collection
-            .lock()
-            .await
-            .upsert_collection_element_like(like)
-            .await
-    }
-    async fn delete_collection_element_like_by_element_id(
-        &mut self,
-        id: &crate::Id<crate::collection::CollectionElement>,
-    ) -> anyhow::Result<()> {
-        self.collection
-            .lock()
-            .await
-            .delete_collection_element_like_by_element_id(id)
-            .await
-    }
-    async fn get_element_like_by_element_id(
-        &mut self,
-        id: &crate::Id<crate::collection::CollectionElement>,
-    ) -> anyhow::Result<Option<crate::collection::CollectionElementLike>> {
-        self.collection
-            .lock()
-            .await
-            .get_element_like_by_element_id(id)
-            .await
-    }
-    async fn update_element_like_at_by_id(
-        &mut self,
-        id: &crate::Id<crate::collection::CollectionElement>,
-        like_at: Option<chrono::DateTime<chrono::Local>>,
-    ) -> anyhow::Result<()> {
-        self.collection
-            .lock()
-            .await
-            .update_element_like_at_by_id(id, like_at)
-            .await
-    }
+    // いいね関連APIは廃止（work_likesへ移行）
     async fn upsert_collection_element_thumbnail(
         &mut self,
         thumbnail: &crate::collection::NewCollectionElementThumbnail,
@@ -787,6 +753,38 @@ impl crate::repository::work_lnk::WorkLnkRepository for TestRepositories {
         id: crate::Id<crate::repository::work_lnk::WorkLnk>,
     ) -> anyhow::Result<()> {
         self.work_lnk.lock().await.delete(id).await
+    }
+}
+
+impl crate::repository::work_like::WorkLikeRepository for TestRepositories {
+    async fn upsert(
+        &mut self,
+        like: &crate::works::NewWorkLike,
+    ) -> anyhow::Result<crate::Id<crate::works::WorkLike>> {
+        self.work_like.lock().await.upsert(like).await
+    }
+    async fn delete_by_work_id(
+        &mut self,
+        work_id: crate::Id<crate::works::Work>,
+    ) -> anyhow::Result<()> {
+        self.work_like.lock().await.delete_by_work_id(work_id).await
+    }
+    async fn get_by_work_id(
+        &mut self,
+        work_id: crate::Id<crate::works::Work>,
+    ) -> anyhow::Result<Option<crate::works::WorkLike>> {
+        self.work_like.lock().await.get_by_work_id(work_id).await
+    }
+    async fn update_like_at_by_work_id(
+        &mut self,
+        work_id: crate::Id<crate::works::Work>,
+        like_at: Option<chrono::DateTime<chrono::Local>>,
+    ) -> anyhow::Result<()> {
+        self.work_like
+            .lock()
+            .await
+            .update_like_at_by_work_id(work_id, like_at)
+            .await
     }
 }
 

@@ -16,7 +16,7 @@
     commandDeleteCollectionElement,
     commandGetCollectionElement,
     commandOpenFolder,
-    commandUpdateElementLike,
+    commandUpdateWorkLike,
     commandUpsertCollectionElement,
 
   } from '@/lib/command'
@@ -32,17 +32,16 @@
 
   const { workDetail, id, seiyaUrl }: Props = $props()
 
-  let isLike = $state(false)
+  let isLike = $state(!!workDetail.likeAt)
 
   const toggleLike = async () => {
-    await commandUpdateElementLike(id, !isLike)
+    await commandUpdateWorkLike(workDetail.id, !isLike)
     isLike = !isLike
     sidebarCollectionElements.updateLike(id, isLike)
   }
 
   const elementPromise = $derived((async () => {
     const element = await commandGetCollectionElement(id)
-    isLike = !!element.likeAt
     return element
   })())
 

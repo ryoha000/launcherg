@@ -440,85 +440,13 @@ impl CollectionRepository for RepositoryImpl<domain::collection::CollectionEleme
         self.upsert_collection_element_play(&play).await
     }
 
-    async fn upsert_collection_element_like(
-        &mut self,
-        like: &NewCollectionElementLike,
-    ) -> anyhow::Result<()> {
-        let l = like.clone();
-        self.executor
-            .with_conn(|conn| {
-                Box::pin(async move {
-                    query(
-                        "INSERT INTO collection_element_likes (collection_element_id, like_at) 
-             VALUES (?, ?)
-             ON CONFLICT(collection_element_id) DO UPDATE SET 
-             like_at = ?, updated_at = CURRENT_TIMESTAMP",
-                    )
-                    .bind(l.collection_element_id.value)
-                    .bind(l.like_at.naive_utc())
-                    .bind(l.like_at.naive_utc())
-                    .execute(conn)
-                    .await?;
-                    Ok::<(), anyhow::Error>(())
-                })
-            })
-            .await?;
-        Ok(())
-    }
+    // 廃止: collection_element_likes は work_likes に移行
 
-    async fn delete_collection_element_like_by_element_id(
-        &mut self,
-        id: &Id<CollectionElement>,
-    ) -> anyhow::Result<()> {
-        let idv = id.value;
-        self.executor
-            .with_conn(|conn| {
-                Box::pin(async move {
-                    query("DELETE FROM collection_element_likes WHERE collection_element_id = ?")
-                        .bind(idv)
-                        .execute(conn)
-                        .await?;
-                    Ok::<(), anyhow::Error>(())
-                })
-            })
-            .await?;
-        Ok(())
-    }
+    // 廃止: collection_element_likes は work_likes に移行
 
-    async fn get_element_like_by_element_id(
-        &mut self,
-        id: &Id<CollectionElement>,
-    ) -> anyhow::Result<Option<CollectionElementLike>> {
-        let idv = id.value;
-        let like_table: Option<CollectionElementLikeTable> = self
-            .executor
-            .with_conn(|conn| {
-                Box::pin(async move {
-                    Ok(query_as(
-                        "SELECT * FROM collection_element_likes WHERE collection_element_id = ?",
-                    )
-                    .bind(idv)
-                    .fetch_optional(conn)
-                    .await?)
-                })
-            })
-            .await?;
-        Ok(like_table.map(|t| t.try_into()).transpose()?)
-    }
+    // 廃止: collection_element_likes は work_likes に移行
 
-    async fn update_element_like_at_by_id(
-        &mut self,
-        id: &Id<CollectionElement>,
-        like_at: Option<DateTime<Local>>,
-    ) -> anyhow::Result<()> {
-        match like_at {
-            Some(at) => {
-                let like = NewCollectionElementLike::new(id.clone(), at);
-                self.upsert_collection_element_like(&like).await
-            }
-            None => self.delete_collection_element_like_by_element_id(id).await,
-        }
-    }
+    // 廃止: collection_element_likes は work_likes に移行
 
     async fn upsert_collection_element_thumbnail(
         &mut self,

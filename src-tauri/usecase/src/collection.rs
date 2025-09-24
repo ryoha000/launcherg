@@ -444,23 +444,7 @@ where
             .await?;
         Ok(())
     }
-    pub async fn update_element_like_at(
-        &self,
-        id: &Id<CollectionElement>,
-        is_like: bool,
-    ) -> anyhow::Result<()> {
-        self.manager
-            .run(|repos| {
-                Box::pin(async move {
-                    repos
-                        .collection()
-                        .update_element_like_at_by_id(id, is_like.then_some(Local::now()))
-                        .await
-                })
-            })
-            .await?;
-        Ok(())
-    }
+    // 廃止: いいね情報は work_likes へ移行
     pub async fn get_all_elements(&self) -> anyhow::Result<Vec<CollectionElement>> {
         let null_size_ids = self
             .manager

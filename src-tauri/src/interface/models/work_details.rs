@@ -15,6 +15,7 @@ pub struct WorkDetailsVm {
     pub is_dmm_pack: bool,
     pub thumbnail: Option<String>,
     pub latest_download_path: Option<LatestWorkDownloadPathVm>,
+    pub like_at: Option<String>,
 }
 
 #[derive(serde::Serialize)]
@@ -88,6 +89,10 @@ impl From<WorkDetails> for WorkDetailsVm {
                 work_id: p.work_id.value,
                 download_path: p.download_path,
             }),
+            like_at: w
+                .like
+                .as_ref()
+                .map(|l| l.like_at.format("%Y-%m-%d %H:%M:%S").to_string()),
         }
     }
 }

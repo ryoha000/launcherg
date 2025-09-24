@@ -173,7 +173,6 @@ impl TryFrom<CollectionElementTable> for CollectionElement {
     }
 }
 
-
 impl TryFrom<CollectionElementPathsTable> for CollectionElementPaths {
     type Error = anyhow::Error;
     fn try_from(st: CollectionElementPathsTable) -> Result<Self, Self::Error> {
@@ -274,7 +273,6 @@ impl From<CollectionElementDetailsRow> for CollectionElement {
             None,
             None,
         );
-
 
         if let Some(paths_id) = r.paths_id {
             if let (Some(created), Some(updated)) = (r.paths_created_at, r.paths_updated_at) {

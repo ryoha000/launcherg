@@ -33,3 +33,15 @@ pub async fn migrate_collection_paths_to_work_lnks(
         .migrate_collection_paths_to_work_lnks()
         .await?)
 }
+
+#[tauri::command]
+pub async fn update_work_like(
+    modules: State<'_, Arc<Modules>>,
+    work_id: i32,
+    is_like: bool,
+) -> anyhow::Result<(), CommandError> {
+    Ok(modules
+        .work_use_case()
+        .update_like(work_id, is_like)
+        .await?)
+}

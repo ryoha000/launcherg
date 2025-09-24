@@ -97,7 +97,7 @@ fn main() {
             commands::erogamescape::upsert_erogamescape_information,
             commands::erogamescape::get_not_registered_erogamescape_information_ids,
             commands::collection::get_all_elements,
-            commands::collection::update_element_like,
+            commands::works::update_work_like,
             commands::utils::open_folder,
             commands::all_game_cache::get_all_game_cache_last_updated,
             commands::all_game_cache::update_all_game_cache,

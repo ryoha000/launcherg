@@ -19,6 +19,7 @@ mockall::mock! {
         type WorkParentPacksRepo = domain::repository::work_parent_packs::MockWorkParentPacksRepository;
         type WorkDownloadPathRepo = domain::repository::work_download_path::MockWorkDownloadPathRepository;
         type WorkLnkRepo = domain::repository::work_lnk::MockWorkLnkRepository;
+        type WorkLikeRepo = domain::repository::work_like::MockWorkLikeRepository;
         type ErogamescapeRepo = domain::repository::erogamescape::MockErogamescapeRepository;
         fn work(&self) -> domain::repository::works::MockWorkRepository;
         fn dmm_work(&self) -> domain::repository::works::MockDmmWorkRepository;
@@ -33,6 +34,7 @@ mockall::mock! {
         fn collection(&self) -> domain::repository::collection::MockCollectionRepository;
         fn work_download_path(&self) -> domain::repository::work_download_path::MockWorkDownloadPathRepository;
         fn work_lnk(&self) -> domain::repository::work_lnk::MockWorkLnkRepository;
+        fn work_like(&self) -> domain::repository::work_like::MockWorkLikeRepository;
         fn erogamescape(&self) -> domain::repository::erogamescape::MockErogamescapeRepository;
     }
 }
@@ -55,6 +57,7 @@ pub struct TestRepositories {
     pub work_download_path:
         Arc<Mutex<domain::repository::work_download_path::MockWorkDownloadPathRepository>>,
     pub work_lnk: Arc<Mutex<domain::repository::work_lnk::MockWorkLnkRepository>>,
+    pub work_like: Arc<Mutex<domain::repository::work_like::MockWorkLikeRepository>>,
     pub erogamescape: Arc<Mutex<domain::repository::erogamescape::MockErogamescapeRepository>>,
 }
 
@@ -75,6 +78,7 @@ impl Default for TestRepositories {
             work_parent_packs: Arc::new(Mutex::new(Default::default())),
             work_download_path: Arc::new(Mutex::new(Default::default())),
             work_lnk: Arc::new(Mutex::new(Default::default())),
+            work_like: Arc::new(Mutex::new(Default::default())),
             erogamescape: Arc::new(Mutex::new(Default::default())),
         }
     }
@@ -96,6 +100,7 @@ impl domain::repository::RepositoriesExt for TestRepositories {
     type ErogamescapeRepo = TestRepositories;
     type WorkDownloadPathRepo = TestRepositories;
     type WorkLnkRepo = TestRepositories;
+    type WorkLikeRepo = TestRepositories;
     fn work(&self) -> Self::WorkRepo {
         self.clone()
     }
@@ -136,6 +141,9 @@ impl domain::repository::RepositoriesExt for TestRepositories {
         self.clone()
     }
     fn work_lnk(&self) -> Self::WorkLnkRepo {
+        self.clone()
+    }
+    fn work_like(&self) -> Self::WorkLikeRepo {
         self.clone()
     }
 }
@@ -468,47 +476,7 @@ impl domain::repository::collection::CollectionRepository for TestRepositories {
             .update_element_last_play_at_by_id(id, last_play_at)
             .await
     }
-    async fn upsert_collection_element_like(
-        &mut self,
-        like: &domain::collection::NewCollectionElementLike,
-    ) -> anyhow::Result<()> {
-        self.collection
-            .lock()
-            .await
-            .upsert_collection_element_like(like)
-            .await
-    }
-    async fn delete_collection_element_like_by_element_id(
-        &mut self,
-        id: &domain::Id<domain::collection::CollectionElement>,
-    ) -> anyhow::Result<()> {
-        self.collection
-            .lock()
-            .await
-            .delete_collection_element_like_by_element_id(id)
-            .await
-    }
-    async fn get_element_like_by_element_id(
-        &mut self,
-        id: &domain::Id<domain::collection::CollectionElement>,
-    ) -> anyhow::Result<Option<domain::collection::CollectionElementLike>> {
-        self.collection
-            .lock()
-            .await
-            .get_element_like_by_element_id(id)
-            .await
-    }
-    async fn update_element_like_at_by_id(
-        &mut self,
-        id: &domain::Id<domain::collection::CollectionElement>,
-        like_at: Option<chrono::DateTime<chrono::Local>>,
-    ) -> anyhow::Result<()> {
-        self.collection
-            .lock()
-            .await
-            .update_element_like_at_by_id(id, like_at)
-            .await
-    }
+    // いいね関連APIは廃止（work_likesへ移行）
     async fn upsert_collection_element_thumbnail(
         &mut self,
         thumbnail: &domain::collection::NewCollectionElementThumbnail,
@@ -840,6 +808,39 @@ impl domain::repository::work_lnk::WorkLnkRepository for TestRepositories {
         id: domain::Id<domain::repository::work_lnk::WorkLnk>,
     ) -> anyhow::Result<()> {
         self.work_lnk.lock().await.delete(id).await
+    }
+}
+
+#[cfg(test)]
+impl domain::repository::work_like::WorkLikeRepository for TestRepositories {
+    async fn upsert(
+        &mut self,
+        like: &domain::works::NewWorkLike,
+    ) -> anyhow::Result<domain::Id<domain::works::WorkLike>> {
+        self.work_like.lock().await.upsert(like).await
+    }
+    async fn delete_by_work_id(
+        &mut self,
+        work_id: domain::Id<domain::works::Work>,
+    ) -> anyhow::Result<()> {
+        self.work_like.lock().await.delete_by_work_id(work_id).await
+    }
+    async fn get_by_work_id(
+        &mut self,
+        work_id: domain::Id<domain::works::Work>,
+    ) -> anyhow::Result<Option<domain::works::WorkLike>> {
+        self.work_like.lock().await.get_by_work_id(work_id).await
+    }
+    async fn update_like_at_by_work_id(
+        &mut self,
+        work_id: domain::Id<domain::works::Work>,
+        like_at: Option<chrono::DateTime<chrono::Local>>,
+    ) -> anyhow::Result<()> {
+        self.work_like
+            .lock()
+            .await
+            .update_like_at_by_work_id(work_id, like_at)
+            .await
     }
 }
 

@@ -167,6 +167,7 @@ mod tests {
                         false,
                         false,
                         None,
+                        None,
                     )))
                 })
             });
@@ -287,44 +288,15 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_update_element_like_at_like() {
-        let mut mock_repo = MockCollectionRepository::new();
-        mock_repo
-            .expect_update_element_like_at_by_id()
-            .with(eq(create_test_element_id(1)), always())
-            .times(1)
-            .returning(|_, _| Box::pin(async move { Ok::<_, anyhow::Error>(()) }));
-
-        let mut mock_repositories = TestRepositories::default();
-        mock_repositories.collection = Arc::new(tauri::async_runtime::Mutex::new(mock_repo));
-
-        let use_case = setup_use_case(mock_repositories);
-        let id = create_test_element_id(1);
-
-        let result = use_case.update_element_like_at(&id, true).await;
-        assert!(result.is_ok());
+    async fn test_update_element_like_at_like_廃止() {
+        // 廃止: WorkUseCase::update_like に移行
+        assert!(true);
     }
 
     #[tokio::test]
-    async fn test_update_element_like_at_unlike() {
-        let mut mock_repo = MockCollectionRepository::new();
-        mock_repo
-            .expect_update_element_like_at_by_id()
-            .with(
-                eq(create_test_element_id(1)),
-                eq(None::<chrono::DateTime<Local>>),
-            )
-            .times(1)
-            .returning(|_, _| Box::pin(async move { Ok::<_, anyhow::Error>(()) }));
-
-        let mut mock_repositories = TestRepositories::default();
-        mock_repositories.collection = Arc::new(tauri::async_runtime::Mutex::new(mock_repo));
-
-        let use_case = setup_use_case(mock_repositories);
-        let id = create_test_element_id(1);
-
-        let result = use_case.update_element_like_at(&id, false).await;
-        assert!(result.is_ok());
+    async fn test_update_element_like_at_unlike_廃止() {
+        // 廃止: WorkUseCase::update_like に移行
+        assert!(true);
     }
 
     #[tokio::test]
@@ -429,6 +401,7 @@ mod tests {
                         None,
                         false,
                         false,
+                        None,
                         None,
                     )))
                 })

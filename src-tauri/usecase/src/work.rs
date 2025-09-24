@@ -4,8 +4,8 @@ use derive_new::new;
 use domain::repository::work_parent_packs::WorkParentPacksRepository as _;
 use domain::repository::works::DmmWorkRepository as _;
 use domain::repository::{
-    collection::CollectionRepository, manager::RepositoryManager, work_lnk::WorkLnkRepository,
-    works::WorkRepository, RepositoriesExt,
+    collection::CollectionRepository, manager::RepositoryManager, work_like::WorkLikeRepository,
+    work_lnk::WorkLnkRepository, works::WorkRepository, RepositoriesExt,
 };
 use domain::windows::{shell_link::ShellLink as ShellLinkTrait, WindowsExt};
 use domain::works::WorkDetails;
@@ -132,6 +132,20 @@ where
         let wid = domain::Id::new(work_id);
         self.manager
             .run(|repos| Box::pin(async move { repos.dmm_work().find_by_work_id(wid).await }))
+            .await
+    }
+
+    pub async fn update_like(&self, work_id: i32, is_like: bool) -> anyhow::Result<()> {
+        let wid = domain::Id::new(work_id);
+        self.manager
+            .run(|repos| {
+                Box::pin(async move {
+                    repos
+                        .work_like()
+                        .update_like_at_by_work_id(wid, is_like.then_some(chrono::Local::now()))
+                        .await
+                })
+            })
             .await
     }
 }

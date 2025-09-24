@@ -124,8 +124,8 @@ export async function commandGetAllElements() {
   return await invoke<CollectionElement[]>('get_all_elements', {})
 }
 
-export async function commandUpdateElementLike(id: number, isLike: boolean) {
-  return await invoke<void>('update_element_like', { id, isLike })
+export async function commandUpdateWorkLike(workId: number, isLike: boolean) {
+  return await invoke<void>('update_work_like', { workId, isLike })
 }
 
 export async function commandOpenFolder(path: string) {
@@ -333,7 +333,7 @@ export async function commandWorkOmitAll() {
 }
 
 // WorkDetails
-export interface WorkDetailsVm { id: number, title: string, dmm?: { id: number, storeId: string, category: string, subcategory: string }, dlsite?: { id: number, storeId: string, category: string }, collectionElementId?: number | null, erogamescapeId?: number | null, isOmitted: boolean, isDmmPack: boolean, thumbnail?: string, latestDownloadPath?: { id: number, workId: number, downloadPath: string } | null }
+export interface WorkDetailsVm { id: number, title: string, dmm?: { id: number, storeId: string, category: string, subcategory: string }, dlsite?: { id: number, storeId: string, category: string }, collectionElementId?: number | null, erogamescapeId?: number | null, isOmitted: boolean, isDmmPack: boolean, thumbnail?: string, latestDownloadPath?: { id: number, workId: number, downloadPath: string } | null, likeAt?: string | null }
 export async function commandGetWorkDetailsAll() {
   return await invoke<WorkDetailsVm[]>('get_work_details_all')
 }

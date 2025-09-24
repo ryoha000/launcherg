@@ -1,7 +1,7 @@
 use super::TestDatabase;
 use domain::collection::{
-    NewCollectionElement, NewCollectionElementInstall, NewCollectionElementLike,
-    NewCollectionElementPaths, NewCollectionElementPlay, NewCollectionElementThumbnail,
+    NewCollectionElement, NewCollectionElementInstall, NewCollectionElementPaths,
+    NewCollectionElementPlay, NewCollectionElementThumbnail,
 };
 use domain::repository::{
     collection::CollectionRepository, works::WorkRepository, RepositoriesExt,
@@ -51,12 +51,6 @@ async fn collection_normal_flows() {
         ))
         .await
         .unwrap();
-        r.upsert_collection_element_like(&NewCollectionElementLike::new(
-            Id::new(1),
-            chrono::Local::now(),
-        ))
-        .await
-        .unwrap();
         r.upsert_collection_element_thumbnail(&NewCollectionElementThumbnail::new(
             Id::new(1),
             Some(10),
@@ -91,11 +85,7 @@ async fn collection_normal_flows() {
             .await
             .unwrap()
             .is_some());
-        assert!(r
-            .get_element_like_by_element_id(&Id::new(1))
-            .await
-            .unwrap()
-            .is_some());
+        // likes は work_likes へ移行済みのため取得しない
         assert!(r
             .get_element_thumbnail_by_element_id(&Id::new(1))
             .await
@@ -117,18 +107,7 @@ async fn collection_normal_flows() {
         assert!(!list.is_empty());
     }
 
-    // like/unlike
-    {
-        let mut r = repo.collection();
-        r.update_element_like_at_by_id(&Id::new(1), None)
-            .await
-            .unwrap();
-        assert!(r
-            .get_element_like_by_element_id(&Id::new(1))
-            .await
-            .unwrap()
-            .is_none());
-    }
+    // like/unlike は work_likes へ移行済みのためテスト対象外
 
     // delete element
     {

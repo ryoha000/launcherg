@@ -131,14 +131,4 @@ pub async fn get_all_elements(
         .collect())
 }
 
-#[tauri::command]
-pub async fn update_element_like(
-    modules: State<'_, Arc<Modules>>,
-    id: i32,
-    is_like: bool,
-) -> anyhow::Result<(), CommandError> {
-    Ok(modules
-        .collection_use_case()
-        .update_element_like_at(&Id::new(id), is_like)
-        .await?)
-}
+// 廃止: collection_element_likes -> work_likes へ移行

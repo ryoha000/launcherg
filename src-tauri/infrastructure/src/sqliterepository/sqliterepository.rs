@@ -56,6 +56,7 @@ pub struct SqliteRepositories {
     collection: RepositoryImpl<domain::collection::CollectionElement>,
     work_download_path: RepositoryImpl<domain::work_download_path::WorkDownloadPath>,
     work_lnk: RepositoryImpl<domain::repository::work_lnk::WorkLnk>,
+    work_like: RepositoryImpl<domain::works::WorkLike>,
     erogamescape: RepositoryImpl<domain::erogamescape::ErogamescapeInformation>,
 }
 
@@ -74,6 +75,7 @@ impl RepositoriesExt for SqliteRepositories {
     type ErogamescapeRepo = RepositoryImpl<domain::erogamescape::ErogamescapeInformation>;
     type WorkDownloadPathRepo = RepositoryImpl<domain::work_download_path::WorkDownloadPath>;
     type WorkLnkRepo = RepositoryImpl<domain::repository::work_lnk::WorkLnk>;
+    type WorkLikeRepo = RepositoryImpl<domain::works::WorkLike>;
 
     fn work(&self) -> Self::WorkRepo {
         self.work.clone()
@@ -117,6 +119,9 @@ impl RepositoriesExt for SqliteRepositories {
     fn work_lnk(&self) -> Self::WorkLnkRepo {
         self.work_lnk.clone()
     }
+    fn work_like(&self) -> Self::WorkLikeRepo {
+        self.work_like.clone()
+    }
 }
 
 impl SqliteRepositories {
@@ -149,6 +154,7 @@ impl SqliteRepositories {
             collection: RepositoryImpl::new(executor.clone()),
             work_download_path: RepositoryImpl::new(executor.clone()),
             work_lnk: RepositoryImpl::new(executor.clone()),
+            work_like: RepositoryImpl::new(executor.clone()),
             erogamescape: RepositoryImpl::new(executor.clone()),
         }
     }

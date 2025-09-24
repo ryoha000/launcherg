@@ -4,7 +4,10 @@ use domain::collection::CollectionElement;
 use domain::repository::work_lnk::{NewWorkLnk, WorkLnk as DomainWorkLnk, WorkLnkRepository};
 use domain::{
     repository::works::{DlsiteWorkRepository, DmmWorkRepository, WorkRepository},
-    works::{DlsiteWork, DmmWork, NewDlsiteWork, NewDmmWork, NewWork, Work, WorkDetails},
+    works::{
+        DlsiteWork, DmmWork, NewDlsiteWork, NewDmmWork, NewWork, NewWorkLike, Work, WorkDetails,
+        WorkLike,
+    },
     Id,
 };
 use sqlx::query_as;
@@ -78,7 +81,11 @@ impl WorkRepository for RepositoryImpl<Work> {
                         lw.store_id as dlsite_store_id,
                         lw.category as dlsite_category,
                         (SELECT id FROM work_download_paths wdp WHERE wdp.work_id = w.id ORDER BY id DESC LIMIT 1) as latest_path_id,
-                        (SELECT download_path FROM work_download_paths wdp WHERE wdp.work_id = w.id ORDER BY id DESC LIMIT 1) as latest_path_download_path
+                        (SELECT download_path FROM work_download_paths wdp WHERE wdp.work_id = w.id ORDER BY id DESC LIMIT 1) as latest_path_download_path,
+                        wl.id as like_id,
+                        wl.like_at as like_like_at,
+                        wl.created_at as like_created_at,
+                        wl.updated_at as like_updated_at
                     FROM works w
                     LEFT JOIN dmm_works dw ON dw.work_id = w.id
                     LEFT JOIN work_collection_elements m1 ON m1.work_id = w.id
@@ -86,6 +93,7 @@ impl WorkRepository for RepositoryImpl<Work> {
                     LEFT JOIN work_omits oo ON oo.work_id = w.id
                     LEFT JOIN dmm_work_packs pp ON pp.work_id = w.id
                     LEFT JOIN dlsite_works lw ON lw.work_id = w.id
+                    LEFT JOIN work_likes wl ON wl.work_id = w.id
                     ORDER BY w.id ASC
                     "#,
                 )
@@ -155,14 +163,19 @@ impl WorkRepository for RepositoryImpl<Work> {
                         lw.store_id as dlsite_store_id,
                         lw.category as dlsite_category,
                         (SELECT id FROM work_download_paths wdp WHERE wdp.work_id = w.id ORDER BY id DESC LIMIT 1) as latest_path_id,
-                        (SELECT download_path FROM work_download_paths wdp WHERE wdp.work_id = w.id ORDER BY id DESC LIMIT 1) as latest_path_download_path
+                        (SELECT download_path FROM work_download_paths wdp WHERE wdp.work_id = w.id ORDER BY id DESC LIMIT 1) as latest_path_download_path,
+                        wl.id as like_id,
+                        wl.like_at as like_like_at,
+                        wl.created_at as like_created_at,
+                        wl.updated_at as like_updated_at
                     FROM works w
                     JOIN work_collection_elements m1 ON m1.work_id = w.id
                     LEFT JOIN dmm_works dw ON dw.work_id = w.id
                     LEFT JOIN work_erogamescape_map wem ON wem.work_id = w.id
                     LEFT JOIN work_omits oo ON oo.work_id = w.id
                     LEFT JOIN dmm_work_packs pp ON pp.work_id = w.id
-                    LEFT JOIN dlsite_works lw ON lw.work_id = w.id
+                        LEFT JOIN dlsite_works lw ON lw.work_id = w.id
+                        LEFT JOIN work_likes wl ON wl.work_id = w.id
                     WHERE m1.collection_element_id = ?
                     LIMIT 1
                     "#,
@@ -628,5 +641,80 @@ impl WorkLnkRepository for RepositoryImpl<domain::repository::work_lnk::WorkLnk>
                 })
             })
             .await
+    }
+}
+
+impl domain::repository::work_like::WorkLikeRepository for RepositoryImpl<domain::works::WorkLike> {
+    async fn upsert(&mut self, like: &NewWorkLike) -> anyhow::Result<Id<WorkLike>> {
+        let work_id = like.work_id.value as i64;
+        let like_at = like.like_at.naive_utc();
+        let (id,): (i64,) = self
+            .executor
+            .with_conn(|conn| {
+                Box::pin(async move {
+                    let (id,): (i64,) = sqlx::query_as(
+                        r#"INSERT INTO work_likes (work_id, like_at) VALUES (?, ?)
+                        ON CONFLICT(work_id) DO UPDATE SET like_at = excluded.like_at, updated_at = CURRENT_TIMESTAMP
+                        RETURNING id"#,
+                    )
+                    .bind(work_id)
+                    .bind(like_at)
+                    .fetch_one(conn)
+                    .await?;
+                    Ok::<(i64,), anyhow::Error>((id,))
+                })
+            })
+            .await?;
+        Ok(Id::new(id as i32))
+    }
+
+    async fn delete_by_work_id(&mut self, work_id: Id<Work>) -> anyhow::Result<()> {
+        let idv = work_id.value as i64;
+        self.executor
+            .with_conn(|conn| {
+                Box::pin(async move {
+                    sqlx::query(r#"DELETE FROM work_likes WHERE work_id = ?"#)
+                        .bind(idv)
+                        .execute(conn)
+                        .await?;
+                    Ok::<(), anyhow::Error>(())
+                })
+            })
+            .await
+    }
+
+    async fn get_by_work_id(&mut self, work_id: Id<Work>) -> anyhow::Result<Option<WorkLike>> {
+        let idv = work_id.value as i64;
+        let row: Option<crate::sqliterepository::models::works::WorkLikeRow> = self
+            .executor
+            .with_conn(|conn| {
+                Box::pin(async move {
+                    let row: Option<crate::sqliterepository::models::works::WorkLikeRow> =
+                        sqlx::query_as(
+                            r#"SELECT id, work_id, like_at, created_at, updated_at FROM work_likes WHERE work_id = ? LIMIT 1"#,
+                        )
+                        .bind(idv)
+                        .fetch_optional(conn)
+                        .await?;
+                    Ok(row)
+                })
+            })
+            .await?;
+        Ok(row.map(|r| r.try_into()).transpose()?)
+    }
+
+    async fn update_like_at_by_work_id(
+        &mut self,
+        work_id: Id<Work>,
+        like_at: Option<chrono::DateTime<chrono::Local>>,
+    ) -> anyhow::Result<()> {
+        match like_at {
+            Some(at) => {
+                let like = NewWorkLike::new(work_id, at);
+                let _ = self.upsert(&like).await?;
+                Ok(())
+            }
+            None => self.delete_by_work_id(work_id).await,
+        }
     }
 }

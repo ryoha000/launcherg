@@ -1,10 +1,9 @@
 use crate::{
     collection::{
         CollectionElement, CollectionElementErogamescape, CollectionElementInstall,
-        CollectionElementLike, CollectionElementPaths, CollectionElementPlay,
-        CollectionElementThumbnail, NewCollectionElement, NewCollectionElementInstall,
-        NewCollectionElementLike, NewCollectionElementPaths, NewCollectionElementPlay,
-        NewCollectionElementThumbnail,
+        CollectionElementPaths, CollectionElementPlay, CollectionElementThumbnail,
+        NewCollectionElement, NewCollectionElementInstall, NewCollectionElementPaths,
+        NewCollectionElementPlay, NewCollectionElementThumbnail,
     },
     works::Work,
     Id,
@@ -64,23 +63,7 @@ pub trait CollectionRepository {
         last_play_at: DateTime<Local>,
     ) -> Result<()>;
 
-    async fn upsert_collection_element_like(
-        &mut self,
-        like: &NewCollectionElementLike,
-    ) -> Result<()>;
-    async fn delete_collection_element_like_by_element_id(
-        &mut self,
-        id: &Id<CollectionElement>,
-    ) -> Result<()>;
-    async fn get_element_like_by_element_id(
-        &mut self,
-        id: &Id<CollectionElement>,
-    ) -> Result<Option<CollectionElementLike>>;
-    async fn update_element_like_at_by_id(
-        &mut self,
-        id: &Id<CollectionElement>,
-        like_at: Option<DateTime<Local>>,
-    ) -> Result<()>;
+    // 廃止: いいね情報は work_likes へ移行
 
     async fn upsert_collection_element_thumbnail(
         &mut self,

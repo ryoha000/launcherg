@@ -41,6 +41,10 @@ pub struct WorkDetailsRow {
     pub dlsite_category: Option<String>,
     pub latest_path_id: Option<i64>,
     pub latest_path_download_path: Option<String>,
+    pub like_id: Option<i64>,
+    pub like_like_at: Option<sqlx::types::chrono::NaiveDateTime>,
+    pub like_created_at: Option<sqlx::types::chrono::NaiveDateTime>,
+    pub like_updated_at: Option<sqlx::types::chrono::NaiveDateTime>,
 }
 
 impl From<crate::sqliterepository::models::works::WorkDetailsRow> for domain::works::WorkDetails {
@@ -62,6 +66,7 @@ impl From<crate::sqliterepository::models::works::WorkDetailsRow> for domain::wo
             is_omitted: false,
             is_dmm_pack: false,
             latest_download_path: None,
+            like: None,
         };
 
         if let Some(dmm_id) = r.dmm_id {
@@ -115,6 +120,20 @@ impl From<crate::sqliterepository::models::works::WorkDetailsRow> for domain::wo
             }
         }
 
+        if let Some(like_id) = r.like_id {
+            if let (Some(like_at), Some(created), Some(updated)) =
+                (r.like_like_at, r.like_created_at, r.like_updated_at)
+            {
+                details.like = Some(domain::works::WorkLike {
+                    id: Id::new(like_id as i32),
+                    work_id: Id::new(r.work_id as i32),
+                    like_at: like_at.and_utc().with_timezone(&chrono::Local),
+                    created_at: created.and_utc().with_timezone(&chrono::Local),
+                    updated_at: updated.and_utc().with_timezone(&chrono::Local),
+                });
+            }
+        }
+
         details
     }
 }
@@ -156,6 +175,30 @@ impl TryFrom<crate::sqliterepository::models::works::WorkTable> for domain::work
         Ok(domain::works::Work {
             id: domain::Id::new(v.id as i32),
             title: v.title,
+        })
+    }
+}
+
+#[derive(sqlx::FromRow, Clone)]
+pub struct WorkLikeRow {
+    pub id: i64,
+    pub work_id: i64,
+    pub like_at: sqlx::types::chrono::NaiveDateTime,
+    pub created_at: sqlx::types::chrono::NaiveDateTime,
+    pub updated_at: sqlx::types::chrono::NaiveDateTime,
+}
+
+impl TryFrom<crate::sqliterepository::models::works::WorkLikeRow> for domain::works::WorkLike {
+    type Error = anyhow::Error;
+    fn try_from(
+        v: crate::sqliterepository::models::works::WorkLikeRow,
+    ) -> Result<Self, Self::Error> {
+        Ok(domain::works::WorkLike {
+            id: domain::Id::new(v.id as i32),
+            work_id: domain::Id::new(v.work_id as i32),
+            like_at: v.like_at.and_utc().with_timezone(&chrono::Local),
+            created_at: v.created_at.and_utc().with_timezone(&chrono::Local),
+            updated_at: v.updated_at.and_utc().with_timezone(&chrono::Local),
         })
     }
 }

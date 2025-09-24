@@ -8,6 +8,7 @@ pub mod mock;
 pub mod native_host_log;
 pub mod save_image_queue;
 pub mod work_download_path;
+pub mod work_like;
 pub mod work_lnk;
 pub mod work_omit;
 pub mod work_parent_packs;
@@ -28,6 +29,7 @@ pub trait RepositoriesExt {
     type ErogamescapeRepo: erogamescape::ErogamescapeRepository;
     type WorkDownloadPathRepo: work_download_path::WorkDownloadPathRepository;
     type WorkLnkRepo: work_lnk::WorkLnkRepository;
+    type WorkLikeRepo: work_like::WorkLikeRepository;
 
     fn work(&self) -> Self::WorkRepo;
     fn dmm_work(&self) -> Self::DmmWorkRepo;
@@ -43,4 +45,5 @@ pub trait RepositoriesExt {
     fn erogamescape(&self) -> Self::ErogamescapeRepo;
     fn work_download_path(&self) -> Self::WorkDownloadPathRepo;
     fn work_lnk(&self) -> Self::WorkLnkRepo;
+    fn work_like(&self) -> Self::WorkLikeRepo;
 }
