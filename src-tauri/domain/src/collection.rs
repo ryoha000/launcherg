@@ -3,6 +3,7 @@ use derive_new::new;
 use serde::{Deserialize, Serialize};
 
 use super::Id;
+use crate::erogamescape::ErogamescapeInformation;
 
 #[derive(new, Clone, Debug, PartialEq)]
 pub struct CollectionElement {
@@ -11,7 +12,7 @@ pub struct CollectionElement {
     pub created_at: DateTime<Local>,
     pub updated_at: DateTime<Local>,
     // 関連データ
-    pub info: Option<CollectionElementInfo>,
+    pub info: Option<ErogamescapeInformation>,
     pub paths: Option<CollectionElementPaths>,
     pub install: Option<CollectionElementInstall>,
     pub play: Option<CollectionElementPlay>,
@@ -20,20 +21,6 @@ pub struct CollectionElement {
     pub dmm: Option<CollectionElementDMM>,
     pub dlsite: Option<CollectionElementDLsite>,
     pub erogamescape: Option<CollectionElementErogamescape>,
-}
-
-// スクレイピング情報（erogamescape由来）
-#[derive(new, Clone, Debug, PartialEq)]
-pub struct CollectionElementInfo {
-    pub id: Id<CollectionElementInfo>,
-    pub collection_element_id: Id<CollectionElement>,
-    pub gamename_ruby: String,
-    pub brandname: String,
-    pub brandname_ruby: String,
-    pub sellday: String,
-    pub is_nukige: bool,
-    pub created_at: DateTime<Local>,
-    pub updated_at: DateTime<Local>,
 }
 
 // パス情報
@@ -112,16 +99,6 @@ pub struct ScannedGameElement {
     pub exe_path: Option<String>,
     pub lnk_path: Option<String>,
     pub install_at: Option<DateTime<Local>>,
-}
-
-#[derive(new, Clone, Debug)]
-pub struct NewCollectionElementInfo {
-    pub collection_element_id: Id<CollectionElement>,
-    pub gamename_ruby: String,
-    pub brandname: String,
-    pub brandname_ruby: String,
-    pub sellday: String,
-    pub is_nukige: bool,
 }
 
 #[derive(new, Clone, Debug)]

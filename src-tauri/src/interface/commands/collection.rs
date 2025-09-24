@@ -97,28 +97,6 @@ pub async fn delete_collection_element(
 }
 
 #[tauri::command]
-pub async fn get_not_registered_detail_erogamescape_ids(
-    modules: State<'_, Arc<Modules>>,
-) -> anyhow::Result<Vec<i32>, CommandError> {
-    let collection_ids = modules
-        .collection_use_case()
-        .get_not_registered_detail_element_ids()
-        .await?;
-
-    let mut erogamescape_ids: Vec<i32> = Vec::with_capacity(collection_ids.len());
-    for cid in collection_ids.into_iter() {
-        if let Some(egs_id) = modules
-            .collection_use_case()
-            .get_erogamescape_id_by_collection_id(&cid)
-            .await?
-        {
-            erogamescape_ids.push(egs_id);
-        }
-    }
-    Ok(erogamescape_ids)
-}
-
-#[tauri::command]
 pub async fn get_collection_ids_by_erogamescape_ids(
     modules: State<'_, Arc<Modules>>,
     erogamescape_ids: Vec<i32>,

@@ -3,6 +3,7 @@ mod all_game_cache_test;
 pub mod collection;
 mod collection_test;
 pub mod dmm_pack;
+pub mod erogamescape;
 pub mod error;
 pub mod extension_installer;
 pub mod extension_manager;

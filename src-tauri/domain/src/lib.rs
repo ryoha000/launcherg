@@ -7,6 +7,7 @@ pub mod all_game_cache;
 pub mod collection;
 pub mod distance;
 pub mod dmm_work_pack;
+pub mod erogamescape;
 pub mod explored_cache;
 pub mod extension;
 pub mod file;

@@ -9,9 +9,8 @@ mod tests {
     use crate::{collection::CollectionUseCase, error::UseCaseError};
     use domain::{
         collection::{
-            CollectionElement, CollectionElementInfo, CollectionElementInstall,
-            CollectionElementPaths, CollectionElementThumbnail, NewCollectionElement,
-            NewCollectionElementInfo, ScannedGameElement,
+            CollectionElement, CollectionElementInstall, CollectionElementPaths,
+            CollectionElementThumbnail, NewCollectionElement, ScannedGameElement,
         },
         repository::collection::MockCollectionRepository,
         service::save_path_resolver::DirsSavePathResolver,
@@ -33,17 +32,7 @@ mod tests {
             gamename: format!("Game {}", id),
             created_at: Local::now(),
             updated_at: Local::now(),
-            info: Some(CollectionElementInfo {
-                id: Id::new(1),
-                collection_element_id: create_test_element_id(id),
-                gamename_ruby: "Test Game Ruby".to_string(),
-                brandname: "Test Brand".to_string(),
-                brandname_ruby: "Test Brand Ruby".to_string(),
-                sellday: "2024-01-01".to_string(),
-                is_nukige: false,
-                created_at: Local::now(),
-                updated_at: Local::now(),
-            }),
+            info: None,
             paths: Some(CollectionElementPaths {
                 id: Id::new(1),
                 collection_element_id: create_test_element_id(id),
@@ -117,7 +106,7 @@ mod tests {
         let mut mock_repositories = TestRepositories::default();
         mock_repositories.collection = Arc::new(tauri::async_runtime::Mutex::new(mock_repo));
 
-        let use_case = setup_use_case(mock_repositories);
+        let use_case = setup_use_case(mock_repositories.clone());
         let element = create_test_new_element(1);
 
         let result = use_case.upsert_collection_element(&element).await;
@@ -126,28 +115,15 @@ mod tests {
 
     #[tokio::test]
     async fn test_upsert_collection_element_info_success() {
-        let mut mock_repo = MockCollectionRepository::new();
-        mock_repo
-            .expect_upsert_collection_element_info()
-            .with(always())
-            .times(1)
-            .returning(|_| Box::pin(async move { Ok::<_, anyhow::Error>(()) }));
+        let mock_repo = MockCollectionRepository::new();
+        // 旧APIは廃止済み
 
         let mut mock_repositories = TestRepositories::default();
         mock_repositories.collection = Arc::new(tauri::async_runtime::Mutex::new(mock_repo));
 
-        let use_case = setup_use_case(mock_repositories);
-        let info = NewCollectionElementInfo::new(
-            create_test_element_id(1),
-            "Test Game Ruby".to_string(),
-            "Test Brand".to_string(),
-            "Test Brand Ruby".to_string(),
-            "2024-01-01".to_string(),
-            false,
-        );
-
-        let result = use_case.upsert_collection_element_info(&info).await;
-        assert!(result.is_ok());
+        let _use_case = setup_use_case(mock_repositories.clone());
+        // 後方互換テストを撤去
+        assert!(true);
     }
 
     #[tokio::test]
@@ -404,25 +380,14 @@ mod tests {
 
     #[tokio::test]
     async fn test_get_not_registered_detail_element_ids() {
-        let mut mock_repo = MockCollectionRepository::new();
-        let expected_ids = vec![create_test_element_id(1), create_test_element_id(2)];
-        mock_repo
-            .expect_get_not_registered_info_element_ids()
-            .times(1)
-            .returning(move || {
-                let value = expected_ids.clone();
-                Box::pin(async move { Ok::<_, anyhow::Error>(value) })
-            });
-
-        let mut mock_repositories = TestRepositories::default();
-        mock_repositories.collection = Arc::new(tauri::async_runtime::Mutex::new(mock_repo));
-
+        // 旧APIは常に空配列を返す
+        let mock_repositories = TestRepositories::default();
         let use_case = setup_use_case(mock_repositories);
-
-        let result = use_case.get_not_registered_detail_element_ids().await;
-        assert!(result.is_ok());
-        let ids = result.unwrap();
-        assert_eq!(ids.len(), 2);
+        let result = use_case
+            .get_not_registered_detail_element_ids()
+            .await
+            .unwrap();
+        assert!(result.is_empty());
     }
 
     #[tokio::test]

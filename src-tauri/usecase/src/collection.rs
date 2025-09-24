@@ -141,24 +141,6 @@ where
         Ok(())
     }
 
-    // スクレイピング情報を保存
-    pub async fn upsert_collection_element_info(
-        &self,
-        info: &domain::collection::NewCollectionElementInfo,
-    ) -> anyhow::Result<()> {
-        self.manager
-            .run(|repos| {
-                Box::pin(async move {
-                    repos
-                        .collection()
-                        .upsert_collection_element_info(info)
-                        .await
-                })
-            })
-            .await?;
-        Ok(())
-    }
-
     // 関連データを含むコレクション要素を作成
     pub async fn create_collection_element(
         &self,
@@ -442,16 +424,8 @@ where
     pub async fn get_not_registered_detail_element_ids(
         &self,
     ) -> anyhow::Result<Vec<Id<CollectionElement>>> {
-        self.manager
-            .run(|repos| {
-                Box::pin(async move {
-                    repos
-                        .collection()
-                        .get_not_registered_info_element_ids()
-                        .await
-                })
-            })
-            .await
+        // 旧APIは廃止。互換のため空配列を返す（呼び出し元は現状なし）
+        Ok(Vec::new())
     }
 
     pub async fn update_element_last_play_at(

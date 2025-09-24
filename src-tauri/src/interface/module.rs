@@ -23,10 +23,10 @@ use crate::{
     },
     usecase::{
         all_game_cache::AllGameCacheUseCase, collection::CollectionUseCase,
-        dmm_pack::DmmPackUseCase, extension_manager::ExtensionManagerUseCase, file::FileUseCase,
-        host_log::HostLogUseCase, image::ImageUseCase, image_queue::ImageQueueUseCase,
-        process::ProcessUseCase, work::WorkUseCase, work_omit::WorkOmitUseCase,
-        work_pipeline::WorkPipelineUseCase,
+        dmm_pack::DmmPackUseCase, erogamescape::ErogamescapeUseCase,
+        extension_manager::ExtensionManagerUseCase, file::FileUseCase, host_log::HostLogUseCase,
+        image::ImageUseCase, image_queue::ImageQueueUseCase, process::ProcessUseCase,
+        work::WorkUseCase, work_omit::WorkOmitUseCase, work_pipeline::WorkPipelineUseCase,
     },
 };
 use domain::game_matcher::{GameMatcher, Matcher as GameMatcherImpl};
@@ -61,6 +61,7 @@ pub struct Modules {
         WorkLinkerImpl<SqliteRepositoryManager, SqliteRepositories, Windows>,
     >,
     image_queue_use_case: ImageQueueUseCase<SqliteRepositoryManager, SqliteRepositories>,
+    erogamescape_use_case: ErogamescapeUseCase<SqliteRepositoryManager, SqliteRepositories>,
     pubsub: PubSub,
     game_matcher: std::sync::Arc<dyn GameMatcher + Send + Sync>,
     image_queue_runner:
@@ -111,6 +112,9 @@ pub trait ModulesExt {
     fn image_queue_use_case(
         &self,
     ) -> &ImageQueueUseCase<SqliteRepositoryManager, SqliteRepositories>;
+    fn erogamescape_use_case(
+        &self,
+    ) -> &ErogamescapeUseCase<SqliteRepositoryManager, SqliteRepositories>;
 }
 
 impl ModulesExt for Modules {
@@ -189,6 +193,11 @@ impl ModulesExt for Modules {
     ) -> &ImageQueueUseCase<SqliteRepositoryManager, SqliteRepositories> {
         &self.image_queue_use_case
     }
+    fn erogamescape_use_case(
+        &self,
+    ) -> &ErogamescapeUseCase<SqliteRepositoryManager, SqliteRepositories> {
+        &self.erogamescape_use_case
+    }
 }
 
 impl Modules {
@@ -227,6 +236,10 @@ impl Modules {
             WorkOmitUseCase::new(repo_manager.clone());
         let host_log_use_case: HostLogUseCase<SqliteRepositoryManager, SqliteRepositories> =
             HostLogUseCase::new(repo_manager.clone());
+        let erogamescape_use_case: ErogamescapeUseCase<
+            SqliteRepositoryManager,
+            SqliteRepositories,
+        > = ErogamescapeUseCase::new(repo_manager.clone());
         let dmm_pack_use_case: DmmPackUseCase<SqliteRepositoryManager, SqliteRepositories> =
             DmmPackUseCase::new(repo_manager.clone());
         let work_use_case: WorkUseCase<SqliteRepositoryManager, SqliteRepositories, Windows> =
@@ -293,6 +306,7 @@ impl Modules {
             image_use_case,
             work_omit_use_case,
             host_log_use_case,
+            erogamescape_use_case,
             dmm_pack_use_case,
             work_use_case,
             work_pipeline_use_case,

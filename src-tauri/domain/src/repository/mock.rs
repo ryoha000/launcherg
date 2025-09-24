@@ -18,6 +18,7 @@ pub struct TestRepositories {
     pub work_download_path:
         Arc<Mutex<crate::repository::work_download_path::MockWorkDownloadPathRepository>>,
     pub work_lnk: Arc<Mutex<crate::repository::work_lnk::MockWorkLnkRepository>>,
+    pub erogamescape: Arc<Mutex<crate::repository::erogamescape::MockErogamescapeRepository>>,
 }
 
 impl Default for TestRepositories {
@@ -36,6 +37,7 @@ impl Default for TestRepositories {
             work_parent_packs: Arc::new(Mutex::new(Default::default())),
             work_download_path: Arc::new(Mutex::new(Default::default())),
             work_lnk: Arc::new(Mutex::new(Default::default())),
+            erogamescape: Arc::new(Mutex::new(Default::default())),
         }
     }
 }
@@ -52,6 +54,7 @@ impl crate::repository::RepositoriesExt for TestRepositories {
     type WorkParentPacksRepo = TestRepositories;
     type DmmPackRepo = TestRepositories;
     type CollectionRepo = TestRepositories;
+    type ErogamescapeRepo = TestRepositories;
     type WorkDownloadPathRepo = TestRepositories;
     type WorkLnkRepo = TestRepositories;
     fn work(&self) -> Self::WorkRepo {
@@ -85,6 +88,9 @@ impl crate::repository::RepositoriesExt for TestRepositories {
         self.clone()
     }
     fn collection(&self) -> Self::CollectionRepo {
+        self.clone()
+    }
+    fn erogamescape(&self) -> Self::ErogamescapeRepo {
         self.clone()
     }
     fn work_download_path(&self) -> Self::WorkDownloadPathRepo {
@@ -150,6 +156,26 @@ impl crate::repository::works::WorkRepository for TestRepositories {
                 sellday,
                 is_nukige,
             )
+            .await
+    }
+}
+
+impl crate::repository::erogamescape::ErogamescapeRepository for TestRepositories {
+    async fn upsert_information(
+        &mut self,
+        info: &crate::erogamescape::NewErogamescapeInformation,
+    ) -> anyhow::Result<()> {
+        self.erogamescape
+            .lock()
+            .await
+            .upsert_information(info)
+            .await
+    }
+    async fn find_missing_information_ids(&mut self) -> anyhow::Result<Vec<i32>> {
+        self.erogamescape
+            .lock()
+            .await
+            .find_missing_information_ids()
             .await
     }
 }
@@ -322,35 +348,6 @@ impl crate::repository::collection::CollectionRepository for TestRepositories {
             .lock()
             .await
             .delete_collection_element(element_id)
-            .await
-    }
-    async fn upsert_collection_element_info(
-        &mut self,
-        info: &crate::collection::NewCollectionElementInfo,
-    ) -> anyhow::Result<()> {
-        self.collection
-            .lock()
-            .await
-            .upsert_collection_element_info(info)
-            .await
-    }
-    async fn get_element_info_by_element_id(
-        &mut self,
-        id: &crate::Id<crate::collection::CollectionElement>,
-    ) -> anyhow::Result<Option<crate::collection::CollectionElementInfo>> {
-        self.collection
-            .lock()
-            .await
-            .get_element_info_by_element_id(id)
-            .await
-    }
-    async fn get_not_registered_info_element_ids(
-        &mut self,
-    ) -> anyhow::Result<Vec<crate::Id<crate::collection::CollectionElement>>> {
-        self.collection
-            .lock()
-            .await
-            .get_not_registered_info_element_ids()
             .await
     }
     async fn upsert_collection_element_paths(

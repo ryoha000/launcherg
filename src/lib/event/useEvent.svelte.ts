@@ -23,7 +23,6 @@ export function useEvent() {
     }
 
     const unlistenFn = await listen<EventPayloadMap[T]>(eventName, (event) => {
-      console.log('[pubsub]', { event: event.event, payload: event.payload })
       handler(event.payload)
     })
 

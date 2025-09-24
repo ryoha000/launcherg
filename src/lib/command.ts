@@ -1,8 +1,4 @@
-import type {
-  AllGameCacheOne,
-  CollectionElement,
-  CollectionElementDetail,
-} from '@/lib/types'
+import type { AllGameCacheOne, CollectionElement } from '@/lib/types'
 import type {
   AddWatchTargetRequest,
   ClearEventsRequest,
@@ -101,8 +97,8 @@ export async function commandDeleteCollectionElement(collectionElementId: number
 }
 
 // 詳細未登録の EGS ID 群を取得
-export async function commandGetNotRegisteredDetailErogamescapeIds() {
-  return await invoke<number[]>('get_not_registered_detail_erogamescape_ids', {})
+export async function commandGetNotRegisteredErogamescapeInformationIds() {
+  return await invoke<number[]>('get_not_registered_erogamescape_information_ids', {})
 }
 
 // EGS ID -> CollectionElement ID の対応を取得
@@ -112,8 +108,16 @@ export async function commandGetCollectionIdsByErogamescapeIds(erogamescapeIds: 
   })
 }
 
-export async function commandUpsertCollectionElementDetails(details: CollectionElementDetail[]) {
-  return await invoke<void>('upsert_collection_element_details', { details })
+export interface ErogamescapeInformationInput {
+  erogamescapeId: number
+  gamenameRuby: string
+  brandname: string
+  brandnameRuby: string
+  sellday: string
+  isNukige: boolean
+}
+export async function commandUpsertErogamescapeInformation(details: ErogamescapeInformationInput[]) {
+  return await invoke<void>('upsert_erogamescape_information', { details })
 }
 
 export async function commandGetAllElements() {

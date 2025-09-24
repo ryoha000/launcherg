@@ -2,6 +2,7 @@ pub mod all_game_cache;
 pub mod collection;
 pub mod dmm_work_pack;
 pub mod driver;
+pub mod erogamescape;
 pub mod explored_cache;
 pub mod models;
 pub mod native_host_log;

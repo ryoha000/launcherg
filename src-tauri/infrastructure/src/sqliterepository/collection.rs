@@ -2,11 +2,11 @@ use chrono::{DateTime, Local};
 use domain::repository::collection::CollectionRepository;
 use domain::{
     collection::{
-        CollectionElement, CollectionElementErogamescape, CollectionElementInfo,
-        CollectionElementInstall, CollectionElementLike, CollectionElementPaths,
-        CollectionElementPlay, CollectionElementThumbnail, NewCollectionElement,
-        NewCollectionElementInfo, NewCollectionElementInstall, NewCollectionElementLike,
-        NewCollectionElementPaths, NewCollectionElementPlay, NewCollectionElementThumbnail,
+        CollectionElement, CollectionElementErogamescape, CollectionElementInstall,
+        CollectionElementLike, CollectionElementPaths, CollectionElementPlay,
+        CollectionElementThumbnail, NewCollectionElement, NewCollectionElementInstall,
+        NewCollectionElementLike, NewCollectionElementPaths, NewCollectionElementPlay,
+        NewCollectionElementThumbnail,
     },
     works::Work,
     Id,
@@ -14,9 +14,9 @@ use domain::{
 use sqlx::{query, query_as};
 
 use crate::sqliterepository::models::collection::{
-    CollectionElementDetailsRow, CollectionElementErogamescapeTable, CollectionElementInfoTable,
-    CollectionElementInstallTable, CollectionElementLikeTable, CollectionElementPathsTable,
-    CollectionElementPlayTable, CollectionElementThumbnailTable,
+    CollectionElementDetailsRow, CollectionElementErogamescapeTable, CollectionElementInstallTable,
+    CollectionElementLikeTable, CollectionElementPathsTable, CollectionElementPlayTable,
+    CollectionElementThumbnailTable,
 };
 use crate::sqliterepository::sqliterepository::RepositoryImpl;
 
@@ -33,14 +33,14 @@ impl CollectionRepository for RepositoryImpl<domain::collection::CollectionEleme
                         ce.created_at AS ce_created_at,
                         ce.updated_at AS ce_updated_at,
 
-                        cei.id AS info_id,
-                        cei.gamename_ruby AS info_gamename_ruby,
-                        cei.sellday AS info_sellday,
-                        cei.is_nukige AS info_is_nukige,
-                        cei.brandname AS info_brandname,
-                        cei.brandname_ruby AS info_brandname_ruby,
-                        cei.created_at AS info_created_at,
-                        cei.updated_at AS info_updated_at,
+                        NULL AS info_id,
+                        NULL AS info_gamename_ruby,
+                        NULL AS info_sellday,
+                        NULL AS info_is_nukige,
+                        NULL AS info_brandname,
+                        NULL AS info_brandname_ruby,
+                        NULL AS info_created_at,
+                        NULL AS info_updated_at,
 
                         cep.id AS paths_id,
                         cep.exe_path AS paths_exe_path,
@@ -74,7 +74,6 @@ impl CollectionRepository for RepositoryImpl<domain::collection::CollectionEleme
                         cee.created_at AS egs_created_at,
                         cee.updated_at AS egs_updated_at
                     FROM collection_elements ce
-                    LEFT JOIN collection_element_info_by_erogamescape cei ON ce.id = cei.collection_element_id
                     LEFT JOIN collection_element_paths cep ON ce.id = cep.collection_element_id
                     LEFT JOIN collection_element_installs cei_install ON ce.id = cei_install.collection_element_id
                     LEFT JOIN collection_element_plays cei_play ON ce.id = cei_play.collection_element_id
@@ -141,14 +140,14 @@ impl CollectionRepository for RepositoryImpl<domain::collection::CollectionEleme
                         ce.created_at AS ce_created_at,
                         ce.updated_at AS ce_updated_at,
 
-                        cei.id AS info_id,
-                        cei.gamename_ruby AS info_gamename_ruby,
-                        cei.sellday AS info_sellday,
-                        cei.is_nukige AS info_is_nukige,
-                        cei.brandname AS info_brandname,
-                        cei.brandname_ruby AS info_brandname_ruby,
-                        cei.created_at AS info_created_at,
-                        cei.updated_at AS info_updated_at,
+                        NULL AS info_id,
+                        NULL AS info_gamename_ruby,
+                        NULL AS info_sellday,
+                        NULL AS info_is_nukige,
+                        NULL AS info_brandname,
+                        NULL AS info_brandname_ruby,
+                        NULL AS info_created_at,
+                        NULL AS info_updated_at,
 
                         cep.id AS paths_id,
                         cep.exe_path AS paths_exe_path,
@@ -182,7 +181,6 @@ impl CollectionRepository for RepositoryImpl<domain::collection::CollectionEleme
                         cee.created_at AS egs_created_at,
                         cee.updated_at AS egs_updated_at
                     FROM collection_elements ce
-                    LEFT JOIN collection_element_info_by_erogamescape cei ON ce.id = cei.collection_element_id
                     LEFT JOIN collection_element_paths cep ON ce.id = cep.collection_element_id
                     LEFT JOIN collection_element_installs cei_install ON ce.id = cei_install.collection_element_id
                     LEFT JOIN collection_element_plays cei_play ON ce.id = cei_play.collection_element_id
@@ -290,75 +288,6 @@ impl CollectionRepository for RepositoryImpl<domain::collection::CollectionEleme
             })
             .await?;
         Ok(())
-    }
-
-    async fn upsert_collection_element_info(
-        &mut self,
-        info: &NewCollectionElementInfo,
-    ) -> anyhow::Result<()> {
-        let i = info.clone();
-        self.executor
-            .with_conn(|conn| {
-                Box::pin(async move {
-                    query(
-                        "INSERT INTO collection_element_info_by_erogamescape 
-             (collection_element_id, gamename_ruby, sellday, is_nukige, brandname, brandname_ruby) 
-             VALUES (?, ?, ?, ?, ?, ?)
-             ON CONFLICT(collection_element_id) DO UPDATE SET 
-             gamename_ruby = ?, sellday = ?, is_nukige = ?, 
-             brandname = ?, brandname_ruby = ?, updated_at = CURRENT_TIMESTAMP",
-                    )
-                    .bind(i.collection_element_id.value)
-                    .bind(&i.gamename_ruby)
-                    .bind(&i.sellday)
-                    .bind(if i.is_nukige { 1 } else { 0 })
-                    .bind(&i.brandname)
-                    .bind(&i.brandname_ruby)
-                    .bind(&i.gamename_ruby)
-                    .bind(&i.sellday)
-                    .bind(if i.is_nukige { 1 } else { 0 })
-                    .bind(&i.brandname)
-                    .bind(&i.brandname_ruby)
-                    .execute(conn)
-                    .await?;
-                    Ok::<(), anyhow::Error>(())
-                })
-            })
-            .await?;
-        Ok(())
-    }
-
-    async fn get_element_info_by_element_id(
-        &mut self,
-        id: &Id<CollectionElement>,
-    ) -> anyhow::Result<Option<CollectionElementInfo>> {
-        let idv = id.value;
-        let info_table: Option<CollectionElementInfoTable> = self.executor.with_conn(|conn| {
-            Box::pin(async move { Ok(query_as("SELECT * FROM collection_element_info_by_erogamescape WHERE collection_element_id = ?").bind(idv).fetch_optional(conn).await?) })
-        }).await?;
-        Ok(info_table.map(|t| t.try_into()).transpose()?)
-    }
-
-    async fn get_not_registered_info_element_ids(
-        &mut self,
-    ) -> anyhow::Result<Vec<Id<CollectionElement>>> {
-        let ids: Vec<(i32,)> = self
-            .executor
-            .with_conn(|conn| {
-                Box::pin(async move {
-                    Ok(sqlx::query_as(
-                        "SELECT ce.id
-            FROM collection_elements ce
-            LEFT JOIN collection_element_info_by_erogamescape cei
-            ON ce.id = cei.collection_element_id
-            WHERE cei.collection_element_id IS NULL",
-                    )
-                    .fetch_all(conn)
-                    .await?)
-                })
-            })
-            .await?;
-        Ok(ids.into_iter().map(|v| Id::new(v.0)).collect())
     }
 
     async fn upsert_collection_element_paths(

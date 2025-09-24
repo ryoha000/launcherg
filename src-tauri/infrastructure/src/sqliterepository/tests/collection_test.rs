@@ -1,8 +1,7 @@
 use super::TestDatabase;
 use domain::collection::{
-    NewCollectionElement, NewCollectionElementInfo, NewCollectionElementInstall,
-    NewCollectionElementLike, NewCollectionElementPaths, NewCollectionElementPlay,
-    NewCollectionElementThumbnail,
+    NewCollectionElement, NewCollectionElementInstall, NewCollectionElementLike,
+    NewCollectionElementPaths, NewCollectionElementPlay, NewCollectionElementThumbnail,
 };
 use domain::repository::{
     collection::CollectionRepository, works::WorkRepository, RepositoriesExt,
@@ -30,19 +29,9 @@ async fn collection_normal_flows() {
     };
     assert_eq!(new_id.value, 2);
 
-    // upsert details for id 1
+    // upsert paths for id 1
     {
         let mut r = repo.collection();
-        r.upsert_collection_element_info(&NewCollectionElementInfo::new(
-            Id::new(1),
-            "gr".into(),
-            "b".into(),
-            "br".into(),
-            String::new(),
-            false,
-        ))
-        .await
-        .unwrap();
         r.upsert_collection_element_paths(&NewCollectionElementPaths::new(
             Id::new(1),
             Some("exe".into()),
@@ -86,11 +75,7 @@ async fn collection_normal_flows() {
             .unwrap()
             .unwrap();
         assert_eq!(one.gamename, "G");
-        assert!(r
-            .get_element_info_by_element_id(&Id::new(1))
-            .await
-            .unwrap()
-            .is_some());
+        // 詳細情報は CE から分離済み
         assert!(r
             .get_element_paths_by_element_id(&Id::new(1))
             .await

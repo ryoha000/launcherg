@@ -820,7 +820,6 @@ fn to_dlsite_params(request: &DlsiteSyncGamesRequestTs) -> (Vec<String>, Vec<Dls
 #[cfg(test)]
 mod tests {
     use super::*;
-    use domain::collection::NewCollectionElementInfo;
     use domain::repository::collection::CollectionRepository;
     use domain::repository::manager::RepositoryManager;
     use domain::repository::works::{DmmWorkRepository, WorkRepository};
@@ -1132,17 +1131,6 @@ mod tests {
                                         .allocate_new_collection_element_id("Game 1")
                                         .await?;
                                     repos.collection().upsert_erogamescape_map(&cid, 1).await?;
-                                    repos
-                                        .collection()
-                                        .upsert_collection_element_info(&NewCollectionElementInfo {
-                                            collection_element_id: cid,
-                                            gamename_ruby: "ゲームイチ".to_string(),
-                                            brandname: "りょはそふと".to_string(),
-                                            brandname_ruby: "リョハソフト".to_string(),
-                                            sellday: "2025-01-01".to_string(),
-                                            is_nukige: false,
-                                        })
-                                        .await?;
 
                                     Ok(())
                                 })
@@ -1177,17 +1165,6 @@ mod tests {
                                         .allocate_new_collection_element_id("Game 1")
                                         .await?;
                                     repos.collection().upsert_erogamescape_map(&cid, 1).await?;
-                                    repos
-                                        .collection()
-                                        .upsert_collection_element_info(&NewCollectionElementInfo {
-                                            collection_element_id: cid,
-                                            gamename_ruby: "ゲームイチ".to_string(),
-                                            brandname: "りょはそふと".to_string(),
-                                            brandname_ruby: "リョハソフト".to_string(),
-                                            sellday: "2025-01-01".to_string(),
-                                            is_nukige: false,
-                                        })
-                                        .await?;
 
                                     Ok(())
                                 })

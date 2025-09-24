@@ -1,10 +1,10 @@
 use crate::{
     collection::{
-        CollectionElement, CollectionElementErogamescape, CollectionElementInfo,
-        CollectionElementInstall, CollectionElementLike, CollectionElementPaths,
-        CollectionElementPlay, CollectionElementThumbnail, NewCollectionElement,
-        NewCollectionElementInfo, NewCollectionElementInstall, NewCollectionElementLike,
-        NewCollectionElementPaths, NewCollectionElementPlay, NewCollectionElementThumbnail,
+        CollectionElement, CollectionElementErogamescape, CollectionElementInstall,
+        CollectionElementLike, CollectionElementPaths, CollectionElementPlay,
+        CollectionElementThumbnail, NewCollectionElement, NewCollectionElementInstall,
+        NewCollectionElementLike, NewCollectionElementPaths, NewCollectionElementPlay,
+        NewCollectionElementThumbnail,
     },
     works::Work,
     Id,
@@ -31,16 +31,6 @@ pub trait CollectionRepository {
         id: &Id<CollectionElement>,
         gamename: &str,
     ) -> Result<()>;
-
-    async fn upsert_collection_element_info(
-        &mut self,
-        info: &NewCollectionElementInfo,
-    ) -> Result<()>;
-    async fn get_element_info_by_element_id(
-        &mut self,
-        id: &Id<CollectionElement>,
-    ) -> Result<Option<CollectionElementInfo>>;
-    async fn get_not_registered_info_element_ids(&mut self) -> Result<Vec<Id<CollectionElement>>>;
 
     async fn upsert_collection_element_paths(
         &mut self,

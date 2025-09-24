@@ -4,9 +4,9 @@ use sqlx::FromRow;
 
 use domain::{
     collection::{
-        CollectionElement, CollectionElementErogamescape, CollectionElementInfo,
-        CollectionElementInstall, CollectionElementLike, CollectionElementPaths,
-        CollectionElementPlay, CollectionElementThumbnail,
+        CollectionElement, CollectionElementErogamescape, CollectionElementInstall,
+        CollectionElementLike, CollectionElementPaths, CollectionElementPlay,
+        CollectionElementThumbnail,
     },
     Id,
 };
@@ -173,22 +173,6 @@ impl TryFrom<CollectionElementTable> for CollectionElement {
     }
 }
 
-impl TryFrom<CollectionElementInfoTable> for CollectionElementInfo {
-    type Error = anyhow::Error;
-    fn try_from(st: CollectionElementInfoTable) -> Result<Self, Self::Error> {
-        Ok(CollectionElementInfo::new(
-            Id::new(st.id),
-            Id::new(st.collection_element_id),
-            st.gamename_ruby,
-            st.brandname,
-            st.brandname_ruby,
-            st.sellday,
-            st.is_nukige != 0,
-            st.created_at.and_utc().with_timezone(&Local),
-            st.updated_at.and_utc().with_timezone(&Local),
-        ))
-    }
-}
 
 impl TryFrom<CollectionElementPathsTable> for CollectionElementPaths {
     type Error = anyhow::Error;
@@ -291,37 +275,6 @@ impl From<CollectionElementDetailsRow> for CollectionElement {
             None,
         );
 
-        if let Some(info_id) = r.info_id {
-            if let (
-                Some(gamename_ruby),
-                Some(brandname),
-                Some(brandname_ruby),
-                Some(sellday),
-                Some(is_nukige),
-                Some(created),
-                Some(updated),
-            ) = (
-                r.info_gamename_ruby,
-                r.info_brandname,
-                r.info_brandname_ruby,
-                r.info_sellday,
-                r.info_is_nukige,
-                r.info_created_at,
-                r.info_updated_at,
-            ) {
-                element.info = Some(CollectionElementInfo::new(
-                    Id::new(info_id),
-                    id.clone(),
-                    gamename_ruby,
-                    brandname,
-                    brandname_ruby,
-                    sellday,
-                    is_nukige != 0,
-                    created.and_utc().with_timezone(&Local),
-                    updated.and_utc().with_timezone(&Local),
-                ));
-            }
-        }
 
         if let Some(paths_id) = r.paths_id {
             if let (Some(created), Some(updated)) = (r.paths_created_at, r.paths_updated_at) {
