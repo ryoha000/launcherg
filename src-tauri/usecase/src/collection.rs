@@ -552,21 +552,4 @@ where
             })
             .await
     }
-
-    // collection_element_id -> erogamescape_id（単発）
-    pub async fn get_erogamescape_id_by_collection_id(
-        &self,
-        id: &Id<CollectionElement>,
-    ) -> anyhow::Result<Option<i32>> {
-        self.manager
-            .run(|repos| {
-                Box::pin(async move {
-                    repos
-                        .collection()
-                        .get_erogamescape_id_by_collection_id(id)
-                        .await
-                })
-            })
-            .await
-    }
 }

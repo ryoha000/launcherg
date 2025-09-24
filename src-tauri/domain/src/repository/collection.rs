@@ -121,10 +121,6 @@ pub trait CollectionRepository {
         &mut self,
         gamename: &str,
     ) -> Result<Id<CollectionElement>>;
-    async fn get_erogamescape_id_by_collection_id(
-        &mut self,
-        id: &Id<CollectionElement>,
-    ) -> Result<Option<i32>>;
 
     async fn get_collection_ids_by_work_ids(
         &mut self,

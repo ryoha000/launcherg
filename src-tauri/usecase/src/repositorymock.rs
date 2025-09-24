@@ -653,16 +653,6 @@ impl domain::repository::collection::CollectionRepository for TestRepositories {
             .allocate_new_collection_element_id(gamename)
             .await
     }
-    async fn get_erogamescape_id_by_collection_id(
-        &mut self,
-        id: &domain::Id<domain::collection::CollectionElement>,
-    ) -> anyhow::Result<Option<i32>> {
-        self.collection
-            .lock()
-            .await
-            .get_erogamescape_id_by_collection_id(id)
-            .await
-    }
 }
 
 #[cfg(test)]

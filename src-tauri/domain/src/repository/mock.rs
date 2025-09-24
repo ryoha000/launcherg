@@ -606,16 +606,6 @@ impl crate::repository::collection::CollectionRepository for TestRepositories {
             .allocate_new_collection_element_id(gamename)
             .await
     }
-    async fn get_erogamescape_id_by_collection_id(
-        &mut self,
-        id: &crate::Id<crate::collection::CollectionElement>,
-    ) -> anyhow::Result<Option<i32>> {
-        self.collection
-            .lock()
-            .await
-            .get_erogamescape_id_by_collection_id(id)
-            .await
-    }
 }
 
 impl crate::repository::save_image_queue::ImageSaveQueueRepository for TestRepositories {

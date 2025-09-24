@@ -703,17 +703,6 @@ impl CollectionRepository for RepositoryImpl<domain::collection::CollectionEleme
         Ok(Id::new(id))
     }
 
-    async fn get_erogamescape_id_by_collection_id(
-        &mut self,
-        id: &Id<CollectionElement>,
-    ) -> anyhow::Result<Option<i32>> {
-        let idv = id.value;
-        let row: Option<(i32,)> = self.executor.with_conn(|conn| {
-            Box::pin(async move { Ok(sqlx::query_as("SELECT erogamescape_id FROM collection_element_erogamescape_map WHERE collection_element_id = ?").bind(idv).fetch_optional(conn).await?) })
-        }).await?;
-        Ok(row.map(|v| v.0))
-    }
-
     async fn get_collection_ids_by_work_ids(
         &mut self,
         work_ids: &[Id<Work>],

@@ -96,7 +96,6 @@ fn main() {
             commands::collection::get_collection_ids_by_erogamescape_ids,
             commands::erogamescape::upsert_erogamescape_information,
             commands::erogamescape::get_not_registered_erogamescape_information_ids,
-            commands::collection_details::get_erogamescape_id_by_collection_id,
             commands::collection::get_all_elements,
             commands::collection::update_element_like,
             commands::utils::open_folder,

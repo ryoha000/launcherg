@@ -1,6 +1,5 @@
 pub mod all_game_cache;
 pub mod collection;
-pub mod collection_details;
 pub mod dmm_pack;
 pub mod erogamescape;
 pub mod extension;

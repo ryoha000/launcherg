@@ -15,7 +15,6 @@
   import {
     commandDeleteCollectionElement,
     commandGetCollectionElement,
-    commandGetErogamescapeIdByCollectionId,
     commandOpenFolder,
     commandUpdateElementLike,
     commandUpsertCollectionElement,
@@ -54,8 +53,8 @@
     gameCache: AllGameCacheOne,
   ) => {
     // 既存要素の EGS ID と新しい候補の EGS ID を比較して差し替え判定
-    const currentEgsId = await commandGetErogamescapeIdByCollectionId(id)
-    const isChangedGame = currentEgsId == null || currentEgsId !== gameCache.id
+    const currentEgsId = workDetail.erogamescapeId
+    const isChangedGame = !currentEgsId || currentEgsId !== gameCache.id
     if (isChangedGame) {
       await commandDeleteCollectionElement(id)
     }
