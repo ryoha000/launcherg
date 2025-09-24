@@ -15,6 +15,7 @@ pub trait WorkRepository {
         &mut self,
         collection_element_id: Id<CollectionElement>,
     ) -> Result<Option<WorkDetails>>;
+    async fn delete(&mut self, id: Id<Work>) -> Result<()>;
     async fn find_work_ids_by_erogamescape_ids(
         &mut self,
         erogamescape_ids: &[i32],

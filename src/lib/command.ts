@@ -86,10 +86,9 @@ export async function commandGetPlayTomeMinutes(collectionElementId: number) {
 
 // removed: commandGetCollectionElement
 
-export async function commandDeleteCollectionElement(collectionElementId: number) {
-  return await invoke<void>('delete_collection_element', {
-    collectionElementId,
-  })
+// removed: commandDeleteCollectionElement
+export async function commandDeleteWork(workId: number) {
+  return await invoke<void>('delete_work', { workId })
 }
 
 // 詳細未登録の EGS ID 群を取得

@@ -164,6 +164,10 @@ impl crate::repository::works::WorkRepository for TestRepositories {
             )
             .await
     }
+
+    async fn delete(&mut self, id: crate::Id<crate::works::Work>) -> anyhow::Result<()> {
+        self.work.lock().await.delete(id).await
+    }
 }
 
 impl crate::repository::erogamescape::ErogamescapeRepository for TestRepositories {
@@ -344,16 +348,6 @@ impl crate::repository::collection::CollectionRepository for TestRepositories {
             .lock()
             .await
             .update_collection_element_gamename_by_id(id, gamename)
-            .await
-    }
-    async fn delete_collection_element(
-        &mut self,
-        element_id: &crate::Id<crate::collection::CollectionElement>,
-    ) -> anyhow::Result<()> {
-        self.collection
-            .lock()
-            .await
-            .delete_collection_element(element_id)
             .await
     }
     async fn upsert_collection_element_paths(

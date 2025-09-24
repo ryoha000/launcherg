@@ -300,57 +300,6 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_delete_collection_element_by_id_success() {
-        let mut mock_repo = MockCollectionRepository::new();
-        let expected_element = create_test_collection_element(1);
-        mock_repo
-            .expect_get_element_by_element_id()
-            .with(eq(create_test_element_id(1)))
-            .times(1)
-            .returning(move |_| {
-                let value = expected_element.clone();
-                Box::pin(async move { Ok::<_, anyhow::Error>(Some(value)) })
-            });
-        mock_repo
-            .expect_delete_collection_element()
-            .with(eq(create_test_element_id(1)))
-            .times(1)
-            .returning(|_| Box::pin(async move { Ok::<_, anyhow::Error>(()) }));
-
-        let mut mock_repositories = TestRepositories::default();
-        mock_repositories.collection = Arc::new(tauri::async_runtime::Mutex::new(mock_repo));
-
-        let use_case = setup_use_case(mock_repositories);
-        let id = create_test_element_id(1);
-
-        let result = use_case.delete_collection_element_by_id(&id).await;
-        assert!(result.is_ok());
-    }
-
-    #[tokio::test]
-    async fn test_delete_collection_element_by_id_not_found() {
-        let mut mock_repo = MockCollectionRepository::new();
-        mock_repo
-            .expect_get_element_by_element_id()
-            .with(eq(create_test_element_id(1)))
-            .times(1)
-            .returning(|_| Box::pin(async move { Ok::<_, anyhow::Error>(None) }));
-
-        let mut mock_repositories = TestRepositories::default();
-        mock_repositories.collection = Arc::new(tauri::async_runtime::Mutex::new(mock_repo));
-
-        let use_case = setup_use_case(mock_repositories);
-        let id = create_test_element_id(1);
-
-        let result = use_case.delete_collection_element_by_id(&id).await;
-        assert!(result.is_err());
-        assert!(matches!(
-            result.unwrap_err().downcast::<UseCaseError>().unwrap(),
-            UseCaseError::CollectionElementIsNotFound
-        ));
-    }
-
-    #[tokio::test]
     async fn test_get_not_registered_detail_element_ids() {
         // 旧APIは常に空配列を返す
         let mock_repositories = TestRepositories::default();

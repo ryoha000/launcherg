@@ -33,12 +33,17 @@ pub async fn get_work_paths(
     let list = modules.work_use_case().list_work_lnks(work_id).await?;
     let lnks = list
         .into_iter()
-        .map(|(id, path)| WorkLnkVm {
-            id,
-            lnk_path: path,
-        })
+        .map(|(id, path)| WorkLnkVm { id, lnk_path: path })
         .collect();
     Ok(WorkPathsVm { lnks })
+}
+
+#[tauri::command]
+pub async fn delete_work(
+    modules: State<'_, Arc<Modules>>,
+    work_id: i32,
+) -> anyhow::Result<(), CommandError> {
+    Ok(modules.work_use_case().delete_work(work_id).await?)
 }
 
 #[tauri::command]

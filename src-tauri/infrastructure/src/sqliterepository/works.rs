@@ -316,6 +316,21 @@ impl WorkRepository for RepositoryImpl<Work> {
             .await?;
         Ok(())
     }
+
+    async fn delete(&mut self, id: Id<Work>) -> anyhow::Result<()> {
+        let idv = id.value as i64;
+        self.executor
+            .with_conn(|conn| {
+                Box::pin(async move {
+                    sqlx::query(r#"DELETE FROM works WHERE id = ?"#)
+                        .bind(idv)
+                        .execute(conn)
+                        .await?;
+                    Ok::<(), anyhow::Error>(())
+                })
+            })
+            .await
+    }
 }
 
 impl DmmWorkRepository for RepositoryImpl<domain::works::DmmWork> {

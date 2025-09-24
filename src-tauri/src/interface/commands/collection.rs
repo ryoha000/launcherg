@@ -72,19 +72,6 @@ pub async fn upsert_collection_element(
         .await?)
 }
 
-// removed: get_collection_element
-
-#[tauri::command]
-pub async fn delete_collection_element(
-    modules: State<'_, Arc<Modules>>,
-    collection_element_id: i32,
-) -> anyhow::Result<(), CommandError> {
-    Ok(modules
-        .collection_use_case()
-        .delete_collection_element_by_id(&Id::new(collection_element_id))
-        .await?)
-}
-
 #[tauri::command]
 pub async fn get_all_elements(
     _handle: AppHandle,
@@ -99,5 +86,3 @@ pub async fn get_all_elements(
         .map(|v| CollectionElement::from_domain(&handle, v))
         .collect())
 }
-
-// 廃止: collection_element_likes -> work_likes へ移行

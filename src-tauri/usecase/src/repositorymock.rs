@@ -206,6 +206,10 @@ impl domain::repository::works::WorkRepository for TestRepositories {
             )
             .await
     }
+
+    async fn delete(&mut self, id: domain::Id<domain::works::Work>) -> anyhow::Result<()> {
+        self.work.lock().await.delete(id).await
+    }
 }
 
 impl domain::repository::erogamescape::ErogamescapeRepository for TestRepositories {
@@ -392,16 +396,6 @@ impl domain::repository::collection::CollectionRepository for TestRepositories {
             .lock()
             .await
             .update_collection_element_gamename_by_id(id, gamename)
-            .await
-    }
-    async fn delete_collection_element(
-        &mut self,
-        element_id: &domain::Id<domain::collection::CollectionElement>,
-    ) -> anyhow::Result<()> {
-        self.collection
-            .lock()
-            .await
-            .delete_collection_element(element_id)
             .await
     }
     // CE 詳細情報 API は廃止

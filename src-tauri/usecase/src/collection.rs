@@ -401,26 +401,6 @@ where
         self.thumbnail_service.save_thumbnail(id, &src_url).await
     }
 
-    pub async fn delete_collection_element_by_id(
-        &self,
-        id: &Id<CollectionElement>,
-    ) -> anyhow::Result<()> {
-        let existed = self
-            .manager
-            .run(|repos| {
-                Box::pin(async move { repos.collection().get_element_by_element_id(id).await })
-            })
-            .await?;
-        if existed.is_none() {
-            return Err(UseCaseError::CollectionElementIsNotFound.into());
-        }
-        self.manager
-            .run(|repos| {
-                Box::pin(async move { repos.collection().delete_collection_element(id).await })
-            })
-            .await
-    }
-
     pub async fn get_not_registered_detail_element_ids(
         &self,
     ) -> anyhow::Result<Vec<Id<CollectionElement>>> {

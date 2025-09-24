@@ -148,4 +148,11 @@ where
             })
             .await
     }
+
+    pub async fn delete_work(&self, work_id: i32) -> anyhow::Result<()> {
+        let wid = domain::Id::new(work_id);
+        self.manager
+            .run(|repos| Box::pin(async move { repos.work().delete(wid).await }))
+            .await
+    }
 }

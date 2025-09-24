@@ -12,7 +12,7 @@
   import Button from '@/components/UI/Button.svelte'
   import Checkbox from '@/components/UI/Checkbox.svelte'
   import LinkServiceFilter from '@/components/WorkList/LinkServiceFilter.svelte'
-  import { commandDeleteCollectionElement } from '@/lib/command'
+  import { commandDeleteWork } from '@/lib/command'
   import { useWorkDetailsAllQuery } from '@/lib/data/queries/workDetails'
   import { useAddWorkOmitMutation, useRemoveWorkOmitMutation } from '@/lib/data/queries/workOmit'
   import { showErrorToast, showInfoToast } from '@/lib/toast'
@@ -54,7 +54,7 @@
   let dontAskAgain = $state(false)
   const performDeleteElement = async (id: number, _title?: string) => {
     try {
-      await commandDeleteCollectionElement(id)
+      await commandDeleteWork(id)
       await sidebarCollectionElements.refetch()
       await get(workDetailsQuery).refetch()
       showInfoToast('削除しました')

@@ -13,7 +13,7 @@
   import QrCode from '@/components/Work/QRCode.svelte'
   import SettingPopover from '@/components/Work/SettingPopover.svelte'
   import {
-    commandDeleteCollectionElement,
+    commandDeleteWork,
     commandGetWorkPaths,
     commandOpenFolder,
     commandUpdateWorkLike,
@@ -55,7 +55,7 @@
     const currentEgsId = workDetail.erogamescapeId
     const isChangedGame = !currentEgsId || currentEgsId !== gameCache.id
     if (isChangedGame) {
-      await commandDeleteCollectionElement(id)
+      await commandDeleteWork(workDetail.id)
     }
     await commandUpsertCollectionElement({ exePath, lnkPath, gameCache })
     await registerCollectionElementDetails()

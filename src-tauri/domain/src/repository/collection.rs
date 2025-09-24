@@ -21,8 +21,6 @@ pub trait CollectionRepository {
     ) -> Result<Option<CollectionElement>>;
     async fn upsert_collection_element(&mut self, new_element: &NewCollectionElement)
         -> Result<()>;
-    async fn delete_collection_element(&mut self, element_id: &Id<CollectionElement>)
-        -> Result<()>;
 
     // 既存の要素に対して名称のみを更新する（非 upsert）
     async fn update_collection_element_gamename_by_id(

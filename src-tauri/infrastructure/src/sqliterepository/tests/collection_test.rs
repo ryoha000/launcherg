@@ -106,19 +106,6 @@ async fn collection_normal_flows() {
         let list = r.get_null_thumbnail_size_element_ids().await.unwrap();
         assert!(!list.is_empty());
     }
-
-    // like/unlike は work_likes へ移行済みのためテスト対象外
-
-    // delete element
-    {
-        let mut r = repo.collection();
-        r.delete_collection_element(&Id::new(1)).await.unwrap();
-        assert!(r
-            .get_element_by_element_id(&Id::new(1))
-            .await
-            .unwrap()
-            .is_none());
-    }
 }
 
 #[tokio::test]

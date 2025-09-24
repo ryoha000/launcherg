@@ -2,7 +2,7 @@
   import type { WorkDetailsVm } from '@/lib/command'
   import Button from '@/components/UI/Button.svelte'
   import Modal from '@/components/UI/Modal.svelte'
-  import { commandDeleteCollectionElement } from '@/lib/command'
+  import { commandDeleteWork } from '@/lib/command'
   import { sidebarCollectionElements } from '@/store/sidebarCollectionElements'
   import { deleteTab, selected, tabs } from '@/store/tabs'
 
@@ -14,9 +14,7 @@
   let { isOpen = $bindable(), workDetail }: Props = $props()
 
   const deleteGame = async () => {
-    if (!workDetail.collectionElementId)
-      return
-    await commandDeleteCollectionElement(workDetail.collectionElementId)
+    await commandDeleteWork(workDetail.id)
     await sidebarCollectionElements.refetch()
     deleteTab($tabs[$selected].id)
     isOpen = false

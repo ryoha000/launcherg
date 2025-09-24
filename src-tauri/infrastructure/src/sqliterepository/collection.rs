@@ -271,25 +271,6 @@ impl CollectionRepository for RepositoryImpl<domain::collection::CollectionEleme
         Ok(())
     }
 
-    async fn delete_collection_element(
-        &mut self,
-        element_id: &Id<CollectionElement>,
-    ) -> anyhow::Result<()> {
-        let idv = element_id.value;
-        self.executor
-            .with_conn(|conn| {
-                Box::pin(async move {
-                    query("DELETE FROM collection_elements WHERE id = ?")
-                        .bind(idv)
-                        .execute(conn)
-                        .await?;
-                    Ok::<(), anyhow::Error>(())
-                })
-            })
-            .await?;
-        Ok(())
-    }
-
     async fn upsert_collection_element_paths(
         &mut self,
         paths: &NewCollectionElementPaths,

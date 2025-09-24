@@ -283,3 +283,38 @@ async fn find_details_by_collection_element_should_match_mapping() {
     let details = found.unwrap();
     assert_eq!(details.collection_element_id.as_ref().unwrap().value, 100);
 }
+
+#[tokio::test]
+async fn work_repository_delete_should_remove_work_and_cascade() {
+    let test_db = TestDatabase::new().await.unwrap();
+    let repo = test_db.sqlite_repository();
+
+    // 1) work を作成し、DMM を紐付け
+    let work_id = repo
+        .work()
+        .upsert(&NewWork {
+            title: "DEL-TARGET".into(),
+        })
+        .await
+        .unwrap();
+    let _ = repo
+        .dmm_work()
+        .upsert(&NewDmmWork {
+            store_id: "SID-DEL".into(),
+            category: "software".into(),
+            subcategory: "game".into(),
+            work_id: work_id.clone(),
+        })
+        .await
+        .unwrap();
+
+    // 2) works から削除
+    {
+        let mut w = repo.work();
+        w.delete(work_id.clone()).await.unwrap();
+    }
+
+    // 3) 再検索で見つからないこと
+    let found = repo.work().find_by_title("DEL-TARGET").await.unwrap();
+    assert!(found.is_none());
+}
