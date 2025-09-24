@@ -68,10 +68,10 @@ impl WorkRepository for RepositoryImpl<Work> {
                         dw.category as dmm_category,
                         dw.subcategory as dmm_subcategory,
                         m1.collection_element_id as ce_id,
-                        e.id as egs_id,
-                        e.erogamescape_id as egs_erogamescape_id,
-                        e.created_at as egs_created_at,
-                        e.updated_at as egs_updated_at,
+                        wem.id as egs_id,
+                        wem.erogamescape_id as egs_erogamescape_id,
+                        wem.created_at as egs_created_at,
+                        wem.updated_at as egs_updated_at,
                         oo.id as omit_id,
                         pp.id as dmm_pack_id,
                         lw.id   as dlsite_id,
@@ -82,7 +82,7 @@ impl WorkRepository for RepositoryImpl<Work> {
                     FROM works w
                     LEFT JOIN dmm_works dw ON dw.work_id = w.id
                     LEFT JOIN work_collection_elements m1 ON m1.work_id = w.id
-                    LEFT JOIN collection_element_erogamescape_map e ON e.collection_element_id = m1.collection_element_id
+                    LEFT JOIN work_erogamescape_map wem ON wem.work_id = w.id
                     LEFT JOIN work_omits oo ON oo.work_id = w.id
                     LEFT JOIN dmm_work_packs pp ON pp.work_id = w.id
                     LEFT JOIN dlsite_works lw ON lw.work_id = w.id
@@ -145,10 +145,10 @@ impl WorkRepository for RepositoryImpl<Work> {
                         dw.category as dmm_category,
                         dw.subcategory as dmm_subcategory,
                         m1.collection_element_id as ce_id,
-                        e.id as egs_id,
-                        e.erogamescape_id as egs_erogamescape_id,
-                        e.created_at as egs_created_at,
-                        e.updated_at as egs_updated_at,
+                        wem.id as egs_id,
+                        wem.erogamescape_id as egs_erogamescape_id,
+                        wem.created_at as egs_created_at,
+                        wem.updated_at as egs_updated_at,
                         oo.id as omit_id,
                         pp.id as dmm_pack_id,
                         lw.id   as dlsite_id,
@@ -159,7 +159,7 @@ impl WorkRepository for RepositoryImpl<Work> {
                     FROM works w
                     JOIN work_collection_elements m1 ON m1.work_id = w.id
                     LEFT JOIN dmm_works dw ON dw.work_id = w.id
-                    LEFT JOIN collection_element_erogamescape_map e ON e.collection_element_id = m1.collection_element_id
+                    LEFT JOIN work_erogamescape_map wem ON wem.work_id = w.id
                     LEFT JOIN work_omits oo ON oo.work_id = w.id
                     LEFT JOIN dmm_work_packs pp ON pp.work_id = w.id
                     LEFT JOIN dlsite_works lw ON lw.work_id = w.id
@@ -205,6 +205,103 @@ impl WorkRepository for RepositoryImpl<Work> {
             }
         }
         Ok(map.into_values().next())
+    }
+
+    async fn find_work_ids_by_erogamescape_ids(
+        &mut self,
+        erogamescape_ids: &[i32],
+    ) -> anyhow::Result<Vec<(i32, Id<Work>)>> {
+        use sqlx::QueryBuilder;
+        if erogamescape_ids.is_empty() {
+            return Ok(Vec::new());
+        }
+        let ids = erogamescape_ids.to_vec();
+        let rows: Vec<(i64, i64)> = self
+            .executor
+            .with_conn(|conn| {
+                Box::pin(async move {
+                    let mut qb = QueryBuilder::new(
+                        r#"SELECT wem.erogamescape_id, wem.work_id FROM work_erogamescape_map wem WHERE wem.erogamescape_id IN ("#,
+                    );
+                    {
+                        let mut separated = qb.separated(", ");
+                        for id in ids.iter() {
+                            separated.push_bind(*id);
+                        }
+                    }
+                    qb.push(")");
+                    let rows: Vec<(i64, i64)> = qb.build_query_as().fetch_all(conn).await?;
+                    Ok(rows)
+                })
+            })
+            .await?;
+        Ok(rows
+            .into_iter()
+            .map(|(egs, wid)| (egs as i32, Id::new(wid as i32)))
+            .collect())
+    }
+
+    async fn upsert_info_by_erogamescape(
+        &mut self,
+        work_id: Id<Work>,
+        erogamescape_id: i32,
+        gamename_ruby: &str,
+        brandname: &str,
+        brandname_ruby: &str,
+        sellday: &str,
+        is_nukige: bool,
+    ) -> anyhow::Result<()> {
+        let wid = work_id.value as i64;
+        let _ = self
+            .executor
+            .with_conn(|conn| {
+                let gamename_ruby = gamename_ruby.to_string();
+                let brandname = brandname.to_string();
+                let brandname_ruby = brandname_ruby.to_string();
+                let sellday = sellday.to_string();
+                let is_nukige = if is_nukige { 1 } else { 0 };
+                let egs_id = erogamescape_id as i64;
+                Box::pin(async move {
+                    // 1) EGS マップを upsert
+                    sqlx::query(
+                        r#"INSERT INTO work_erogamescape_map (work_id, erogamescape_id)
+                        VALUES (?, ?)
+                        ON CONFLICT(work_id) DO UPDATE SET
+                            erogamescape_id = excluded.erogamescape_id,
+                            updated_at = CURRENT_TIMESTAMP
+                        "#,
+                    )
+                    .bind(wid)
+                    .bind(egs_id)
+                    .execute(&mut *conn)
+                    .await?;
+
+                    // 2) 詳細を upsert
+                    sqlx::query(
+                        r#"INSERT INTO erogamescape_information (id, gamename_ruby, sellday, is_nukige, brandname, brandname_ruby)
+                        VALUES (?, ?, ?, ?, ?, ?)
+                        ON CONFLICT(id) DO UPDATE SET
+                            gamename_ruby = excluded.gamename_ruby,
+                            sellday = excluded.sellday,
+                            is_nukige = excluded.is_nukige,
+                            brandname = excluded.brandname,
+                            brandname_ruby = excluded.brandname_ruby,
+                            updated_at = CURRENT_TIMESTAMP
+                        "#,
+                    )
+                    .bind(egs_id)
+                    .bind(gamename_ruby)
+                    .bind(sellday)
+                    .bind(is_nukige)
+                    .bind(brandname)
+                    .bind(brandname_ruby)
+                    .execute(&mut *conn)
+                    .await?;
+                    Ok::<(), anyhow::Error>(())
+                })
+            })
+            .await?;
+        Ok(())
     }
 }
 

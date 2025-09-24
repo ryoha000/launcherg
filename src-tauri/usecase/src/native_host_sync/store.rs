@@ -157,7 +157,7 @@ where
             })
             .await?;
 
-        // egs
+        // egs -> work を Work 側のテーブルから直接解決
         let egs_ids: Vec<i32> = games
             .iter()
             .filter_map(|g| (ops.egs)(g).map(|e| e.erogamescape_id))
@@ -166,6 +166,24 @@ where
             HashMap::new();
         let mut egs_id_to_work_id: HashMap<i32, Id<domain::works::Work>> = HashMap::new();
         if !egs_ids.is_empty() {
+            // Work 直結
+            let pairs = self
+                .manager
+                .run(|repos| {
+                    let egs_ids = egs_ids.clone();
+                    Box::pin(async move {
+                        repos
+                            .work()
+                            .find_work_ids_by_erogamescape_ids(&egs_ids)
+                            .await
+                    })
+                })
+                .await?;
+            for (egs, wid) in pairs.into_iter() {
+                egs_id_to_work_id.insert(egs, wid);
+            }
+
+            // 互換: サムネ/アイコン運用のため CE も参照（移行フェーズ）
             let rows = self
                 .manager
                 .run(|repos| {
@@ -178,33 +196,6 @@ where
                 .await?;
             for (egs_id, ceid) in rows.into_iter() {
                 egs_id_to_collection_id.insert(egs_id, ceid);
-            }
-
-            let ce_ids: Vec<Id<domain::collection::CollectionElement>> =
-                egs_id_to_collection_id.values().cloned().collect();
-            if !ce_ids.is_empty() {
-                let rows = self
-                    .manager
-                    .run(|repos| {
-                        let ce_ids = ce_ids.clone();
-                        Box::pin(async move {
-                            let mut repo = repos.collection();
-                            repo.get_work_ids_by_collection_ids(&ce_ids).await
-                        })
-                    })
-                    .await?;
-                let mut first_work_by_ce: HashMap<
-                    Id<domain::collection::CollectionElement>,
-                    Id<domain::works::Work>,
-                > = HashMap::new();
-                for (ceid, wid) in rows.into_iter() {
-                    first_work_by_ce.entry(ceid).or_insert(wid);
-                }
-                for (egs_id, ceid) in egs_id_to_collection_id.iter() {
-                    if let Some(wid) = first_work_by_ce.get(ceid) {
-                        egs_id_to_work_id.insert(*egs_id, wid.clone());
-                    }
-                }
             }
         }
 
@@ -286,7 +277,7 @@ where
         // ストアキー upsert
         (ops.upsert_store_mapping)(repos, &key, work_id.clone()).await?;
 
-        // CE 確保
+        // CE 確保（画像保存のための互換運用。将来的に削除）
         let collection_element_id = match collection_element_id_by_erogamescape {
             Some(ceid) => ceid,
             None => {
@@ -294,34 +285,32 @@ where
                     .collection()
                     .allocate_new_collection_element_id(&gamename)
                     .await?;
-                if let Some(egs_info) = egs.as_ref() {
-                    repos
-                        .collection()
-                        .upsert_erogamescape_map(&ceid, egs_info.erogamescape_id)
-                        .await?;
-                    repos
-                        .collection()
-                        .upsert_collection_element_info(
-                            &domain::collection::NewCollectionElementInfo::new(
-                                ceid.clone(),
-                                gamename.clone(),
-                                egs_info.brandname.clone(),
-                                egs_info.brandname_ruby.clone(),
-                                egs_info.sellday.clone(),
-                                egs_info.is_nukige,
-                            ),
-                        )
-                        .await?;
-                }
+                // 旧 CE 情報は以後更新しない（EGS 情報は Work 側へ）
                 ceid
             }
         };
 
-        // CE-Work マッピング
+        // CE-Work マッピング（互換）
         repos
             .collection()
             .upsert_work_mapping(&collection_element_id, work_id.clone())
             .await?;
+
+        // Work 側へ EGS 情報を upsert
+        if let Some(ref egs_info) = egs {
+            repos
+                .work()
+                .upsert_info_by_erogamescape(
+                    work_id.clone(),
+                    egs_info.erogamescape_id,
+                    &gamename, // ruby 未取得時は仮置き
+                    &egs_info.brandname,
+                    &egs_info.brandname_ruby,
+                    &egs_info.sellday,
+                    egs_info.is_nukige,
+                )
+                .await?;
+        }
 
         // 親パック（DMMのみ有効）
         (ops.link_parent_pack_if_needed)(repos, work_id.clone(), parent_pack_work_id).await?;

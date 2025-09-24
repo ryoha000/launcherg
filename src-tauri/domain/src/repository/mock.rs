@@ -118,6 +118,40 @@ impl crate::repository::works::WorkRepository for TestRepositories {
             .find_details_by_collection_element_id(collection_element_id)
             .await
     }
+    async fn find_work_ids_by_erogamescape_ids(
+        &mut self,
+        erogamescape_ids: &[i32],
+    ) -> anyhow::Result<Vec<(i32, crate::Id<crate::works::Work>)>> {
+        self.work
+            .lock()
+            .await
+            .find_work_ids_by_erogamescape_ids(erogamescape_ids)
+            .await
+    }
+    async fn upsert_info_by_erogamescape(
+        &mut self,
+        work_id: crate::Id<crate::works::Work>,
+        erogamescape_id: i32,
+        gamename_ruby: &str,
+        brandname: &str,
+        brandname_ruby: &str,
+        sellday: &str,
+        is_nukige: bool,
+    ) -> anyhow::Result<()> {
+        self.work
+            .lock()
+            .await
+            .upsert_info_by_erogamescape(
+                work_id,
+                erogamescape_id,
+                gamename_ruby,
+                brandname,
+                brandname_ruby,
+                sellday,
+                is_nukige,
+            )
+            .await
+    }
 }
 
 impl crate::repository::works::DmmWorkRepository for TestRepositories {

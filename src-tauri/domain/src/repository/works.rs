@@ -15,6 +15,20 @@ pub trait WorkRepository {
         &mut self,
         collection_element_id: Id<CollectionElement>,
     ) -> Result<Option<WorkDetails>>;
+    async fn find_work_ids_by_erogamescape_ids(
+        &mut self,
+        erogamescape_ids: &[i32],
+    ) -> Result<Vec<(i32, Id<Work>)>>;
+    async fn upsert_info_by_erogamescape(
+        &mut self,
+        work_id: Id<Work>,
+        erogamescape_id: i32,
+        gamename_ruby: &str,
+        brandname: &str,
+        brandname_ruby: &str,
+        sellday: &str,
+        is_nukige: bool,
+    ) -> Result<()>;
 }
 
 #[trait_variant::make(Send)]
