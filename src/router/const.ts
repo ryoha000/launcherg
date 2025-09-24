@@ -1,7 +1,6 @@
 import type { Descriptor } from './registry'
 import { keyedTab, pathParamExtractor, queryParamExtractor, singletonTab } from '@/store/tabs/schema'
 import DenyList from '@/views/Debug/DenyList.svelte'
-import DmmPacks from '@/views/Debug/DmmPacks.svelte'
 import ExtensionLog from '@/views/Debug/ExtensionLog.svelte'
 import ExtensionManager from '@/views/Debug/ExtensionManager.svelte'
 import ProcTail from '@/views/Debug/ProcTail.svelte'
@@ -86,12 +85,5 @@ export const ROUTE_REGISTRY = [
     component: DenyList,
     icon: 'i-material-symbols-bug-report-outline-rounded color-text-tertiary',
     tab: singletonTab('denylist デバッグ'),
-  },
-  {
-    kind: 'debug-dmmpacks',
-    pathTemplate: '/debug/dmmpacks',
-    component: DmmPacks,
-    icon: 'i-material-symbols-bug-report-outline-rounded color-text-tertiary',
-    tab: singletonTab('dmmpacks デバッグ'),
   },
 ] as const satisfies readonly Descriptor[]

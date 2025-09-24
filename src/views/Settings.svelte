@@ -41,10 +41,6 @@
     goto('/debug/denylist')
   }
 
-  function navigateToDmmPacks() {
-    goto('/debug/dmmpacks')
-  }
-
   function navigateToImageQueue() {
     goto('/image-queue')
   }
@@ -121,7 +117,6 @@
       <div class='space-y-3'>
         <Button variant='normal' onclick={navigateToProcTailDebug} text='ProcTailデバッグ画面' />
         <Button variant='normal' onclick={navigateToDenyList} text='Deny List 管理 (DMM/DLsite)' />
-        <Button variant='normal' onclick={navigateToDmmPacks} text='DMMパック管理' />
         <Button variant='normal' onclick={navigateToImageQueue} text='画像保存キュー' />
       </div>
     </div>
