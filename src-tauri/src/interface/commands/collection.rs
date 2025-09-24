@@ -72,18 +72,7 @@ pub async fn upsert_collection_element(
         .await?)
 }
 
-#[tauri::command]
-pub async fn get_collection_element(
-    handle: AppHandle,
-    modules: State<'_, Arc<Modules>>,
-    collection_element_id: i32,
-) -> anyhow::Result<CollectionElement, CommandError> {
-    Ok(modules
-        .collection_use_case()
-        .get_element_by_element_id(&Id::new(collection_element_id))
-        .await
-        .and_then(|v| Ok(CollectionElement::from_domain(&Arc::new(handle), v)))?)
-}
+// removed: get_collection_element
 
 #[tauri::command]
 pub async fn delete_collection_element(

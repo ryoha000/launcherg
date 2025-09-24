@@ -14,7 +14,7 @@
   import SettingPopover from '@/components/Work/SettingPopover.svelte'
   import {
     commandDeleteCollectionElement,
-    commandGetCollectionElement,
+    commandGetWorkPaths,
     commandOpenFolder,
     commandUpdateWorkLike,
     commandUpsertCollectionElement,
@@ -40,9 +40,9 @@
     sidebarCollectionElements.updateLike(id, isLike)
   }
 
-  const elementPromise = $derived((async () => {
-    const element = await commandGetCollectionElement(id)
-    return element
+  const lnksPromise = $derived((async () => {
+    const { lnks } = await commandGetWorkPaths(workDetail.id)
+    return lnks
   })())
 
   let isOpenImportManually = $state(false)
@@ -71,7 +71,7 @@
   let isOpenQrCode = $state(false)
 </script>
 
-{#await elementPromise then element}
+{#await lnksPromise then lnks}
   <div class='min-w-0 w-full flex flex-wrap items-center gap-4'>
     <PlayButton workDetail={workDetail} />
     <Button
@@ -99,8 +99,7 @@
             onclose={() => close()}
             onselectChange={() => (isOpenImportManually = true)}
             onselectDelete={() => (isOpenDelete = true)}
-            onselectOpen={() =>
-              commandOpenFolder(element.exePath ?? element.lnkPath)}
+            onselectOpen={() => lnks.length > 0 && commandOpenFolder(lnks[0].lnkPath)}
             onselectOtherInfomation={() => (isOpenOtherInformation = true)}
           />
         {/snippet}
@@ -110,11 +109,11 @@
   <ImportManually
     bind:isOpen={isOpenImportManually}
     idInput={`${id}`}
-    path={element.exePath ?? element.lnkPath}
+    path={(lnks[0]?.lnkPath ?? '')}
     onconfirm={onChangeGame}
     oncancel={() => (isOpenImportManually = false)}
   />
-  <DeleteElement bind:isOpen={isOpenDelete} {element} />
+  <DeleteElement bind:isOpen={isOpenDelete} {workDetail} />
   <OtherInformation bind:isOpen={isOpenOtherInformation} {workDetail} />
   <QrCode bind:isOpen={isOpenQrCode} {id} {seiyaUrl} />
 {/await}

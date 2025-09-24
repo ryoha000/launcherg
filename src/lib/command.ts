@@ -84,11 +84,7 @@ export async function commandGetPlayTomeMinutes(collectionElementId: number) {
   return await invoke<number>('get_play_time_minutes', { collectionElementId })
 }
 
-export async function commandGetCollectionElement(collectionElementId: number) {
-  return await invoke<CollectionElement>('get_collection_element', {
-    collectionElementId,
-  })
-}
+// removed: commandGetCollectionElement
 
 export async function commandDeleteCollectionElement(collectionElementId: number) {
   return await invoke<void>('delete_collection_element', {
@@ -340,6 +336,13 @@ export async function commandGetWorkDetailsAll() {
 
 export async function commandGetWorkDetailsByCollectionElement(collectionElementId: number) {
   return await invoke<WorkDetailsVm | null>('get_work_details_by_collection_element', { collectionElementId })
+}
+
+// Work Paths
+export interface WorkLnkVm { id: number, lnkPath: string }
+export interface WorkPathsVm { lnks: WorkLnkVm[] }
+export async function commandGetWorkPaths(workId: number) {
+  return await invoke<WorkPathsVm>('get_work_paths', { workId })
 }
 
 // DMM Work Packs wrappers

@@ -6,7 +6,7 @@
   import VirtualScroller from '@/components/UI/VirtualScroller.svelte'
   import VirtualScrollerMasonry from '@/components/UI/VirtualScrollerMasonry.svelte'
   import {
-    commandGetCollectionElement,
+    commandGetWorkDetailsByCollectionElement,
     commandUpdateAllGameCache,
   } from '@/lib/command'
   import { scrapeAllGameCacheOnes } from '@/lib/scrape/scrapeAllGame'
@@ -19,7 +19,7 @@
     Object.keys(localStorage)
       .map(v => +(v.match(memoRegex)?.[1] ?? '0'))
       .filter(v => v)
-      .map(v => commandGetCollectionElement(v)),
+      .map(v => commandGetWorkDetailsByCollectionElement(v)),
   )
 
   const isOpenGettingStarted = true
@@ -82,8 +82,8 @@
       </div>
       <div class='space-y-2'>
         <div class='text-(h3 text-primary) font-medium'>Memo</div>
-        {#await memoPromises then elements}
-          {#if elements.length === 0 && $sidebarCollectionElements.length !== 0}
+        {#await memoPromises then details}
+          {#if details.length === 0 && $sidebarCollectionElements.length !== 0}
             <div
               class='max-w-120 border border-(border-primary solid) rounded p-4 space-y-2'
             >
@@ -96,13 +96,13 @@
             </div>
           {:else}
             <div class='flex flex-(col) gap-1'>
-              {#each elements as element (element.id)}
+              {#each details as d (d?.id)}
                 <a
                   use:route
-                  href='/memos/{element.id}?gamename={element.gamename}'
+                  href='/memos/{d!.id}?gamename={d!.title}'
                   class='text-(body2 text-link) hover:underline-(1px text-link)'
                 >
-                  メモ - {element.gamename}
+                  メモ - {d!.title}
                 </a>
               {/each}
             </div>

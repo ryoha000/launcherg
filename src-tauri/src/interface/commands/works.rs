@@ -4,12 +4,41 @@ use tauri::State;
 use crate::interface::error::CommandError;
 use crate::interface::module::{Modules, ModulesExt};
 
+#[derive(serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct WorkLnkVm {
+    pub id: i32,
+    pub lnk_path: String,
+}
+
+#[derive(serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct WorkPathsVm {
+    pub lnks: Vec<WorkLnkVm>,
+}
+
 #[tauri::command]
 pub async fn list_work_lnks(
     modules: State<'_, Arc<Modules>>,
     work_id: i32,
 ) -> anyhow::Result<Vec<(i32, String)>, CommandError> {
     Ok(modules.work_use_case().list_work_lnks(work_id).await?)
+}
+
+#[tauri::command]
+pub async fn get_work_paths(
+    modules: State<'_, Arc<Modules>>,
+    work_id: i32,
+) -> anyhow::Result<WorkPathsVm, CommandError> {
+    let list = modules.work_use_case().list_work_lnks(work_id).await?;
+    let lnks = list
+        .into_iter()
+        .map(|(id, path)| WorkLnkVm {
+            id,
+            lnk_path: path,
+        })
+        .collect();
+    Ok(WorkPathsVm { lnks })
 }
 
 #[tauri::command]

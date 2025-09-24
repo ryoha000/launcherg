@@ -1,5 +1,5 @@
 <script lang='ts'>
-  import type { CollectionElement } from '@/lib/types'
+  import type { WorkDetailsVm } from '@/lib/command'
   import Button from '@/components/UI/Button.svelte'
   import Modal from '@/components/UI/Modal.svelte'
   import { commandDeleteCollectionElement } from '@/lib/command'
@@ -8,13 +8,15 @@
 
   interface Props {
     isOpen: boolean
-    element: CollectionElement
+    workDetail: WorkDetailsVm
   }
 
-  let { isOpen = $bindable(), element }: Props = $props()
+  let { isOpen = $bindable(), workDetail }: Props = $props()
 
   const deleteGame = async () => {
-    await commandDeleteCollectionElement(element.id)
+    if (!workDetail.collectionElementId)
+      return
+    await commandDeleteCollectionElement(workDetail.collectionElementId)
     await sidebarCollectionElements.refetch()
     deleteTab($tabs[$selected].id)
     isOpen = false
@@ -48,7 +50,7 @@
   {#snippet footer()}
     <div class='max-w-full p-4'>
       <Button
-        text='{element.gamename} を削除する'
+        text='{workDetail.title} を削除する'
         variant='error'
         wrappable
         appendClass='w-full justify-center'
