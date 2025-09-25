@@ -1,12 +1,12 @@
 <script lang='ts'>
   import type { Readable } from 'svelte/store'
-  import type { CollectionElement } from '@/lib/types'
+  import type { SidebarWorkItem } from '@/store/sidebarCollectionElements'
   import { onDestroy, onMount } from 'svelte'
   import ZappingGameItem from '@/components/Home/ZappingGameItem.svelte'
   import { useVirtualScrollerMasonry } from '@/components/UI/virtualScrollerMasonry'
 
   interface Props {
-    elements: Readable<CollectionElement[]>
+    elements: Readable<SidebarWorkItem[]>
     setVirtualHeight: (v: number) => void
     contentsWidth: Readable<number>
     contentsScrollY: Readable<number>

@@ -11,6 +11,7 @@ pub trait WorkRepository {
     async fn upsert(&mut self, new_work: &NewWork) -> Result<Id<Work>>;
     async fn find_by_title(&mut self, title: &str) -> Result<Option<Work>>;
     async fn list_all_details(&mut self) -> Result<Vec<WorkDetails>>;
+    async fn find_details_by_work_id(&mut self, work_id: Id<Work>) -> Result<Option<WorkDetails>>;
     async fn find_details_by_collection_element_id(
         &mut self,
         collection_element_id: Id<CollectionElement>,

@@ -1,15 +1,13 @@
 <script lang='ts'>
-  import type { CollectionElement } from '@/lib/types'
+  import type { SidebarWorkItem } from '@/store/sidebarCollectionElements'
   import { route } from '@mateothegreat/svelte5-router'
   import { convertFileSrc } from '@tauri-apps/api/core'
 
-  interface Props {
-    collectionElement: CollectionElement
-  }
+  interface Props { collectionElement: SidebarWorkItem }
 
   const { collectionElement }: Props = $props()
 
-  const imgSrc = $derived(convertFileSrc(collectionElement.thumbnail))
+  const imgSrc = $derived(collectionElement.thumbnail?.path ? convertFileSrc(collectionElement.thumbnail.path) : '')
 </script>
 
 <div
@@ -17,22 +15,22 @@
 >
   <a
     tabIndex={0}
-    href={`/works/${collectionElement.id}?gamename=${collectionElement.gamename}`}
+    href={`/works/${collectionElement.id}?gamename=${collectionElement.title}`}
     use:route
     class='block h-full w-full'
   >
-    {#if collectionElement.thumbnailWidth && collectionElement.thumbnailHeight}
+    {#if collectionElement.thumbnail?.path}
       <img
         decoding='async'
         class='h-full w-full rounded object-contain'
         src={imgSrc}
-        alt={`${collectionElement.gamename}のサムネイル`}
+        alt={`${collectionElement.title}のサムネイル`}
       />
     {:else}
       <div
         class='h-full w-full flex items-center justify-center border rounded bg-bg-primary px-6 text-(body text-primary) font-bold'
       >
-        {collectionElement.gamename}
+        {collectionElement.title}
       </div>
     {/if}
   </a>

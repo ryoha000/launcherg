@@ -162,6 +162,12 @@ impl domain::repository::works::WorkRepository for TestRepositories {
     async fn list_all_details(&mut self) -> anyhow::Result<Vec<domain::works::WorkDetails>> {
         self.work.lock().await.list_all_details().await
     }
+    async fn find_details_by_work_id(
+        &mut self,
+        work_id: domain::Id<domain::works::Work>,
+    ) -> anyhow::Result<Option<domain::works::WorkDetails>> {
+        self.work.lock().await.find_details_by_work_id(work_id).await
+    }
     async fn find_details_by_collection_element_id(
         &mut self,
         collection_element_id: domain::Id<domain::collection::CollectionElement>,

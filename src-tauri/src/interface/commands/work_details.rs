@@ -24,3 +24,15 @@ pub async fn get_work_details_by_collection_element(
         .await?;
     Ok(row.map(|w| w.into()))
 }
+
+#[tauri::command]
+pub async fn get_work_details_by_work_id(
+    modules: State<'_, Arc<Modules>>,
+    work_id: i32,
+) -> anyhow::Result<Option<WorkDetailsVm>, CommandError> {
+    let row = modules
+        .work_use_case()
+        .find_details_by_work_id(work_id)
+        .await?;
+    Ok(row.map(|w| w.into()))
+}

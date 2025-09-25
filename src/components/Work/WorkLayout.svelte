@@ -18,8 +18,8 @@
     if (workInformation) {
       return workInformation.imgUrl
     }
-    if (workDetail.thumbnail) {
-      return convertFileSrc(workDetail.thumbnail)
+    if (workDetail.thumbnail?.path) {
+      return convertFileSrc(workDetail.thumbnail.path)
     }
     return ''
   })

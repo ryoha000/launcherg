@@ -1,22 +1,30 @@
 import type { Readable, Writable } from 'svelte/store'
-import type { CollectionElement } from '@/lib/types'
+import type { SidebarWorkItem } from '@/store/sidebarCollectionElements'
 import { writable } from 'svelte/store'
 import { toHiragana, toRomaji } from 'wanakana'
 
 export interface Option<T> { label: string, value: T, otherLabels?: string[] }
 
-export function collectionElementsToOptions(elements: CollectionElement[]) {
-  return elements.map(v => ({
-    label: v.gamename,
-    value: v.id,
-    otherLabels: [
-      toHiragana(v.gamenameRuby),
-      toRomaji(v.gamenameRuby),
-      v.brandname,
-      toHiragana(v.brandnameRuby),
-      toRomaji(v.brandnameRuby),
-    ],
-  }))
+export function collectionElementsToOptions(elements: SidebarWorkItem[]) {
+  return elements.map((v) => {
+    const otherLabels: string[] = []
+    if (v.gamenameRuby) {
+      otherLabels.push(toHiragana(v.gamenameRuby))
+      otherLabels.push(toRomaji(v.gamenameRuby))
+    }
+    if (v.brandname) {
+      otherLabels.push(toHiragana(v.brandname))
+      otherLabels.push(toRomaji(v.brandname))
+    }
+    if (v.sellday) {
+      otherLabels.push(v.sellday)
+    }
+    return {
+      label: v.title,
+      value: v.id,
+      otherLabels,
+    }
+  })
 }
 
 export function useFilter<T>(query: Writable<string>, options: Readable<Option<T>[]>, getOptions: () => Option<T>[]) {

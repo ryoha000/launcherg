@@ -1,9 +1,10 @@
 use chrono::{DateTime, Local};
 use derive_new::new;
+use serde::{Serialize, Deserialize};
 
 use crate::Id;
 
-#[derive(new, Clone, Debug, PartialEq)]
+#[derive(new, Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct ErogamescapeInformation {
     pub id: Id<ErogamescapeInformation>,
     pub gamename_ruby: String,
@@ -15,7 +16,7 @@ pub struct ErogamescapeInformation {
     pub updated_at: DateTime<Local>,
 }
 
-#[derive(new, Clone, Debug, PartialEq)]
+#[derive(new, Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct NewErogamescapeInformation {
     pub erogamescape_id: i32,
     pub gamename_ruby: String,

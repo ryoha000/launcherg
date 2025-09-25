@@ -25,6 +25,7 @@ pub struct WorkTable {
 pub struct WorkDetailsRow {
     pub work_id: i64,
     pub work_title: String,
+    pub ce_created_at: Option<sqlx::types::chrono::NaiveDateTime>,
     pub dmm_id: Option<i64>,
     pub dmm_store_id: Option<String>,
     pub dmm_category: Option<String>,
@@ -34,6 +35,16 @@ pub struct WorkDetailsRow {
     pub egs_erogamescape_id: Option<i32>,
     pub egs_created_at: Option<sqlx::types::chrono::NaiveDateTime>,
     pub egs_updated_at: Option<sqlx::types::chrono::NaiveDateTime>,
+    // Erogamescape information details (from erogamescape_information)
+    pub egs_info_gamename_ruby: Option<String>,
+    pub egs_info_brandname: Option<String>,
+    pub egs_info_brandname_ruby: Option<String>,
+    pub egs_info_sellday: Option<String>,
+    pub egs_info_is_nukige: Option<i64>,
+    pub egs_info_created_at: Option<sqlx::types::chrono::NaiveDateTime>,
+    pub egs_info_updated_at: Option<sqlx::types::chrono::NaiveDateTime>,
+    pub cet_width: Option<i64>,
+    pub cet_height: Option<i64>,
     pub omit_id: Option<i64>,
     pub dmm_pack_id: Option<i64>,
     pub dlsite_id: Option<i64>,
@@ -41,6 +52,8 @@ pub struct WorkDetailsRow {
     pub dlsite_category: Option<String>,
     pub latest_path_id: Option<i64>,
     pub latest_path_download_path: Option<String>,
+    pub install_install_at: Option<sqlx::types::chrono::NaiveDateTime>,
+    pub play_last_play_at: Option<sqlx::types::chrono::NaiveDateTime>,
     pub like_id: Option<i64>,
     pub like_like_at: Option<sqlx::types::chrono::NaiveDateTime>,
     pub like_created_at: Option<sqlx::types::chrono::NaiveDateTime>,
@@ -51,7 +64,8 @@ impl From<crate::sqliterepository::models::works::WorkDetailsRow> for domain::wo
     fn from(r: crate::sqliterepository::models::works::WorkDetailsRow) -> Self {
         use domain::{
             collection::CollectionElementErogamescape,
-            works::{DlsiteWork, DmmWork, Work},
+            erogamescape::ErogamescapeInformation,
+            works::{DlsiteWork, DmmWork, Work, WorkThumbnailSize},
             Id,
         };
         let mut details = domain::works::WorkDetails {
@@ -63,10 +77,21 @@ impl From<crate::sqliterepository::models::works::WorkDetailsRow> for domain::wo
             dlsite: None,
             collection_element_id: r.ce_id.map(|v| Id::new(v as i32)),
             erogamescape: None,
+            erogamescape_information: None,
             is_omitted: false,
             is_dmm_pack: false,
             latest_download_path: None,
             like: None,
+            install_at: r
+                .install_install_at
+                .map(|v| v.and_utc().with_timezone(&chrono::Local)),
+            last_play_at: r
+                .play_last_play_at
+                .map(|v| v.and_utc().with_timezone(&chrono::Local)),
+            registered_at: r
+                .ce_created_at
+                .map(|v| v.and_utc().with_timezone(&chrono::Local)),
+            thumbnail_size: None,
         };
 
         if let Some(dmm_id) = r.dmm_id {
@@ -120,6 +145,38 @@ impl From<crate::sqliterepository::models::works::WorkDetailsRow> for domain::wo
             }
         }
 
+        // Map erogamescape_information when available
+        if let Some(info_egs_id) = r.egs_erogamescape_id {
+            if let (
+                Some(gamename_ruby),
+                Some(brandname),
+                Some(brandname_ruby),
+                Some(sellday),
+                Some(is_nukige),
+                Some(created_at),
+                Some(updated_at),
+            ) = (
+                r.egs_info_gamename_ruby.clone(),
+                r.egs_info_brandname.clone(),
+                r.egs_info_brandname_ruby.clone(),
+                r.egs_info_sellday.clone(),
+                r.egs_info_is_nukige,
+                r.egs_info_created_at,
+                r.egs_info_updated_at,
+            ) {
+                details.erogamescape_information = Some(ErogamescapeInformation::new(
+                    Id::new(info_egs_id),
+                    gamename_ruby,
+                    brandname,
+                    brandname_ruby,
+                    sellday,
+                    is_nukige != 0,
+                    created_at.and_utc().with_timezone(&chrono::Local),
+                    updated_at.and_utc().with_timezone(&chrono::Local),
+                ));
+            }
+        }
+
         if let Some(like_id) = r.like_id {
             if let (Some(like_at), Some(created), Some(updated)) =
                 (r.like_like_at, r.like_created_at, r.like_updated_at)
@@ -132,6 +189,10 @@ impl From<crate::sqliterepository::models::works::WorkDetailsRow> for domain::wo
                     updated_at: updated.and_utc().with_timezone(&chrono::Local),
                 });
             }
+        }
+
+        if let (Some(w), Some(h)) = (r.cet_width, r.cet_height) {
+            details.thumbnail_size = Some(WorkThumbnailSize::new(w as i32, h as i32))
         }
 
         details

@@ -3,7 +3,6 @@ use tauri::{AppHandle, State};
 
 use crate::interface::error::CommandError;
 use crate::interface::models::all_game_cache::AllGameCacheOne;
-use crate::interface::models::collection::CollectionElement;
 use crate::interface::module::{Modules, ModulesExt};
 
 use domain::windows::shell_link::ShellLink as _;
@@ -11,7 +10,6 @@ use domain::windows::WindowsExt as _;
 
 use crate::domain::collection::ScannedGameElement;
 use crate::domain::file::get_file_created_at_sync;
-use crate::domain::Id;
 
 #[tauri::command]
 pub async fn upsert_collection_element(
@@ -72,17 +70,3 @@ pub async fn upsert_collection_element(
         .await?)
 }
 
-#[tauri::command]
-pub async fn get_all_elements(
-    _handle: AppHandle,
-    modules: State<'_, Arc<Modules>>,
-) -> anyhow::Result<Vec<CollectionElement>, CommandError> {
-    let handle = &Arc::new(_handle);
-    Ok(modules
-        .collection_use_case()
-        .get_all_elements()
-        .await?
-        .into_iter()
-        .map(|v| CollectionElement::from_domain(&handle, v))
-        .collect())
-}

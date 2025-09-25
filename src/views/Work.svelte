@@ -5,7 +5,7 @@
 
   let { route }: { route?: { result: { path: { params: { id?: string } } } } } = $props()
   const idParam = $derived(route?.result?.path?.params?.id || '')
-  const collectionElementId = $derived(Number(idParam))
+  const workId = $derived(Number(idParam))
 
 // async function openDmmDownload(dmm: { storeId: string, category: string, subcategory: string }) {
   //   const payload = {
@@ -66,5 +66,5 @@
       </button>
     </div>
   {/if} -->
-  <WorkErogameScape {collectionElementId} />
+  <WorkErogameScape {workId} />
 </div>

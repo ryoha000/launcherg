@@ -264,7 +264,7 @@
               <td class='px-2 py-1'>
                 {#if item.thumbnail}
                   <div class='h-12 w-20 overflow-hidden rounded bg-bg-secondary'>
-                    <img src={convertFileSrc(item.thumbnail)} alt='thumbnail' class='h-full w-full object-cover' />
+                    <img src={convertFileSrc(item.thumbnail.path)} alt='thumbnail' class='h-full w-full object-cover' />
                   </div>
                 {:else}
                   <div class='h-full w-full'>

@@ -1,12 +1,10 @@
 <script lang='ts'>
-  import type { CollectionElementsWithLabel } from '@/lib/types'
+  import type { SidebarWorkItemsWithLabel } from '@/store/sidebarCollectionElements'
   import SimpleBar from 'simplebar'
   import CollectionElement from '@/components/Sidebar/CollectionElement.svelte'
   import ADisclosure from '@/components/UI/ADisclosure.svelte'
 
-  interface Props {
-    collectionElement: CollectionElementsWithLabel[]
-  }
+  interface Props { collectionElement: SidebarWorkItemsWithLabel[] }
 
   const { collectionElement }: Props = $props()
 

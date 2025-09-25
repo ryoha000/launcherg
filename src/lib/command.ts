@@ -1,4 +1,4 @@
-import type { AllGameCacheOne, CollectionElement } from '@/lib/types'
+import type { AllGameCacheOne } from '@/lib/types'
 import type {
   AddWatchTargetRequest,
   ClearEventsRequest,
@@ -108,9 +108,7 @@ export async function commandUpsertErogamescapeInformation(details: Erogamescape
   return await invoke<void>('upsert_erogamescape_information', { details })
 }
 
-export async function commandGetAllElements() {
-  return await invoke<CollectionElement[]>('get_all_elements', {})
-}
+// removed: commandGetAllElements
 
 export async function commandUpdateWorkLike(workId: number, isLike: boolean) {
   return await invoke<void>('update_work_like', { workId, isLike })
@@ -321,13 +319,17 @@ export async function commandWorkOmitAll() {
 }
 
 // WorkDetails
-export interface WorkDetailsVm { id: number, title: string, dmm?: { id: number, storeId: string, category: string, subcategory: string }, dlsite?: { id: number, storeId: string, category: string }, collectionElementId?: number | null, erogamescapeId?: number | null, isOmitted: boolean, isDmmPack: boolean, thumbnail?: string, latestDownloadPath?: { id: number, workId: number, downloadPath: string } | null, likeAt?: string | null }
+export interface WorkDetailsVm { id: number, title: string, dmm?: { id: number, storeId: string, category: string, subcategory: string }, dlsite?: { id: number, storeId: string, category: string }, collectionElementId?: number | null, erogamescapeId?: number | null, erogamescapeInformation?: { gamenameRuby: string, brandname: string, brandnameRuby: string, sellday: string, isNukige: boolean }, isOmitted: boolean, isDmmPack: boolean, thumbnail?: { path: string, width?: number, height?: number } | null, latestDownloadPath?: { id: number, workId: number, downloadPath: string } | null, likeAt?: string | null, installAt?: string | null, lastPlayAt?: string | null, registeredAt?: string | null }
 export async function commandGetWorkDetailsAll() {
   return await invoke<WorkDetailsVm[]>('get_work_details_all')
 }
 
 export async function commandGetWorkDetailsByCollectionElement(collectionElementId: number) {
   return await invoke<WorkDetailsVm | null>('get_work_details_by_collection_element', { collectionElementId })
+}
+
+export async function commandGetWorkDetailsByWorkId(workId: number) {
+  return await invoke<WorkDetailsVm | null>('get_work_details_by_work_id', { workId })
 }
 
 // Work Paths

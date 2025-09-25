@@ -1,7 +1,7 @@
 import type { Attribute } from '@/components/Sidebar/searchAttributes'
 import type { SortOrder } from '@/components/Sidebar/sort'
 import type { Option } from '@/lib/trieFilter'
-import type { CollectionElementsWithLabel } from '@/lib/types'
+import type { SidebarWorkItemsWithLabel } from '@/store/sidebarCollectionElements'
 import {
 
   FILTER_BY_ATTRIBUTE,
@@ -9,7 +9,7 @@ import {
 import { sort } from '@/components/Sidebar/sort'
 import { sidebarCollectionElements } from '@/store/sidebarCollectionElements'
 
-export function search(filteredOption: Option<number>[], attributes: Attribute[], order: SortOrder): CollectionElementsWithLabel[] {
+export function search(filteredOption: Option<number>[], attributes: Attribute[], order: SortOrder): SidebarWorkItemsWithLabel[] {
   const filteredElements = sidebarCollectionElements
     .value()
     .filter(

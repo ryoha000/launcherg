@@ -2,17 +2,15 @@
   import { onMount } from 'svelte'
   import { get } from 'svelte/store'
   import WorkLayout from '@/components/Work/WorkLayout.svelte'
-  import { useWorkDetailsQuery } from '@/lib/data/queries/workDetails'
+  import { useWorkDetailsByWorkIdQuery } from '@/lib/data/queries/workDetails'
   import { useEvent } from '@/lib/event'
   import { works } from '@/store/works'
 
-  interface Props {
-    collectionElementId: number
-  }
+  interface Props { workId: number }
 
-  const { collectionElementId }: Props = $props()
+  const { workId }: Props = $props()
 
-  const workDetailQuery = useWorkDetailsQuery(collectionElementId)
+  const workDetailQuery = useWorkDetailsByWorkIdQuery(workId)
   const appEvent = useEvent()
   const workInformationPromise = $derived.by(async () => {
     const erogameScapeId = $workDetailQuery.data?.erogamescapeId

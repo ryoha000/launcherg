@@ -54,6 +54,14 @@ where
             .await
     }
 
+    pub async fn find_details_by_work_id(&self, work_id: i32) -> anyhow::Result<Option<WorkDetails>> {
+        self.manager
+            .run(|repos| {
+                Box::pin(async move { repos.work().find_details_by_work_id(domain::Id::new(work_id)).await })
+            })
+            .await
+    }
+
     pub async fn list_work_lnks(&self, work_id: i32) -> anyhow::Result<Vec<(i32, String)>> {
         let wid = domain::Id::new(work_id);
         let list = self

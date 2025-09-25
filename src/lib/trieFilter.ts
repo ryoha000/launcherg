@@ -1,8 +1,6 @@
 import type { Readable } from 'svelte/store'
-import type { CollectionElement } from '@/lib/types'
 import { writable } from 'svelte/store'
 import TrieSearch from 'trie-search'
-import { toHiragana, toRomaji } from 'wanakana'
 import { isNotNullOrUndefined } from '@/lib/utils'
 
 export interface Option<T> { label: string, value: T, otherLabels?: string[] }
@@ -10,20 +8,6 @@ export interface Option<T> { label: string, value: T, otherLabels?: string[] }
 interface KeyValue<T> {
   key: string
   value: T
-}
-
-export function collectionElementsToOptions(elements: CollectionElement[]) {
-  return elements.map(v => ({
-    label: v.gamename,
-    value: v.id,
-    otherLabels: [
-      toHiragana(v.gamenameRuby),
-      toRomaji(v.gamenameRuby),
-      v.brandname,
-      toHiragana(v.brandnameRuby),
-      toRomaji(v.brandnameRuby),
-    ],
-  }))
 }
 
 export function useTrieFilter<T>(options: Readable<Option<T>[]>, getOptions: () => Option<T>[]) {

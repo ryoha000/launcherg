@@ -33,7 +33,7 @@
     try {
       disabledRefetchThumbnail = true
       const ids = $flattenShown
-        .filter(v => !v.thumbnailWidth && !v.thumbnailHeight)
+        .filter(v => !v.thumbnail?.width && !v.thumbnail?.height)
         .map(v => v.id)
       const caches = await scrapeAllGameCacheOnes(ids)
       await commandUpdateAllGameCache(caches)
