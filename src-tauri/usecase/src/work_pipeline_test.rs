@@ -447,9 +447,9 @@ mod tests {
             .unwrap();
     }
 
-    // post_process_thumbnail_sizes (empty)
+    // backfill_thumbnail_sizes (empty)
     #[tokio::test]
-    async fn post_process_thumbnail_sizes_空なら何もしない() {
+    async fn backfill_thumbnail_sizes_空なら何もしない() {
         let pubsub = MockPubSub::default();
         let fs = Arc::new(MockFileSystem::new());
         let extractor = Arc::new(MockMetadataExtractor::new());
@@ -471,6 +471,6 @@ mod tests {
             Arc::new(domain::service::save_path_resolver::DirsSavePathResolver::default()),
             linker,
         );
-        let _ = uc.post_process_thumbnail_sizes().await.unwrap();
+        let _ = uc.backfill_thumbnail_sizes().await.unwrap();
     }
 }

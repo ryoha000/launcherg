@@ -94,6 +94,7 @@ fn main() {
             commands::erogamescape::upsert_erogamescape_information,
             commands::erogamescape::get_not_registered_erogamescape_information_ids,
             commands::works::update_work_like,
+            commands::works::backfill_thumbnail_sizes,
             commands::utils::open_folder,
             commands::all_game_cache::get_all_game_cache_last_updated,
             commands::all_game_cache::update_all_game_cache,

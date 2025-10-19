@@ -5,6 +5,7 @@
   import ImportDropFiles from '@/components/Home/ImportDropFiles.svelte'
   import Titlebar from '@/components/UI/Titlebar/Titlebar.svelte'
   import Layout from '@/layouts/Layout.svelte'
+  import { commandBackfillThumbnailSizes } from '@/lib/command'
   import { queryClient } from '@/lib/data/queryClient'
   import { useEvent } from '@/lib/event'
   import { registerCollectionElementDetails } from '@/lib/registerCollectionElementDetails'
@@ -20,6 +21,7 @@
   onMount(() => {
     initialize()
     initializeAllGameCache()
+    commandBackfillThumbnailSizes()
 
     void appEvent.startListen('appSignal:showMessage', ({ event }) => {
       if (event.type !== 'showMessage')

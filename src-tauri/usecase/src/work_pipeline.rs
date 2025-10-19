@@ -94,7 +94,7 @@ where
         self.linker.ensure_links(link_tasks).await?;
         self.update_explored_cache(explored).await?;
 
-        self.post_process_thumbnail_sizes().await?;
+        self.backfill_thumbnail_sizes().await?;
         Ok(deduped.into_iter().map(|r| r.title).collect())
     }
 
@@ -392,15 +392,17 @@ where
         Ok(())
     }
 
-    pub(crate) async fn post_process_thumbnail_sizes(&self) -> anyhow::Result<()> {
+    pub async fn backfill_thumbnail_sizes(&self) -> anyhow::Result<usize> {
         let resolver = self.resolver.clone();
-        self.manager
+        let updated = self
+            .manager
             .run(|repos| {
                 let resolver = resolver.clone();
                 Box::pin(async move {
                     use domain::repository::collection::CollectionRepository as _;
                     let mut coll = repos.collection();
                     let ids = coll.get_null_thumbnail_size_element_ids().await?;
+                    let mut updated: usize = 0;
                     if !ids.is_empty() {
                         for id in ids.into_iter() {
                             let path = resolver.thumbnail_png_path(id.value);
@@ -411,16 +413,17 @@ where
                                             &id, w as i32, h as i32,
                                         )
                                         .await;
+                                    updated += 1;
                                 }
                                 Err(_) => {}
                             }
                         }
                     }
-                    Ok::<(), anyhow::Error>(())
+                    Ok::<usize, anyhow::Error>(updated)
                 })
             })
             .await?;
-        Ok(())
+        Ok(updated)
     }
 
     pub(crate) async fn prepare_link_tasks(

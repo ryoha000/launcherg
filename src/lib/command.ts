@@ -362,3 +362,8 @@ export interface ImageSaveQueueRowVm {
 export async function commandGetImageSaveQueue(req?: { limit?: number, status?: 'unfinished' | 'finished' }) {
   return await invoke<ImageSaveQueueRowVm[]>('get_image_save_queue', req ? { request: req } : {})
 }
+
+// Backfill for missing thumbnail sizes
+export async function commandBackfillThumbnailSizes() {
+  return await invoke<number>('backfill_thumbnail_sizes')
+}
