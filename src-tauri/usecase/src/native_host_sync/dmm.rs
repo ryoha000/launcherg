@@ -97,7 +97,7 @@ where
             repos: &'a Rx,
             resolver: &'a dyn SavePathResolver,
             ceid: &'a domain::Id<domain::collection::CollectionElement>,
-            key: &'a DmmKey,
+            _key: &'a DmmKey,
             image_url: &'a str,
         ) -> futures::future::BoxFuture<'a, anyhow::Result<()>> {
             Box::pin(async move {
@@ -125,22 +125,6 @@ where
                             &normalized,
                             ImageSrcType::Url,
                             &thumb_dst,
-                            ImagePreprocess::ResizeForWidth400,
-                        )
-                        .await;
-                }
-                let alias = resolver.thumbnail_alias_dmm_png_path(
-                    &key.category,
-                    &key.subcategory,
-                    &key.store_id,
-                );
-                {
-                    let mut repo = repos.image_queue();
-                    let _ = repo
-                        .enqueue(
-                            &normalized,
-                            ImageSrcType::Url,
-                            &alias,
                             ImagePreprocess::ResizeForWidth400,
                         )
                         .await;

@@ -42,29 +42,6 @@ pub trait SavePathResolver {
             .to_string_lossy()
             .to_string()
     }
-
-    // 別名: DMM 用サムネイルパス（thumbnails/dmm/{category}-{subcategory}-{store_id}.png）
-    fn thumbnail_alias_dmm_png_path(
-        &self,
-        category: &str,
-        subcategory: &str,
-        store_id: &str,
-    ) -> String {
-        let dir = PathBuf::from(self.thumbnails_dir()).join("dmm");
-        std::fs::create_dir_all(&dir).ok();
-        dir.join(format!("{}-{}-{}.png", category, subcategory, store_id))
-            .to_string_lossy()
-            .to_string()
-    }
-
-    // 別名: DLsite 用サムネイルパス（thumbnails/dlsite/{category}-{store_id}.png）
-    fn thumbnail_alias_dlsite_png_path(&self, category: &str, store_id: &str) -> String {
-        let dir = PathBuf::from(self.thumbnails_dir()).join("dlsite");
-        std::fs::create_dir_all(&dir).ok();
-        dir.join(format!("{}-{}.png", category, store_id))
-            .to_string_lossy()
-            .to_string()
-    }
     fn play_history_jsonl_path(&self, id: i32) -> String {
         PathBuf::from(self.play_histories_dir())
             .join(format!("{}.jsonl", id))

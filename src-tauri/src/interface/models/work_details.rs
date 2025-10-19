@@ -71,19 +71,10 @@ pub struct ThumbnailVm {
 impl From<WorkDetails> for WorkDetailsVm {
     fn from(w: WorkDetails) -> Self {
         let resolver = DirsSavePathResolver::default();
-        let thumbnail_path = if let Some(dmm) = w.dmm.as_ref() {
-            Some(resolver.thumbnail_alias_dmm_png_path(
-                &dmm.category,
-                &dmm.subcategory,
-                &dmm.store_id,
-            ))
-        } else if let Some(dlsite) = w.dlsite.as_ref() {
-            Some(resolver.thumbnail_alias_dlsite_png_path(&dlsite.category, &dlsite.store_id))
-        } else if let Some(collection_element_id) = w.collection_element_id.as_ref() {
-            Some(resolver.thumbnail_png_path(collection_element_id.value))
-        } else {
-            None
-        };
+        let thumbnail_path = w
+            .collection_element_id
+            .as_ref()
+            .map(|id| resolver.thumbnail_png_path(id.value));
         WorkDetailsVm {
             id: w.work.id.value,
             title: w.work.title,
