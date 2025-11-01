@@ -24,7 +24,7 @@ CREATE TABLE IF NOT EXISTS erogamescape_information (
     updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
--- 3) 既存データを collection_element_* からバックフィル
+-- 3) 既存データを V1 由来テーブルからバックフィル（V3 正規化は不実施）
 -- 3a) マップ
 INSERT OR IGNORE INTO work_erogamescape_map (work_id, erogamescape_id, created_at, updated_at)
 SELECT m.work_id, e.erogamescape_id, e.created_at, e.updated_at
@@ -35,8 +35,8 @@ JOIN collection_element_erogamescape_map e ON e.collection_element_id = m.collec
 INSERT OR IGNORE INTO erogamescape_information (
     id, gamename_ruby, sellday, is_nukige, brandname, brandname_ruby, created_at, updated_at
 )
-SELECT e.erogamescape_id, i.gamename_ruby, i.sellday, i.is_nukige, i.brandname, i.brandname_ruby,
-       COALESCE(i.created_at, CURRENT_TIMESTAMP), COALESCE(i.updated_at, CURRENT_TIMESTAMP)
+SELECT e.erogamescape_id, d.gamename_ruby, d.sellday, d.is_nukige, d.brandname, d.brandname_ruby,
+       CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
 FROM work_collection_elements m
 JOIN collection_element_erogamescape_map e ON e.collection_element_id = m.collection_element_id
-JOIN collection_element_info_by_erogamescape i ON i.collection_element_id = m.collection_element_id;
+JOIN collection_element_details d ON d.collection_element_id = m.collection_element_id;

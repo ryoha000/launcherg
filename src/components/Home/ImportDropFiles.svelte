@@ -1,9 +1,10 @@
 <script lang='ts'>
+  import type { WorkPathInput } from '@/lib/command'
   import type { AllGameCacheOne } from '@/lib/types'
   import { onDestroy, onMount } from 'svelte'
   import { useFileDrop } from '@/components/Home/fileDrop.svelte'
   import ImportManually from '@/components/Sidebar/ImportManually.svelte'
-  import { commandUpsertCollectionElement } from '@/lib/command'
+  import { commandRegisterWorkFromPath } from '@/lib/command'
   import { registerCollectionElementDetails } from '@/lib/registerCollectionElementDetails'
   import { showInfoToast } from '@/lib/toast'
   import { sidebarCollectionElements } from '@/store/sidebarCollectionElements'
@@ -23,7 +24,14 @@
     lnkPath: string | null,
     gameCache: AllGameCacheOne,
   ) => {
-    await commandUpsertCollectionElement({ exePath, lnkPath, gameCache })
+    let path: WorkPathInput
+    if (exePath) {
+      path = { type: 'exe', exePath }
+    }
+    else {
+      path = { type: 'lnk', lnkPath: lnkPath as string }
+    }
+    await commandRegisterWorkFromPath({ path, gameCache })
     await registerCollectionElementDetails()
     await sidebarCollectionElements.refetch()
     showInfoToast(`${gameCache.gamename}を登録しました。`)

@@ -3,7 +3,6 @@ use tauri::async_runtime::Mutex;
 
 #[derive(Clone)]
 pub struct TestRepositories {
-    pub collection: Arc<Mutex<crate::repository::collection::MockCollectionRepository>>,
     pub explored_cache: Arc<Mutex<crate::repository::explored_cache::MockExploredCacheRepository>>,
     pub all_game_cache: Arc<Mutex<crate::repository::all_game_cache::MockAllGameCacheRepository>>,
     pub image_queue: Arc<Mutex<crate::repository::save_image_queue::MockImageSaveQueueRepository>>,
@@ -25,7 +24,6 @@ pub struct TestRepositories {
 impl Default for TestRepositories {
     fn default() -> Self {
         Self {
-            collection: Arc::new(Mutex::new(Default::default())),
             explored_cache: Arc::new(Mutex::new(Default::default())),
             all_game_cache: Arc::new(Mutex::new(Default::default())),
             image_queue: Arc::new(Mutex::new(Default::default())),
@@ -55,7 +53,6 @@ impl crate::repository::RepositoriesExt for TestRepositories {
     type WorkOmitRepo = TestRepositories;
     type WorkParentPacksRepo = TestRepositories;
     type DmmPackRepo = TestRepositories;
-    type CollectionRepo = TestRepositories;
     type ErogamescapeRepo = TestRepositories;
     type WorkDownloadPathRepo = TestRepositories;
     type WorkLnkRepo = TestRepositories;
@@ -88,9 +85,6 @@ impl crate::repository::RepositoriesExt for TestRepositories {
         self.clone()
     }
     fn dmm_pack(&self) -> Self::DmmPackRepo {
-        self.clone()
-    }
-    fn collection(&self) -> Self::CollectionRepo {
         self.clone()
     }
     fn erogamescape(&self) -> Self::ErogamescapeRepo {
@@ -126,16 +120,6 @@ impl crate::repository::works::WorkRepository for TestRepositories {
     ) -> anyhow::Result<Option<crate::works::WorkDetails>> {
         self.work.lock().await.find_details_by_work_id(work_id).await
     }
-    async fn find_details_by_collection_element_id(
-        &mut self,
-        collection_element_id: crate::Id<crate::collection::CollectionElement>,
-    ) -> anyhow::Result<Option<crate::works::WorkDetails>> {
-        self.work
-            .lock()
-            .await
-            .find_details_by_collection_element_id(collection_element_id)
-            .await
-    }
     async fn find_work_ids_by_erogamescape_ids(
         &mut self,
         erogamescape_ids: &[i32],
@@ -146,33 +130,50 @@ impl crate::repository::works::WorkRepository for TestRepositories {
             .find_work_ids_by_erogamescape_ids(erogamescape_ids)
             .await
     }
-    async fn upsert_info_by_erogamescape(
+    async fn upsert_erogamescape_map(
         &mut self,
         work_id: crate::Id<crate::works::Work>,
         erogamescape_id: i32,
-        gamename_ruby: &str,
-        brandname: &str,
-        brandname_ruby: &str,
-        sellday: &str,
-        is_nukige: bool,
     ) -> anyhow::Result<()> {
         self.work
             .lock()
             .await
-            .upsert_info_by_erogamescape(
-                work_id,
-                erogamescape_id,
-                gamename_ruby,
-                brandname,
-                brandname_ruby,
-                sellday,
-                is_nukige,
-            )
+            .upsert_erogamescape_map(work_id, erogamescape_id)
             .await
     }
 
     async fn delete(&mut self, id: crate::Id<crate::works::Work>) -> anyhow::Result<()> {
         self.work.lock().await.delete(id).await
+    }
+
+    async fn list_work_ids_missing_thumbnail_size(
+        &mut self,
+    ) -> anyhow::Result<Vec<crate::Id<crate::works::Work>>> {
+        self.work.lock().await.list_work_ids_missing_thumbnail_size().await
+    }
+
+    async fn upsert_work_thumbnail_size(
+        &mut self,
+        work_id: crate::Id<crate::works::Work>,
+        width: i32,
+        height: i32,
+    ) -> anyhow::Result<()> {
+        self.work
+            .lock()
+            .await
+            .upsert_work_thumbnail_size(work_id, width, height)
+            .await
+    }
+    async fn update_last_play_at_by_work_id(
+        &mut self,
+        work_id: crate::Id<crate::works::Work>,
+        last_play_at: chrono::DateTime<chrono::Local>,
+    ) -> anyhow::Result<()> {
+        self.work
+            .lock()
+            .await
+            .update_last_play_at_by_work_id(work_id, last_play_at)
+            .await
     }
 }
 
@@ -316,261 +317,6 @@ impl crate::repository::explored_cache::ExploredCacheRepository for TestReposito
     }
     async fn add(&mut self, adding: crate::explored_cache::ExploredCache) -> anyhow::Result<()> {
         self.explored_cache.lock().await.add(adding).await
-    }
-}
-
-impl crate::repository::collection::CollectionRepository for TestRepositories {
-    async fn get_all_elements(
-        &mut self,
-    ) -> anyhow::Result<Vec<crate::collection::CollectionElement>> {
-        self.collection.lock().await.get_all_elements().await
-    }
-    async fn get_element_by_element_id(
-        &mut self,
-        id: &crate::Id<crate::collection::CollectionElement>,
-    ) -> anyhow::Result<Option<crate::collection::CollectionElement>> {
-        self.collection
-            .lock()
-            .await
-            .get_element_by_element_id(id)
-            .await
-    }
-    async fn upsert_collection_element(
-        &mut self,
-        new_element: &crate::collection::NewCollectionElement,
-    ) -> anyhow::Result<()> {
-        self.collection
-            .lock()
-            .await
-            .upsert_collection_element(new_element)
-            .await
-    }
-    async fn update_collection_element_gamename_by_id(
-        &mut self,
-        id: &crate::Id<crate::collection::CollectionElement>,
-        gamename: &str,
-    ) -> anyhow::Result<()> {
-        self.collection
-            .lock()
-            .await
-            .update_collection_element_gamename_by_id(id, gamename)
-            .await
-    }
-    async fn upsert_collection_element_paths(
-        &mut self,
-        paths: &crate::collection::NewCollectionElementPaths,
-    ) -> anyhow::Result<()> {
-        self.collection
-            .lock()
-            .await
-            .upsert_collection_element_paths(paths)
-            .await
-    }
-    async fn get_element_paths_by_element_id(
-        &mut self,
-        id: &crate::Id<crate::collection::CollectionElement>,
-    ) -> anyhow::Result<Option<crate::collection::CollectionElementPaths>> {
-        self.collection
-            .lock()
-            .await
-            .get_element_paths_by_element_id(id)
-            .await
-    }
-    async fn upsert_collection_element_install(
-        &mut self,
-        install: &crate::collection::NewCollectionElementInstall,
-    ) -> anyhow::Result<()> {
-        self.collection
-            .lock()
-            .await
-            .upsert_collection_element_install(install)
-            .await
-    }
-    async fn get_element_install_by_element_id(
-        &mut self,
-        id: &crate::Id<crate::collection::CollectionElement>,
-    ) -> anyhow::Result<Option<crate::collection::CollectionElementInstall>> {
-        self.collection
-            .lock()
-            .await
-            .get_element_install_by_element_id(id)
-            .await
-    }
-    async fn upsert_collection_element_play(
-        &mut self,
-        play: &crate::collection::NewCollectionElementPlay,
-    ) -> anyhow::Result<()> {
-        self.collection
-            .lock()
-            .await
-            .upsert_collection_element_play(play)
-            .await
-    }
-    async fn get_element_play_by_element_id(
-        &mut self,
-        id: &crate::Id<crate::collection::CollectionElement>,
-    ) -> anyhow::Result<Option<crate::collection::CollectionElementPlay>> {
-        self.collection
-            .lock()
-            .await
-            .get_element_play_by_element_id(id)
-            .await
-    }
-    async fn update_element_last_play_at_by_id(
-        &mut self,
-        id: &crate::Id<crate::collection::CollectionElement>,
-        last_play_at: chrono::DateTime<chrono::Local>,
-    ) -> anyhow::Result<()> {
-        self.collection
-            .lock()
-            .await
-            .update_element_last_play_at_by_id(id, last_play_at)
-            .await
-    }
-    // いいね関連APIは廃止（work_likesへ移行）
-    async fn upsert_collection_element_thumbnail(
-        &mut self,
-        thumbnail: &crate::collection::NewCollectionElementThumbnail,
-    ) -> anyhow::Result<()> {
-        self.collection
-            .lock()
-            .await
-            .upsert_collection_element_thumbnail(thumbnail)
-            .await
-    }
-    async fn get_element_thumbnail_by_element_id(
-        &mut self,
-        id: &crate::Id<crate::collection::CollectionElement>,
-    ) -> anyhow::Result<Option<crate::collection::CollectionElementThumbnail>> {
-        self.collection
-            .lock()
-            .await
-            .get_element_thumbnail_by_element_id(id)
-            .await
-    }
-    async fn upsert_collection_element_thumbnail_size(
-        &mut self,
-        id: &crate::Id<crate::collection::CollectionElement>,
-        width: i32,
-        height: i32,
-    ) -> anyhow::Result<()> {
-        self.collection
-            .lock()
-            .await
-            .upsert_collection_element_thumbnail_size(id, width, height)
-            .await
-    }
-    async fn get_null_thumbnail_size_element_ids(
-        &mut self,
-    ) -> anyhow::Result<Vec<crate::Id<crate::collection::CollectionElement>>> {
-        self.collection
-            .lock()
-            .await
-            .get_null_thumbnail_size_element_ids()
-            .await
-    }
-    async fn get_collection_id_by_erogamescape_id(
-        &mut self,
-        erogamescape_id: i32,
-    ) -> anyhow::Result<Option<crate::Id<crate::collection::CollectionElement>>> {
-        self.collection
-            .lock()
-            .await
-            .get_collection_id_by_erogamescape_id(erogamescape_id)
-            .await
-    }
-    async fn get_collection_ids_by_erogamescape_ids(
-        &mut self,
-        erogamescape_ids: &[i32],
-    ) -> anyhow::Result<Vec<(i32, crate::Id<crate::collection::CollectionElement>)>> {
-        self.collection
-            .lock()
-            .await
-            .get_collection_ids_by_erogamescape_ids(erogamescape_ids)
-            .await
-    }
-    async fn get_collection_ids_by_work_ids(
-        &mut self,
-        work_ids: &[crate::Id<crate::works::Work>],
-    ) -> anyhow::Result<
-        Vec<(
-            crate::Id<crate::works::Work>,
-            crate::Id<crate::collection::CollectionElement>,
-        )>,
-    > {
-        self.collection
-            .lock()
-            .await
-            .get_collection_ids_by_work_ids(work_ids)
-            .await
-    }
-    async fn upsert_work_mapping(
-        &mut self,
-        collection_element_id: &crate::Id<crate::collection::CollectionElement>,
-        work_id: crate::Id<crate::works::Work>,
-    ) -> anyhow::Result<()> {
-        self.collection
-            .lock()
-            .await
-            .upsert_work_mapping(collection_element_id, work_id)
-            .await
-    }
-    async fn insert_work_mapping(
-        &mut self,
-        collection_element_id: &crate::Id<crate::collection::CollectionElement>,
-        work_id: crate::Id<crate::works::Work>,
-    ) -> anyhow::Result<()> {
-        self.collection
-            .lock()
-            .await
-            .insert_work_mapping(collection_element_id, work_id)
-            .await
-    }
-    async fn get_work_ids_by_collection_ids(
-        &mut self,
-        collection_element_ids: &[crate::Id<crate::collection::CollectionElement>],
-    ) -> anyhow::Result<
-        Vec<(
-            crate::Id<crate::collection::CollectionElement>,
-            crate::Id<crate::works::Work>,
-        )>,
-    > {
-        self.collection
-            .lock()
-            .await
-            .get_work_ids_by_collection_ids(collection_element_ids)
-            .await
-    }
-    async fn get_element_erogamescape_by_element_id(
-        &mut self,
-        id: &crate::Id<crate::collection::CollectionElement>,
-    ) -> anyhow::Result<Option<crate::collection::CollectionElementErogamescape>> {
-        self.collection
-            .lock()
-            .await
-            .get_element_erogamescape_by_element_id(id)
-            .await
-    }
-    async fn upsert_erogamescape_map(
-        &mut self,
-        collection_element_id: &crate::Id<crate::collection::CollectionElement>,
-        erogamescape_id: i32,
-    ) -> anyhow::Result<()> {
-        self.collection
-            .lock()
-            .await
-            .upsert_erogamescape_map(collection_element_id, erogamescape_id)
-            .await
-    }
-    async fn allocate_new_collection_element_id(
-        &mut self,
-        gamename: &str,
-    ) -> anyhow::Result<crate::Id<crate::collection::CollectionElement>> {
-        self.collection
-            .lock()
-            .await
-            .allocate_new_collection_element_id(gamename)
-            .await
     }
 }
 

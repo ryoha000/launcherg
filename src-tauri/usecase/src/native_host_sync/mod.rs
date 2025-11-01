@@ -3,15 +3,13 @@
 //! - EGS 情報があれば名称/詳細も upsert し、EGS マップを作成/更新する
 
 use derive_new::new;
-use domain::repository::save_image_queue::ImageSaveQueueRepository;
 use domain::repository::work_omit::WorkOmitRepository;
 use domain::repository::works::WorkRepository;
 use domain::repository::works::{DlsiteWorkRepository, DmmWorkRepository};
 use domain::repository::{
-    collection::CollectionRepository, manager::RepositoryManager,
+    manager::RepositoryManager,
     work_parent_packs::WorkParentPacksRepository, RepositoriesExt,
 };
-use domain::save_image_queue::{ImagePreprocess, ImageSrcType};
 use domain::service::save_path_resolver::SavePathResolver;
 use std::marker::PhantomData;
 use std::sync::Arc;

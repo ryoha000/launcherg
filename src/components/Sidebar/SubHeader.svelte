@@ -1,11 +1,12 @@
 <script lang='ts'>
+  import type { WorkPathInput } from '@/lib/command'
   import type { AllGameCacheOne } from '@/lib/types'
   import ImportAutomatically from '@/components/Sidebar/ImportAutomatically.svelte'
   import ImportManually from '@/components/Sidebar/ImportManually.svelte'
   import ImportPopover from '@/components/Sidebar/ImportPopover.svelte'
   import APopover from '@/components/UI/APopover.svelte'
   import Button from '@/components/UI/Button.svelte'
-  import { commandUpsertCollectionElement } from '@/lib/command'
+  import { commandRegisterWorkFromPath } from '@/lib/command'
   import { registerCollectionElementDetails } from '@/lib/registerCollectionElementDetails'
   import { showInfoToast } from '@/lib/toast'
   import { sidebarCollectionElements } from '@/store/sidebarCollectionElements'
@@ -18,7 +19,14 @@
     lnkPath: string | null,
     gameCache: AllGameCacheOne,
   ) => {
-    await commandUpsertCollectionElement({ exePath, lnkPath, gameCache })
+    let path: WorkPathInput
+    if (exePath) {
+      path = { type: 'exe', exePath }
+    }
+    else {
+      path = { type: 'lnk', lnkPath: lnkPath as string }
+    }
+    await commandRegisterWorkFromPath({ path, gameCache })
     await registerCollectionElementDetails()
     await sidebarCollectionElements.refetch()
     isOpenImportManually = false

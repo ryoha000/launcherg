@@ -54,13 +54,10 @@ mod tests {
 
         let repos = TestRepositories::default();
         {
-            let mut coll = repos.collection.lock().await;
-            coll.expect_get_collection_ids_by_erogamescape_ids()
-                .returning(|_| Box::pin(async { Ok::<_, anyhow::Error>(Vec::new()) }));
-            coll.expect_get_work_ids_by_collection_ids()
-                .returning(|_| Box::pin(async { Ok::<_, anyhow::Error>(Vec::new()) }));
-            coll.expect_get_null_thumbnail_size_element_ids()
-                .returning(|| Box::pin(async move { Ok::<_, anyhow::Error>(vec![]) }));
+            let mut work = repos.work.lock().await;
+            work.expect_list_work_ids_missing_thumbnail_size()
+                .times(0..)
+                .returning(|| Box::pin(async { Ok::<_, anyhow::Error>(Vec::new()) }));
         }
         let manager = Arc::new(TestRepositoryManager::new(repos));
 
@@ -244,21 +241,10 @@ mod tests {
         let repos = TestRepositories::default();
         {
             let mut work = repos.work.lock().await;
+            work.expect_find_by_title()
+                .returning(|_| Box::pin(async { Ok(None) }));
             work.expect_upsert()
                 .returning(|_| Box::pin(async { Ok(domain::Id::new(100)) }));
-        }
-        {
-            let mut coll = repos.collection.lock().await;
-            coll.expect_get_collection_ids_by_erogamescape_ids()
-                .returning(|_| Box::pin(async { Ok::<_, anyhow::Error>(Vec::new()) }));
-            coll.expect_get_work_ids_by_collection_ids()
-                .returning(|_| Box::pin(async { Ok::<_, anyhow::Error>(Vec::new()) }));
-            coll.expect_allocate_new_collection_element_id()
-                .returning(|_| Box::pin(async { Ok::<_, anyhow::Error>(domain::Id::new(200)) }));
-            coll.expect_upsert_erogamescape_map()
-                .returning(|_, _| Box::pin(async { Ok::<_, anyhow::Error>(()) }));
-            coll.expect_insert_work_mapping()
-                .returning(|_, _| Box::pin(async { Ok::<_, anyhow::Error>(()) }));
         }
         {
             let mut agc = repos.all_game_cache.lock().await;
@@ -302,21 +288,10 @@ mod tests {
         let repos = TestRepositories::default();
         {
             let mut work = repos.work.lock().await;
+            work.expect_find_by_title()
+                .returning(|_| Box::pin(async { Ok(None) }));
             work.expect_upsert()
                 .returning(|_| Box::pin(async { Ok(domain::Id::new(100)) }));
-        }
-        {
-            let mut coll = repos.collection.lock().await;
-            coll.expect_get_collection_ids_by_erogamescape_ids()
-                .returning(|_| Box::pin(async { Ok::<_, anyhow::Error>(Vec::new()) }));
-            coll.expect_get_work_ids_by_collection_ids()
-                .returning(|_| Box::pin(async { Ok::<_, anyhow::Error>(Vec::new()) }));
-            coll.expect_allocate_new_collection_element_id()
-                .returning(|_| Box::pin(async { Ok::<_, anyhow::Error>(domain::Id::new(200)) }));
-            coll.expect_upsert_erogamescape_map()
-                .returning(|_, _| Box::pin(async { Ok::<_, anyhow::Error>(()) }));
-            coll.expect_insert_work_mapping()
-                .returning(|_, _| Box::pin(async { Ok::<_, anyhow::Error>(()) }));
         }
         {
             let mut agc = repos.all_game_cache.lock().await;
@@ -368,19 +343,10 @@ mod tests {
         let repos = TestRepositories::default();
         {
             let mut work = repos.work.lock().await;
+            work.expect_find_by_title()
+                .returning(|_| Box::pin(async { Ok(None) }));
             work.expect_upsert()
                 .returning(|_| Box::pin(async { Err(anyhow::anyhow!("fail")) }));
-        }
-        {
-            let mut coll = repos.collection.lock().await;
-            coll.expect_get_collection_ids_by_erogamescape_ids()
-                .returning(|_| Box::pin(async { Ok::<_, anyhow::Error>(Vec::new()) }));
-            coll.expect_get_work_ids_by_collection_ids()
-                .returning(|_| Box::pin(async { Ok::<_, anyhow::Error>(Vec::new()) }));
-            coll.expect_allocate_new_collection_element_id()
-                .returning(|_| Box::pin(async { Ok::<_, anyhow::Error>(domain::Id::new(200)) }));
-            coll.expect_upsert_erogamescape_map()
-                .returning(|_, _| Box::pin(async { Ok::<_, anyhow::Error>(()) }));
         }
         {
             let mut agc = repos.all_game_cache.lock().await;
@@ -447,30 +413,4 @@ mod tests {
             .unwrap();
     }
 
-    // backfill_thumbnail_sizes (empty)
-    #[tokio::test]
-    async fn backfill_thumbnail_sizes_空なら何もしない() {
-        let pubsub = MockPubSub::default();
-        let fs = Arc::new(MockFileSystem::new());
-        let extractor = Arc::new(MockMetadataExtractor::new());
-        let dedup = Arc::new(MockDuplicateResolver::new());
-        let repos = TestRepositories::default();
-        {
-            let mut coll = repos.collection.lock().await;
-            coll.expect_get_null_thumbnail_size_element_ids()
-                .returning(|| Box::pin(async { Ok::<_, anyhow::Error>(vec![]) }));
-        }
-        let manager = Arc::new(TestRepositoryManager::new(repos));
-        let linker = default_linker();
-        let uc: WorkPipelineUseCase<_, _, _, _, _, _, _> = WorkPipelineUseCase::new(
-            manager,
-            pubsub,
-            fs,
-            extractor,
-            dedup,
-            Arc::new(domain::service::save_path_resolver::DirsSavePathResolver::default()),
-            linker,
-        );
-        let _ = uc.backfill_thumbnail_sizes().await.unwrap();
-    }
 }

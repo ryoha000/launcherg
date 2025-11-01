@@ -1,6 +1,8 @@
 use super::store::{PlanDecisionGeneric, StoreOps};
 use super::*;
-use std::collections::HashSet;
+use domain::repository::save_image_queue::ImageSaveQueueRepository as _;
+use domain::save_image_queue::{ImagePreprocess, ImageSrcType};
+use std::collections::{HashMap, HashSet};
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 struct DmmKey {
@@ -39,9 +41,6 @@ where
         }
         fn gamename(p: &DmmSyncGameParam) -> &str {
             &p.gamename
-        }
-        fn image_url(p: &DmmSyncGameParam) -> &str {
-            &p.image_url
         }
         fn egs(p: &DmmSyncGameParam) -> Option<&EgsInfo> {
             p.egs.as_ref()
@@ -93,65 +92,26 @@ where
                 Ok(())
             })
         }
-        fn enqueue_images_with_repos<'a, Rx: RepositoriesExt + Send + Sync + 'static>(
-            repos: &'a Rx,
-            resolver: &'a dyn SavePathResolver,
-            ceid: &'a domain::Id<domain::collection::CollectionElement>,
-            _key: &'a DmmKey,
-            image_url: &'a str,
-        ) -> futures::future::BoxFuture<'a, anyhow::Result<()>> {
-            Box::pin(async move {
-                if image_url.is_empty() {
-                    return Ok(());
-                }
-                let icon_dst = resolver.icon_png_path(ceid.value);
-                {
-                    let mut repo = repos.image_queue();
-                    let _ = repo
-                        .enqueue(
-                            image_url,
-                            ImageSrcType::Url,
-                            &icon_dst,
-                            ImagePreprocess::ResizeAndCropSquare256,
-                        )
-                        .await;
-                }
-                let normalized = normalize_thumbnail_url(image_url);
-                let thumb_dst = resolver.thumbnail_png_path(ceid.value);
-                {
-                    let mut repo = repos.image_queue();
-                    let _ = repo
-                        .enqueue(
-                            &normalized,
-                            ImageSrcType::Url,
-                            &thumb_dst,
-                            ImagePreprocess::ResizeForWidth400,
-                        )
-                        .await;
-                }
-                Ok(())
-            })
-        }
 
         let ops: StoreOps<DmmSyncGameParam, DmmKey, R> = StoreOps {
             key_from_param,
             gamename,
-            image_url,
             egs,
             parent_pack_work_id,
             find_work_id_by_key: find_work_id_by_key::<R>,
             upsert_store_mapping: upsert_store_mapping::<R>,
-            enqueue_images_with_repos: enqueue_images_with_repos::<R>,
             link_parent_pack_if_needed: link_parent_pack_if_needed::<R>,
         };
 
-        // key でユニーク化
+        // key でユニーク化し、同時に key→image_url のマップを構築
         let mut seen: HashSet<DmmKey> = HashSet::new();
         let mut unique_games: Vec<DmmSyncGameParam> = Vec::with_capacity(games.len());
+        let mut image_url_by_key: HashMap<DmmKey, String> = HashMap::new();
         for g in games.into_iter() {
             let k = DmmKey::from_param(&g);
-            if seen.insert(k) {
-                unique_games.push(g);
+            if seen.insert(k.clone()) {
+                unique_games.push(g.clone());
+                image_url_by_key.insert(k, g.image_url.clone());
             }
         }
 
@@ -166,23 +126,51 @@ where
                 let plans = plans.clone();
                 let resolver = resolver.clone();
                 let ops = ops;
+                let image_url_by_key = image_url_by_key.clone();
                 Box::pin(async move {
                     let mut new_work_count: u32 = 0;
                     for plan in plans.into_iter() {
                         match plan {
                             PlanDecisionGeneric::SkipExists | PlanDecisionGeneric::SkipOmitted => {}
                             PlanDecisionGeneric::Apply(apply) => {
-                                let is_new_work = apply.work_id_by_key.is_none()
+                                let was_new = apply.work_id_by_key.is_none()
                                     && apply.work_id_by_erogamescape.is_none();
+                                let key = apply.key.clone();
                                 Self::execute_apply_with_repos_generic(
                                     &repos,
                                     apply,
-                                    resolver.as_ref(),
                                     &ops,
                                 )
                                 .await?;
-                                if is_new_work {
+                                if was_new {
                                     new_work_count += 1;
+                                    // 新規 Work 作成時のみ画像キューへ投入
+                                    if let Some(work_id) = (ops.find_work_id_by_key)(&repos, &key).await? {
+                                        if let Some(image_url) = image_url_by_key.get(&key) {
+                                            if !image_url.is_empty() {
+                                                let icon_dst = resolver.icon_png_path(work_id.value);
+                                                let mut repo = repos.image_queue();
+                                                let _ = repo
+                                                    .enqueue(
+                                                        image_url,
+                                                        ImageSrcType::Url,
+                                                        &icon_dst,
+                                                        ImagePreprocess::ResizeAndCropSquare256,
+                                                    )
+                                                    .await;
+                                                let normalized = normalize_thumbnail_url(image_url);
+                                                let thumb_dst = resolver.thumbnail_png_path(work_id.value);
+                                                let _ = repo
+                                                    .enqueue(
+                                                        &normalized,
+                                                        ImageSrcType::Url,
+                                                        &thumb_dst,
+                                                        ImagePreprocess::ResizeForWidth400,
+                                                    )
+                                                    .await;
+                                            }
+                                        }
+                                    }
                                 }
                             }
                         }

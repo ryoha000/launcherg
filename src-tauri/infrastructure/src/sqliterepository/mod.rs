@@ -1,5 +1,4 @@
 pub mod all_game_cache;
-pub mod collection;
 pub mod dmm_work_pack;
 pub mod driver;
 pub mod erogamescape;

@@ -9,7 +9,6 @@ pub struct WorkDetailsVm {
     pub title: String,
     pub dmm: Option<DmmSideVm>,
     pub dlsite: Option<DlsiteSideVm>,
-    pub collection_element_id: Option<i32>,
     pub erogamescape_id: Option<i32>,
     pub erogamescape_information: Option<ErogamescapeInformationVm>,
     pub is_omitted: bool,
@@ -71,10 +70,7 @@ pub struct ThumbnailVm {
 impl From<WorkDetails> for WorkDetailsVm {
     fn from(w: WorkDetails) -> Self {
         let resolver = DirsSavePathResolver::default();
-        let thumbnail_path = w
-            .collection_element_id
-            .as_ref()
-            .map(|id| resolver.thumbnail_png_path(id.value));
+        let thumbnail_path = Some(resolver.thumbnail_png_path(w.work.id.value));
         WorkDetailsVm {
             id: w.work.id.value,
             title: w.work.title,
@@ -92,8 +88,7 @@ impl From<WorkDetails> for WorkDetailsVm {
                 category: d.category,
                 is_omitted: false,
             }),
-            collection_element_id: w.collection_element_id.map(|v| v.value),
-            erogamescape_id: w.erogamescape.as_ref().map(|e| e.erogamescape_id),
+            erogamescape_id: w.erogamescape_id,
             erogamescape_information: w.erogamescape_information.map(|i| ErogamescapeInformationVm {
                 gamename_ruby: i.gamename_ruby,
                 brandname: i.brandname,

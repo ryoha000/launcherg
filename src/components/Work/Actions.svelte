@@ -1,5 +1,5 @@
 <script lang='ts'>
-  import type { WorkDetailsVm } from '@/lib/command'
+  import type { WorkDetailsVm, WorkPathInput } from '@/lib/command'
   import type { AllGameCacheOne } from '@/lib/types'
   import { goto } from '@mateothegreat/svelte5-router'
   import ImportManually from '@/components/Sidebar/ImportManually.svelte'
@@ -16,10 +16,10 @@
     commandDeleteWork,
     commandGetWorkPaths,
     commandOpenFolder,
+    commandRegisterWorkFromPath,
     commandUpdateWorkLike,
-    commandUpsertCollectionElement,
-
   } from '@/lib/command'
+
   import { registerCollectionElementDetails } from '@/lib/registerCollectionElementDetails'
   import { sidebarCollectionElements } from '@/store/sidebarCollectionElements'
   import { deleteTab, selected, tabs } from '@/store/tabs'
@@ -57,7 +57,14 @@
     if (isChangedGame) {
       await commandDeleteWork(workDetail.id)
     }
-    await commandUpsertCollectionElement({ exePath, lnkPath, gameCache })
+    let path: WorkPathInput
+    if (exePath) {
+      path = { type: 'exe', exePath }
+    }
+    else {
+      path = { type: 'lnk', lnkPath: lnkPath as string }
+    }
+    await commandRegisterWorkFromPath({ path, gameCache })
     await registerCollectionElementDetails()
     await sidebarCollectionElements.refetch()
     if (isChangedGame) {

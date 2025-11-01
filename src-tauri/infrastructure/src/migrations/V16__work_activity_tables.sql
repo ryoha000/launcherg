@@ -46,29 +46,33 @@ CREATE TABLE IF NOT EXISTS work_thumbnails (
 );
 CREATE INDEX IF NOT EXISTS idx_work_thumbnails_work_id ON work_thumbnails(work_id);
 
--- 2) バックフィル: CE 由来データを CE-Work マッピング経由で移送
+-- 2) バックフィル: V1のcollection_elementsから直接移送（V3正規化は不実施）
 -- installs
 INSERT OR IGNORE INTO work_installs (work_id, install_at, created_at, updated_at)
-SELECT m.work_id, ci.install_at, ci.created_at, ci.updated_at
+SELECT m.work_id, ce.install_at, ce.created_at, ce.updated_at
 FROM work_collection_elements m
-JOIN collection_element_installs ci ON ci.collection_element_id = m.collection_element_id;
+JOIN collection_elements ce ON ce.id = m.collection_element_id
+WHERE ce.install_at IS NOT NULL;
 
 -- plays
 INSERT OR IGNORE INTO work_plays (work_id, last_play_at, created_at, updated_at)
-SELECT m.work_id, cp.last_play_at, cp.created_at, cp.updated_at
+SELECT m.work_id, ce.last_play_at, ce.created_at, ce.updated_at
 FROM work_collection_elements m
-JOIN collection_element_plays cp ON cp.collection_element_id = m.collection_element_id;
+JOIN collection_elements ce ON ce.id = m.collection_element_id
+WHERE ce.last_play_at IS NOT NULL;
 
 -- likes
 INSERT OR IGNORE INTO work_likes (work_id, like_at, created_at, updated_at)
-SELECT m.work_id, cl.like_at, cl.created_at, cl.updated_at
+SELECT m.work_id, ce.like_at, ce.created_at, ce.updated_at
 FROM work_collection_elements m
-JOIN collection_element_likes cl ON cl.collection_element_id = m.collection_element_id;
+JOIN collection_elements ce ON ce.id = m.collection_element_id
+WHERE ce.like_at IS NOT NULL;
 
 -- thumbnails
 INSERT OR IGNORE INTO work_thumbnails (work_id, thumbnail_width, thumbnail_height, created_at, updated_at)
-SELECT m.work_id, ct.thumbnail_width, ct.thumbnail_height, ct.created_at, ct.updated_at
+SELECT m.work_id, ce.thumbnail_width, ce.thumbnail_height, ce.created_at, ce.updated_at
 FROM work_collection_elements m
-JOIN collection_element_thumbnails ct ON ct.collection_element_id = m.collection_element_id;
+JOIN collection_elements ce ON ce.id = m.collection_element_id
+WHERE ce.thumbnail_width IS NOT NULL OR ce.thumbnail_height IS NOT NULL;
 
 

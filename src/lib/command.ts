@@ -50,19 +50,15 @@ export async function commandUploadImage(id: number, base64Image: string) {
   })
 }
 
-export async function commandUpsertCollectionElement(arg: {
-  exePath: string | null
-  lnkPath: string | null
+export type WorkPathInput
+  = | { type: 'exe', exePath: string }
+    | { type: 'lnk', lnkPath: string }
+
+export async function commandRegisterWorkFromPath(arg: {
+  path: WorkPathInput
   gameCache: AllGameCacheOne
 }) {
-  return await invoke<void>('upsert_collection_element', arg)
-}
-
-export async function commandUpdateCollectionElementIcon(id: number, path: string) {
-  return await invoke<void>('update_collection_element_icon', {
-    id,
-    path,
-  })
+  return await invoke<void>('register_work_from_path', arg)
 }
 
 export async function commandGetDefaultImportDirs() {
@@ -319,13 +315,9 @@ export async function commandWorkOmitAll() {
 }
 
 // WorkDetails
-export interface WorkDetailsVm { id: number, title: string, dmm?: { id: number, storeId: string, category: string, subcategory: string }, dlsite?: { id: number, storeId: string, category: string }, collectionElementId?: number | null, erogamescapeId?: number | null, erogamescapeInformation?: { gamenameRuby: string, brandname: string, brandnameRuby: string, sellday: string, isNukige: boolean }, isOmitted: boolean, isDmmPack: boolean, thumbnail?: { path: string, width?: number, height?: number } | null, latestDownloadPath?: { id: number, workId: number, downloadPath: string } | null, likeAt?: string | null, installAt?: string | null, lastPlayAt?: string | null, registeredAt?: string | null }
+export interface WorkDetailsVm { id: number, title: string, dmm?: { id: number, storeId: string, category: string, subcategory: string }, dlsite?: { id: number, storeId: string, category: string }, erogamescapeId?: number | null, erogamescapeInformation?: { gamenameRuby: string, brandname: string, brandnameRuby: string, sellday: string, isNukige: boolean }, isOmitted: boolean, isDmmPack: boolean, thumbnail?: { path: string, width?: number, height?: number } | null, latestDownloadPath?: { id: number, workId: number, downloadPath: string } | null, likeAt?: string | null, installAt?: string | null, lastPlayAt?: string | null, registeredAt?: string | null }
 export async function commandGetWorkDetailsAll() {
   return await invoke<WorkDetailsVm[]>('get_work_details_all')
-}
-
-export async function commandGetWorkDetailsByCollectionElement(collectionElementId: number) {
-  return await invoke<WorkDetailsVm | null>('get_work_details_by_collection_element', { collectionElementId })
 }
 
 export async function commandGetWorkDetailsByWorkId(workId: number) {

@@ -6,7 +6,6 @@ mockall::mock! {
     pub RepositoriesExtMock {}
 
     impl domain::repository::RepositoriesExt for RepositoriesExtMock {
-        type CollectionRepo = domain::repository::collection::MockCollectionRepository;
         type ExploredCacheRepo = domain::repository::explored_cache::MockExploredCacheRepository;
         type AllGameCacheRepo = domain::repository::all_game_cache::MockAllGameCacheRepository;
         type ImageQueueRepo = domain::repository::save_image_queue::MockImageSaveQueueRepository;
@@ -31,7 +30,7 @@ mockall::mock! {
         fn work_omit(&self) -> domain::repository::work_omit::MockWorkOmitRepository;
         fn work_parent_packs(&self) -> domain::repository::work_parent_packs::MockWorkParentPacksRepository;
         fn dmm_pack(&self) -> domain::repository::dmm_work_pack::MockDmmPackRepository;
-        fn collection(&self) -> domain::repository::collection::MockCollectionRepository;
+        // 廃止: fn collection(&self) -> domain::repository::collection::MockCollectionRepository;
         fn work_download_path(&self) -> domain::repository::work_download_path::MockWorkDownloadPathRepository;
         fn work_lnk(&self) -> domain::repository::work_lnk::MockWorkLnkRepository;
         fn work_like(&self) -> domain::repository::work_like::MockWorkLikeRepository;
@@ -42,7 +41,6 @@ mockall::mock! {
 #[cfg(test)]
 #[derive(Clone)]
 pub struct TestRepositories {
-    pub collection: Arc<Mutex<domain::repository::collection::MockCollectionRepository>>,
     pub explored_cache: Arc<Mutex<domain::repository::explored_cache::MockExploredCacheRepository>>,
     pub all_game_cache: Arc<Mutex<domain::repository::all_game_cache::MockAllGameCacheRepository>>,
     pub image_queue: Arc<Mutex<domain::repository::save_image_queue::MockImageSaveQueueRepository>>,
@@ -65,7 +63,6 @@ pub struct TestRepositories {
 impl Default for TestRepositories {
     fn default() -> Self {
         Self {
-            collection: Arc::new(Mutex::new(Default::default())),
             explored_cache: Arc::new(Mutex::new(Default::default())),
             all_game_cache: Arc::new(Mutex::new(Default::default())),
             image_queue: Arc::new(Mutex::new(Default::default())),
@@ -96,7 +93,6 @@ impl domain::repository::RepositoriesExt for TestRepositories {
     type WorkOmitRepo = TestRepositories;
     type WorkParentPacksRepo = TestRepositories;
     type DmmPackRepo = TestRepositories;
-    type CollectionRepo = TestRepositories;
     type ErogamescapeRepo = TestRepositories;
     type WorkDownloadPathRepo = TestRepositories;
     type WorkLnkRepo = TestRepositories;
@@ -129,9 +125,6 @@ impl domain::repository::RepositoriesExt for TestRepositories {
         self.clone()
     }
     fn dmm_pack(&self) -> Self::DmmPackRepo {
-        self.clone()
-    }
-    fn collection(&self) -> Self::CollectionRepo {
         self.clone()
     }
     fn erogamescape(&self) -> Self::ErogamescapeRepo {
@@ -168,16 +161,6 @@ impl domain::repository::works::WorkRepository for TestRepositories {
     ) -> anyhow::Result<Option<domain::works::WorkDetails>> {
         self.work.lock().await.find_details_by_work_id(work_id).await
     }
-    async fn find_details_by_collection_element_id(
-        &mut self,
-        collection_element_id: domain::Id<domain::collection::CollectionElement>,
-    ) -> anyhow::Result<Option<domain::works::WorkDetails>> {
-        self.work
-            .lock()
-            .await
-            .find_details_by_collection_element_id(collection_element_id)
-            .await
-    }
     async fn find_work_ids_by_erogamescape_ids(
         &mut self,
         erogamescape_ids: &[i32],
@@ -188,33 +171,51 @@ impl domain::repository::works::WorkRepository for TestRepositories {
             .find_work_ids_by_erogamescape_ids(erogamescape_ids)
             .await
     }
-    async fn upsert_info_by_erogamescape(
+    async fn upsert_erogamescape_map(
         &mut self,
         work_id: domain::Id<domain::works::Work>,
         erogamescape_id: i32,
-        gamename_ruby: &str,
-        brandname: &str,
-        brandname_ruby: &str,
-        sellday: &str,
-        is_nukige: bool,
     ) -> anyhow::Result<()> {
         self.work
             .lock()
             .await
-            .upsert_info_by_erogamescape(
-                work_id,
-                erogamescape_id,
-                gamename_ruby,
-                brandname,
-                brandname_ruby,
-                sellday,
-                is_nukige,
-            )
+            .upsert_erogamescape_map(work_id, erogamescape_id)
             .await
     }
 
     async fn delete(&mut self, id: domain::Id<domain::works::Work>) -> anyhow::Result<()> {
         self.work.lock().await.delete(id).await
+    }
+
+    async fn list_work_ids_missing_thumbnail_size(
+        &mut self,
+    ) -> anyhow::Result<Vec<domain::Id<domain::works::Work>>> {
+        self.work.lock().await.list_work_ids_missing_thumbnail_size().await
+    }
+
+    async fn upsert_work_thumbnail_size(
+        &mut self,
+        work_id: domain::Id<domain::works::Work>,
+        width: i32,
+        height: i32,
+    ) -> anyhow::Result<()> {
+        self.work
+            .lock()
+            .await
+            .upsert_work_thumbnail_size(work_id, width, height)
+            .await
+    }
+
+    async fn update_last_play_at_by_work_id(
+        &mut self,
+        work_id: domain::Id<domain::works::Work>,
+        last_play_at: chrono::DateTime<chrono::Local>,
+    ) -> anyhow::Result<()> {
+        self.work
+            .lock()
+            .await
+            .update_last_play_at_by_work_id(work_id, last_play_at)
+            .await
     }
 }
 
@@ -363,263 +364,6 @@ impl domain::repository::explored_cache::ExploredCacheRepository for TestReposit
     }
     async fn add(&mut self, adding: domain::explored_cache::ExploredCache) -> anyhow::Result<()> {
         self.explored_cache.lock().await.add(adding).await
-    }
-}
-
-#[cfg(test)]
-impl domain::repository::collection::CollectionRepository for TestRepositories {
-    async fn get_all_elements(
-        &mut self,
-    ) -> anyhow::Result<Vec<domain::collection::CollectionElement>> {
-        self.collection.lock().await.get_all_elements().await
-    }
-    async fn get_element_by_element_id(
-        &mut self,
-        id: &domain::Id<domain::collection::CollectionElement>,
-    ) -> anyhow::Result<Option<domain::collection::CollectionElement>> {
-        self.collection
-            .lock()
-            .await
-            .get_element_by_element_id(id)
-            .await
-    }
-    async fn upsert_collection_element(
-        &mut self,
-        new_element: &domain::collection::NewCollectionElement,
-    ) -> anyhow::Result<()> {
-        self.collection
-            .lock()
-            .await
-            .upsert_collection_element(new_element)
-            .await
-    }
-    async fn update_collection_element_gamename_by_id(
-        &mut self,
-        id: &domain::Id<domain::collection::CollectionElement>,
-        gamename: &str,
-    ) -> anyhow::Result<()> {
-        self.collection
-            .lock()
-            .await
-            .update_collection_element_gamename_by_id(id, gamename)
-            .await
-    }
-    // CE 詳細情報 API は廃止
-    async fn upsert_collection_element_paths(
-        &mut self,
-        paths: &domain::collection::NewCollectionElementPaths,
-    ) -> anyhow::Result<()> {
-        self.collection
-            .lock()
-            .await
-            .upsert_collection_element_paths(paths)
-            .await
-    }
-    async fn get_element_paths_by_element_id(
-        &mut self,
-        id: &domain::Id<domain::collection::CollectionElement>,
-    ) -> anyhow::Result<Option<domain::collection::CollectionElementPaths>> {
-        self.collection
-            .lock()
-            .await
-            .get_element_paths_by_element_id(id)
-            .await
-    }
-    async fn upsert_collection_element_install(
-        &mut self,
-        install: &domain::collection::NewCollectionElementInstall,
-    ) -> anyhow::Result<()> {
-        self.collection
-            .lock()
-            .await
-            .upsert_collection_element_install(install)
-            .await
-    }
-    async fn get_element_install_by_element_id(
-        &mut self,
-        id: &domain::Id<domain::collection::CollectionElement>,
-    ) -> anyhow::Result<Option<domain::collection::CollectionElementInstall>> {
-        self.collection
-            .lock()
-            .await
-            .get_element_install_by_element_id(id)
-            .await
-    }
-    async fn upsert_collection_element_play(
-        &mut self,
-        play: &domain::collection::NewCollectionElementPlay,
-    ) -> anyhow::Result<()> {
-        self.collection
-            .lock()
-            .await
-            .upsert_collection_element_play(play)
-            .await
-    }
-    async fn get_element_play_by_element_id(
-        &mut self,
-        id: &domain::Id<domain::collection::CollectionElement>,
-    ) -> anyhow::Result<Option<domain::collection::CollectionElementPlay>> {
-        self.collection
-            .lock()
-            .await
-            .get_element_play_by_element_id(id)
-            .await
-    }
-    async fn update_element_last_play_at_by_id(
-        &mut self,
-        id: &domain::Id<domain::collection::CollectionElement>,
-        last_play_at: chrono::DateTime<chrono::Local>,
-    ) -> anyhow::Result<()> {
-        self.collection
-            .lock()
-            .await
-            .update_element_last_play_at_by_id(id, last_play_at)
-            .await
-    }
-    // いいね関連APIは廃止（work_likesへ移行）
-    async fn upsert_collection_element_thumbnail(
-        &mut self,
-        thumbnail: &domain::collection::NewCollectionElementThumbnail,
-    ) -> anyhow::Result<()> {
-        self.collection
-            .lock()
-            .await
-            .upsert_collection_element_thumbnail(thumbnail)
-            .await
-    }
-    async fn get_element_thumbnail_by_element_id(
-        &mut self,
-        id: &domain::Id<domain::collection::CollectionElement>,
-    ) -> anyhow::Result<Option<domain::collection::CollectionElementThumbnail>> {
-        self.collection
-            .lock()
-            .await
-            .get_element_thumbnail_by_element_id(id)
-            .await
-    }
-    async fn upsert_collection_element_thumbnail_size(
-        &mut self,
-        id: &domain::Id<domain::collection::CollectionElement>,
-        width: i32,
-        height: i32,
-    ) -> anyhow::Result<()> {
-        self.collection
-            .lock()
-            .await
-            .upsert_collection_element_thumbnail_size(id, width, height)
-            .await
-    }
-    async fn get_null_thumbnail_size_element_ids(
-        &mut self,
-    ) -> anyhow::Result<Vec<domain::Id<domain::collection::CollectionElement>>> {
-        self.collection
-            .lock()
-            .await
-            .get_null_thumbnail_size_element_ids()
-            .await
-    }
-    async fn get_collection_id_by_erogamescape_id(
-        &mut self,
-        erogamescape_id: i32,
-    ) -> anyhow::Result<Option<domain::Id<domain::collection::CollectionElement>>> {
-        self.collection
-            .lock()
-            .await
-            .get_collection_id_by_erogamescape_id(erogamescape_id)
-            .await
-    }
-    async fn get_collection_ids_by_erogamescape_ids(
-        &mut self,
-        erogamescape_ids: &[i32],
-    ) -> anyhow::Result<Vec<(i32, domain::Id<domain::collection::CollectionElement>)>> {
-        self.collection
-            .lock()
-            .await
-            .get_collection_ids_by_erogamescape_ids(erogamescape_ids)
-            .await
-    }
-    async fn get_collection_ids_by_work_ids(
-        &mut self,
-        work_ids: &[domain::Id<domain::works::Work>],
-    ) -> anyhow::Result<
-        Vec<(
-            domain::Id<domain::works::Work>,
-            domain::Id<domain::collection::CollectionElement>,
-        )>,
-    > {
-        self.collection
-            .lock()
-            .await
-            .get_collection_ids_by_work_ids(work_ids)
-            .await
-    }
-    async fn upsert_work_mapping(
-        &mut self,
-        collection_element_id: &domain::Id<domain::collection::CollectionElement>,
-        work_id: domain::Id<domain::works::Work>,
-    ) -> anyhow::Result<()> {
-        self.collection
-            .lock()
-            .await
-            .upsert_work_mapping(collection_element_id, work_id)
-            .await
-    }
-    async fn insert_work_mapping(
-        &mut self,
-        collection_element_id: &domain::Id<domain::collection::CollectionElement>,
-        work_id: domain::Id<domain::works::Work>,
-    ) -> anyhow::Result<()> {
-        self.collection
-            .lock()
-            .await
-            .insert_work_mapping(collection_element_id, work_id)
-            .await
-    }
-    async fn get_work_ids_by_collection_ids(
-        &mut self,
-        collection_element_ids: &[domain::Id<domain::collection::CollectionElement>],
-    ) -> anyhow::Result<
-        Vec<(
-            domain::Id<domain::collection::CollectionElement>,
-            domain::Id<domain::works::Work>,
-        )>,
-    > {
-        self.collection
-            .lock()
-            .await
-            .get_work_ids_by_collection_ids(collection_element_ids)
-            .await
-    }
-    async fn get_element_erogamescape_by_element_id(
-        &mut self,
-        id: &domain::Id<domain::collection::CollectionElement>,
-    ) -> anyhow::Result<Option<domain::collection::CollectionElementErogamescape>> {
-        self.collection
-            .lock()
-            .await
-            .get_element_erogamescape_by_element_id(id)
-            .await
-    }
-    async fn upsert_erogamescape_map(
-        &mut self,
-        collection_element_id: &domain::Id<domain::collection::CollectionElement>,
-        erogamescape_id: i32,
-    ) -> anyhow::Result<()> {
-        self.collection
-            .lock()
-            .await
-            .upsert_erogamescape_map(collection_element_id, erogamescape_id)
-            .await
-    }
-    async fn allocate_new_collection_element_id(
-        &mut self,
-        gamename: &str,
-    ) -> anyhow::Result<domain::Id<domain::collection::CollectionElement>> {
-        self.collection
-            .lock()
-            .await
-            .allocate_new_collection_element_id(gamename)
-            .await
     }
 }
 

@@ -1,11 +1,14 @@
 use std::sync::Arc;
 use tauri::State;
+use chrono::Utc;
 
 use crate::interface::error::CommandError;
 use crate::interface::module::{Modules, ModulesExt};
-use chrono::Utc;
-use domain::pubsub::PubSubService as _;
+use crate::interface::models::all_game_cache::AllGameCacheOne;
+use crate::interface::models::work_path_input::WorkPathInput;
 use domain::pubsub::event::{AppSignalEventPayload, AppSignalPayload, AppSignalSourcePayload, PubSubEvent};
+use domain::pubsub::PubSubService;
+use usecase::work::RegisterWorkPathInput as UsecaseWorkPathInput;
 
 #[derive(serde::Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -81,16 +84,6 @@ pub async fn launch_work(
 }
 
 #[tauri::command]
-pub async fn migrate_collection_paths_to_work_lnks(
-    modules: State<'_, Arc<Modules>>,
-) -> anyhow::Result<(), CommandError> {
-    Ok(modules
-        .collection_use_case()
-        .migrate_collection_paths_to_work_lnks()
-        .await?)
-}
-
-#[tauri::command]
 pub async fn update_work_like(
     modules: State<'_, Arc<Modules>>,
     work_id: i32,
@@ -99,5 +92,27 @@ pub async fn update_work_like(
     Ok(modules
         .work_use_case()
         .update_like(work_id, is_like)
+        .await?)
+}
+
+#[tauri::command]
+pub async fn register_work_from_path(
+    modules: State<'_, Arc<Modules>>,
+    path: WorkPathInput,
+    game_cache: AllGameCacheOne,
+) -> anyhow::Result<(), CommandError> {
+    let input = match path {
+        WorkPathInput::Exe { exe_path } => UsecaseWorkPathInput::Exe { exe_path },
+        WorkPathInput::Lnk { lnk_path } => UsecaseWorkPathInput::Lnk { lnk_path },
+    };
+
+    Ok(modules
+        .work_use_case()
+        .register_work_from_input(
+            game_cache.id,
+            game_cache.gamename,
+            game_cache.thumbnail_url,
+            input,
+        )
         .await?)
 }

@@ -14,7 +14,6 @@ mod embedded {
 }
 
 mod all_game_cache_test;
-mod collection_test;
 mod dmm_work_pack_test;
 mod explored_cache_test;
 mod native_host_log_test;
@@ -23,7 +22,7 @@ mod work_lnk_test;
 mod work_omit_test;
 mod work_parent_packs_test;
 mod works_extra_test;
-mod works_test;
+mod works;
 
 pub struct TestDatabase {
     pub pool: Pool<Sqlite>,

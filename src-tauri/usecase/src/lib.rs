@@ -1,7 +1,5 @@
 pub mod all_game_cache;
 mod all_game_cache_test;
-pub mod collection;
-mod collection_test;
 pub mod dmm_pack;
 pub mod erogamescape;
 pub mod error;

@@ -10,7 +10,7 @@ use crate::thumbnail as thumb;
 use anyhow::Context as _;
 use domain::file::save_icon_to_png as domain_save_icon_to_png;
 use domain::service::save_path_resolver::{DirsSavePathResolver, SavePathResolver};
-use domain::{collection::CollectionElement, icon::IconService, Id};
+use domain::{icon::IconService, works::Work, Id};
 use fast_image_resize as fr;
 use image::{io::Reader as ImageReader, ColorType, ImageEncoder};
 use std::io::BufWriter;
@@ -103,7 +103,7 @@ impl IconServiceImpl {
 
     pub(crate) fn build_icon_path_host(
         resolver: &dyn SavePathResolver,
-        id: &Id<CollectionElement>,
+        id: &Id<Work>,
     ) -> anyhow::Result<String> {
         Ok(resolver.icon_png_path(id.value))
     }
@@ -122,7 +122,7 @@ impl IconServiceImpl {
 impl IconService for IconServiceImpl {
     async fn save_icon_from_path(
         &self,
-        id: &Id<CollectionElement>,
+        id: &Id<Work>,
         source_path: &str,
     ) -> anyhow::Result<()> {
         match &self.backend {
@@ -151,7 +151,7 @@ impl IconService for IconServiceImpl {
 
     async fn save_icon_from_url(
         &self,
-        id: &Id<CollectionElement>,
+        id: &Id<Work>,
         url: &str,
     ) -> anyhow::Result<()> {
         if url.is_empty() {
@@ -224,7 +224,7 @@ impl IconService for IconServiceImpl {
         }
     }
 
-    async fn save_default_icon(&self, id: &Id<CollectionElement>) -> anyhow::Result<()> {
+    async fn save_default_icon(&self, id: &Id<Work>) -> anyhow::Result<()> {
         match &self.backend {
             Backend::Tauri(_handle) => {
                 let resolver = DirsSavePathResolver::default();

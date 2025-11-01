@@ -10,10 +10,10 @@ use fast_image_resize as fr;
 use image::{io::Reader as ImageReader, ColorType, ImageEncoder};
 
 use domain::service::save_path_resolver::{DirsSavePathResolver, SavePathResolver};
-use domain::{collection::CollectionElement, thumbnail::ThumbnailService, Id};
+use domain::{thumbnail::ThumbnailService, works::Work, Id};
 
 pub fn build_thumbnail_paths(
-    id: &Id<CollectionElement>,
+    id: &Id<Work>,
     src_url: &str,
 ) -> anyhow::Result<(String, String)> {
     // 互換: 既存の呼び出し用（今後は SavePathResolver へ移行）
@@ -76,7 +76,7 @@ pub fn resize_image(src: &str, dst: &str, dst_width_px: u32) -> anyhow::Result<(
 }
 
 pub async fn save_thumbnail(
-    id: &Id<CollectionElement>,
+    id: &Id<Work>,
     url: &str,
     width: u32,
 ) -> anyhow::Result<()> {
@@ -104,13 +104,13 @@ impl ThumbnailServiceImpl {
 }
 
 impl ThumbnailService for ThumbnailServiceImpl {
-    async fn save_thumbnail(&self, id: &Id<CollectionElement>, url: &str) -> anyhow::Result<()> {
+    async fn save_thumbnail(&self, id: &Id<Work>, url: &str) -> anyhow::Result<()> {
         save_thumbnail(id, url, 400).await
     }
 
     async fn get_thumbnail_size(
         &self,
-        id: &Id<CollectionElement>,
+        id: &Id<Work>,
     ) -> anyhow::Result<Option<(u32, u32)>> {
         let resized = self.resolver.thumbnail_png_path(id.value);
         if !Path::new(&resized).exists() {

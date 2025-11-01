@@ -6,7 +6,7 @@
   import VirtualScroller from '@/components/UI/VirtualScroller.svelte'
   import VirtualScrollerMasonry from '@/components/UI/VirtualScrollerMasonry.svelte'
   import {
-    commandGetWorkDetailsByCollectionElement,
+    commandGetWorkDetailsByWorkId,
     commandUpdateAllGameCache,
   } from '@/lib/command'
   import { scrapeAllGameCacheOnes } from '@/lib/scrape/scrapeAllGame'
@@ -19,7 +19,7 @@
     Object.keys(localStorage)
       .map(v => +(v.match(memoRegex)?.[1] ?? '0'))
       .filter(v => v)
-      .map(v => commandGetWorkDetailsByCollectionElement(v)),
+      .map(v => commandGetWorkDetailsByWorkId(v)),
   )
 
   const isOpenGettingStarted = true
@@ -96,7 +96,7 @@
             </div>
           {:else}
             <div class='flex flex-(col) gap-1'>
-              {#each details as d (d?.id)}
+              {#each details.filter(Boolean) as d (d!.id)}
                 <a
                   use:route
                   href='/memos/{d!.id}?gamename={d!.title}'

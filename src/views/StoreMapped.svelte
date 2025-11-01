@@ -276,7 +276,7 @@
               <td class='px-2 py-1'>
                 <div class='flex gap-4'>
                   <label class='flex items-center gap-2'>
-                    <Checkbox value={item.isOmitted} on:update={e => updateDenied({ collectionElementId: item.collectionElementId ?? undefined, storeType: 1, storeId: item.dmm!.storeId, title: item.title, nextValue: e.detail.value, prevValue: item.isOmitted, workId: item.id })} disabled={disabledDenyList} />
+                    <Checkbox value={item.isOmitted} on:update={e => updateDenied({ storeType: 1, storeId: item.dmm!.storeId, title: item.title, nextValue: e.detail.value, prevValue: item.isOmitted, workId: item.id })} disabled={disabledDenyList} />
                     <span>{item.isOmitted ? '除外' : '未設定'}</span>
                   </label>
                 </div>

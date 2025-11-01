@@ -22,7 +22,7 @@ use crate::{
         work_linker::WorkLinkerImpl,
     },
     usecase::{
-        all_game_cache::AllGameCacheUseCase, collection::CollectionUseCase,
+        all_game_cache::AllGameCacheUseCase,
         dmm_pack::DmmPackUseCase, erogamescape::ErogamescapeUseCase,
         extension_manager::ExtensionManagerUseCase, file::FileUseCase, host_log::HostLogUseCase,
         image::ImageUseCase, image_queue::ImageQueueUseCase, process::ProcessUseCase,
@@ -35,12 +35,6 @@ use domain::repository::manager::RepositoryManager as _;
 use tauri::AppHandle;
 
 pub struct Modules {
-    collection_use_case: CollectionUseCase<
-        SqliteRepositoryManager,
-        SqliteRepositories,
-        ThumbnailServiceImpl,
-        Windows,
-    >,
     extension_manager_use_case:
         ExtensionManagerUseCase<PubSub, NativeMessagingHostClientFactoryImpl>,
     file_use_case: FileUseCase,
@@ -72,14 +66,6 @@ pub trait ModulesExt {
     type Windows: WindowsExt;
     type PubSub: PubSubExt + PubSubService;
 
-    fn collection_use_case(
-        &self,
-    ) -> &CollectionUseCase<
-        SqliteRepositoryManager,
-        SqliteRepositories,
-        ThumbnailServiceImpl,
-        Windows,
-    >;
     fn extension_manager_use_case(
         &self,
     ) -> &ExtensionManagerUseCase<Self::PubSub, NativeMessagingHostClientFactoryImpl>;
@@ -122,16 +108,6 @@ impl ModulesExt for Modules {
     type Windows = Windows;
     type PubSub = PubSub;
 
-    fn collection_use_case(
-        &self,
-    ) -> &CollectionUseCase<
-        SqliteRepositoryManager,
-        SqliteRepositories,
-        ThumbnailServiceImpl,
-        Windows,
-    > {
-        &self.collection_use_case
-    }
     fn extension_manager_use_case(
         &self,
     ) -> &ExtensionManagerUseCase<Self::PubSub, NativeMessagingHostClientFactoryImpl> {
@@ -210,12 +186,6 @@ impl Modules {
         let thumbs = Arc::new(ThumbnailServiceImpl::new(resolver.clone()));
         let icons = TauriIconServiceImpl::new_from_app_handle(Arc::new(handle.clone()));
 
-        let collection_use_case = CollectionUseCase::new(
-            repo_manager.clone(),
-            resolver.clone(),
-            thumbs.clone(),
-            windows.clone(),
-        );
         let extension_manager_use_case = ExtensionManagerUseCase::new(
             pubsub.clone(),
             Arc::new(NativeMessagingHostClientFactoryImpl),
@@ -242,8 +212,10 @@ impl Modules {
         > = ErogamescapeUseCase::new(repo_manager.clone());
         let dmm_pack_use_case: DmmPackUseCase<SqliteRepositoryManager, SqliteRepositories> =
             DmmPackUseCase::new(repo_manager.clone());
+        let save_path_resolver: Arc<dyn domain::service::save_path_resolver::SavePathResolver> =
+            Arc::new(DirsSavePathResolver::default());
         let work_use_case: WorkUseCase<SqliteRepositoryManager, SqliteRepositories, Windows> =
-            WorkUseCase::new(repo_manager.clone(), windows.clone());
+            WorkUseCase::new(repo_manager.clone(), windows.clone(), save_path_resolver.clone());
         let image_queue_use_case: ImageQueueUseCase<SqliteRepositoryManager, SqliteRepositories> =
             ImageQueueUseCase::new(repo_manager.clone());
 
@@ -298,7 +270,6 @@ impl Modules {
         ));
 
         Self {
-            collection_use_case,
             extension_manager_use_case,
             all_game_cache_use_case,
             file_use_case,

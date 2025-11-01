@@ -2,10 +2,9 @@ use std::collections::{HashMap, HashSet};
 use std::sync::atomic::{AtomicI32, Ordering};
 use std::{marker::PhantomData, sync::Arc};
 
-use domain::collection::CollectionElement;
 use domain::pubsub::{DedupResultPayload, EnrichResultPayload, PubSubEvent, PubSubService};
 use domain::repository::{
-    all_game_cache::AllGameCacheRepository as _, collection::CollectionRepository as _,
+    all_game_cache::AllGameCacheRepository as _,
     explored_cache::ExploredCacheRepository as _, manager::RepositoryManager,
     save_image_queue::ImageSaveQueueRepository as _, works::WorkRepository as _, RepositoriesExt,
 };
@@ -240,45 +239,24 @@ where
         use std::collections::{HashMap, HashSet};
 
         let resolver = self.resolver.clone();
+        
+        // EGS IDを収集
+        let mut uniq_egs: Vec<i32> = Vec::new();
+        let mut seen_egs: HashSet<i32> = HashSet::new();
+        for it in deduped.iter() {
+            if seen_egs.insert(it.egs_id) {
+                uniq_egs.push(it.egs_id);
+            }
+        }
 
-        // 単一トランザクションで全件処理
+        // 単一トランザクションで全件処理（Work中心）
         let count = self
             .manager
             .run_in_transaction(move |repos| {
                 let resolver = resolver.clone();
                 Box::pin(async move {
-                    // 先読みキャッシュを準備（EGS -> CE、CE -> Work）
-                    let mut coll = repos.collection();
                     let mut work_repo = repos.work();
                     let resolver = resolver.clone();
-
-                    let mut uniq_egs: Vec<i32> = Vec::new();
-                    let mut seen: HashSet<i32> = HashSet::new();
-                    for it in deduped.iter() {
-                        if seen.insert(it.egs_id) {
-                            uniq_egs.push(it.egs_id);
-                        }
-                    }
-
-                    let mut egs_to_ce: HashMap<i32, Id<CollectionElement>> = HashMap::new();
-                    if !uniq_egs.is_empty() {
-                        let egs_ce_pairs = coll
-                            .get_collection_ids_by_erogamescape_ids(&uniq_egs)
-                            .await?; // Vec<(egs, ce)>
-                        for (egs, ce) in egs_ce_pairs.into_iter() {
-                            egs_to_ce.insert(egs, ce);
-                        }
-                    }
-
-                    let mut ce_to_work: HashMap<Id<CollectionElement>, Id<domain::works::Work>> =
-                        HashMap::new();
-                    let ce_ids: Vec<Id<CollectionElement>> = egs_to_ce.values().cloned().collect();
-                    if !ce_ids.is_empty() {
-                        let ce_work_pairs = coll.get_work_ids_by_collection_ids(&ce_ids).await?; // Vec<(ce, work)>
-                        for (ce, w) in ce_work_pairs.into_iter() {
-                            ce_to_work.insert(ce, w);
-                        }
-                    }
 
                     // 先読み: EGS -> AllGameCacheOneWithThumbnailUrl
                     let mut egs_to_agc: HashMap<
@@ -296,37 +274,32 @@ where
                     for item in deduped.iter() {
                         let title = item.title.clone();
                         let item_file_path = item.candidate.path.to_string_lossy().to_string();
-
-                        // CollectionElement の存在確認（EGS マッピングで判定）
-                        let collection_id: Id<CollectionElement> = if let Some(cid) =
-                            egs_to_ce.get(&item.egs_id).cloned()
-                        {
-                            // 既存: 非 upsert の名称更新
-                            coll.update_collection_element_gamename_by_id(&cid, &title)
-                                .await?;
-                            cid
-                        } else {
-                            // 未存在: 採番（挿入）→ EGS マッピング作成
-                            let new_id = coll.allocate_new_collection_element_id(&title).await?;
-                            coll.upsert_erogamescape_map(&new_id, item.egs_id).await?;
-                            egs_to_ce.insert(item.egs_id, new_id.clone());
-                            new_id
+                        // Work を EGS ID で検索。なければ新規作成
+                        let existing = work_repo
+                            .find_work_ids_by_erogamescape_ids(&[item.egs_id])
+                            .await?;
+                        let (work_id, is_new) = match existing.into_iter().next() {
+                            Some((_egs, id)) => (id, false),
+                            None => (
+                                work_repo
+                                    .upsert(&domain::works::NewWork::new(title.clone()))
+                                    .await?,
+                                true,
+                            ),
                         };
 
-                        // Work の存在確認（CE -> Work マップ）
-                        if !ce_to_work.contains_key(&collection_id) {
-                            let work_id = work_repo
-                                .upsert(&domain::works::NewWork::new(title.clone()))
+                        // EGS マップは新規作成時のみ upsert
+                        if is_new {
+                            repos
+                                .work()
+                                .upsert_erogamescape_map(work_id.clone(), item.egs_id)
                                 .await?;
-                            coll.insert_work_mapping(&collection_id, work_id.clone())
-                                .await?;
-                            ce_to_work.insert(collection_id.clone(), work_id);
                         }
 
                         // 画像保存キュー投入（既存ロジックを維持）
                         let mut iq = repos.image_queue();
                         if let Some(exec) = std::path::Path::new(&item_file_path).to_str() {
-                            let icon_dst = resolver.icon_png_path(collection_id.value);
+                            let icon_dst = resolver.icon_png_path(work_id.value);
                             let src_type = match item.candidate.kind {
                                 CandidateKind::Exe => ImageSrcType::Exe,
                                 CandidateKind::Shortcut => ImageSrcType::Shortcut,
@@ -344,7 +317,7 @@ where
 
                         if let Some(gc) = egs_to_agc.get(&item.egs_id) {
                             if !gc.thumbnail_url.is_empty() {
-                                let thumb_dst = resolver.thumbnail_png_path(collection_id.value);
+                                let thumb_dst = resolver.thumbnail_png_path(work_id.value);
                                 iq.enqueue(
                                     &gc.thumbnail_url,
                                     ImageSrcType::Url,
@@ -399,19 +372,16 @@ where
             .run(|repos| {
                 let resolver = resolver.clone();
                 Box::pin(async move {
-                    use domain::repository::collection::CollectionRepository as _;
-                    let mut coll = repos.collection();
-                    let ids = coll.get_null_thumbnail_size_element_ids().await?;
+                    let mut work_repo = repos.work();
+                    let ids = work_repo.list_work_ids_missing_thumbnail_size().await?;
                     let mut updated: usize = 0;
                     if !ids.is_empty() {
                         for id in ids.into_iter() {
                             let path = resolver.thumbnail_png_path(id.value);
                             match image::image_dimensions(&path) {
                                 Ok((w, h)) => {
-                                    let _ = coll
-                                        .upsert_collection_element_thumbnail_size(
-                                            &id, w as i32, h as i32,
-                                        )
+                                    let _ = work_repo
+                                        .upsert_work_thumbnail_size(id, w as i32, h as i32)
                                         .await;
                                     updated += 1;
                                 }
@@ -444,33 +414,11 @@ where
 
         let egs_to_work: HashMap<i32, Id<domain::works::Work>> = self
             .manager
-            .run(|repos| {
-                let uniq_egs = uniq_egs.clone();
+            .run(|_repos| {
+                let _uniq_egs = uniq_egs.clone();
                 Box::pin(async move {
-                    let mut coll = repos.collection();
-                    let egs_ce_pairs = coll
-                        .get_collection_ids_by_erogamescape_ids(&uniq_egs)
-                        .await?;
-                    if egs_ce_pairs.is_empty() {
-                        return Ok::<HashMap<i32, Id<domain::works::Work>>, anyhow::Error>(
-                            HashMap::new(),
-                        );
-                    }
-                    let ce_ids: Vec<Id<CollectionElement>> =
-                        egs_ce_pairs.iter().map(|(_e, ce)| ce.clone()).collect();
-                    let ce_work_pairs = coll.get_work_ids_by_collection_ids(&ce_ids).await?;
-                    let mut ce_to_work: HashMap<Id<CollectionElement>, Id<domain::works::Work>> =
-                        HashMap::new();
-                    for (ce, w) in ce_work_pairs.into_iter() {
-                        ce_to_work.insert(ce, w);
-                    }
-                    let mut map: HashMap<i32, Id<domain::works::Work>> = HashMap::new();
-                    for (egs, ce) in egs_ce_pairs.into_iter() {
-                        if let Some(w) = ce_to_work.get(&ce) {
-                            map.insert(egs, w.clone());
-                        }
-                    }
-                    Ok::<HashMap<i32, Id<domain::works::Work>>, anyhow::Error>(map)
+                    // 旧 CE マップは廃止。EGS→Work は存在しない可能性があるため空
+                    Ok::<HashMap<i32, Id<domain::works::Work>>, anyhow::Error>(HashMap::new())
                 })
             })
             .await?;

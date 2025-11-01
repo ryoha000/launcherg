@@ -1,5 +1,4 @@
 pub mod all_game_cache;
-pub mod collection;
 pub mod dmm_work_pack;
 pub mod erogamescape;
 pub mod explored_cache;
@@ -25,7 +24,6 @@ pub trait RepositoriesExt {
     type WorkOmitRepo: work_omit::WorkOmitRepository;
     type WorkParentPacksRepo: work_parent_packs::WorkParentPacksRepository;
     type DmmPackRepo: dmm_work_pack::DmmPackRepository;
-    type CollectionRepo: collection::CollectionRepository;
     type ErogamescapeRepo: erogamescape::ErogamescapeRepository;
     type WorkDownloadPathRepo: work_download_path::WorkDownloadPathRepository;
     type WorkLnkRepo: work_lnk::WorkLnkRepository;
@@ -41,7 +39,6 @@ pub trait RepositoriesExt {
     fn work_omit(&self) -> Self::WorkOmitRepo;
     fn work_parent_packs(&self) -> Self::WorkParentPacksRepo;
     fn dmm_pack(&self) -> Self::DmmPackRepo;
-    fn collection(&self) -> Self::CollectionRepo;
     fn erogamescape(&self) -> Self::ErogamescapeRepo;
     fn work_download_path(&self) -> Self::WorkDownloadPathRepo;
     fn work_lnk(&self) -> Self::WorkLnkRepo;

@@ -1,6 +1,5 @@
 use std::collections::BTreeMap;
 
-use domain::collection::CollectionElement;
 use domain::repository::work_lnk::{NewWorkLnk, WorkLnk as DomainWorkLnk, WorkLnkRepository};
 use domain::{
     repository::works::{DlsiteWorkRepository, DmmWorkRepository, WorkRepository},
@@ -66,12 +65,12 @@ impl WorkRepository for RepositoryImpl<Work> {
                     SELECT 
                         w.id   as work_id,
                         w.title as work_title,
-                        ce.created_at as ce_created_at,
+                        NULL as ce_created_at,
                         dw.id   as dmm_id,
                         dw.store_id as dmm_store_id,
                         dw.category as dmm_category,
                         dw.subcategory as dmm_subcategory,
-                        m1.collection_element_id as ce_id,
+                        NULL as ce_id,
                         wem.id as egs_id,
                         wem.erogamescape_id as egs_erogamescape_id,
                         wem.created_at as egs_created_at,
@@ -83,10 +82,10 @@ impl WorkRepository for RepositoryImpl<Work> {
                         ei.is_nukige as egs_info_is_nukige,
                         ei.created_at as egs_info_created_at,
                         ei.updated_at as egs_info_updated_at,
-                        cet.thumbnail_width as cet_width,
-                        cet.thumbnail_height as cet_height,
-                        cei_install.install_at as install_install_at,
-                        cei_play.last_play_at as play_last_play_at,
+                        wt.thumbnail_width as cet_width,
+                        wt.thumbnail_height as cet_height,
+                        wi.install_at as install_install_at,
+                        wp.last_play_at as play_last_play_at,
                         oo.id as omit_id,
                         pp.id as dmm_pack_id,
                         lw.id   as dlsite_id,
@@ -99,14 +98,12 @@ impl WorkRepository for RepositoryImpl<Work> {
                         wl.created_at as like_created_at,
                         wl.updated_at as like_updated_at
                     FROM works w
-                    LEFT JOIN work_collection_elements m1 ON m1.work_id = w.id
-                    LEFT JOIN collection_elements ce ON ce.id = m1.collection_element_id
                     LEFT JOIN dmm_works dw ON dw.work_id = w.id
                     LEFT JOIN work_erogamescape_map wem ON wem.work_id = w.id
                     LEFT JOIN erogamescape_information ei ON ei.id = wem.erogamescape_id
-                    LEFT JOIN collection_element_thumbnails AS cet ON cet.collection_element_id = m1.collection_element_id
-                    LEFT JOIN collection_element_installs AS cei_install ON cei_install.collection_element_id = m1.collection_element_id
-                    LEFT JOIN collection_element_plays AS cei_play ON cei_play.collection_element_id = m1.collection_element_id
+                    LEFT JOIN work_thumbnails AS wt ON wt.work_id = w.id
+                    LEFT JOIN work_installs AS wi ON wi.work_id = w.id
+                    LEFT JOIN work_plays AS wp ON wp.work_id = w.id
                     LEFT JOIN work_omits oo ON oo.work_id = w.id
                     LEFT JOIN dmm_work_packs pp ON pp.work_id = w.id
                     LEFT JOIN dlsite_works lw ON lw.work_id = w.id
@@ -132,12 +129,8 @@ impl WorkRepository for RepositoryImpl<Work> {
                     if entry.dlsite.is_none() {
                         entry.dlsite = details.dlsite;
                     }
-                    if entry.collection_element_id.is_none() {
-                        entry.collection_element_id = details.collection_element_id;
-                    }
-                    if entry.erogamescape.is_none() {
-                        entry.erogamescape = details.erogamescape;
-                    }
+                    // 廃止: collection_element_id は Work 移行により不要
+                    // 廃止: erogamescape は erogamescape_information を使用
                     entry.is_omitted |= details.is_omitted;
                     entry.is_dmm_pack |= details.is_dmm_pack;
                     if entry.latest_download_path.is_none() {
@@ -162,12 +155,12 @@ impl WorkRepository for RepositoryImpl<Work> {
                     SELECT 
                         w.id   as work_id,
                         w.title as work_title,
-                        ce.created_at as ce_created_at,
+                        NULL as ce_created_at,
                         dw.id   as dmm_id,
                         dw.store_id as dmm_store_id,
                         dw.category as dmm_category,
                         dw.subcategory as dmm_subcategory,
-                        m1.collection_element_id as ce_id,
+                        NULL as ce_id,
                         wem.id as egs_id,
                         wem.erogamescape_id as egs_erogamescape_id,
                         wem.created_at as egs_created_at,
@@ -179,10 +172,10 @@ impl WorkRepository for RepositoryImpl<Work> {
                         ei.is_nukige as egs_info_is_nukige,
                         ei.created_at as egs_info_created_at,
                         ei.updated_at as egs_info_updated_at,
-                        cet.thumbnail_width as cet_width,
-                        cet.thumbnail_height as cet_height,
-                        cei_install.install_at as install_install_at,
-                        cei_play.last_play_at as play_last_play_at,
+                        wt.thumbnail_width as cet_width,
+                        wt.thumbnail_height as cet_height,
+                        wi.install_at as install_install_at,
+                        wp.last_play_at as play_last_play_at,
                         oo.id as omit_id,
                         pp.id as dmm_pack_id,
                         lw.id   as dlsite_id,
@@ -195,17 +188,15 @@ impl WorkRepository for RepositoryImpl<Work> {
                         wl.created_at as like_created_at,
                         wl.updated_at as like_updated_at
                     FROM works w
-                    LEFT JOIN work_collection_elements m1 ON m1.work_id = w.id
-                    LEFT JOIN collection_elements ce ON ce.id = m1.collection_element_id
                     LEFT JOIN dmm_works dw ON dw.work_id = w.id
                     LEFT JOIN work_erogamescape_map wem ON wem.work_id = w.id
                     LEFT JOIN erogamescape_information ei ON ei.id = wem.erogamescape_id
-                    LEFT JOIN collection_element_thumbnails AS cet ON cet.collection_element_id = m1.collection_element_id
+                    LEFT JOIN work_thumbnails AS wt ON wt.work_id = w.id
                     LEFT JOIN work_omits oo ON oo.work_id = w.id
                     LEFT JOIN dmm_work_packs pp ON pp.work_id = w.id
                     LEFT JOIN dlsite_works lw ON lw.work_id = w.id
-                    LEFT JOIN collection_element_installs AS cei_install ON cei_install.collection_element_id = m1.collection_element_id
-                    LEFT JOIN collection_element_plays AS cei_play ON cei_play.collection_element_id = m1.collection_element_id
+                    LEFT JOIN work_installs AS wi ON wi.work_id = w.id
+                    LEFT JOIN work_plays AS wp ON wp.work_id = w.id
                     LEFT JOIN work_likes wl ON wl.work_id = w.id
                     WHERE w.id = ?
                     ORDER BY w.id ASC
@@ -226,8 +217,7 @@ impl WorkRepository for RepositoryImpl<Work> {
                 Some(entry) => {
                     if entry.dmm.is_none() { entry.dmm = details.dmm; }
                     if entry.dlsite.is_none() { entry.dlsite = details.dlsite; }
-                    if entry.collection_element_id.is_none() { entry.collection_element_id = details.collection_element_id; }
-                    if entry.erogamescape.is_none() { entry.erogamescape = details.erogamescape; }
+                    // 廃止: collection_element_id と erogamescape は Work 移行により不要
                     if entry.erogamescape_information.is_none() { entry.erogamescape_information = details.erogamescape_information; }
                     entry.is_omitted |= details.is_omitted;
                     entry.is_dmm_pack |= details.is_dmm_pack;
@@ -239,106 +229,7 @@ impl WorkRepository for RepositoryImpl<Work> {
 
         Ok(map.into_values().next())
     }
-    async fn find_details_by_collection_element_id(
-        &mut self,
-        collection_element_id: Id<CollectionElement>,
-    ) -> anyhow::Result<Option<WorkDetails>> {
-        let idv = collection_element_id.value as i64;
-        let rows = self.executor.with_conn(|conn| {
-            Box::pin(async move {
-                let rows: Vec<WorkDetailsRow> = query_as(
-                    r#"
-                    SELECT 
-                        w.id   as work_id,
-                        w.title as work_title,
-                        ce.created_at as ce_created_at,
-                        dw.id   as dmm_id,
-                        dw.store_id as dmm_store_id,
-                        dw.category as dmm_category,
-                        dw.subcategory as dmm_subcategory,
-                        m1.collection_element_id as ce_id,
-                        wem.id as egs_id,
-                        wem.erogamescape_id as egs_erogamescape_id,
-                        wem.created_at as egs_created_at,
-                        wem.updated_at as egs_updated_at,
-                        ei.gamename_ruby as egs_info_gamename_ruby,
-                        ei.brandname as egs_info_brandname,
-                        ei.brandname_ruby as egs_info_brandname_ruby,
-                        ei.sellday as egs_info_sellday,
-                        ei.is_nukige as egs_info_is_nukige,
-                        ei.created_at as egs_info_created_at,
-                        ei.updated_at as egs_info_updated_at,
-                        cet.thumbnail_width as cet_width,
-                        cet.thumbnail_height as cet_height,
-                        cei_install.install_at as install_install_at,
-                        cei_play.last_play_at as play_last_play_at,
-                        oo.id as omit_id,
-                        pp.id as dmm_pack_id,
-                        lw.id   as dlsite_id,
-                        lw.store_id as dlsite_store_id,
-                        lw.category as dlsite_category,
-                        (SELECT id FROM work_download_paths wdp WHERE wdp.work_id = w.id ORDER BY id DESC LIMIT 1) as latest_path_id,
-                        (SELECT download_path FROM work_download_paths wdp WHERE wdp.work_id = w.id ORDER BY id DESC LIMIT 1) as latest_path_download_path,
-                        wl.id as like_id,
-                        wl.like_at as like_like_at,
-                        wl.created_at as like_created_at,
-                        wl.updated_at as like_updated_at
-                    FROM works w
-                    JOIN work_collection_elements m1 ON m1.work_id = w.id
-                    LEFT JOIN collection_elements ce ON ce.id = m1.collection_element_id
-                    LEFT JOIN dmm_works dw ON dw.work_id = w.id
-                    LEFT JOIN work_erogamescape_map wem ON wem.work_id = w.id
-                    LEFT JOIN erogamescape_information ei ON ei.id = wem.erogamescape_id
-                    LEFT JOIN collection_element_thumbnails AS cet ON cet.collection_element_id = m1.collection_element_id
-                    LEFT JOIN work_omits oo ON oo.work_id = w.id
-                    LEFT JOIN dmm_work_packs pp ON pp.work_id = w.id
-                        LEFT JOIN dlsite_works lw ON lw.work_id = w.id
-                    LEFT JOIN collection_element_installs AS cei_install ON cei_install.collection_element_id = m1.collection_element_id
-                    LEFT JOIN collection_element_plays AS cei_play ON cei_play.collection_element_id = m1.collection_element_id
-                        LEFT JOIN work_likes wl ON wl.work_id = w.id
-                    WHERE m1.collection_element_id = ?
-                    LIMIT 1
-                    "#,
-                )
-                .bind(idv)
-                .fetch_all(conn)
-                .await?;
-                Ok(rows)
-            })
-        }).await?;
-
-        let mut map: std::collections::BTreeMap<i64, WorkDetails> =
-            std::collections::BTreeMap::new();
-        for r in rows.into_iter() {
-            let details: WorkDetails = r.into();
-            let key = details.work.id.value as i64;
-            match map.get_mut(&key) {
-                Some(entry) => {
-                    if entry.dmm.is_none() {
-                        entry.dmm = details.dmm;
-                    }
-                    if entry.dlsite.is_none() {
-                        entry.dlsite = details.dlsite;
-                    }
-                    if entry.collection_element_id.is_none() {
-                        entry.collection_element_id = details.collection_element_id;
-                    }
-                    if entry.erogamescape.is_none() {
-                        entry.erogamescape = details.erogamescape;
-                    }
-                    entry.is_omitted |= details.is_omitted;
-                    entry.is_dmm_pack |= details.is_dmm_pack;
-                    if entry.latest_download_path.is_none() {
-                        entry.latest_download_path = details.latest_download_path;
-                    }
-                }
-                None => {
-                    map.insert(key, details);
-                }
-            }
-        }
-        Ok(map.into_values().next())
-    }
+    // 廃止: CE ID での検索は非対応
 
     async fn find_work_ids_by_erogamescape_ids(
         &mut self,
@@ -374,28 +265,16 @@ impl WorkRepository for RepositoryImpl<Work> {
             .collect())
     }
 
-    async fn upsert_info_by_erogamescape(
+    async fn upsert_erogamescape_map(
         &mut self,
         work_id: Id<Work>,
         erogamescape_id: i32,
-        gamename_ruby: &str,
-        brandname: &str,
-        brandname_ruby: &str,
-        sellday: &str,
-        is_nukige: bool,
     ) -> anyhow::Result<()> {
         let wid = work_id.value as i64;
-        let _ = self
-            .executor
+        let egs_id = erogamescape_id as i64;
+        self.executor
             .with_conn(|conn| {
-                let gamename_ruby = gamename_ruby.to_string();
-                let brandname = brandname.to_string();
-                let brandname_ruby = brandname_ruby.to_string();
-                let sellday = sellday.to_string();
-                let is_nukige = if is_nukige { 1 } else { 0 };
-                let egs_id = erogamescape_id as i64;
                 Box::pin(async move {
-                    // 1) EGS マップを upsert
                     sqlx::query(
                         r#"INSERT INTO work_erogamescape_map (work_id, erogamescape_id)
                         VALUES (?, ?)
@@ -406,28 +285,6 @@ impl WorkRepository for RepositoryImpl<Work> {
                     )
                     .bind(wid)
                     .bind(egs_id)
-                    .execute(&mut *conn)
-                    .await?;
-
-                    // 2) 詳細を upsert
-                    sqlx::query(
-                        r#"INSERT INTO erogamescape_information (id, gamename_ruby, sellday, is_nukige, brandname, brandname_ruby)
-                        VALUES (?, ?, ?, ?, ?, ?)
-                        ON CONFLICT(id) DO UPDATE SET
-                            gamename_ruby = excluded.gamename_ruby,
-                            sellday = excluded.sellday,
-                            is_nukige = excluded.is_nukige,
-                            brandname = excluded.brandname,
-                            brandname_ruby = excluded.brandname_ruby,
-                            updated_at = CURRENT_TIMESTAMP
-                        "#,
-                    )
-                    .bind(egs_id)
-                    .bind(gamename_ruby)
-                    .bind(sellday)
-                    .bind(is_nukige)
-                    .bind(brandname)
-                    .bind(brandname_ruby)
                     .execute(&mut *conn)
                     .await?;
                     Ok::<(), anyhow::Error>(())
@@ -450,6 +307,94 @@ impl WorkRepository for RepositoryImpl<Work> {
                 })
             })
             .await
+    }
+
+    async fn list_work_ids_missing_thumbnail_size(&mut self) -> anyhow::Result<Vec<Id<Work>>> {
+        let rows: Vec<(i64,)> = self
+            .executor
+            .with_conn(|conn| {
+                Box::pin(async move {
+                    let rows: Vec<(i64,)> = sqlx::query_as(
+                        r#"
+                        SELECT w.id
+                        FROM works w
+                        LEFT JOIN work_thumbnails wt ON wt.work_id = w.id
+                        WHERE wt.work_id IS NULL 
+                           OR wt.thumbnail_width IS NULL 
+                           OR wt.thumbnail_height IS NULL
+                        "#,
+                    )
+                    .fetch_all(conn)
+                    .await?;
+                    Ok(rows)
+                })
+            })
+            .await?;
+        Ok(rows.into_iter().map(|(id,)| Id::new(id as i32)).collect())
+    }
+
+    async fn upsert_work_thumbnail_size(
+        &mut self,
+        work_id: Id<Work>,
+        width: i32,
+        height: i32,
+    ) -> anyhow::Result<()> {
+        let wid = work_id.value as i64;
+        let width = width as i64;
+        let height = height as i64;
+        self.executor
+            .with_conn(|conn| {
+                Box::pin(async move {
+                    sqlx::query(
+                        r#"
+                        INSERT INTO work_thumbnails (work_id, thumbnail_width, thumbnail_height)
+                        VALUES (?, ?, ?)
+                        ON CONFLICT(work_id) DO UPDATE SET
+                            thumbnail_width = excluded.thumbnail_width,
+                            thumbnail_height = excluded.thumbnail_height,
+                            updated_at = CURRENT_TIMESTAMP
+                        "#,
+                    )
+                    .bind(wid)
+                    .bind(width)
+                    .bind(height)
+                    .execute(conn)
+                    .await?;
+                    Ok::<(), anyhow::Error>(())
+                })
+            })
+            .await?;
+        Ok(())
+    }
+
+    async fn update_last_play_at_by_work_id(
+        &mut self,
+        work_id: Id<Work>,
+        last_play_at: chrono::DateTime<chrono::Local>,
+    ) -> anyhow::Result<()> {
+        let wid = work_id.value as i64;
+        let last_play_at_naive = last_play_at.naive_utc();
+        self.executor
+            .with_conn(|conn| {
+                Box::pin(async move {
+                    sqlx::query(
+                        r#"
+                        INSERT INTO work_plays (work_id, last_play_at)
+                        VALUES (?, ?)
+                        ON CONFLICT(work_id) DO UPDATE SET
+                            last_play_at = excluded.last_play_at,
+                            updated_at = CURRENT_TIMESTAMP
+                        "#,
+                    )
+                    .bind(wid)
+                    .bind(last_play_at_naive)
+                    .execute(conn)
+                    .await?;
+                    Ok::<(), anyhow::Error>(())
+                })
+            })
+            .await?;
+        Ok(())
     }
 }
 
@@ -555,23 +500,29 @@ impl DmmWorkRepository for RepositoryImpl<domain::works::DmmWork> {
             .with_conn(|conn| {
                 Box::pin(async move {
                     let mut qb = QueryBuilder::new(
-                        r#"SELECT w.id as id, w.store_id, w.category, w.subcategory, w.work_id
-                        FROM dmm_works w
-                        WHERE (w.store_id, w.category, w.subcategory) IN ("#,
+                        r#"WITH keys(store_id, category, subcategory) AS (VALUES "#,
                     );
-                    {
-                        let mut separated = qb.separated(", ");
-                        for (store_id, category, subcategory) in keys.iter() {
-                            separated.push_unseparated("(");
-                            separated.push_bind(store_id);
-                            separated.push_unseparated(", ");
-                            separated.push_bind(category);
-                            separated.push_unseparated(", ");
-                            separated.push_bind(subcategory);
-                            separated.push_unseparated(")");
+                    for (idx, (store_id, category, subcategory)) in keys.iter().enumerate() {
+                        if idx > 0 {
+                            qb.push(", ");
                         }
+                        qb.push("(");
+                        qb.push_bind(store_id);
+                        qb.push(", ");
+                        qb.push_bind(category);
+                        qb.push(", ");
+                        qb.push_bind(subcategory);
+                        qb.push(")");
                     }
-                    qb.push(")");
+                    qb.push(
+                        r#")
+SELECT w.id as id, w.store_id, w.category, w.subcategory, w.work_id
+FROM dmm_works w
+INNER JOIN keys k
+  ON k.store_id = w.store_id
+ AND k.category = w.category
+ AND k.subcategory = w.subcategory"#,
+                    );
 
                     let rows: Vec<crate::sqliterepository::models::works::DmmWorkTable> =
                         qb.build_query_as().fetch_all(conn).await?;

@@ -820,7 +820,6 @@ fn to_dlsite_params(request: &DlsiteSyncGamesRequestTs) -> (Vec<String>, Vec<Dls
 #[cfg(test)]
 mod tests {
     use super::*;
-    use domain::repository::collection::CollectionRepository;
     use domain::repository::manager::RepositoryManager;
     use domain::repository::works::{DmmWorkRepository, WorkRepository};
     use domain::repository::RepositoriesExt;
@@ -1046,9 +1045,9 @@ mod tests {
                         assert!(work.dmm.is_some());
                         let dmm = work.dmm.unwrap();
                         if dmm.store_id == "SID1" {
-                            assert!(work.erogamescape.is_some());
+                            assert!(work.erogamescape_id.is_some());
                         } else if dmm.store_id == "SID2" {
-                            assert!(work.erogamescape.is_none());
+                            assert!(work.erogamescape_id.is_none());
                         } else {
                             assert!(false, "unexpected store_id: {}", dmm.store_id);
                         }
@@ -1071,9 +1070,9 @@ mod tests {
                         assert!(work.dlsite.is_some());
                         let dlsite = work.dlsite.unwrap();
                         if dlsite.store_id == "RJ1" {
-                            assert!(work.erogamescape.is_some());
+                            assert!(work.erogamescape_id.is_some());
                         } else if dlsite.store_id == "RJ2" {
-                            assert!(work.erogamescape.is_none());
+                            assert!(work.erogamescape_id.is_none());
                         } else {
                             assert!(false, "unexpected store_id: {}", dlsite.store_id);
                         }
@@ -1094,7 +1093,7 @@ mod tests {
                     for work in works {
                         assert!(work.dmm.is_some());
                         assert!(work.dlsite.is_some());
-                        assert!(work.erogamescape.is_some());
+                        assert!(work.erogamescape_id.is_some());
                     }
                     true
                 }),
@@ -1112,13 +1111,13 @@ mod tests {
                     for work in works {
                         assert!(work.dmm.is_some());
                         assert!(work.dlsite.is_some());
-                        assert!(work.erogamescape.is_some());
+                        assert!(work.erogamescape_id.is_some());
                     }
                     true
                 }),
             },
             TestCase {
-                name: "collection_element に紐づいているときに DMM の登録(erogamescape_id が既存)"
+                name: "work に紐づいているときに DMM の登録(erogamescape_id が既存)"
                     .to_string(),
                 params: vec![SyncGameParam::Dmm(vec![dmm_param_egs.clone()])],
                 setup: Box::new(|manager| {
@@ -1126,11 +1125,14 @@ mod tests {
                         manager
                             .run(|repos| {
                                 Box::pin(async move {
-                                    let cid = repos
-                                        .collection()
-                                        .allocate_new_collection_element_id("Game 1")
+                                    let mut work = repos.work();
+                                    let work_id = work
+                                        .upsert(&NewWork {
+                                            title: "Game 1".to_string(),
+                                        })
                                         .await?;
-                                    repos.collection().upsert_erogamescape_map(&cid, 1).await?;
+                                    work.upsert_erogamescape_map(work_id.clone(), 1)
+                                        .await?;
 
                                     Ok(())
                                 })
@@ -1145,14 +1147,14 @@ mod tests {
                     for work in works {
                         assert!(work.dmm.is_some());
                         assert!(work.dlsite.is_none());
-                        assert!(work.erogamescape.is_some());
+                        assert!(work.erogamescape_id.is_some());
                     }
                     true
                 }),
             },
             TestCase {
                 name:
-                    "collection_element に紐づいているときに DLsite の登録(erogamescape_id が既存)"
+                    "work に紐づいているときに DLsite の登録(erogamescape_id が既存)"
                         .to_string(),
                 params: vec![SyncGameParam::Dlsite(vec![dlsite_param_egs.clone()])],
                 setup: Box::new(|manager| {
@@ -1160,11 +1162,14 @@ mod tests {
                         manager
                             .run(|repos| {
                                 Box::pin(async move {
-                                    let cid = repos
-                                        .collection()
-                                        .allocate_new_collection_element_id("Game 1")
+                                    let mut work = repos.work();
+                                    let work_id = work
+                                        .upsert(&NewWork {
+                                            title: "Game 1".to_string(),
+                                        })
                                         .await?;
-                                    repos.collection().upsert_erogamescape_map(&cid, 1).await?;
+                                    work.upsert_erogamescape_map(work_id.clone(), 1)
+                                        .await?;
 
                                     Ok(())
                                 })
@@ -1178,7 +1183,7 @@ mod tests {
                     assert_eq!(works.len(), 1);
                     for work in works {
                         assert!(work.dlsite.is_some());
-                        assert!(work.erogamescape.is_some());
+                        assert!(work.erogamescape_id.is_some());
                         assert!(work.dmm.is_none());
                     }
                     true
@@ -1191,7 +1196,6 @@ mod tests {
             let repo_manager = StdArc::new(SqliteRepositoryManager::new(db.pool_arc()));
             let resolver = Arc::new(DirsSavePathResolver::default());
             let usecase = NativeHostSyncUseCase::new(repo_manager.clone(), resolver.clone());
-            (test_case.setup)(repo_manager.clone()).await;
 
             // 同じDBを使いまわしていないか確認
             let works = repo_manager
@@ -1203,7 +1207,9 @@ mod tests {
                 })
                 .await
                 .unwrap();
-            assert!(works.is_empty());
+            assert!(works.is_empty(), "{} {:?}", test_case.name, works);
+
+            (test_case.setup)(repo_manager.clone()).await;
 
             for param in test_case.params {
                 match param {

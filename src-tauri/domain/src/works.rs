@@ -5,7 +5,6 @@ use crate::Id;
 use crate::erogamescape::ErogamescapeInformation;
 use chrono::{DateTime, Local};
 
-use crate::collection::{CollectionElement, CollectionElementErogamescape};
 use crate::work_download_path::WorkDownloadPath;
 
 #[derive(new, Clone, Debug, Serialize, Deserialize)]
@@ -56,8 +55,7 @@ pub struct WorkDetails {
     pub work: Work,
     pub dmm: Option<DmmWork>,
     pub dlsite: Option<DlsiteWork>,
-    pub collection_element_id: Option<Id<CollectionElement>>,
-    pub erogamescape: Option<CollectionElementErogamescape>,
+    pub erogamescape_id: Option<i32>,
     #[new(default)]
     pub erogamescape_information: Option<ErogamescapeInformation>,
     pub is_omitted: bool,

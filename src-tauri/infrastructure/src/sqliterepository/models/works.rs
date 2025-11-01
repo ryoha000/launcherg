@@ -62,12 +62,7 @@ pub struct WorkDetailsRow {
 
 impl From<crate::sqliterepository::models::works::WorkDetailsRow> for domain::works::WorkDetails {
     fn from(r: crate::sqliterepository::models::works::WorkDetailsRow) -> Self {
-        use domain::{
-            collection::CollectionElementErogamescape,
-            erogamescape::ErogamescapeInformation,
-            works::{DlsiteWork, DmmWork, Work, WorkThumbnailSize},
-            Id,
-        };
+        use domain::{erogamescape::ErogamescapeInformation, works::{DlsiteWork, DmmWork, Work, WorkThumbnailSize}, Id};
         let mut details = domain::works::WorkDetails {
             work: Work {
                 id: Id::new(r.work_id as i32),
@@ -75,8 +70,7 @@ impl From<crate::sqliterepository::models::works::WorkDetailsRow> for domain::wo
             },
             dmm: None,
             dlsite: None,
-            collection_element_id: r.ce_id.map(|v| Id::new(v as i32)),
-            erogamescape: None,
+            erogamescape_id: r.egs_erogamescape_id,
             erogamescape_information: None,
             is_omitted: false,
             is_dmm_pack: false,
@@ -126,23 +120,6 @@ impl From<crate::sqliterepository::models::works::WorkDetailsRow> for domain::wo
 
         if let Some(_) = r.omit_id {
             details.is_omitted = true;
-        }
-
-        if let Some(egs_row_id) = r.egs_id {
-            if let (Some(egs_id), Some(created), Some(updated), Some(ce_id)) = (
-                r.egs_erogamescape_id,
-                r.egs_created_at,
-                r.egs_updated_at,
-                r.ce_id,
-            ) {
-                details.erogamescape = Some(CollectionElementErogamescape::new(
-                    Id::new(egs_row_id as i32),
-                    Id::new(ce_id as i32),
-                    egs_id,
-                    created.and_utc().with_timezone(&chrono::Local),
-                    updated.and_utc().with_timezone(&chrono::Local),
-                ));
-            }
         }
 
         // Map erogamescape_information when available

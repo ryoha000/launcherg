@@ -53,7 +53,6 @@ pub struct SqliteRepositories {
     work_omit: RepositoryImpl<domain::work_omit::WorkOmit>,
     work_parent_packs: RepositoryImpl<domain::work_parent_pack::WorkParentPack>,
     dmm_pack: RepositoryImpl<domain::dmm_work_pack::DmmWorkPack>,
-    collection: RepositoryImpl<domain::collection::CollectionElement>,
     work_download_path: RepositoryImpl<domain::work_download_path::WorkDownloadPath>,
     work_lnk: RepositoryImpl<domain::repository::work_lnk::WorkLnk>,
     work_like: RepositoryImpl<domain::works::WorkLike>,
@@ -71,7 +70,6 @@ impl RepositoriesExt for SqliteRepositories {
     type WorkOmitRepo = RepositoryImpl<domain::work_omit::WorkOmit>;
     type WorkParentPacksRepo = RepositoryImpl<domain::work_parent_pack::WorkParentPack>;
     type DmmPackRepo = RepositoryImpl<domain::dmm_work_pack::DmmWorkPack>;
-    type CollectionRepo = RepositoryImpl<domain::collection::CollectionElement>;
     type ErogamescapeRepo = RepositoryImpl<domain::erogamescape::ErogamescapeInformation>;
     type WorkDownloadPathRepo = RepositoryImpl<domain::work_download_path::WorkDownloadPath>;
     type WorkLnkRepo = RepositoryImpl<domain::repository::work_lnk::WorkLnk>;
@@ -106,9 +104,6 @@ impl RepositoriesExt for SqliteRepositories {
     }
     fn dmm_pack(&self) -> Self::DmmPackRepo {
         self.dmm_pack.clone()
-    }
-    fn collection(&self) -> Self::CollectionRepo {
-        self.collection.clone()
     }
     fn erogamescape(&self) -> Self::ErogamescapeRepo {
         self.erogamescape.clone()
@@ -151,7 +146,6 @@ impl SqliteRepositories {
             work_omit: RepositoryImpl::new(executor.clone()),
             work_parent_packs: RepositoryImpl::new(executor.clone()),
             dmm_pack: RepositoryImpl::new(executor.clone()),
-            collection: RepositoryImpl::new(executor.clone()),
             work_download_path: RepositoryImpl::new(executor.clone()),
             work_lnk: RepositoryImpl::new(executor.clone()),
             work_like: RepositoryImpl::new(executor.clone()),

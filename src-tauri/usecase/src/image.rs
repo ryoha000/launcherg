@@ -5,7 +5,7 @@ use derive_new::new;
 use domain::service::save_path_resolver::{DirsSavePathResolver, SavePathResolver};
 use domain::windows::shell_link::ShellLink as _;
 use domain::windows::WindowsExt;
-use domain::{collection::CollectionElement, icon::IconService, thumbnail::ThumbnailService, Id};
+use domain::{icon::IconService, thumbnail::ThumbnailService, works::Work, Id};
 use tauri::AppHandle;
 
 #[derive(new)]
@@ -25,7 +25,7 @@ impl<TS: ThumbnailService, IS: IconService, W: WindowsExt + Send + Sync + 'stati
 {
     pub async fn save_thumbnail(
         &self,
-        id: &Id<CollectionElement>,
+        id: &Id<Work>,
         url: &str,
     ) -> anyhow::Result<()> {
         self.thumbnail_service.save_thumbnail(id, url).await
@@ -33,7 +33,7 @@ impl<TS: ThumbnailService, IS: IconService, W: WindowsExt + Send + Sync + 'stati
 
     pub async fn concurency_save_thumbnails(
         &self,
-        args: Vec<(Id<CollectionElement>, String)>,
+        args: Vec<(Id<Work>, String)>,
     ) -> anyhow::Result<()> {
         use futures::StreamExt as _;
         futures::stream::iter(args.into_iter())
@@ -48,23 +48,14 @@ impl<TS: ThumbnailService, IS: IconService, W: WindowsExt + Send + Sync + 'stati
         Ok(())
     }
 
-    // icon
-    async fn save_icon_from_path(
-        &self,
-        id: &Id<CollectionElement>,
-        source_path: &str,
-    ) -> anyhow::Result<()> {
-        self.icon_service.save_icon_from_path(id, source_path).await
-    }
-
-    async fn save_default_icon(&self, id: &Id<CollectionElement>) -> anyhow::Result<()> {
+    async fn save_default_icon(&self, id: &Id<Work>) -> anyhow::Result<()> {
         self.icon_service.save_default_icon(id).await
     }
 
     // exe/lnk の情報からアイコン保存元を決定し保存する
     pub async fn save_icon_by_paths(
         &self,
-        id: &Id<CollectionElement>,
+        id: &Id<Work>,
         exe_path: &Option<String>,
         lnk_path: &Option<String>,
     ) -> anyhow::Result<()> {
@@ -85,7 +76,7 @@ impl<TS: ThumbnailService, IS: IconService, W: WindowsExt + Send + Sync + 'stati
             }
         }
         if let Some(src) = icon_source {
-            self.save_icon_from_path(id, &src).await
+            self.icon_service.save_icon_from_path(id, &src).await
         } else {
             self.save_default_icon(id).await
         }
@@ -94,7 +85,7 @@ impl<TS: ThumbnailService, IS: IconService, W: WindowsExt + Send + Sync + 'stati
     // 既存PNGを上書き（ユーザー指定PNG用）
     pub async fn overwrite_icon_png(
         &self,
-        id: &Id<CollectionElement>,
+        id: &Id<Work>,
         png_path: &str,
     ) -> anyhow::Result<()> {
         let dst = self.resolver.icon_png_path(id.value);

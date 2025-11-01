@@ -3,40 +3,40 @@ use std::future::Future;
 use std::pin::Pin;
 
 use domain::Id;
+use domain::repository::erogamescape::ErogamescapeRepository;
 
 use super::*;
 
+/// ストア同期で使用する操作群。ジェネリックに定義して DMM/DLsite で共通利用。
 #[derive(Clone)]
 pub struct StoreOps<P, K, R>
 where
     R: RepositoriesExt + Send + Sync + 'static,
 {
+    /// パラメータからキーを抽出
     pub key_from_param: fn(&P) -> K,
+    /// パラメータからゲーム名を取得
     pub gamename: fn(&P) -> &str,
-    pub image_url: fn(&P) -> &str,
+    /// パラメータから EGS 情報を取得
     pub egs: fn(&P) -> Option<&EgsInfo>,
+    /// パラメータから親パック Work ID を取得
     pub parent_pack_work_id: fn(&P) -> Option<Id<domain::works::Work>>,
 
+    /// キーで Work ID を検索（返却: Option<WorkId>）
     pub find_work_id_by_key: for<'a> fn(
         &'a R,
         &'a K,
     ) -> Pin<
         Box<dyn Future<Output = anyhow::Result<Option<Id<domain::works::Work>>>> + Send + 'a>,
     >,
+    /// ストアマッピングを upsert（キーと Work ID の関連付け）
     pub upsert_store_mapping:
         for<'a> fn(
             &'a R,
             &'a K,
             Id<domain::works::Work>,
         ) -> Pin<Box<dyn Future<Output = anyhow::Result<()>> + Send + 'a>>,
-    pub enqueue_images_with_repos:
-        for<'a> fn(
-            &'a R,
-            &'a dyn SavePathResolver,
-            &'a domain::Id<domain::collection::CollectionElement>,
-            &'a K,
-            &'a str,
-        ) -> Pin<Box<dyn Future<Output = anyhow::Result<()>> + Send + 'a>>,
+    /// 親パック Work との関連付けが必要なら実行
     pub link_parent_pack_if_needed:
         for<'a> fn(
             &'a R,
@@ -45,31 +45,43 @@ where
         ) -> Pin<Box<dyn Future<Output = anyhow::Result<()>> + Send + 'a>>,
 }
 
+
+/// バッチ同期前のスナップショット。既存の Work マッピングと除外情報を保持。
 #[derive(Clone, Debug)]
 pub struct BatchSnapshot<K> {
+    /// ストアキーごとの既存 Work ID（None = 未マッピング）
     pub work_id_by_key: HashMap<K, Option<Id<domain::works::Work>>>,
-    pub mapped_keys: HashMap<K, Id<domain::collection::CollectionElement>>,
+    /// 除外対象 Work ID（同期対象外）
     pub omitted_work_ids: HashSet<Id<domain::works::Work>>,
-    pub egs_id_to_collection_id: HashMap<i32, Id<domain::collection::CollectionElement>>,
+    /// EGS ID ごとの既存 Work ID（EGS マッピング用）
     pub egs_id_to_work_id: HashMap<i32, Id<domain::works::Work>>,
 }
 
+/// 同期適用パラメータ。キーと関連 Work/Egs 情報を持つ。
 #[derive(Clone, Debug)]
 pub struct SyncApplyGeneric<K> {
+    /// ストアキー
     pub key: K,
+    /// ストアキー由来の既存 Work ID
     pub work_id_by_key: Option<Id<domain::works::Work>>,
+    /// EGS 由来の既存 Work ID
     pub work_id_by_erogamescape: Option<Id<domain::works::Work>>,
-    pub collection_element_id_by_erogamescape: Option<Id<domain::collection::CollectionElement>>,
+    /// ゲーム名
     pub gamename: String,
-    pub image_url: String,
+    /// 親パック Work ID（DMM パックの場合）
     pub parent_pack_work_id: Option<Id<domain::works::Work>>,
+    /// EGS 情報（あれば Work に upsert）
     pub egs: Option<EgsInfo>,
 }
 
+/// 同期計画の決定結果。
 #[derive(Clone, Debug)]
 pub enum PlanDecisionGeneric<K> {
+    /// 既に存在するためスキップ
     SkipExists,
+    /// 除外対象のためスキップ
     SkipOmitted,
+    /// 新規/更新適用
     Apply(SyncApplyGeneric<K>),
 }
 
@@ -78,6 +90,10 @@ where
     M: RepositoryManager<R>,
     R: RepositoriesExt + Send + Sync + 'static,
 {
+    /// バッチ同期前のスナップショットを作成。
+    /// - ストアキーごとの既存 Work ID を検索
+    /// - 除外対象 Work を取得
+    /// - EGS ID ごとの既存 Work ID を検索
     pub async fn build_batch_snapshot<P, K>(
         &self,
         games: &[P],
@@ -86,10 +102,10 @@ where
     where
         K: Clone + std::cmp::Eq + std::hash::Hash + Send + Sync + 'static,
     {
-        // keys
+        // ストアキー一覧
         let keys: Vec<K> = games.iter().map(|g| (ops.key_from_param)(g)).collect();
 
-        // work_id_by_key
+        // ストアキーごとの既存 Work ID を検索
         let mut work_id_by_key: HashMap<K, Option<Id<domain::works::Work>>> = HashMap::new();
         let found_map = self
             .manager
@@ -109,43 +125,12 @@ where
         for (k, v) in found_map.into_iter() {
             work_id_by_key.insert(k, v);
         }
+        // 未検索キーは None として初期化
         for k in keys.iter() {
             work_id_by_key.entry(k.clone()).or_insert(None);
         }
 
-        // mapped_keys via work_ids
-        let work_ids: Vec<Id<domain::works::Work>> = keys
-            .iter()
-            .filter_map(|k| work_id_by_key.get(k).and_then(|v| v.clone()))
-            .collect();
-        let mut mapped_keys: HashMap<K, Id<domain::collection::CollectionElement>> = HashMap::new();
-        if !work_ids.is_empty() {
-            let rows = self
-                .manager
-                .run(|repos| {
-                    let work_ids = work_ids.clone();
-                    Box::pin(async move {
-                        let mut repo = repos.collection();
-                        repo.get_collection_ids_by_work_ids(&work_ids).await
-                    })
-                })
-                .await?;
-            let mut keys_by_work: HashMap<Id<domain::works::Work>, Vec<K>> = HashMap::new();
-            for (k, v) in work_id_by_key.iter() {
-                if let Some(wid) = v.clone() {
-                    keys_by_work.entry(wid).or_default().push(k.clone());
-                }
-            }
-            for (wid, ce) in rows.into_iter() {
-                if let Some(kk) = keys_by_work.get(&wid) {
-                    for k in kk.iter() {
-                        mapped_keys.insert(k.clone(), ce.clone());
-                    }
-                }
-            }
-        }
-
-        // omitted
+        // 除外対象 Work ID を取得
         let omitted_work_ids: HashSet<Id<domain::works::Work>> = self
             .manager
             .run(|repos| {
@@ -157,16 +142,13 @@ where
             })
             .await?;
 
-        // egs -> work を Work 側のテーブルから直接解決
+        // EGS ID ごとの既存 Work ID を検索（Work テーブルから直接）
         let egs_ids: Vec<i32> = games
             .iter()
             .filter_map(|g| (ops.egs)(g).map(|e| e.erogamescape_id))
             .collect();
-        let mut egs_id_to_collection_id: HashMap<i32, Id<domain::collection::CollectionElement>> =
-            HashMap::new();
         let mut egs_id_to_work_id: HashMap<i32, Id<domain::works::Work>> = HashMap::new();
         if !egs_ids.is_empty() {
-            // Work 直結
             let pairs = self
                 .manager
                 .run(|repos| {
@@ -182,32 +164,19 @@ where
             for (egs, wid) in pairs.into_iter() {
                 egs_id_to_work_id.insert(egs, wid);
             }
-
-            // 互換: サムネ/アイコン運用のため CE も参照（移行フェーズ）
-            let rows = self
-                .manager
-                .run(|repos| {
-                    let egs_ids = egs_ids.clone();
-                    Box::pin(async move {
-                        let mut repo = repos.collection();
-                        repo.get_collection_ids_by_erogamescape_ids(&egs_ids).await
-                    })
-                })
-                .await?;
-            for (egs_id, ceid) in rows.into_iter() {
-                egs_id_to_collection_id.insert(egs_id, ceid);
-            }
         }
 
         Ok(BatchSnapshot {
             work_id_by_key,
-            mapped_keys,
             omitted_work_ids,
-            egs_id_to_collection_id,
             egs_id_to_work_id,
         })
     }
 
+    /// 個別ゲームに対する同期計画を決定。
+    /// - 既に Work が存在すれば SkipExists
+    /// - 除外対象 Work なら SkipOmitted
+    /// - それ以外は Apply（新規作成/EGS 情報更新）
     pub async fn decide_for_game_generic<P: Clone, K: Clone + std::cmp::Eq + std::hash::Hash>(
         &self,
         snapshot: &BatchSnapshot<K>,
@@ -215,11 +184,14 @@ where
         ops: &StoreOps<P, K, R>,
     ) -> anyhow::Result<PlanDecisionGeneric<K>> {
         let key = (ops.key_from_param)(&param);
-        if snapshot.mapped_keys.contains_key(&key) {
+
+        // ストアキーに紐づく Work が既に存在すればスキップ
+        let work_id = snapshot.work_id_by_key.get(&key).cloned().unwrap_or(None);
+        if work_id.is_some() {
             return Ok(PlanDecisionGeneric::SkipExists);
         }
 
-        let work_id = snapshot.work_id_by_key.get(&key).cloned().unwrap_or(None);
+        // Work が除外対象ならスキップ（work_id が Some の場合のみチェック）
         if let Some(ref work_id) = work_id {
             if snapshot.omitted_work_ids.contains(work_id) {
                 return Ok(PlanDecisionGeneric::SkipOmitted);
@@ -231,23 +203,20 @@ where
             work_id_by_key: work_id,
             work_id_by_erogamescape: (ops.egs)(&param)
                 .and_then(|e| snapshot.egs_id_to_work_id.get(&e.erogamescape_id).cloned()),
-            collection_element_id_by_erogamescape: (ops.egs)(&param).and_then(|e| {
-                snapshot
-                    .egs_id_to_collection_id
-                    .get(&e.erogamescape_id)
-                    .cloned()
-            }),
             gamename: (ops.gamename)(&param).to_string(),
-            image_url: (ops.image_url)(&param).to_string(),
             parent_pack_work_id: (ops.parent_pack_work_id)(&param),
             egs: (ops.egs)(&param).cloned(),
         }))
     }
 
+    /// 同期適用を実行。
+    /// - Work の新規作成または既存利用
+    /// - ストアマッピングの upsert
+    /// - EGS 情報の upsert（あれば）
+    /// - 親パック関連付け（DMM の場合）
     pub async fn execute_apply_with_repos_generic<P, K>(
         repos: &R,
         apply: SyncApplyGeneric<K>,
-        resolver: &dyn SavePathResolver,
         ops: &StoreOps<P, K, R>,
     ) -> anyhow::Result<()>
     where
@@ -257,14 +226,12 @@ where
             key,
             work_id_by_key,
             work_id_by_erogamescape,
-            collection_element_id_by_erogamescape,
             gamename,
-            image_url,
             parent_pack_work_id,
             egs,
         } = apply;
 
-        // Work 確保
+        // 既存 Work があれば利用、なければ新規作成
         let work_id = match work_id_by_key.or(work_id_by_erogamescape) {
             Some(work_id) => work_id,
             None => {
@@ -274,50 +241,37 @@ where
                     .await?
             }
         };
-        // ストアキー upsert
+
+        // ストアキーとのマッピングを upsert
         (ops.upsert_store_mapping)(repos, &key, work_id.clone()).await?;
 
-        // CE 確保（画像保存のための互換運用。将来的に削除）
-        let collection_element_id = match collection_element_id_by_erogamescape {
-            Some(ceid) => ceid,
-            None => {
-                let ceid = repos
-                    .collection()
-                    .allocate_new_collection_element_id(&gamename)
-                    .await?;
-                // 旧 CE 情報は以後更新しない（EGS 情報は Work 側へ）
-                ceid
-            }
-        };
-
-        // CE-Work マッピング（互換）
-        repos
-            .collection()
-            .upsert_work_mapping(&collection_element_id, work_id.clone())
-            .await?;
-
-        // Work 側へ EGS 情報を upsert
+        // EGS 情報があれば Work に upsert
         if let Some(ref egs_info) = egs {
+            // 1) EGS マップを upsert
             repos
                 .work()
-                .upsert_info_by_erogamescape(
-                    work_id.clone(),
-                    egs_info.erogamescape_id,
-                    &gamename, // ruby 未取得時は仮置き
-                    &egs_info.brandname,
-                    &egs_info.brandname_ruby,
-                    &egs_info.sellday,
-                    egs_info.is_nukige,
-                )
+                .upsert_erogamescape_map(work_id.clone(), egs_info.erogamescape_id)
                 .await?;
+
+            // 2) EGS 情報を upsert
+            let ruby = if egs_info.gamename_ruby.is_empty() {
+                gamename.clone()
+            } else {
+                egs_info.gamename_ruby.clone()
+            };
+            let info = domain::erogamescape::NewErogamescapeInformation::new(
+                egs_info.erogamescape_id,
+                ruby,
+                egs_info.brandname.clone(),
+                egs_info.brandname_ruby.clone(),
+                egs_info.sellday.clone(),
+                egs_info.is_nukige,
+            );
+            repos.erogamescape().upsert_information(&info).await?;
         }
 
-        // 親パック（DMMのみ有効）
+        // 親パック関連付け（DMM パックの場合）
         (ops.link_parent_pack_if_needed)(repos, work_id.clone(), parent_pack_work_id).await?;
-
-        // 画像投入
-        (ops.enqueue_images_with_repos)(repos, resolver, &collection_element_id, &key, &image_url)
-            .await?;
 
         Ok(())
     }
