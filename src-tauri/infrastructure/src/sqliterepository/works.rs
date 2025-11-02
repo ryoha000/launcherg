@@ -7,7 +7,7 @@ use domain::{
         DlsiteWork, DmmWork, NewDlsiteWork, NewDmmWork, NewWork, NewWorkLike, Work, WorkDetails,
         WorkLike,
     },
-    Id,
+    Id, StrId,
 };
 use sqlx::query_as;
 
@@ -17,25 +17,28 @@ use crate::sqliterepository::{
 };
 
 impl WorkRepository for RepositoryImpl<Work> {
-    async fn upsert(&mut self, new_work: &NewWork) -> anyhow::Result<Id<Work>> {
+    async fn upsert(&mut self, new_work: &NewWork) -> anyhow::Result<StrId<Work>> {
         let title = new_work.title.clone();
+        let work_id = uuid::Uuid::new_v4().to_string();
         let id = self
             .executor
             .with_conn(|conn| {
+                let work_id = work_id.clone();
                 Box::pin(async move {
-                    let (id,): (i64,) = sqlx::query_as(
-                        r#"INSERT INTO works (title) VALUES (?)
+                    let (id,): (String,) = sqlx::query_as(
+                        r#"INSERT INTO works (id, title) VALUES (?, ?)
                        RETURNING id"#,
                     )
+                    .bind(work_id)
                     .bind(title)
                     .fetch_one(conn)
                     .await?;
-                    Ok::<i64, anyhow::Error>(id)
+                    Ok::<String, anyhow::Error>(id)
                 })
             })
             .await?;
 
-        Ok(Id::new(id as i32))
+        Ok(StrId::new(id))
     }
 
     async fn find_by_title(&mut self, title: &str) -> anyhow::Result<Option<Work>> {
@@ -117,10 +120,10 @@ impl WorkRepository for RepositoryImpl<Work> {
             })
         }).await?;
 
-        let mut map: BTreeMap<i64, WorkDetails> = BTreeMap::new();
+        let mut map: BTreeMap<String, WorkDetails> = BTreeMap::new();
         for r in rows.into_iter() {
             let details: WorkDetails = r.into();
-            let key = details.work.id.value as i64;
+            let key = details.work.id.value.clone();
             match map.get_mut(&key) {
                 Some(entry) => {
                     if entry.dmm.is_none() {
@@ -146,8 +149,8 @@ impl WorkRepository for RepositoryImpl<Work> {
         Ok(map.into_values().collect())
     }
 
-    async fn find_details_by_work_id(&mut self, work_id: Id<Work>) -> anyhow::Result<Option<WorkDetails>> {
-        let idv = work_id.value as i64;
+    async fn find_details_by_work_id(&mut self, work_id: StrId<Work>) -> anyhow::Result<Option<WorkDetails>> {
+        let idv = work_id.value.clone();
         let rows = self.executor.with_conn(|conn| {
             Box::pin(async move {
                 let rows: Vec<WorkDetailsRow> = query_as(
@@ -209,10 +212,10 @@ impl WorkRepository for RepositoryImpl<Work> {
             })
         }).await?;
 
-        let mut map: BTreeMap<i64, WorkDetails> = BTreeMap::new();
+        let mut map: BTreeMap<String, WorkDetails> = BTreeMap::new();
         for r in rows.into_iter() {
             let details: WorkDetails = r.into();
-            let key = details.work.id.value as i64;
+            let key = details.work.id.value.clone();
             match map.get_mut(&key) {
                 Some(entry) => {
                     if entry.dmm.is_none() { entry.dmm = details.dmm; }
@@ -234,13 +237,13 @@ impl WorkRepository for RepositoryImpl<Work> {
     async fn find_work_ids_by_erogamescape_ids(
         &mut self,
         erogamescape_ids: &[i32],
-    ) -> anyhow::Result<Vec<(i32, Id<Work>)>> {
+    ) -> anyhow::Result<Vec<(i32, StrId<Work>)>> {
         use sqlx::QueryBuilder;
         if erogamescape_ids.is_empty() {
             return Ok(Vec::new());
         }
         let ids = erogamescape_ids.to_vec();
-        let rows: Vec<(i64, i64)> = self
+        let rows: Vec<(i64, String)> = self
             .executor
             .with_conn(|conn| {
                 Box::pin(async move {
@@ -254,23 +257,23 @@ impl WorkRepository for RepositoryImpl<Work> {
                         }
                     }
                     qb.push(")");
-                    let rows: Vec<(i64, i64)> = qb.build_query_as().fetch_all(conn).await?;
+                    let rows: Vec<(i64, String)> = qb.build_query_as().fetch_all(conn).await?;
                     Ok(rows)
                 })
             })
             .await?;
         Ok(rows
             .into_iter()
-            .map(|(egs, wid)| (egs as i32, Id::new(wid as i32)))
+            .map(|(egs, wid)| (egs as i32, StrId::new(wid)))
             .collect())
     }
 
     async fn upsert_erogamescape_map(
         &mut self,
-        work_id: Id<Work>,
+        work_id: StrId<Work>,
         erogamescape_id: i32,
     ) -> anyhow::Result<()> {
-        let wid = work_id.value as i64;
+        let wid = work_id.value.clone();
         let egs_id = erogamescape_id as i64;
         self.executor
             .with_conn(|conn| {
@@ -294,8 +297,8 @@ impl WorkRepository for RepositoryImpl<Work> {
         Ok(())
     }
 
-    async fn delete(&mut self, id: Id<Work>) -> anyhow::Result<()> {
-        let idv = id.value as i64;
+    async fn delete(&mut self, id: StrId<Work>) -> anyhow::Result<()> {
+        let idv = id.value.clone();
         self.executor
             .with_conn(|conn| {
                 Box::pin(async move {
@@ -309,12 +312,12 @@ impl WorkRepository for RepositoryImpl<Work> {
             .await
     }
 
-    async fn list_work_ids_missing_thumbnail_size(&mut self) -> anyhow::Result<Vec<Id<Work>>> {
-        let rows: Vec<(i64,)> = self
+    async fn list_work_ids_missing_thumbnail_size(&mut self) -> anyhow::Result<Vec<StrId<Work>>> {
+        let rows: Vec<(String,)> = self
             .executor
             .with_conn(|conn| {
                 Box::pin(async move {
-                    let rows: Vec<(i64,)> = sqlx::query_as(
+                    let rows: Vec<(String,)> = sqlx::query_as(
                         r#"
                         SELECT w.id
                         FROM works w
@@ -330,16 +333,16 @@ impl WorkRepository for RepositoryImpl<Work> {
                 })
             })
             .await?;
-        Ok(rows.into_iter().map(|(id,)| Id::new(id as i32)).collect())
+        Ok(rows.into_iter().map(|(id,)| StrId::new(id)).collect())
     }
 
     async fn upsert_work_thumbnail_size(
         &mut self,
-        work_id: Id<Work>,
+        work_id: StrId<Work>,
         width: i32,
         height: i32,
     ) -> anyhow::Result<()> {
-        let wid = work_id.value as i64;
+        let wid = work_id.value.clone();
         let width = width as i64;
         let height = height as i64;
         self.executor
@@ -369,10 +372,10 @@ impl WorkRepository for RepositoryImpl<Work> {
 
     async fn update_last_play_at_by_work_id(
         &mut self,
-        work_id: Id<Work>,
+        work_id: StrId<Work>,
         last_play_at: chrono::DateTime<chrono::Local>,
     ) -> anyhow::Result<()> {
-        let wid = work_id.value as i64;
+        let wid = work_id.value.clone();
         let last_play_at_naive = last_play_at.naive_utc();
         self.executor
             .with_conn(|conn| {
@@ -419,7 +422,7 @@ impl DmmWorkRepository for RepositoryImpl<domain::works::DmmWork> {
                     .bind(&new_work.store_id)
                     .bind(&new_work.category)
                     .bind(&new_work.subcategory)
-                    .bind(new_work.work_id.value as i64)
+                    .bind(new_work.work_id.value.clone())
                     .fetch_one(&mut *conn)
                     .await?;
 
@@ -536,8 +539,8 @@ INNER JOIN keys k
             .collect::<anyhow::Result<Vec<_>>>()?)
     }
 
-    async fn find_by_work_id(&mut self, work_id: Id<Work>) -> anyhow::Result<Option<DmmWork>> {
-        let idv = work_id.value as i64;
+    async fn find_by_work_id(&mut self, work_id: StrId<Work>) -> anyhow::Result<Option<DmmWork>> {
+        let idv = work_id.value.clone();
         let row = self
             .executor
             .with_conn(|conn| {
@@ -579,7 +582,7 @@ impl DlsiteWorkRepository for RepositoryImpl<domain::works::DlsiteWork> {
                     )
                     .bind(&new_work.store_id)
                     .bind(&new_work.category)
-                    .bind(new_work.work_id.value as i64)
+                    .bind(new_work.work_id.value.clone())
                     .fetch_one(&mut *conn)
                     .await?;
 
@@ -668,9 +671,9 @@ impl WorkLnkRepository for RepositoryImpl<domain::repository::work_lnk::WorkLnk>
     }
     async fn list_by_work_id(
         &mut self,
-        work_id: Id<domain::works::Work>,
+        work_id: StrId<domain::works::Work>,
     ) -> anyhow::Result<Vec<DomainWorkLnk>> {
-        let idv = work_id.value as i64;
+        let idv = work_id.value.clone();
         let rows: Vec<WorkLnkRow> = self.executor.with_conn(|conn| {
             Box::pin(async move {
                 let rows: Vec<WorkLnkRow> = sqlx::query_as(
@@ -690,7 +693,7 @@ impl WorkLnkRepository for RepositoryImpl<domain::repository::work_lnk::WorkLnk>
         &mut self,
         new_lnk: &NewWorkLnk,
     ) -> anyhow::Result<Id<domain::repository::work_lnk::WorkLnk>> {
-        let work_id = new_lnk.work_id.value as i64;
+        let work_id = new_lnk.work_id.value.clone();
         let lnk_path = new_lnk.lnk_path.clone();
         let id: i64 = self
             .executor
@@ -732,7 +735,7 @@ impl WorkLnkRepository for RepositoryImpl<domain::repository::work_lnk::WorkLnk>
 
 impl domain::repository::work_like::WorkLikeRepository for RepositoryImpl<domain::works::WorkLike> {
     async fn upsert(&mut self, like: &NewWorkLike) -> anyhow::Result<Id<WorkLike>> {
-        let work_id = like.work_id.value as i64;
+        let work_id = like.work_id.value.clone();
         let like_at = like.like_at.naive_utc();
         let (id,): (i64,) = self
             .executor
@@ -754,8 +757,8 @@ impl domain::repository::work_like::WorkLikeRepository for RepositoryImpl<domain
         Ok(Id::new(id as i32))
     }
 
-    async fn delete_by_work_id(&mut self, work_id: Id<Work>) -> anyhow::Result<()> {
-        let idv = work_id.value as i64;
+    async fn delete_by_work_id(&mut self, work_id: StrId<Work>) -> anyhow::Result<()> {
+        let idv = work_id.value.clone();
         self.executor
             .with_conn(|conn| {
                 Box::pin(async move {
@@ -769,8 +772,8 @@ impl domain::repository::work_like::WorkLikeRepository for RepositoryImpl<domain
             .await
     }
 
-    async fn get_by_work_id(&mut self, work_id: Id<Work>) -> anyhow::Result<Option<WorkLike>> {
-        let idv = work_id.value as i64;
+    async fn get_by_work_id(&mut self, work_id: StrId<Work>) -> anyhow::Result<Option<WorkLike>> {
+        let idv = work_id.value.clone();
         let row: Option<crate::sqliterepository::models::works::WorkLikeRow> = self
             .executor
             .with_conn(|conn| {
@@ -791,7 +794,7 @@ impl domain::repository::work_like::WorkLikeRepository for RepositoryImpl<domain
 
     async fn update_like_at_by_work_id(
         &mut self,
-        work_id: Id<Work>,
+        work_id: StrId<Work>,
         like_at: Option<chrono::DateTime<chrono::Local>>,
     ) -> anyhow::Result<()> {
         match like_at {

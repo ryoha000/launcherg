@@ -243,8 +243,12 @@ mod tests {
             let mut work = repos.work.lock().await;
             work.expect_find_by_title()
                 .returning(|_| Box::pin(async { Ok(None) }));
+            work.expect_find_work_ids_by_erogamescape_ids()
+                .returning(|_| Box::pin(async { Ok::<_, anyhow::Error>(vec![]) }));
             work.expect_upsert()
-                .returning(|_| Box::pin(async { Ok(domain::Id::new(100)) }));
+                .returning(|_| Box::pin(async { Ok(domain::StrId::new("100".to_string())) }));
+            work.expect_upsert_erogamescape_map()
+                .returning(|_, _| Box::pin(async { Ok::<_, anyhow::Error>(()) }));
         }
         {
             let mut agc = repos.all_game_cache.lock().await;
@@ -290,8 +294,12 @@ mod tests {
             let mut work = repos.work.lock().await;
             work.expect_find_by_title()
                 .returning(|_| Box::pin(async { Ok(None) }));
+            work.expect_find_work_ids_by_erogamescape_ids()
+                .returning(|_| Box::pin(async { Ok::<_, anyhow::Error>(vec![]) }));
             work.expect_upsert()
-                .returning(|_| Box::pin(async { Ok(domain::Id::new(100)) }));
+                .returning(|_| Box::pin(async { Ok(domain::StrId::new("100".to_string())) }));
+            work.expect_upsert_erogamescape_map()
+                .returning(|_, _| Box::pin(async { Ok::<_, anyhow::Error>(()) }));
         }
         {
             let mut agc = repos.all_game_cache.lock().await;
@@ -345,6 +353,8 @@ mod tests {
             let mut work = repos.work.lock().await;
             work.expect_find_by_title()
                 .returning(|_| Box::pin(async { Ok(None) }));
+            work.expect_find_work_ids_by_erogamescape_ids()
+                .returning(|_| Box::pin(async { Ok::<_, anyhow::Error>(vec![]) }));
             work.expect_upsert()
                 .returning(|_| Box::pin(async { Err(anyhow::anyhow!("fail")) }));
         }

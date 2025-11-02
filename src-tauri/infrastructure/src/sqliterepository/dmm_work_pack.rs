@@ -1,15 +1,16 @@
 use crate::sqliterepository::sqliterepository::RepositoryImpl;
 use domain::{
-    dmm_work_pack::DmmWorkPack, repository::dmm_work_pack::DmmPackRepository, works::Work, Id,
+    dmm_work_pack::DmmWorkPack, repository::dmm_work_pack::DmmPackRepository, works::Work, Id, StrId,
 };
 
 impl DmmPackRepository for RepositoryImpl<domain::dmm_work_pack::DmmWorkPack> {
-    async fn add(&mut self, work_id: Id<Work>) -> anyhow::Result<()> {
+    async fn add(&mut self, work_id: StrId<Work>) -> anyhow::Result<()> {
+        let work_id_str = work_id.value.clone();
         self.executor
             .with_conn(|conn| {
                 Box::pin(async move {
                     sqlx::query(r#"INSERT OR IGNORE INTO dmm_work_packs (work_id) VALUES (?)"#)
-                        .bind(work_id.value)
+                        .bind(work_id_str)
                         .execute(conn)
                         .await?;
                     Ok::<(), anyhow::Error>(())
@@ -19,12 +20,13 @@ impl DmmPackRepository for RepositoryImpl<domain::dmm_work_pack::DmmWorkPack> {
         Ok(())
     }
 
-    async fn remove(&mut self, work_id: Id<Work>) -> anyhow::Result<()> {
+    async fn remove(&mut self, work_id: StrId<Work>) -> anyhow::Result<()> {
+        let work_id_str = work_id.value.clone();
         self.executor
             .with_conn(|conn| {
                 Box::pin(async move {
                     sqlx::query(r#"DELETE FROM dmm_work_packs WHERE work_id = ?"#)
-                        .bind(work_id.value)
+                        .bind(work_id_str)
                         .execute(conn)
                         .await?;
                     Ok::<(), anyhow::Error>(())
@@ -35,7 +37,7 @@ impl DmmPackRepository for RepositoryImpl<domain::dmm_work_pack::DmmWorkPack> {
     }
 
     async fn list(&mut self) -> anyhow::Result<Vec<DmmWorkPack>> {
-        let rows: Vec<(i64, i64)> =
+        let rows: Vec<(i64, String)> =
             self.executor
                 .with_conn(|conn| {
                     Box::pin(async move {
@@ -51,19 +53,20 @@ impl DmmPackRepository for RepositoryImpl<domain::dmm_work_pack::DmmWorkPack> {
             .into_iter()
             .map(|(id, work_id)| DmmWorkPack {
                 id: Id::new(id as i32),
-                work_id: Id::new(work_id as i32),
+                work_id: StrId::new(work_id),
             })
             .collect())
     }
 
-    async fn exists(&mut self, work_id: Id<Work>) -> anyhow::Result<bool> {
+    async fn exists(&mut self, work_id: StrId<Work>) -> anyhow::Result<bool> {
+        let work_id_str = work_id.value.clone();
         let row: Option<(i64,)> = self
             .executor
             .with_conn(|conn| {
                 Box::pin(async move {
                     Ok(
                         sqlx::query_as(r#"SELECT 1 FROM dmm_work_packs WHERE work_id = ? LIMIT 1"#)
-                            .bind(work_id.value)
+                            .bind(work_id_str)
                             .fetch_optional(conn)
                             .await?,
                     )

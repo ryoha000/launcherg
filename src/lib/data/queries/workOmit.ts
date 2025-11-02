@@ -12,7 +12,7 @@ export function useWorkOmitQuery() {
 }
 
 export function useAddWorkOmitMutation() {
-  return createMutation<unknown, Error, { workId: number }>(
+  return createMutation<unknown, Error, { workId: string }>(
     {
       mutationFn: input => commandWorkOmitAdd(input.workId),
       onSuccess: async () => {
@@ -26,7 +26,7 @@ export function useAddWorkOmitMutation() {
 }
 
 export function useRemoveWorkOmitMutation() {
-  return createMutation<unknown, Error, { workId: number }>(
+  return createMutation<unknown, Error, { workId: string }>(
     {
       mutationFn: input => commandWorkOmitRemove(input.workId),
       onSuccess: async () => {

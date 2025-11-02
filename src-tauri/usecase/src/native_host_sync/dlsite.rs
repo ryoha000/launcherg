@@ -31,14 +31,14 @@ where
         fn egs(p: &DlsiteSyncGameParam) -> Option<&EgsInfo> {
             p.egs.as_ref()
         }
-        fn parent_pack_work_id(_: &DlsiteSyncGameParam) -> Option<domain::Id<domain::works::Work>> {
+        fn parent_pack_work_id(_: &DlsiteSyncGameParam) -> Option<domain::StrId<domain::works::Work>> {
             None
         }
 
         fn find_work_id_by_key<'a, Rx: RepositoriesExt + Send + Sync + 'static>(
             repos: &'a Rx,
             k: &'a DlsiteKey,
-        ) -> futures::future::BoxFuture<'a, anyhow::Result<Option<domain::Id<domain::works::Work>>>>
+        ) -> futures::future::BoxFuture<'a, anyhow::Result<Option<domain::StrId<domain::works::Work>>>>
         {
             Box::pin(async move {
                 let mut repo = repos.dlsite_work();
@@ -51,7 +51,7 @@ where
         fn upsert_store_mapping<'a, Rx: RepositoriesExt + Send + Sync + 'static>(
             repos: &'a Rx,
             k: &'a DlsiteKey,
-            work_id: domain::Id<domain::works::Work>,
+            work_id: domain::StrId<domain::works::Work>,
         ) -> futures::future::BoxFuture<'a, anyhow::Result<()>> {
             Box::pin(async move {
                 let mut repo = repos.dlsite_work();
@@ -67,8 +67,8 @@ where
         }
         fn link_parent_pack_if_needed<'a, Rx: RepositoriesExt + Send + Sync + 'static>(
             _: &'a Rx,
-            _: domain::Id<domain::works::Work>,
-            _: Option<domain::Id<domain::works::Work>>,
+            _: domain::StrId<domain::works::Work>,
+            _: Option<domain::StrId<domain::works::Work>>,
         ) -> futures::future::BoxFuture<'a, anyhow::Result<()>> {
             Box::pin(async move { Ok(()) })
         }
@@ -131,7 +131,7 @@ where
                                     if let Some(work_id) = (ops.find_work_id_by_key)(&repos, &key).await? {
                                         if let Some(image_url) = image_url_by_key.get(&key) {
                                             if !image_url.is_empty() {
-                                                let icon_dst = resolver.icon_png_path(work_id.value);
+                                                let icon_dst = resolver.icon_png_path(&work_id.value);
                                                 let mut repo = repos.image_queue();
                                                 let _ = repo
                                                     .enqueue(
@@ -142,7 +142,7 @@ where
                                                     )
                                                     .await;
                                                 let normalized = normalize_thumbnail_url(image_url);
-                                                let thumb_dst = resolver.thumbnail_png_path(work_id.value);
+                                                let thumb_dst = resolver.thumbnail_png_path(&work_id.value);
                                                 let _ = repo
                                                     .enqueue(
                                                         &normalized,

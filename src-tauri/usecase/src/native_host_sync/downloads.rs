@@ -14,7 +14,7 @@ use domain::{
         save_path_resolver::SavePathResolver,
         work_linker::{WorkLinkTask, WorkLinker},
     },
-    Id,
+    StrId,
 };
 
 pub struct DownloadsUseCase<U, R, FS, DR, WL>
@@ -66,7 +66,7 @@ where
     pub async fn resolve_dmm_work_id(
         &self,
         store_id: &str,
-    ) -> anyhow::Result<Id<domain::works::Work>> {
+    ) -> anyhow::Result<StrId<domain::works::Work>> {
         let maybe = self
             .manager
             .run(|repos| {
@@ -94,7 +94,7 @@ where
     pub async fn resolve_dlsite_work_id(
         &self,
         store_id: &str,
-    ) -> anyhow::Result<Id<domain::works::Work>> {
+    ) -> anyhow::Result<StrId<domain::works::Work>> {
         let sid = store_id.to_string();
         let maybe = self
             .manager
@@ -122,7 +122,7 @@ where
     /// `work_id` が `None` の場合は何もせず成功として返す。
     pub async fn save_download_path(
         &self,
-        work_id: Id<domain::works::Work>,
+        work_id: StrId<domain::works::Work>,
         path: &str,
     ) -> anyhow::Result<()> {
         let p = path.to_string();
@@ -149,7 +149,7 @@ where
     pub async fn handle_single(
         &self,
         filename: &str,
-        work_id: Id<domain::works::Work>,
+        work_id: StrId<domain::works::Work>,
     ) -> anyhow::Result<PathBuf> {
         let dst_root = PathBuf::from(self.downloaded_games_dir());
         let src = Path::new(filename);
@@ -192,7 +192,7 @@ where
     pub async fn handle_split(
         &self,
         items: &[String],
-        work_id: Id<domain::works::Work>,
+        work_id: StrId<domain::works::Work>,
     ) -> anyhow::Result<PathBuf> {
         let dst_root = PathBuf::from(self.downloaded_games_dir());
         std::fs::create_dir_all(&dst_root).ok();
@@ -219,7 +219,7 @@ where
     async fn make_unique_work_subdir(
         &self,
         dst_root: &Path,
-        work_id: Id<domain::works::Work>,
+        work_id: StrId<domain::works::Work>,
     ) -> anyhow::Result<PathBuf> {
         let wid = work_id.value;
         let now = Local::now();
@@ -242,7 +242,7 @@ where
 
     pub async fn register_installed_work(
         &self,
-        work_id: Id<domain::works::Work>,
+        work_id: StrId<domain::works::Work>,
         install_dir: &Path,
     ) -> anyhow::Result<()> {
         // 候補列挙: インストールディレクトリ以下を走査
@@ -365,7 +365,7 @@ mod tests {
         let install_dir = temp.path().join("installed");
         std::fs::create_dir_all(&install_dir).unwrap();
 
-        uc.register_installed_work(Id::new(10), &install_dir)
+        uc.register_installed_work(StrId::new("10".to_string()), &install_dir)
             .await
             .unwrap();
     }
@@ -412,7 +412,7 @@ mod tests {
         std::fs::write(&exe_path, b"dummy").unwrap();
 
         let result_path = uc
-            .handle_single(source_dir.path().to_string_lossy().as_ref(), Id::new(42))
+            .handle_single(source_dir.path().to_string_lossy().as_ref(), StrId::new("42".to_string()))
             .await
             .unwrap();
         assert!(result_path.starts_with(temp.path()));

@@ -7,9 +7,7 @@
   import VirtualScrollerMasonry from '@/components/UI/VirtualScrollerMasonry.svelte'
   import {
     commandGetWorkDetailsByWorkId,
-    commandUpdateAllGameCache,
   } from '@/lib/command'
-  import { scrapeAllGameCacheOnes } from '@/lib/scrape/scrapeAllGame'
   import { showErrorToast, showInfoToast } from '@/lib/toast'
   import { sidebarCollectionElements } from '@/store/sidebarCollectionElements'
   import Icon from '/icon.png'
@@ -17,7 +15,7 @@
   const memoRegex = /^smde_memo-(\d+)$/
   const memoPromises = Promise.all(
     Object.keys(localStorage)
-      .map(v => +(v.match(memoRegex)?.[1] ?? '0'))
+      .map(v => v.match(memoRegex)?.[1] ?? '')
       .filter(v => v)
       .map(v => commandGetWorkDetailsByWorkId(v)),
   )
@@ -32,11 +30,13 @@
   const refetchThumbnail = async () => {
     try {
       disabledRefetchThumbnail = true
-      const ids = $flattenShown
-        .filter(v => !v.thumbnail?.width && !v.thumbnail?.height)
-        .map(v => v.id)
-      const caches = await scrapeAllGameCacheOnes(ids)
-      await commandUpdateAllGameCache(caches)
+      // TODO: workId から erogamescape_id を取得する必要がある
+      // 現在は workId が string になったため、一時的に無効化
+      // const ids = $flattenShown
+      //   .filter(v => !v.thumbnail?.width && !v.thumbnail?.height)
+      //   .map(v => v.id)
+      // const caches = await scrapeAllGameCacheOnes(ids)
+      // await commandUpdateAllGameCache(caches)
       await sidebarCollectionElements.refetch()
       showInfoToast('サムネイルの再取得が完了しました')
     }

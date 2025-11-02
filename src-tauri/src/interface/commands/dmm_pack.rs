@@ -8,11 +8,11 @@ use crate::interface::module::{Modules, ModulesExt};
 #[tauri::command]
 pub async fn work_pack_add(
     modules: State<'_, Arc<Modules>>,
-    work_id: i32,
+    work_id: String,
 ) -> anyhow::Result<(), CommandError> {
     modules
         .dmm_pack_use_case()
-        .add(domain::Id::new(work_id))
+        .add(domain::StrId::new(work_id))
         .await?;
     Ok(())
 }
@@ -20,11 +20,11 @@ pub async fn work_pack_add(
 #[tauri::command]
 pub async fn work_pack_remove(
     modules: State<'_, Arc<Modules>>,
-    work_id: i32,
+    work_id: String,
 ) -> anyhow::Result<(), CommandError> {
     modules
         .dmm_pack_use_case()
-        .remove(domain::Id::new(work_id))
+        .remove(domain::StrId::new(work_id))
         .await?;
     Ok(())
 }
@@ -32,7 +32,7 @@ pub async fn work_pack_remove(
 #[tauri::command]
 pub async fn work_pack_all(
     modules: State<'_, Arc<Modules>>,
-) -> anyhow::Result<Vec<i32>, CommandError> {
+) -> anyhow::Result<Vec<String>, CommandError> {
     let list = modules.dmm_pack_use_case().list().await?;
     Ok(list.into_iter().map(|e| e.work_id.value).collect())
 }
@@ -40,7 +40,7 @@ pub async fn work_pack_all(
 #[tauri::command]
 pub async fn get_parent_dmm_pack_keys(
     modules: State<'_, Arc<Modules>>,
-    work_id: i32,
+    work_id: String,
 ) -> anyhow::Result<Option<DmmPackKeysVm>, CommandError> {
     let parent_id = modules
         .work_use_case()

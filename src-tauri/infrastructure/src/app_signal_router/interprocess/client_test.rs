@@ -62,7 +62,7 @@ mod tests {
     fn sample_refetch_work_signal(work_id: i32) -> AppSignal {
         AppSignal {
             source: AppSignalSource::NativeMessagingHost,
-            event: AppSignalEvent::RefetchWork { work_id },
+            event: AppSignalEvent::RefetchWork { work_id: work_id.to_string() },
             issued_at: Utc::now(),
         }
     }

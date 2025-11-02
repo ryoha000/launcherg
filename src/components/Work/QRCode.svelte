@@ -8,7 +8,7 @@
 
   interface Props {
     isOpen: boolean
-    id: number
+    id: string
     seiyaUrl: string
   }
 

@@ -72,7 +72,7 @@ export async function commandLaunchWork(isRunAsAdmin: boolean, workLnkId: number
   })
 }
 
-export async function commandListWorkLnks(workId: number) {
+export async function commandListWorkLnks(workId: string) {
   return await invoke<[number, string][]>('list_work_lnks', { workId })
 }
 
@@ -83,7 +83,7 @@ export async function commandGetPlayTomeMinutes(collectionElementId: number) {
 // removed: commandGetCollectionElement
 
 // removed: commandDeleteCollectionElement
-export async function commandDeleteWork(workId: number) {
+export async function commandDeleteWork(workId: string) {
   return await invoke<void>('delete_work', { workId })
 }
 
@@ -106,7 +106,7 @@ export async function commandUpsertErogamescapeInformation(details: Erogamescape
 
 // removed: commandGetAllElements
 
-export async function commandUpdateWorkLike(workId: number, isLike: boolean) {
+export async function commandUpdateWorkLike(workId: string, isLike: boolean) {
   return await invoke<void>('update_work_like', { workId, isLike })
 }
 
@@ -268,7 +268,7 @@ export async function commandGetDevExtensionInfo() {
 
 // Parent DMM Pack keys for a child work
 export interface DmmPackKeysVm { storeId: string, category: string, subcategory: string }
-export async function commandGetParentDmmPackKeys(workId: number) {
+export async function commandGetParentDmmPackKeys(workId: string) {
   return await invoke<DmmPackKeysVm | null>('get_parent_dmm_pack_keys', { workId })
 }
 
@@ -304,41 +304,41 @@ export async function commandRemoveRegistryKeys() {
 }
 
 // Work Omit Commands
-export async function commandWorkOmitAdd(workId: number) {
+export async function commandWorkOmitAdd(workId: string) {
   return await invoke<void>('work_omit_add', { workId })
 }
-export async function commandWorkOmitRemove(workId: number) {
+export async function commandWorkOmitRemove(workId: string) {
   return await invoke<void>('work_omit_remove', { workId })
 }
 export async function commandWorkOmitAll() {
-  return await invoke<number[]>('work_omit_all')
+  return await invoke<string[]>('work_omit_all')
 }
 
 // WorkDetails
-export interface WorkDetailsVm { id: number, title: string, dmm?: { id: number, storeId: string, category: string, subcategory: string }, dlsite?: { id: number, storeId: string, category: string }, erogamescapeId?: number | null, erogamescapeInformation?: { gamenameRuby: string, brandname: string, brandnameRuby: string, sellday: string, isNukige: boolean }, isOmitted: boolean, isDmmPack: boolean, thumbnail?: { path: string, width?: number, height?: number } | null, latestDownloadPath?: { id: number, workId: number, downloadPath: string } | null, likeAt?: string | null, installAt?: string | null, lastPlayAt?: string | null, registeredAt?: string | null }
+export interface WorkDetailsVm { id: string, title: string, dmm?: { id: number, storeId: string, category: string, subcategory: string }, dlsite?: { id: number, storeId: string, category: string }, erogamescapeId?: number | null, erogamescapeInformation?: { gamenameRuby: string, brandname: string, brandnameRuby: string, sellday: string, isNukige: boolean }, isOmitted: boolean, isDmmPack: boolean, thumbnail?: { path: string, width?: number, height?: number } | null, latestDownloadPath?: { id: number, workId: string, downloadPath: string } | null, likeAt?: string | null, installAt?: string | null, lastPlayAt?: string | null, registeredAt?: string | null }
 export async function commandGetWorkDetailsAll() {
   return await invoke<WorkDetailsVm[]>('get_work_details_all')
 }
 
-export async function commandGetWorkDetailsByWorkId(workId: number) {
+export async function commandGetWorkDetailsByWorkId(workId: string) {
   return await invoke<WorkDetailsVm | null>('get_work_details_by_work_id', { workId })
 }
 
 // Work Paths
 export interface WorkLnkVm { id: number, lnkPath: string }
 export interface WorkPathsVm { lnks: WorkLnkVm[] }
-export async function commandGetWorkPaths(workId: number) {
+export async function commandGetWorkPaths(workId: string) {
   return await invoke<WorkPathsVm>('get_work_paths', { workId })
 }
 
 // DMM Work Packs wrappers
 export async function commandWorkPackAll() {
-  return await invoke<number[]>('work_pack_all')
+  return await invoke<string[]>('work_pack_all')
 }
-export async function commandWorkPackAdd(workId: number) {
+export async function commandWorkPackAdd(workId: string) {
   return await invoke<void>('work_pack_add', { workId })
 }
-export async function commandWorkPackRemove(workId: number) {
+export async function commandWorkPackRemove(workId: string) {
   return await invoke<void>('work_pack_remove', { workId })
 }
 

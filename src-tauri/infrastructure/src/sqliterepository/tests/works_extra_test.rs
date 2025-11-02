@@ -11,7 +11,7 @@ async fn work_repository_normal_flows() {
     {
         let mut r = repo.work();
         let id = r.upsert(&NewWork { title: "TT".into() }).await.unwrap();
-        assert!(id.value > 0);
+        assert!(!id.value.is_empty());
         let found = r.find_by_title("TT").await.unwrap();
         assert!(found.is_some());
     }

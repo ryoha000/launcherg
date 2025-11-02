@@ -1,6 +1,6 @@
 <script lang='ts'>
   // 統合後: workId のみを扱う
-  type WorkOmitItemVm = number
+  type WorkOmitItemVm = string
   import { get } from 'svelte/store'
   import Button from '@/components/UI/Button.svelte'
   import { useAddWorkOmitMutation, useRemoveWorkOmitMutation, useWorkOmitQuery } from '@/lib/data/queries/workOmit'
@@ -24,8 +24,8 @@
   })
 
   const add = async () => {
-    const wid = Number(workIdInput.trim())
-    if (!wid || Number.isNaN(wid))
+    const wid = workIdInput.trim()
+    if (!wid)
       return
     await get(addMutation).mutateAsync({ workId: wid })
     workIdInput = ''

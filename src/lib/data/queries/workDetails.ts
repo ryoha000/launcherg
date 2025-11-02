@@ -10,7 +10,7 @@ export function useWorkDetailsAllQuery() {
   })
 }
 
-export function useWorkDetailsByWorkIdQuery(workId: number) {
+export function useWorkDetailsByWorkIdQuery(workId: string) {
   return createQuery<WorkDetailsVm | null>({
     queryKey: queryKeys.workDetails.byId(workId),
     queryFn: () => commandGetWorkDetailsByWorkId(workId),

@@ -9,7 +9,7 @@ import {
 import { sort } from '@/components/Sidebar/sort'
 import { sidebarCollectionElements } from '@/store/sidebarCollectionElements'
 
-export function search(filteredOption: Option<number>[], attributes: Attribute[], order: SortOrder): SidebarWorkItemsWithLabel[] {
+export function search(filteredOption: Option<string>[], attributes: Attribute[], order: SortOrder): SidebarWorkItemsWithLabel[] {
   const filteredElements = sidebarCollectionElements
     .value()
     .filter(

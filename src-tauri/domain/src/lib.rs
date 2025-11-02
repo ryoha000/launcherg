@@ -48,3 +48,9 @@ impl<T> core::hash::Hash for Id<T> {
         self.value.hash(state);
     }
 }
+
+#[derive(new, Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
+pub struct StrId<T> {
+    pub value: String,
+    _marker: PhantomData<T>,
+}

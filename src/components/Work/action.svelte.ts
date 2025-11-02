@@ -7,18 +7,18 @@ import { localStorageWritable } from '@/lib/utils'
 import { startProcessMap } from '@/store/startProcessMap'
 
 export function useStart(workDetail: WorkDetailsVm, workLnkQuery: CreateQueryResult<[number, string][], Error>) {
-  const isAdminRecord = localStorageWritable<Record<number, boolean>>(
+  const isAdminRecord = localStorageWritable<Record<string, boolean>>(
     'play-admin-cache',
     {},
   )
 
-  const updateRunAsForWork = (workId: number, runAs: 'admin' | 'user') => {
+  const updateRunAsForWork = (workId: string, runAs: 'admin' | 'user') => {
     isAdminRecord.update((v) => {
       v[workId] = runAs === 'admin'
       return v
     })
   }
-  const updateStartProcess = (id: number, processId: number) => {
+  const updateStartProcess = (id: string, processId: number) => {
     startProcessMap.update((v) => {
       v[id] = processId
       return v

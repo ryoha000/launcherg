@@ -105,7 +105,7 @@ impl crate::repository::works::WorkRepository for TestRepositories {
     async fn upsert(
         &mut self,
         new_work: &crate::works::NewWork,
-    ) -> anyhow::Result<crate::Id<crate::works::Work>> {
+    ) -> anyhow::Result<crate::StrId<crate::works::Work>> {
         self.work.lock().await.upsert(new_work).await
     }
     async fn find_by_title(&mut self, title: &str) -> anyhow::Result<Option<crate::works::Work>> {
@@ -116,14 +116,14 @@ impl crate::repository::works::WorkRepository for TestRepositories {
     }
     async fn find_details_by_work_id(
         &mut self,
-        work_id: crate::Id<crate::works::Work>,
+        work_id: crate::StrId<crate::works::Work>,
     ) -> anyhow::Result<Option<crate::works::WorkDetails>> {
         self.work.lock().await.find_details_by_work_id(work_id).await
     }
     async fn find_work_ids_by_erogamescape_ids(
         &mut self,
         erogamescape_ids: &[i32],
-    ) -> anyhow::Result<Vec<(i32, crate::Id<crate::works::Work>)>> {
+    ) -> anyhow::Result<Vec<(i32, crate::StrId<crate::works::Work>)>> {
         self.work
             .lock()
             .await
@@ -132,7 +132,7 @@ impl crate::repository::works::WorkRepository for TestRepositories {
     }
     async fn upsert_erogamescape_map(
         &mut self,
-        work_id: crate::Id<crate::works::Work>,
+        work_id: crate::StrId<crate::works::Work>,
         erogamescape_id: i32,
     ) -> anyhow::Result<()> {
         self.work
@@ -142,19 +142,19 @@ impl crate::repository::works::WorkRepository for TestRepositories {
             .await
     }
 
-    async fn delete(&mut self, id: crate::Id<crate::works::Work>) -> anyhow::Result<()> {
+    async fn delete(&mut self, id: crate::StrId<crate::works::Work>) -> anyhow::Result<()> {
         self.work.lock().await.delete(id).await
     }
 
     async fn list_work_ids_missing_thumbnail_size(
         &mut self,
-    ) -> anyhow::Result<Vec<crate::Id<crate::works::Work>>> {
+    ) -> anyhow::Result<Vec<crate::StrId<crate::works::Work>>> {
         self.work.lock().await.list_work_ids_missing_thumbnail_size().await
     }
 
     async fn upsert_work_thumbnail_size(
         &mut self,
-        work_id: crate::Id<crate::works::Work>,
+        work_id: crate::StrId<crate::works::Work>,
         width: i32,
         height: i32,
     ) -> anyhow::Result<()> {
@@ -166,7 +166,7 @@ impl crate::repository::works::WorkRepository for TestRepositories {
     }
     async fn update_last_play_at_by_work_id(
         &mut self,
-        work_id: crate::Id<crate::works::Work>,
+        work_id: crate::StrId<crate::works::Work>,
         last_play_at: chrono::DateTime<chrono::Local>,
     ) -> anyhow::Result<()> {
         self.work
@@ -230,7 +230,7 @@ impl crate::repository::works::DmmWorkRepository for TestRepositories {
     }
     async fn find_by_work_id(
         &mut self,
-        work_id: crate::Id<crate::works::Work>,
+        work_id: crate::StrId<crate::works::Work>,
     ) -> anyhow::Result<Option<crate::works::DmmWork>> {
         self.dmm_work.lock().await.find_by_work_id(work_id).await
     }
@@ -267,16 +267,16 @@ impl crate::repository::works::DlsiteWorkRepository for TestRepositories {
 }
 
 impl crate::repository::dmm_work_pack::DmmPackRepository for TestRepositories {
-    async fn add(&mut self, work_id: crate::Id<crate::works::Work>) -> anyhow::Result<()> {
+    async fn add(&mut self, work_id: crate::StrId<crate::works::Work>) -> anyhow::Result<()> {
         self.dmm_pack.lock().await.add(work_id).await
     }
-    async fn remove(&mut self, work_id: crate::Id<crate::works::Work>) -> anyhow::Result<()> {
+    async fn remove(&mut self, work_id: crate::StrId<crate::works::Work>) -> anyhow::Result<()> {
         self.dmm_pack.lock().await.remove(work_id).await
     }
     async fn list(&mut self) -> anyhow::Result<Vec<crate::dmm_work_pack::DmmWorkPack>> {
         self.dmm_pack.lock().await.list().await
     }
-    async fn exists(&mut self, work_id: crate::Id<crate::works::Work>) -> anyhow::Result<bool> {
+    async fn exists(&mut self, work_id: crate::StrId<crate::works::Work>) -> anyhow::Result<bool> {
         self.dmm_pack.lock().await.exists(work_id).await
     }
 }
@@ -392,16 +392,16 @@ impl crate::repository::native_host_log::NativeHostLogRepository for TestReposit
 }
 
 impl crate::repository::work_omit::WorkOmitRepository for TestRepositories {
-    async fn add(&mut self, work_id: crate::Id<crate::works::Work>) -> anyhow::Result<()> {
+    async fn add(&mut self, work_id: crate::StrId<crate::works::Work>) -> anyhow::Result<()> {
         self.work_omit.lock().await.add(work_id).await
     }
-    async fn remove(&mut self, work_id: crate::Id<crate::works::Work>) -> anyhow::Result<()> {
+    async fn remove(&mut self, work_id: crate::StrId<crate::works::Work>) -> anyhow::Result<()> {
         self.work_omit.lock().await.remove(work_id).await
     }
     async fn list(&mut self) -> anyhow::Result<Vec<crate::work_omit::WorkOmit>> {
         self.work_omit.lock().await.list().await
     }
-    async fn exists(&mut self, work_id: crate::Id<crate::works::Work>) -> anyhow::Result<bool> {
+    async fn exists(&mut self, work_id: crate::StrId<crate::works::Work>) -> anyhow::Result<bool> {
         self.work_omit.lock().await.exists(work_id).await
     }
 }
@@ -409,8 +409,8 @@ impl crate::repository::work_omit::WorkOmitRepository for TestRepositories {
 impl crate::repository::work_parent_packs::WorkParentPacksRepository for TestRepositories {
     async fn add(
         &mut self,
-        work_id: crate::Id<crate::works::Work>,
-        parent_pack_work_id: crate::Id<crate::works::Work>,
+        work_id: crate::StrId<crate::works::Work>,
+        parent_pack_work_id: crate::StrId<crate::works::Work>,
     ) -> anyhow::Result<()> {
         self.work_parent_packs
             .lock()
@@ -420,8 +420,8 @@ impl crate::repository::work_parent_packs::WorkParentPacksRepository for TestRep
     }
     async fn exists(
         &mut self,
-        work_id: crate::Id<crate::works::Work>,
-        parent_pack_work_id: crate::Id<crate::works::Work>,
+        work_id: crate::StrId<crate::works::Work>,
+        parent_pack_work_id: crate::StrId<crate::works::Work>,
     ) -> anyhow::Result<bool> {
         self.work_parent_packs
             .lock()
@@ -431,8 +431,8 @@ impl crate::repository::work_parent_packs::WorkParentPacksRepository for TestRep
     }
     async fn find_parent_id(
         &mut self,
-        work_id: crate::Id<crate::works::Work>,
-    ) -> anyhow::Result<Option<crate::Id<crate::works::Work>>> {
+        work_id: crate::StrId<crate::works::Work>,
+    ) -> anyhow::Result<Option<crate::StrId<crate::works::Work>>> {
         self.work_parent_packs
             .lock()
             .await
@@ -444,7 +444,7 @@ impl crate::repository::work_parent_packs::WorkParentPacksRepository for TestRep
 impl crate::repository::work_download_path::WorkDownloadPathRepository for TestRepositories {
     async fn add(
         &mut self,
-        work_id: crate::Id<crate::works::Work>,
+        work_id: crate::StrId<crate::works::Work>,
         download_path: &str,
     ) -> anyhow::Result<()> {
         self.work_download_path
@@ -455,7 +455,7 @@ impl crate::repository::work_download_path::WorkDownloadPathRepository for TestR
     }
     async fn list_by_work(
         &mut self,
-        work_id: crate::Id<crate::works::Work>,
+        work_id: crate::StrId<crate::works::Work>,
     ) -> anyhow::Result<Vec<crate::work_download_path::WorkDownloadPath>> {
         self.work_download_path
             .lock()
@@ -465,7 +465,7 @@ impl crate::repository::work_download_path::WorkDownloadPathRepository for TestR
     }
     async fn latest_by_work(
         &mut self,
-        work_id: crate::Id<crate::works::Work>,
+        work_id: crate::StrId<crate::works::Work>,
     ) -> anyhow::Result<Option<crate::work_download_path::WorkDownloadPath>> {
         self.work_download_path
             .lock()
@@ -484,7 +484,7 @@ impl crate::repository::work_lnk::WorkLnkRepository for TestRepositories {
     }
     async fn list_by_work_id(
         &mut self,
-        work_id: crate::Id<crate::works::Work>,
+        work_id: crate::StrId<crate::works::Work>,
     ) -> anyhow::Result<Vec<crate::repository::work_lnk::WorkLnk>> {
         self.work_lnk.lock().await.list_by_work_id(work_id).await
     }
@@ -511,19 +511,19 @@ impl crate::repository::work_like::WorkLikeRepository for TestRepositories {
     }
     async fn delete_by_work_id(
         &mut self,
-        work_id: crate::Id<crate::works::Work>,
+        work_id: crate::StrId<crate::works::Work>,
     ) -> anyhow::Result<()> {
         self.work_like.lock().await.delete_by_work_id(work_id).await
     }
     async fn get_by_work_id(
         &mut self,
-        work_id: crate::Id<crate::works::Work>,
+        work_id: crate::StrId<crate::works::Work>,
     ) -> anyhow::Result<Option<crate::works::WorkLike>> {
         self.work_like.lock().await.get_by_work_id(work_id).await
     }
     async fn update_like_at_by_work_id(
         &mut self,
-        work_id: crate::Id<crate::works::Work>,
+        work_id: crate::StrId<crate::works::Work>,
         like_at: Option<chrono::DateTime<chrono::Local>>,
     ) -> anyhow::Result<()> {
         self.work_like

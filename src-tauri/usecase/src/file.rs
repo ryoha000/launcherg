@@ -16,7 +16,7 @@ pub struct FileUseCase {
 impl FileUseCase {
     pub fn get_new_upload_image_path(&self, id: i32) -> anyhow::Result<String> {
         // resolver.memos_dir() 配下に UUID.png を生成
-        Ok(self.resolver.memo_image_new_png_path(id))
+        Ok(self.resolver.memo_image_new_png_path(&id.to_string()))
     }
     pub async fn upload_image(&self, id: i32, base64_image: String) -> anyhow::Result<String> {
         let path = self.get_new_upload_image_path(id)?;
@@ -32,7 +32,7 @@ impl FileUseCase {
     ) -> anyhow::Result<f32> {
         let path = self
             .resolver
-            .play_history_jsonl_path(collection_element_id.value);
+            .play_history_jsonl_path(&collection_element_id.value.to_string());
 
         let exist = std::path::Path::new(&path).exists();
         if !exist {

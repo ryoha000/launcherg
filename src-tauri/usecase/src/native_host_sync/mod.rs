@@ -54,7 +54,7 @@ pub struct DmmSyncGameParam {
     pub gamename: String,
     pub egs: Option<EgsInfo>,
     pub image_url: String,
-    pub parent_pack_work_id: Option<i32>,
+    pub parent_pack_work_id: Option<String>,
 }
 
 #[derive(Clone, Debug)]
@@ -118,7 +118,7 @@ where
             if w.is_omitted {
                 if let Some(dmm) = w.dmm {
                     out.push(DmmOmitItem {
-                        work_id: w.work.id.value,
+                        work_id: w.work.id.value.clone(),
                         store_id: dmm.store_id,
                         category: dmm.category,
                         subcategory: dmm.subcategory,
@@ -132,7 +132,7 @@ where
 
 #[derive(Clone, Debug)]
 pub struct DmmOmitItem {
-    pub work_id: i32,
+    pub work_id: String,
     pub store_id: String,
     pub category: String,
     pub subcategory: String,

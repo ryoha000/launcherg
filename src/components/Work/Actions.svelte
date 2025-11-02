@@ -26,7 +26,7 @@
 
   interface Props {
     workDetail: WorkDetailsVm
-    id: number
+    id: string
     seiyaUrl: string
   }
 

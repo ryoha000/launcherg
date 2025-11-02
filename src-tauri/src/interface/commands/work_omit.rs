@@ -8,11 +8,11 @@ use crate::interface::module::{Modules, ModulesExt};
 #[tauri::command]
 pub async fn work_omit_add(
     modules: State<'_, Arc<Modules>>,
-    work_id: i32,
+    work_id: String,
 ) -> anyhow::Result<(), CommandError> {
     modules
         .work_omit_use_case()
-        .add(domain::Id::new(work_id))
+        .add(domain::StrId::new(work_id))
         .await?;
     Ok(())
 }
@@ -20,11 +20,11 @@ pub async fn work_omit_add(
 #[tauri::command]
 pub async fn work_omit_remove(
     modules: State<'_, Arc<Modules>>,
-    work_id: i32,
+    work_id: String,
 ) -> anyhow::Result<(), CommandError> {
     modules
         .work_omit_use_case()
-        .remove(domain::Id::new(work_id))
+        .remove(domain::StrId::new(work_id))
         .await?;
     Ok(())
 }

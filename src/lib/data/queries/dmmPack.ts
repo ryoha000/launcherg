@@ -4,14 +4,14 @@ import { queryClient } from '@/lib/data/queryClient'
 import { queryKeys } from '@/lib/data/queryKeys'
 
 export function useDmmPackQuery() {
-  return createQuery<number[], Error>({
+  return createQuery<string[], Error>({
     queryKey: queryKeys.dmmPack.all(),
     queryFn: () => commandWorkPackAll(),
   })
 }
 
 export function useAddDmmPackMutation() {
-  return createMutation<unknown, Error, { workId: number }>(
+  return createMutation<unknown, Error, { workId: string }>(
     {
       mutationFn: input => commandWorkPackAdd(input.workId),
       onSuccess: async () => {
@@ -25,7 +25,7 @@ export function useAddDmmPackMutation() {
 }
 
 export function useRemoveDmmPackMutation() {
-  return createMutation<unknown, Error, { workId: number }>(
+  return createMutation<unknown, Error, { workId: string }>(
     {
       mutationFn: input => commandWorkPackRemove(input.workId),
       onSuccess: async () => {

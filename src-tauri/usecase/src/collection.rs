@@ -194,12 +194,12 @@ where
             if let Some(details) = work_details {
                 let work_id = details.work.id;
                 let lnk_save_path = if let Some(lnk) = element.lnk_path.as_ref() {
-                    let dst = self.resolver.lnk_new_path(work_id.value);
+                    let dst = self.resolver.lnk_new_path(&work_id.value);
                     let _ = std::fs::create_dir_all(std::path::Path::new(&dst).parent().unwrap());
                     let _ = std::fs::copy(&lnk, &dst);
                     Some(dst)
                 } else if let Some(exe) = element.exe_path.as_ref() {
-                    let dst = self.resolver.lnk_new_path(work_id.value);
+                    let dst = self.resolver.lnk_new_path(&work_id.value);
                     let _ = std::fs::create_dir_all(std::path::Path::new(&dst).parent().unwrap());
                     let _ = self
                         .windows

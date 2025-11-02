@@ -4,7 +4,7 @@ use derive_new::new;
 use domain::repository::{
     dmm_work_pack::DmmPackRepository, manager::RepositoryManager, RepositoriesExt,
 };
-use domain::{dmm_work_pack::DmmWorkPack, works::Work, Id};
+use domain::{dmm_work_pack::DmmWorkPack, works::Work, StrId};
 use std::marker::PhantomData;
 
 #[derive(new)]
@@ -23,7 +23,7 @@ where
     M: RepositoryManager<R>,
     R: RepositoriesExt + Send + Sync + 'static,
 {
-    pub async fn add(&self, work_id: Id<Work>) -> anyhow::Result<()> {
+    pub async fn add(&self, work_id: StrId<Work>) -> anyhow::Result<()> {
         self.manager
             .run(move |repos| {
                 Box::pin(async move {
@@ -34,7 +34,7 @@ where
             .await
     }
 
-    pub async fn remove(&self, work_id: Id<Work>) -> anyhow::Result<()> {
+    pub async fn remove(&self, work_id: StrId<Work>) -> anyhow::Result<()> {
         self.manager
             .run(move |repos| {
                 Box::pin(async move {

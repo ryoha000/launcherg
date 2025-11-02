@@ -4,7 +4,7 @@ use derive_new::new;
 use domain::repository::{
     manager::RepositoryManager, work_omit::WorkOmitRepository, RepositoriesExt,
 };
-use domain::{work_omit::WorkOmit, works::Work, Id};
+use domain::{work_omit::WorkOmit, works::Work, StrId};
 use std::marker::PhantomData;
 
 #[derive(new)]
@@ -22,12 +22,12 @@ where
     M: RepositoryManager<R>,
     R: RepositoriesExt + Send + Sync + 'static,
 {
-    pub async fn add(&self, work_id: Id<Work>) -> anyhow::Result<()> {
+    pub async fn add(&self, work_id: StrId<Work>) -> anyhow::Result<()> {
         self.manager
             .run(move |repos| Box::pin(async move { repos.work_omit().add(work_id).await }))
             .await
     }
-    pub async fn remove(&self, work_id: Id<Work>) -> anyhow::Result<()> {
+    pub async fn remove(&self, work_id: StrId<Work>) -> anyhow::Result<()> {
         self.manager
             .run(move |repos| Box::pin(async move { repos.work_omit().remove(work_id).await }))
             .await
@@ -37,7 +37,7 @@ where
             .run(|repos| Box::pin(async move { repos.work_omit().list().await }))
             .await
     }
-    pub async fn exists(&self, work_id: Id<Work>) -> anyhow::Result<bool> {
+    pub async fn exists(&self, work_id: StrId<Work>) -> anyhow::Result<bool> {
         self.manager
             .run(move |repos| Box::pin(async move { repos.work_omit().exists(work_id).await }))
             .await

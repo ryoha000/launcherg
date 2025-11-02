@@ -2,7 +2,7 @@ import { commandGetWorkDetailsAll, commandUpdateWorkLike } from '@/lib/command'
 import { createWritable } from '@/lib/utils'
 
 export interface SidebarWorkItem {
-  id: number
+  id: string
   title: string
   thumbnail?: { path: string, width?: number, height?: number }
   likeAt?: string | null
@@ -47,7 +47,7 @@ function createSidebarCollectionElements() {
     )
   }
 
-  const updateLike = async (workId: number, isLike: boolean) => {
+  const updateLike = async (workId: string, isLike: boolean) => {
     await commandUpdateWorkLike(workId, isLike)
     const now = new Date()
     const likeAt = isLike

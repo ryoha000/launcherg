@@ -5,7 +5,7 @@ use derive_new::new;
 use domain::service::save_path_resolver::{DirsSavePathResolver, SavePathResolver};
 use domain::windows::shell_link::ShellLink as _;
 use domain::windows::WindowsExt;
-use domain::{icon::IconService, thumbnail::ThumbnailService, works::Work, Id};
+use domain::{icon::IconService, thumbnail::ThumbnailService, works::Work, StrId};
 use tauri::AppHandle;
 
 #[derive(new)]
@@ -25,7 +25,7 @@ impl<TS: ThumbnailService, IS: IconService, W: WindowsExt + Send + Sync + 'stati
 {
     pub async fn save_thumbnail(
         &self,
-        id: &Id<Work>,
+        id: &StrId<Work>,
         url: &str,
     ) -> anyhow::Result<()> {
         self.thumbnail_service.save_thumbnail(id, url).await
@@ -33,7 +33,7 @@ impl<TS: ThumbnailService, IS: IconService, W: WindowsExt + Send + Sync + 'stati
 
     pub async fn concurency_save_thumbnails(
         &self,
-        args: Vec<(Id<Work>, String)>,
+        args: Vec<(StrId<Work>, String)>,
     ) -> anyhow::Result<()> {
         use futures::StreamExt as _;
         futures::stream::iter(args.into_iter())
@@ -48,14 +48,14 @@ impl<TS: ThumbnailService, IS: IconService, W: WindowsExt + Send + Sync + 'stati
         Ok(())
     }
 
-    async fn save_default_icon(&self, id: &Id<Work>) -> anyhow::Result<()> {
+    async fn save_default_icon(&self, id: &StrId<Work>) -> anyhow::Result<()> {
         self.icon_service.save_default_icon(id).await
     }
 
     // exe/lnk の情報からアイコン保存元を決定し保存する
     pub async fn save_icon_by_paths(
         &self,
-        id: &Id<Work>,
+        id: &StrId<Work>,
         exe_path: &Option<String>,
         lnk_path: &Option<String>,
     ) -> anyhow::Result<()> {
@@ -85,10 +85,10 @@ impl<TS: ThumbnailService, IS: IconService, W: WindowsExt + Send + Sync + 'stati
     // 既存PNGを上書き（ユーザー指定PNG用）
     pub async fn overwrite_icon_png(
         &self,
-        id: &Id<Work>,
+        id: &StrId<Work>,
         png_path: &str,
     ) -> anyhow::Result<()> {
-        let dst = self.resolver.icon_png_path(id.value);
+        let dst = self.resolver.icon_png_path(&id.value);
         std::fs::copy(png_path, dst)?;
         Ok(())
     }

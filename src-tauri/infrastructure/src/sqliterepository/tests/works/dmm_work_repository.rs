@@ -67,7 +67,7 @@ async fn dmm_works_upsert_and_find_by_store_key() {
         .unwrap();
     assert!(updated.is_some());
     let w2 = updated.unwrap();
-    assert!(w2.work_id.value > 0);
+    assert!(!w2.work_id.value.is_empty());
     assert_eq!(w2.subcategory, "utility");
 
     let updated_by_store_id = repo.dmm_work().find_by_store_id("SID-1").await.unwrap();

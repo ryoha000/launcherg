@@ -46,16 +46,16 @@ where
     }
 
 
-    pub async fn find_details_by_work_id(&self, work_id: i32) -> anyhow::Result<Option<WorkDetails>> {
+    pub async fn find_details_by_work_id(&self, work_id: String) -> anyhow::Result<Option<WorkDetails>> {
         self.manager
             .run(|repos| {
-                Box::pin(async move { repos.work().find_details_by_work_id(domain::Id::new(work_id)).await })
+                Box::pin(async move { repos.work().find_details_by_work_id(domain::StrId::new(work_id)).await })
             })
             .await
     }
 
-    pub async fn list_work_lnks(&self, work_id: i32) -> anyhow::Result<Vec<(i32, String)>> {
-        let wid = domain::Id::new(work_id);
+    pub async fn list_work_lnks(&self, work_id: String) -> anyhow::Result<Vec<(i32, String)>> {
+        let wid = domain::StrId::new(work_id);
         let list = self
             .manager
             .run(|repos| Box::pin(async move { repos.work_lnk().list_by_work_id(wid).await }))
@@ -109,8 +109,8 @@ where
         Ok(pid)
     }
 
-    pub async fn get_parent_dmm_pack_work_id(&self, work_id: i32) -> anyhow::Result<Option<i32>> {
-        let wid = domain::Id::new(work_id);
+    pub async fn get_parent_dmm_pack_work_id(&self, work_id: String) -> anyhow::Result<Option<String>> {
+        let wid = domain::StrId::new(work_id);
         let parent = self
             .manager
             .run(|repos| {
@@ -122,16 +122,16 @@ where
 
     pub async fn get_dmm_work_by_work_id(
         &self,
-        work_id: i32,
+        work_id: String,
     ) -> anyhow::Result<Option<domain::works::DmmWork>> {
-        let wid = domain::Id::new(work_id);
+        let wid = domain::StrId::new(work_id);
         self.manager
             .run(|repos| Box::pin(async move { repos.dmm_work().find_by_work_id(wid).await }))
             .await
     }
 
-    pub async fn update_like(&self, work_id: i32, is_like: bool) -> anyhow::Result<()> {
-        let wid = domain::Id::new(work_id);
+    pub async fn update_like(&self, work_id: String, is_like: bool) -> anyhow::Result<()> {
+        let wid = domain::StrId::new(work_id);
         self.manager
             .run(|repos| {
                 Box::pin(async move {
@@ -144,8 +144,8 @@ where
             .await
     }
 
-    pub async fn delete_work(&self, work_id: i32) -> anyhow::Result<()> {
-        let wid = domain::Id::new(work_id);
+    pub async fn delete_work(&self, work_id: String) -> anyhow::Result<()> {
+        let wid = domain::StrId::new(work_id);
         self.manager
             .run(|repos| Box::pin(async move { repos.work().delete(wid).await }))
             .await
@@ -204,7 +204,7 @@ where
                         }
                         RegisterWorkPathInput::Exe { exe_path } => {
                             // .lnk を生成して登録
-                            let dst = resolver.lnk_new_path(work_id.value);
+                            let dst = resolver.lnk_new_path(&work_id.value);
                             if let Some(parent) = std::path::Path::new(&dst).parent() {
                                 let _ = std::fs::create_dir_all(parent);
                             }
@@ -228,7 +228,7 @@ where
 
                     // 4) サムネイルをキュー投入
                     if !thumbnail_url.is_empty() {
-                        let thumb_dst = resolver.thumbnail_png_path(work_id.value);
+                        let thumb_dst = resolver.thumbnail_png_path(&work_id.value);
                         let _ = repos
                             .image_queue()
                             .enqueue(

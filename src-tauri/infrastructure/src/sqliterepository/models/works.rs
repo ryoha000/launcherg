@@ -4,7 +4,7 @@ pub struct DmmWorkTable {
     pub store_id: String,
     pub category: String,
     pub subcategory: String,
-    pub work_id: i64,
+    pub work_id: String,
 }
 
 #[derive(sqlx::FromRow, Clone)]
@@ -12,18 +12,18 @@ pub struct DlsiteWorkTable {
     pub id: i64,
     pub store_id: String,
     pub category: String,
-    pub work_id: i64,
+    pub work_id: String,
 }
 
 #[derive(sqlx::FromRow, Clone)]
 pub struct WorkTable {
-    pub id: i64,
+    pub id: String,
     pub title: String,
 }
 
 #[derive(sqlx::FromRow, Clone)]
 pub struct WorkDetailsRow {
-    pub work_id: i64,
+    pub work_id: String,
     pub work_title: String,
     pub ce_created_at: Option<sqlx::types::chrono::NaiveDateTime>,
     pub dmm_id: Option<i64>,
@@ -62,10 +62,10 @@ pub struct WorkDetailsRow {
 
 impl From<crate::sqliterepository::models::works::WorkDetailsRow> for domain::works::WorkDetails {
     fn from(r: crate::sqliterepository::models::works::WorkDetailsRow) -> Self {
-        use domain::{erogamescape::ErogamescapeInformation, works::{DlsiteWork, DmmWork, Work, WorkThumbnailSize}, Id};
+        use domain::{erogamescape::ErogamescapeInformation, works::{DlsiteWork, DmmWork, Work, WorkThumbnailSize}, Id, StrId};
         let mut details = domain::works::WorkDetails {
             work: Work {
-                id: Id::new(r.work_id as i32),
+                id: StrId::new(r.work_id.clone()),
                 title: r.work_title.clone(),
             },
             dmm: None,
@@ -91,7 +91,7 @@ impl From<crate::sqliterepository::models::works::WorkDetailsRow> for domain::wo
         if let Some(dmm_id) = r.dmm_id {
             details.dmm = Some(DmmWork {
                 id: Id::new(dmm_id as i32),
-                work_id: Id::new(r.work_id as i32),
+                work_id: StrId::new(r.work_id.clone()),
                 store_id: r.dmm_store_id.unwrap_or_default(),
                 category: r.dmm_category.unwrap_or_default(),
                 subcategory: r.dmm_subcategory.unwrap_or_default(),
@@ -103,7 +103,7 @@ impl From<crate::sqliterepository::models::works::WorkDetailsRow> for domain::wo
             if let Some(download_path) = r.latest_path_download_path.clone() {
                 details.latest_download_path = Some(domain::work_download_path::WorkDownloadPath {
                     id: Id::new(path_id as i32),
-                    work_id: Id::new(r.work_id as i32),
+                    work_id: StrId::new(r.work_id.clone()),
                     download_path,
                 });
             }
@@ -112,7 +112,7 @@ impl From<crate::sqliterepository::models::works::WorkDetailsRow> for domain::wo
         if let Some(dl_id) = r.dlsite_id {
             details.dlsite = Some(DlsiteWork {
                 id: Id::new(dl_id as i32),
-                work_id: Id::new(r.work_id as i32),
+                work_id: StrId::new(r.work_id.clone()),
                 store_id: r.dlsite_store_id.unwrap_or_default(),
                 category: r.dlsite_category.unwrap_or_default(),
             });
@@ -160,7 +160,7 @@ impl From<crate::sqliterepository::models::works::WorkDetailsRow> for domain::wo
             {
                 details.like = Some(domain::works::WorkLike {
                     id: Id::new(like_id as i32),
-                    work_id: Id::new(r.work_id as i32),
+                    work_id: StrId::new(r.work_id.clone()),
                     like_at: like_at.and_utc().with_timezone(&chrono::Local),
                     created_at: created.and_utc().with_timezone(&chrono::Local),
                     updated_at: updated.and_utc().with_timezone(&chrono::Local),
@@ -183,7 +183,7 @@ impl TryFrom<crate::sqliterepository::models::works::DmmWorkTable> for domain::w
     ) -> Result<Self, Self::Error> {
         Ok(domain::works::DmmWork {
             id: domain::Id::new(v.id as i32),
-            work_id: domain::Id::new(v.work_id as i32),
+            work_id: domain::StrId::new(v.work_id),
             store_id: v.store_id,
             category: v.category,
             subcategory: v.subcategory,
@@ -200,7 +200,7 @@ impl TryFrom<crate::sqliterepository::models::works::DlsiteWorkTable>
     ) -> Result<Self, Self::Error> {
         Ok(domain::works::DlsiteWork {
             id: domain::Id::new(v.id as i32),
-            work_id: domain::Id::new(v.work_id as i32),
+            work_id: domain::StrId::new(v.work_id),
             store_id: v.store_id,
             category: v.category,
         })
@@ -211,7 +211,7 @@ impl TryFrom<crate::sqliterepository::models::works::WorkTable> for domain::work
     type Error = anyhow::Error;
     fn try_from(v: crate::sqliterepository::models::works::WorkTable) -> Result<Self, Self::Error> {
         Ok(domain::works::Work {
-            id: domain::Id::new(v.id as i32),
+            id: domain::StrId::new(v.id),
             title: v.title,
         })
     }
@@ -220,7 +220,7 @@ impl TryFrom<crate::sqliterepository::models::works::WorkTable> for domain::work
 #[derive(sqlx::FromRow, Clone)]
 pub struct WorkLikeRow {
     pub id: i64,
-    pub work_id: i64,
+    pub work_id: String,
     pub like_at: sqlx::types::chrono::NaiveDateTime,
     pub created_at: sqlx::types::chrono::NaiveDateTime,
     pub updated_at: sqlx::types::chrono::NaiveDateTime,
@@ -233,7 +233,7 @@ impl TryFrom<crate::sqliterepository::models::works::WorkLikeRow> for domain::wo
     ) -> Result<Self, Self::Error> {
         Ok(domain::works::WorkLike {
             id: domain::Id::new(v.id as i32),
-            work_id: domain::Id::new(v.work_id as i32),
+            work_id: domain::StrId::new(v.work_id),
             like_at: v.like_at.and_utc().with_timezone(&chrono::Local),
             created_at: v.created_at.and_utc().with_timezone(&chrono::Local),
             updated_at: v.updated_at.and_utc().with_timezone(&chrono::Local),
@@ -244,7 +244,7 @@ impl TryFrom<crate::sqliterepository::models::works::WorkLikeRow> for domain::wo
 #[derive(sqlx::FromRow, Clone)]
 pub struct WorkLnkRow {
     pub id: i64,
-    pub work_id: i64,
+    pub work_id: String,
     pub lnk_path: String,
 }
 
@@ -254,7 +254,7 @@ impl From<crate::sqliterepository::models::works::WorkLnkRow>
     fn from(v: crate::sqliterepository::models::works::WorkLnkRow) -> Self {
         domain::repository::work_lnk::WorkLnk {
             id: domain::Id::new(v.id as i32),
-            work_id: domain::Id::new(v.work_id as i32),
+            work_id: domain::StrId::new(v.work_id),
             lnk_path: v.lnk_path,
         }
     }

@@ -394,7 +394,7 @@ async fn handle_downloads_completed(
             return err(request_id, msg);
         }
         cleanup_download_paths([item.filename.as_str()]);
-        if let Err(err) = dispatch_refetch_work(&ctx.app_signal_router, work_id.value).await {
+        if let Err(err) = dispatch_refetch_work(&ctx.app_signal_router, work_id.value.clone()).await {
             log_app_signal_dispatch_failure(
                 &ctx,
                 format!("dispatch_refetch_work work_id={}", work_id.value),
@@ -429,7 +429,7 @@ async fn handle_downloads_completed(
             return err(request_id, msg);
         }
         cleanup_download_paths(paths.iter().map(|p| p.as_str()));
-        if let Err(err) = dispatch_refetch_work(&ctx.app_signal_router, work_id.value).await {
+        if let Err(err) = dispatch_refetch_work(&ctx.app_signal_router, work_id.value.clone()).await {
             log_app_signal_dispatch_failure(
                 &ctx,
                 format!("dispatch_refetch_work work_id={}", work_id.value),
@@ -446,7 +446,7 @@ async fn handle_downloads_completed(
         );
     }
 
-    if let Err(err) = dispatch_refetch_work(&ctx.app_signal_router, work_id.value).await {
+    if let Err(err) = dispatch_refetch_work(&ctx.app_signal_router, work_id.value.clone()).await {
         log_app_signal_dispatch_failure(
             &ctx,
             format!("dispatch_refetch_work work_id={}", work_id.value),
@@ -521,7 +521,7 @@ async fn dispatch_show_error_message(
 
 async fn dispatch_refetch_work(
     router: &Arc<InterprocessAppSignalRouter>,
-    work_id: i32,
+    work_id: String,
 ) -> anyhow::Result<()> {
     let signal = AppSignal {
         source: AppSignalSource::NativeMessagingHost,
@@ -795,7 +795,7 @@ fn to_dmm_params(request: &DmmSyncGamesRequestTs) -> (Vec<String>, Vec<DmmSyncGa
             gamename: g.title.clone(),
             image_url: g.image_url.clone(),
             egs: g.egs_info.as_ref().map(map_egs_ts),
-            parent_pack_work_id: g.parent_pack_work_id,
+            parent_pack_work_id: g.parent_pack_work_id.clone(),
         })
         .collect();
     (input_ids, params)
@@ -850,7 +850,7 @@ mod tests {
         let usecase = NativeHostSyncUseCase::new(repo_manager.clone(), resolver.clone());
 
         // まず parent 用の work を1件作成し、その work_id を後続で参照
-        let parent_work_id: i32 = repo_manager
+        let parent_work_id: String = repo_manager
             .run(|repos| {
                 Box::pin(async move {
                     // work を先に作成
@@ -863,15 +863,15 @@ mod tests {
                         .value;
                     // dmm_work を紐付け
                     let mut dmm = repos.dmm_work();
-                    let id = dmm
+                    let _id = dmm
                         .upsert(&NewDmmWork {
                             store_id: "PARENT_SID".to_string(),
                             category: "game".to_string(),
                             subcategory: "pack".to_string(),
-                            work_id: domain::Id::new(work_id),
+                            work_id: domain::StrId::new(work_id.clone()),
                         })
                         .await?;
-                    Ok::<i32, anyhow::Error>(id.value)
+                    Ok::<String, anyhow::Error>(work_id)
                 })
             })
             .await
@@ -902,7 +902,7 @@ mod tests {
                                 store_id,
                                 category,
                                 subcategory,
-                                work_id: domain::Id::new(work_id),
+                                work_id: domain::StrId::new(work_id),
                             })
                             .await?;
                     }
@@ -931,7 +931,7 @@ mod tests {
             } else {
                 None
             };
-            let parent = if i < 10 { Some(parent_work_id) } else { None };
+            let parent = if i < 10 { Some(parent_work_id.clone()) } else { None };
             params.push(DmmSyncGameParam {
                 store_id,
                 category,
@@ -1289,7 +1289,7 @@ mod tests {
                     sellday: "s".into(),
                     is_nukige: false,
                 }),
-                parent_pack_work_id: Some(10),
+                parent_pack_work_id: Some("10".to_string()),
             }],
             extension_id: "ext".into(),
         };
@@ -1300,7 +1300,7 @@ mod tests {
         assert_eq!(params[0].subcategory, "pc");
         assert_eq!(params[0].gamename, "T");
         assert!(params[0].egs.is_some());
-        assert_eq!(params[0].parent_pack_work_id, Some(10));
+        assert_eq!(params[0].parent_pack_work_id, Some("10".to_string()));
     }
 
     #[test]

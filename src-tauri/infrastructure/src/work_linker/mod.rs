@@ -44,7 +44,7 @@ where
 
 #[derive(Clone)]
 struct PreparedTask {
-    work_id: domain::Id<domain::works::Work>,
+    work_id: domain::StrId<domain::works::Work>,
     kind: CandidateKind,
     src: String,
     dst: String,
@@ -63,14 +63,14 @@ where
         }
 
         // 事前整形: 対象種別のみ抽出し、work_id ごとに一意化してリンク先を決定
-        let mut seen: HashSet<i32> = HashSet::new();
+        let mut seen: HashSet<String> = HashSet::new();
         let mut prepared: Vec<PreparedTask> = Vec::new();
         for task in tasks.into_iter() {
             if !matches!(task.kind, CandidateKind::Exe | CandidateKind::Shortcut) {
                 continue;
             }
-            if seen.insert(task.work_id.value) {
-                let dst = self.resolver.lnk_new_path(task.work_id.value);
+            if seen.insert(task.work_id.value.clone()) {
+                let dst = self.resolver.lnk_new_path(&task.work_id.value);
                 prepared.push(PreparedTask {
                     work_id: task.work_id,
                     kind: task.kind,
@@ -86,7 +86,7 @@ where
 
         // リンク作成: Exe は作成リクエストを蓄積、Shortcut はコピーして登録候補に追加
         let mut exe_reqs: Vec<CreateShortcutRequest> = Vec::new();
-        let mut to_insert: Vec<(domain::Id<domain::works::Work>, String)> = Vec::new();
+        let mut to_insert: Vec<(domain::StrId<domain::works::Work>, String)> = Vec::new();
         for task in prepared.iter() {
             if let Some(parent) = Path::new(&task.dst).parent() {
                 let _ = std::fs::create_dir_all(parent);
@@ -240,7 +240,7 @@ mod tests {
 
         let linker: WorkLinkerImpl<_, _, _> = WorkLinkerImpl::new(manager, resolver, windows);
         let task = WorkLinkTask {
-            work_id: domain::Id::new(10),
+            work_id: domain::StrId::new("10".to_string()),
             kind: CandidateKind::Exe,
             src: exe_path.clone(),
         };

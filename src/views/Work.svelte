@@ -5,7 +5,7 @@
 
   let { route }: { route?: { result: { path: { params: { id?: string } } } } } = $props()
   const idParam = $derived(route?.result?.path?.params?.id || '')
-  const workId = $derived(Number(idParam))
+  const workId = $derived(idParam)
 
 // async function openDmmDownload(dmm: { storeId: string, category: string, subcategory: string }) {
   //   const payload = {

@@ -1,7 +1,6 @@
 use std::sync::Arc;
 use tauri::{AppHandle, State};
 
-use crate::domain::Id;
 use crate::interface::error::CommandError;
 use crate::interface::module::{Modules, ModulesExt};
 
@@ -22,12 +21,12 @@ pub async fn upload_image(
 pub async fn update_collection_element_icon(
     _handle: AppHandle,
     modules: State<'_, Arc<Modules>>,
-    id: i32,
+    id: String,
     path: String,
 ) -> anyhow::Result<(), CommandError> {
     Ok(modules
         .image_use_case()
-        .overwrite_icon_png(&Id::new(id), &path)
+        .overwrite_icon_png(&domain::StrId::new(id), &path)
         .await?)
 }
 

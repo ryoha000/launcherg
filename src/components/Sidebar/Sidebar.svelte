@@ -20,7 +20,7 @@
     await sidebarCollectionElements.refetch()
   })
 
-  const [elementOptions, getElementOptions] = createWritable<Option<number>[]>(
+  const [elementOptions, getElementOptions] = createWritable<Option<string>[]>(
     [],
   )
   sidebarCollectionElements.subscribe(v =>

@@ -30,39 +30,39 @@ pub trait SavePathResolver {
             .to_string()
     }
 
-    fn icon_png_path(&self, id: i32) -> String {
+    fn icon_png_path(&self, id: &str) -> String {
         PathBuf::from(self.icons_dir())
             .join(format!("{}.png", id))
             .to_string_lossy()
             .to_string()
     }
-    fn thumbnail_png_path(&self, id: i32) -> String {
+    fn thumbnail_png_path(&self, id: &str) -> String {
         PathBuf::from(self.thumbnails_dir())
             .join(format!("{}.png", id))
             .to_string_lossy()
             .to_string()
     }
-    fn play_history_jsonl_path(&self, id: i32) -> String {
+    fn play_history_jsonl_path(&self, id: &str) -> String {
         PathBuf::from(self.play_histories_dir())
             .join(format!("{}.jsonl", id))
             .to_string_lossy()
             .to_string()
     }
-    fn memo_image_dir(&self, id: i32) -> String {
-        let p = PathBuf::from(self.memos_dir()).join(format!("{}", id));
+    fn memo_image_dir(&self, id: &str) -> String {
+        let p = PathBuf::from(self.memos_dir()).join(id);
         std::fs::create_dir_all(&p).ok();
         p.to_string_lossy().to_string()
     }
 
     // Generate new memo image path like game-memos/{id}/{UUID}.png (directory ensured)
-    fn memo_image_new_png_path(&self, id: i32) -> String {
+    fn memo_image_new_png_path(&self, id: &str) -> String {
         let dir = PathBuf::from(self.memo_image_dir(id));
         dir.join(format!("{}.png", uuid::Uuid::new_v4().to_string()))
             .to_string_lossy()
             .to_string()
     }
 
-    fn lnk_new_path(&self, work_id: i32) -> String {
+    fn lnk_new_path(&self, work_id: &str) -> String {
         let dir = PathBuf::from(self.lnks_dir());
         dir.join(format!(
             "{}-{}.lnk",
@@ -83,7 +83,7 @@ pub trait SavePathResolver {
     }
 
     // Default memo markdown path like game-memos/{id}/untitled.md (directory ensured)
-    fn memo_default_md_path(&self, id: i32) -> String {
+    fn memo_default_md_path(&self, id: &str) -> String {
         let dir = PathBuf::from(self.memo_image_dir(id));
         dir.join("untitled.md").to_string_lossy().to_string()
     }

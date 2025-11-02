@@ -2,7 +2,7 @@ use std::collections::{HashMap, HashSet};
 use std::future::Future;
 use std::pin::Pin;
 
-use domain::Id;
+use domain::StrId;
 use domain::repository::erogamescape::ErogamescapeRepository;
 
 use super::*;
@@ -20,28 +20,28 @@ where
     /// パラメータから EGS 情報を取得
     pub egs: fn(&P) -> Option<&EgsInfo>,
     /// パラメータから親パック Work ID を取得
-    pub parent_pack_work_id: fn(&P) -> Option<Id<domain::works::Work>>,
+    pub parent_pack_work_id: fn(&P) -> Option<StrId<domain::works::Work>>,
 
     /// キーで Work ID を検索（返却: Option<WorkId>）
     pub find_work_id_by_key: for<'a> fn(
         &'a R,
         &'a K,
     ) -> Pin<
-        Box<dyn Future<Output = anyhow::Result<Option<Id<domain::works::Work>>>> + Send + 'a>,
+        Box<dyn Future<Output = anyhow::Result<Option<StrId<domain::works::Work>>>> + Send + 'a>,
     >,
     /// ストアマッピングを upsert（キーと Work ID の関連付け）
     pub upsert_store_mapping:
         for<'a> fn(
             &'a R,
             &'a K,
-            Id<domain::works::Work>,
+            StrId<domain::works::Work>,
         ) -> Pin<Box<dyn Future<Output = anyhow::Result<()>> + Send + 'a>>,
     /// 親パック Work との関連付けが必要なら実行
     pub link_parent_pack_if_needed:
         for<'a> fn(
             &'a R,
-            Id<domain::works::Work>,
-            Option<Id<domain::works::Work>>,
+            StrId<domain::works::Work>,
+            Option<StrId<domain::works::Work>>,
         ) -> Pin<Box<dyn Future<Output = anyhow::Result<()>> + Send + 'a>>,
 }
 
@@ -50,11 +50,11 @@ where
 #[derive(Clone, Debug)]
 pub struct BatchSnapshot<K> {
     /// ストアキーごとの既存 Work ID（None = 未マッピング）
-    pub work_id_by_key: HashMap<K, Option<Id<domain::works::Work>>>,
+    pub work_id_by_key: HashMap<K, Option<StrId<domain::works::Work>>>,
     /// 除外対象 Work ID（同期対象外）
-    pub omitted_work_ids: HashSet<Id<domain::works::Work>>,
+    pub omitted_work_ids: HashSet<StrId<domain::works::Work>>,
     /// EGS ID ごとの既存 Work ID（EGS マッピング用）
-    pub egs_id_to_work_id: HashMap<i32, Id<domain::works::Work>>,
+    pub egs_id_to_work_id: HashMap<i32, StrId<domain::works::Work>>,
 }
 
 /// 同期適用パラメータ。キーと関連 Work/Egs 情報を持つ。
@@ -63,13 +63,13 @@ pub struct SyncApplyGeneric<K> {
     /// ストアキー
     pub key: K,
     /// ストアキー由来の既存 Work ID
-    pub work_id_by_key: Option<Id<domain::works::Work>>,
+    pub work_id_by_key: Option<StrId<domain::works::Work>>,
     /// EGS 由来の既存 Work ID
-    pub work_id_by_erogamescape: Option<Id<domain::works::Work>>,
+    pub work_id_by_erogamescape: Option<StrId<domain::works::Work>>,
     /// ゲーム名
     pub gamename: String,
     /// 親パック Work ID（DMM パックの場合）
-    pub parent_pack_work_id: Option<Id<domain::works::Work>>,
+    pub parent_pack_work_id: Option<StrId<domain::works::Work>>,
     /// EGS 情報（あれば Work に upsert）
     pub egs: Option<EgsInfo>,
 }
@@ -106,7 +106,7 @@ where
         let keys: Vec<K> = games.iter().map(|g| (ops.key_from_param)(g)).collect();
 
         // ストアキーごとの既存 Work ID を検索
-        let mut work_id_by_key: HashMap<K, Option<Id<domain::works::Work>>> = HashMap::new();
+        let mut work_id_by_key: HashMap<K, Option<StrId<domain::works::Work>>> = HashMap::new();
         let found_map = self
             .manager
             .run(|repos| {
@@ -118,7 +118,7 @@ where
                         let wid = (ops.find_work_id_by_key)(&repos, k).await?;
                         out.insert(k.clone(), wid);
                     }
-                    Ok::<HashMap<K, Option<Id<domain::works::Work>>>, anyhow::Error>(out)
+                    Ok::<HashMap<K, Option<StrId<domain::works::Work>>>, anyhow::Error>(out)
                 })
             })
             .await?;
@@ -131,7 +131,7 @@ where
         }
 
         // 除外対象 Work ID を取得
-        let omitted_work_ids: HashSet<Id<domain::works::Work>> = self
+        let omitted_work_ids: HashSet<StrId<domain::works::Work>> = self
             .manager
             .run(|repos| {
                 Box::pin(async move {
@@ -147,7 +147,7 @@ where
             .iter()
             .filter_map(|g| (ops.egs)(g).map(|e| e.erogamescape_id))
             .collect();
-        let mut egs_id_to_work_id: HashMap<i32, Id<domain::works::Work>> = HashMap::new();
+        let mut egs_id_to_work_id: HashMap<i32, StrId<domain::works::Work>> = HashMap::new();
         if !egs_ids.is_empty() {
             let pairs = self
                 .manager

@@ -1,22 +1,22 @@
 use derive_new::new;
 use serde::{Deserialize, Serialize};
 
-use crate::Id;
+use crate::{Id, StrId};
 use crate::erogamescape::ErogamescapeInformation;
 use chrono::{DateTime, Local};
 
 use crate::work_download_path::WorkDownloadPath;
 
-#[derive(new, Clone, Debug, Serialize, Deserialize)]
+#[derive(new, Clone, Debug, Serialize, Deserialize, PartialEq, Eq, Hash)]
 pub struct Work {
-    pub id: Id<Work>,
+    pub id: StrId<Work>,
     pub title: String,
 }
 
 #[derive(new, Clone, Debug, Serialize, Deserialize)]
 pub struct DmmWork {
     pub id: Id<DmmWork>,
-    pub work_id: Id<Work>,
+    pub work_id: StrId<Work>,
     pub store_id: String,
     pub category: String,
     pub subcategory: String,
@@ -25,7 +25,7 @@ pub struct DmmWork {
 #[derive(new, Clone, Debug, Serialize, Deserialize)]
 pub struct DlsiteWork {
     pub id: Id<DlsiteWork>,
-    pub work_id: Id<Work>,
+    pub work_id: StrId<Work>,
     pub store_id: String,
     pub category: String,
 }
@@ -35,14 +35,14 @@ pub struct NewDmmWork {
     pub store_id: String,
     pub category: String,
     pub subcategory: String,
-    pub work_id: Id<Work>,
+    pub work_id: StrId<Work>,
 }
 
 #[derive(new, Clone, Debug, Serialize, Deserialize)]
 pub struct NewDlsiteWork {
     pub store_id: String,
     pub category: String,
-    pub work_id: Id<Work>,
+    pub work_id: StrId<Work>,
 }
 
 #[derive(new, Clone, Debug, Serialize, Deserialize)]
@@ -82,7 +82,7 @@ pub struct WorkThumbnailSize {
 #[derive(new, Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct WorkLike {
     pub id: Id<WorkLike>,
-    pub work_id: Id<Work>,
+    pub work_id: StrId<Work>,
     pub like_at: DateTime<Local>,
     pub created_at: DateTime<Local>,
     pub updated_at: DateTime<Local>,
@@ -90,6 +90,6 @@ pub struct WorkLike {
 
 #[derive(new, Clone, Debug, Serialize, Deserialize)]
 pub struct NewWorkLike {
-    pub work_id: Id<Work>,
+    pub work_id: StrId<Work>,
     pub like_at: DateTime<Local>,
 }

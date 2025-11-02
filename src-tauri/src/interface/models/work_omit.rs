@@ -4,7 +4,7 @@ use serde::Serialize;
 #[serde(rename_all = "camelCase")]
 pub struct WorkOmitItemVm {
     pub id: i32,
-    pub work_id: i32,
+    pub work_id: String,
 }
 
 impl From<domain::work_omit::WorkOmit> for WorkOmitItemVm {

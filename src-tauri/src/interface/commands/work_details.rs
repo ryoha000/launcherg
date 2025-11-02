@@ -16,7 +16,7 @@ pub async fn get_work_details_all(
 #[tauri::command]
 pub async fn get_work_details_by_work_id(
     modules: State<'_, Arc<Modules>>,
-    work_id: i32,
+    work_id: String,
 ) -> anyhow::Result<Option<WorkDetailsVm>, CommandError> {
     let row = modules
         .work_use_case()

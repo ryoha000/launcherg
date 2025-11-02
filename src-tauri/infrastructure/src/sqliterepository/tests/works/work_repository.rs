@@ -26,7 +26,7 @@ async fn work_upsert_and_find_by_title_正常系() {
         .await
         .unwrap()
     };
-    assert!(work_id.value > 0);
+    assert!(!work_id.value.is_empty());
 
     // タイトルで検索
     let found = {
@@ -54,7 +54,7 @@ async fn work_find_details_by_work_id_存在しない_空() {
     // 存在しない work_id で検索
     let not_found = {
         let mut r = repo.work();
-        r.find_details_by_work_id(domain::Id::new(999999))
+        r.find_details_by_work_id(domain::StrId::new("999999".to_string()))
             .await
             .unwrap()
     };
@@ -334,14 +334,14 @@ async fn work_find_work_ids_by_erogamescape_ids_複数混在() {
 
     // 存在する分のみ返る
     assert_eq!(result.len(), 2);
-    let mut pairs: Vec<(i32, i32)> = result
+    let mut pairs: Vec<(i32, String)> = result
         .into_iter()
         .map(|(egs, wid)| (egs, wid.value))
         .collect();
     pairs.sort_by_key(|(egs, _)| *egs);
 
-    assert_eq!(pairs[0], (egs_id1, work_id1.value));
-    assert_eq!(pairs[1], (egs_id2, work_id2.value));
+    assert_eq!(pairs[0], (egs_id1, work_id1.value.clone()));
+    assert_eq!(pairs[1], (egs_id2, work_id2.value.clone()));
 }
 
 #[tokio::test]
@@ -477,7 +477,7 @@ async fn work_list_work_ids_missing_thumbnail_size_欠損とnull検出() {
 
     // work_id1, work_id2, work_id3（サムネイルなし）が含まれる
     assert_eq!(missing.len(), 3);
-    let mut missing_ids: Vec<i32> = missing.iter().map(|id| id.value).collect();
+    let mut missing_ids: Vec<String> = missing.iter().map(|id| id.value.clone()).collect();
     missing_ids.sort();
     assert!(missing_ids.contains(&work_id1.value));
     assert!(missing_ids.contains(&work_id2.value));

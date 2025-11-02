@@ -5,7 +5,7 @@ use crate::domain::works::WorkDetails;
 #[derive(serde::Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct WorkDetailsVm {
-    pub id: i32,
+    pub id: String,
     pub title: String,
     pub dmm: Option<DmmSideVm>,
     pub dlsite: Option<DlsiteSideVm>,
@@ -45,7 +45,7 @@ pub struct DlsiteSideVm {
 #[serde(rename_all = "camelCase")]
 pub struct LatestWorkDownloadPathVm {
     pub id: i32,
-    pub work_id: i32,
+    pub work_id: String,
     pub download_path: String,
 }
 
@@ -70,9 +70,9 @@ pub struct ThumbnailVm {
 impl From<WorkDetails> for WorkDetailsVm {
     fn from(w: WorkDetails) -> Self {
         let resolver = DirsSavePathResolver::default();
-        let thumbnail_path = Some(resolver.thumbnail_png_path(w.work.id.value));
+        let thumbnail_path = Some(resolver.thumbnail_png_path(&w.work.id.value));
         WorkDetailsVm {
-            id: w.work.id.value,
+            id: w.work.id.value.clone(),
             title: w.work.title,
             dmm: w.dmm.map(|d| DmmSideVm {
                 id: d.id.value,
@@ -105,7 +105,7 @@ impl From<WorkDetails> for WorkDetailsVm {
             }),
             latest_download_path: w.latest_download_path.map(|p| LatestWorkDownloadPathVm {
                 id: p.id.value,
-                work_id: p.work_id.value,
+                work_id: p.work_id.value.clone(),
                 download_path: p.download_path,
             }),
             like_at: w

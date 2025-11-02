@@ -50,9 +50,9 @@
     }))
   }
   let isOpenConfirmDelete = $state(false)
-  let confirmDeleteTarget = $state(null as { id: number, title: string } | null)
+  let confirmDeleteTarget = $state(null as { id: string, title: string } | null)
   let dontAskAgain = $state(false)
-  const performDeleteElement = async (id: number, _title?: string) => {
+  const performDeleteElement = async (id: string, _title?: string) => {
     try {
       await commandDeleteWork(id)
       await sidebarCollectionElements.refetch()
@@ -69,7 +69,7 @@
       dontAskAgain = false
     }
   }
-  const maybeDeleteOnFlagSet = async (collectionElementId?: number, title?: string) => {
+  const maybeDeleteOnFlagSet = async (collectionElementId?: string, title?: string) => {
     if (!collectionElementId)
       return
     if (getAutoDeletePref()) {
@@ -141,13 +141,13 @@
   }
 
   const updateDenied = async (arg: {
-    collectionElementId?: number
+    collectionElementId?: string
     storeType: number
     storeId: string
     title: string
     nextValue: boolean
     prevValue: boolean
-    workId: number
+    workId: string
   }) => {
     const { collectionElementId, storeType, storeId, title, nextValue, prevValue, workId } = arg
     if (nextValue === prevValue)

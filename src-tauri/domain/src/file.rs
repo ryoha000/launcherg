@@ -24,7 +24,7 @@ use windows::core::PCWSTR;
 
 use crate::service::save_path_resolver::{DirsSavePathResolver, SavePathResolver};
 
-use super::Id;
+use super::StrId;
 
 trait WString {
     #[allow(dead_code)]
@@ -80,9 +80,9 @@ fn get_ini_value(contents: &str, key: &str) -> Option<String> {
 pub fn save_icon_to_png(
     handle: &Arc<AppHandle>,
     file_path: &str,
-    work_id: &Id<crate::works::Work>,
+    work_id: &StrId<crate::works::Work>,
 ) -> anyhow::Result<JoinHandle<anyhow::Result<()>>> {
-    let save_png_path = DirsSavePathResolver::default().icon_png_path(work_id.value);
+    let save_png_path = DirsSavePathResolver::default().icon_png_path(&work_id.value);
 
     let is_exe = file_path.to_lowercase().ends_with("exe");
     let is_ico = file_path.to_lowercase().ends_with("ico");

@@ -6,7 +6,7 @@
   import { useEvent } from '@/lib/event'
   import { works } from '@/store/works'
 
-  interface Props { workId: number }
+  interface Props { workId: string }
 
   const { workId }: Props = $props()
 

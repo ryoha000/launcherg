@@ -19,7 +19,7 @@ pub enum AppSignalEvent {
     },
     RefetchWork {
         #[serde(rename = "workId")]
-        work_id: i32,
+        work_id: String,
     },
     RefetchWorks,
     SyncRequested {

@@ -10,7 +10,7 @@ use crate::thumbnail as thumb;
 use anyhow::Context as _;
 use domain::file::save_icon_to_png as domain_save_icon_to_png;
 use domain::service::save_path_resolver::{DirsSavePathResolver, SavePathResolver};
-use domain::{icon::IconService, works::Work, Id};
+use domain::{icon::IconService, works::Work, StrId};
 use fast_image_resize as fr;
 use image::{io::Reader as ImageReader, ColorType, ImageEncoder};
 use std::io::BufWriter;
@@ -103,9 +103,9 @@ impl IconServiceImpl {
 
     pub(crate) fn build_icon_path_host(
         resolver: &dyn SavePathResolver,
-        id: &Id<Work>,
+        id: &StrId<Work>,
     ) -> anyhow::Result<String> {
-        Ok(resolver.icon_png_path(id.value))
+        Ok(resolver.icon_png_path(&id.value))
     }
 
     pub(crate) fn write_default_icon(save_path: &str) -> anyhow::Result<()> {
@@ -122,7 +122,7 @@ impl IconServiceImpl {
 impl IconService for IconServiceImpl {
     async fn save_icon_from_path(
         &self,
-        id: &Id<Work>,
+        id: &StrId<Work>,
         source_path: &str,
     ) -> anyhow::Result<()> {
         match &self.backend {
@@ -151,7 +151,7 @@ impl IconService for IconServiceImpl {
 
     async fn save_icon_from_url(
         &self,
-        id: &Id<Work>,
+        id: &StrId<Work>,
         url: &str,
     ) -> anyhow::Result<()> {
         if url.is_empty() {
@@ -160,7 +160,7 @@ impl IconService for IconServiceImpl {
         match &self.backend {
             Backend::Tauri(_handle) => {
                 let resolver = DirsSavePathResolver::default();
-                let save_path = resolver.icon_png_path(id.value);
+                let save_path = resolver.icon_png_path(&id.value);
                 // 既に存在すればスキップ
                 if Path::new(&save_path).exists() {
                     return Ok(());
@@ -224,11 +224,11 @@ impl IconService for IconServiceImpl {
         }
     }
 
-    async fn save_default_icon(&self, id: &Id<Work>) -> anyhow::Result<()> {
+    async fn save_default_icon(&self, id: &StrId<Work>) -> anyhow::Result<()> {
         match &self.backend {
             Backend::Tauri(_handle) => {
                 let resolver = DirsSavePathResolver::default();
-                let save_path = resolver.icon_png_path(id.value);
+                let save_path = resolver.icon_png_path(&id.value);
                 Self::write_default_icon(&save_path)
             }
             Backend::Host { resolver } => {

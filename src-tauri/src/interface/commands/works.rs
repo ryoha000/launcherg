@@ -45,7 +45,7 @@ pub async fn backfill_thumbnail_sizes(
 #[tauri::command]
 pub async fn list_work_lnks(
     modules: State<'_, Arc<Modules>>,
-    work_id: i32,
+    work_id: String,
 ) -> anyhow::Result<Vec<(i32, String)>, CommandError> {
     Ok(modules.work_use_case().list_work_lnks(work_id).await?)
 }
@@ -53,7 +53,7 @@ pub async fn list_work_lnks(
 #[tauri::command]
 pub async fn get_work_paths(
     modules: State<'_, Arc<Modules>>,
-    work_id: i32,
+    work_id: String,
 ) -> anyhow::Result<WorkPathsVm, CommandError> {
     let list = modules.work_use_case().list_work_lnks(work_id).await?;
     let lnks = list
@@ -66,7 +66,7 @@ pub async fn get_work_paths(
 #[tauri::command]
 pub async fn delete_work(
     modules: State<'_, Arc<Modules>>,
-    work_id: i32,
+    work_id: String,
 ) -> anyhow::Result<(), CommandError> {
     Ok(modules.work_use_case().delete_work(work_id).await?)
 }
@@ -86,7 +86,7 @@ pub async fn launch_work(
 #[tauri::command]
 pub async fn update_work_like(
     modules: State<'_, Arc<Modules>>,
-    work_id: i32,
+    work_id: String,
     is_like: bool,
 ) -> anyhow::Result<(), CommandError> {
     Ok(modules

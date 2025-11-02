@@ -14,7 +14,7 @@ export type AppSignalEventPayload =
 	message: string;
 }}
 	| { type: "refetchWork", payload: {
-	workId: number;
+	workId: string;
 }}
 	| { type: "refetchWorks", payload?: undefined }
 	| { type: "syncRequested", payload: {

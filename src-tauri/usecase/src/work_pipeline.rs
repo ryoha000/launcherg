@@ -15,7 +15,7 @@ use domain::scan::{
 };
 use domain::service::save_path_resolver::SavePathResolver;
 use domain::service::work_linker::{WorkLinkTask, WorkLinker};
-use domain::Id;
+use domain::StrId;
 use futures::StreamExt as _;
 use tokio::sync::mpsc;
 use tokio_stream::wrappers::ReceiverStream;
@@ -299,7 +299,7 @@ where
                         // 画像保存キュー投入（既存ロジックを維持）
                         let mut iq = repos.image_queue();
                         if let Some(exec) = std::path::Path::new(&item_file_path).to_str() {
-                            let icon_dst = resolver.icon_png_path(work_id.value);
+                            let icon_dst = resolver.icon_png_path(&work_id.value);
                             let src_type = match item.candidate.kind {
                                 CandidateKind::Exe => ImageSrcType::Exe,
                                 CandidateKind::Shortcut => ImageSrcType::Shortcut,
@@ -317,7 +317,7 @@ where
 
                         if let Some(gc) = egs_to_agc.get(&item.egs_id) {
                             if !gc.thumbnail_url.is_empty() {
-                                let thumb_dst = resolver.thumbnail_png_path(work_id.value);
+                                let thumb_dst = resolver.thumbnail_png_path(&work_id.value);
                                 iq.enqueue(
                                     &gc.thumbnail_url,
                                     ImageSrcType::Url,
@@ -377,7 +377,7 @@ where
                     let mut updated: usize = 0;
                     if !ids.is_empty() {
                         for id in ids.into_iter() {
-                            let path = resolver.thumbnail_png_path(id.value);
+                            let path = resolver.thumbnail_png_path(&id.value);
                             match image::image_dimensions(&path) {
                                 Ok((w, h)) => {
                                     let _ = work_repo
@@ -412,13 +412,13 @@ where
             }
         }
 
-        let egs_to_work: HashMap<i32, Id<domain::works::Work>> = self
+        let egs_to_work: HashMap<i32, StrId<domain::works::Work>> = self
             .manager
             .run(|_repos| {
                 let _uniq_egs = uniq_egs.clone();
                 Box::pin(async move {
                     // 旧 CE マップは廃止。EGS→Work は存在しない可能性があるため空
-                    Ok::<HashMap<i32, Id<domain::works::Work>>, anyhow::Error>(HashMap::new())
+                    Ok::<HashMap<i32, StrId<domain::works::Work>>, anyhow::Error>(HashMap::new())
                 })
             })
             .await?;
@@ -428,10 +428,10 @@ where
         }
 
         let mut tasks: Vec<WorkLinkTask> = Vec::new();
-        let mut seen_work: HashSet<i32> = HashSet::new();
+        let mut seen_work: HashSet<String> = HashSet::new();
         for item in deduped.iter() {
             if let Some(wid) = egs_to_work.get(&item.egs_id) {
-                if !seen_work.insert(wid.value) {
+                if !seen_work.insert(wid.value.clone()) {
                     continue;
                 }
                 tasks.push(WorkLinkTask {

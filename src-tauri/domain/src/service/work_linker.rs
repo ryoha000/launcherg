@@ -1,10 +1,10 @@
 use std::path::PathBuf;
 
-use crate::{scan::CandidateKind, works::Work, Id};
+use crate::{scan::CandidateKind, works::Work, StrId};
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct WorkLinkTask {
-    pub work_id: Id<Work>,
+    pub work_id: StrId<Work>,
     pub kind: CandidateKind,
     pub src: PathBuf,
 }

@@ -64,7 +64,7 @@ async fn dlsite_works_upsert_and_find_by_store_key() {
         .unwrap();
     assert!(updated.is_some());
     let w2 = updated.unwrap();
-    assert!(w2.work_id.value > 0);
+    assert!(!w2.work_id.value.is_empty());
     assert_eq!(w2.category, "doujin");
 
     let updated_by_store_id = repo.dlsite_work().find_by_store_id("RJ123").await.unwrap();

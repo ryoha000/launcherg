@@ -1,8 +1,8 @@
-use crate::{works::Work, Id};
+use crate::{works::Work, Id, StrId};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DmmWorkPack {
     pub id: Id<DmmWorkPack>,
-    pub work_id: Id<Work>,
+    pub work_id: StrId<Work>,
 }

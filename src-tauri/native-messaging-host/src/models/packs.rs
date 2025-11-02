@@ -17,6 +17,6 @@ pub struct DmmOmitDmmPartTs {
 #[typeshare]
 #[derive(serde::Serialize, serde::Deserialize, Clone, Debug)]
 pub struct DmmOmitWorkItemTs {
-    pub work_id: i32,
+    pub work_id: String,
     pub dmm: DmmOmitDmmPartTs,
 }
