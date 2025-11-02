@@ -1,2 +1,0 @@
--- no-op: Work中心移行の方針により、V3でのcollection_elements正規化は行わない
--- 既存のV1スキーマ（collection_elements の各カラム）をそのまま維持します。
