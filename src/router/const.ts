@@ -20,14 +20,14 @@ export const ROUTE_REGISTRY = [
   },
   {
     kind: 'works',
-    pathTemplate: '/works/:id(\\d+)',
+    pathTemplate: '/works/:id(.*?)',
     component: Work,
     icon: 'i-material-symbols-computer-outline-rounded color-accent-accent',
     tab: keyedTab(pathParamExtractor('id'), queryParamExtractor('gamename')),
   },
   {
     kind: 'memos',
-    pathTemplate: '/memos/:id(\\d+)',
+    pathTemplate: '/memos/:id(.*?)',
     component: Memo,
     icon: 'i-material-symbols-drive-file-rename-outline color-accent-edit',
     tab: keyedTab(

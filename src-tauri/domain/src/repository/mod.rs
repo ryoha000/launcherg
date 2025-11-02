@@ -28,6 +28,7 @@ pub trait RepositoriesExt {
     type WorkDownloadPathRepo: work_download_path::WorkDownloadPathRepository;
     type WorkLnkRepo: work_lnk::WorkLnkRepository;
     type WorkLikeRepo: work_like::WorkLikeRepository;
+    type WorkLinkPendingExeRepo: crate::work_link_pending_exe::WorkLinkPendingExeRepository;
 
     fn work(&self) -> Self::WorkRepo;
     fn dmm_work(&self) -> Self::DmmWorkRepo;
@@ -43,4 +44,5 @@ pub trait RepositoriesExt {
     fn work_download_path(&self) -> Self::WorkDownloadPathRepo;
     fn work_lnk(&self) -> Self::WorkLnkRepo;
     fn work_like(&self) -> Self::WorkLikeRepo;
+    fn work_link_pending_exe(&self) -> Self::WorkLinkPendingExeRepo;
 }

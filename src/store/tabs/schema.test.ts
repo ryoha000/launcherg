@@ -17,7 +17,7 @@ describe('tabs/schema: 基本ヘルパ', () => {
   it('pathParamExtractor: パスパラメータから値を取得できる', () => {
     const ex = pathParamExtractor('id')
     expect(ex({ path: '/x', pathParams: { id: '42' } })).toBe('42')
-    expect(ex({ path: '/x', pathParams: { id: 7 } })).toBe(7)
+    expect(ex({ path: '/x', pathParams: { id: 7 } })).toBe('7')
     expect(ex({ path: '/x', pathParams: {} })).toBeUndefined()
   })
 
@@ -113,7 +113,7 @@ describe('tabs/schema: buildPath', () => {
       pathTemplate: '/works/:id(\\d+)',
       tab: keyedTab(pathParamExtractor('id')),
     })
-    expect(buildPath(k, 456)).toBe('/works/456')
+    expect(buildPath(k, '456')).toBe('/works/456')
     expect(buildPath(k)).toBe('/works/:id(\\d+)')
   })
 })

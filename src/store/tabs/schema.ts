@@ -12,17 +12,17 @@ export type TabPolicy
     | { mode: 'singleton', title: string }
     | {
       mode: 'keyed'
-      key: Extractor<number | string>
+      key: Extractor<string>
       title?: Extractor<string>
     }
 
-export function pathParamExtractor(name: string): Extractor<string | number> {
+export function pathParamExtractor(name: string): Extractor<string> {
   return ({ pathParams }) => {
     const value = pathParams?.[name]
     if (typeof value === 'string')
       return value
     if (typeof value === 'number')
-      return value
+      return String(value)
     return undefined
   }
 }
@@ -59,7 +59,7 @@ export function singletonTab(title: string): TabPolicy {
 }
 
 export function keyedTab(
-  keyExtractor: Extractor<number | string>,
+  keyExtractor: Extractor<string>,
   titleExtractor?: Extractor<string>,
 ): TabPolicy {
   return { mode: 'keyed', key: keyExtractor, title: titleExtractor }
@@ -69,7 +69,7 @@ export function keyedTab(
 export type TabAction
   = | { mode: 'none' }
     | { mode: 'singleton', type: string, title: string }
-    | { mode: 'keyed', type: string, key: number | string, title?: string }
+    | { mode: 'keyed', type: string, key: string, title?: string }
 
 export function getTabActionFromLocation(
   registry: readonly Descriptor[],
@@ -117,7 +117,7 @@ export function getTabActionFromLocation(
 // URL 構築（タブ遷移用）
 export function buildPath(
   descriptor: Descriptor,
-  key?: string | number,
+  key?: string,
 ): string {
   const { pathTemplate } = descriptor
   const tab = descriptor.tab

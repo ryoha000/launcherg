@@ -20,6 +20,7 @@ pub mod pubsub;
 pub mod save_image_queue;
 pub mod thumbnail;
 pub mod work_download_path;
+pub mod work_link_pending_exe;
 pub mod work_omit;
 pub mod work_parent_pack;
 pub mod works;

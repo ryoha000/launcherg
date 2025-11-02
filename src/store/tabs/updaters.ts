@@ -10,7 +10,7 @@ export function upsertSingletonTab(tabs: Tab[], action: Extract<TabAction, { mod
   const newTab: Tab = {
     id: Date.now(),
     type: action.type,
-    workId: -1,
+    workId: '',
     scrollTo: 0,
     title: action.title,
   }
@@ -22,13 +22,14 @@ export function upsertKeyedTab(
   tabs: Tab[],
   action: Extract<TabAction, { mode: 'keyed' }>,
 ): { nextTabs: Tab[], selectedIndex: number } {
-  const idx = tabs.findIndex(v => v.type === action.type && String(v.workId) === String(action.key))
+  const keyStr = String(action.key)
+  const idx = tabs.findIndex(v => v.type === action.type && v.workId === keyStr)
   if (idx !== -1)
     return { nextTabs: tabs, selectedIndex: idx }
   const newTab: Tab = {
     id: Date.now(),
     type: action.type,
-    workId: typeof action.key === 'string' ? Number(action.key) : (action.key as number),
+    workId: keyStr,
     scrollTo: 0,
     title: action.title ?? 'エラー: タイトル不明',
   }

@@ -21,6 +21,7 @@ mod repositorymock;
 #[cfg(test)]
 mod windowsmock;
 pub mod work;
+pub mod work_link_pending_exe;
 pub mod work_omit;
 pub mod work_pipeline;
 #[cfg(test)]

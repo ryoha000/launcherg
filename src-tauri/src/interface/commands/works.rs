@@ -116,3 +116,10 @@ pub async fn register_work_from_path(
         )
         .await?)
 }
+
+#[tauri::command]
+pub async fn process_pending_exe_links(
+    modules: State<'_, Arc<Modules>>,
+) -> anyhow::Result<(), CommandError> {
+    Ok(modules.work_link_pending_exe_use_case().process_pending_exe_links().await?)
+}

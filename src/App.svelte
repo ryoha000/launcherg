@@ -5,9 +5,10 @@
   import ImportDropFiles from '@/components/Home/ImportDropFiles.svelte'
   import Titlebar from '@/components/UI/Titlebar/Titlebar.svelte'
   import Layout from '@/layouts/Layout.svelte'
-  import { commandBackfillThumbnailSizes } from '@/lib/command'
+  import { commandBackfillThumbnailSizes, commandProcessPendingExeLinks } from '@/lib/command'
   import { queryClient } from '@/lib/data/queryClient'
   import { useEvent } from '@/lib/event'
+  import { runLocalMigrationV3 } from '@/lib/migrations/workCenteredV3'
   import { registerCollectionElementDetails } from '@/lib/registerCollectionElementDetails'
   import { initializeAllGameCache } from '@/lib/scrape/scrapeAllGame'
   import { showErrorToast, showInfoToast } from '@/lib/toast'
@@ -18,10 +19,16 @@
   const appEvent = useEvent()
   const setDetailPromise = $derived(registerCollectionElementDetails())
 
-  onMount(() => {
+  const init = async () => {
+    await runLocalMigrationV3()
+    await commandProcessPendingExeLinks()
     initialize()
     initializeAllGameCache()
     commandBackfillThumbnailSizes()
+  }
+
+  onMount(() => {
+    init()
 
     void appEvent.startListen('appSignal:showMessage', ({ event }) => {
       if (event.type !== 'showMessage')

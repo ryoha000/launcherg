@@ -359,3 +359,8 @@ export async function commandGetImageSaveQueue(req?: { limit?: number, status?: 
 export async function commandBackfillThumbnailSizes() {
   return await invoke<number>('backfill_thumbnail_sizes')
 }
+
+// Process pending exe links (work_link_pending_exe)
+export async function commandProcessPendingExeLinks() {
+  return await invoke<void>('process_pending_exe_links')
+}

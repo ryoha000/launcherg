@@ -19,6 +19,7 @@ mockall::mock! {
         type WorkDownloadPathRepo = domain::repository::work_download_path::MockWorkDownloadPathRepository;
         type WorkLnkRepo = domain::repository::work_lnk::MockWorkLnkRepository;
         type WorkLikeRepo = domain::repository::work_like::MockWorkLikeRepository;
+        type WorkLinkPendingExeRepo = domain::work_link_pending_exe::MockWorkLinkPendingExeRepository;
         type ErogamescapeRepo = domain::repository::erogamescape::MockErogamescapeRepository;
         fn work(&self) -> domain::repository::works::MockWorkRepository;
         fn dmm_work(&self) -> domain::repository::works::MockDmmWorkRepository;
@@ -34,6 +35,7 @@ mockall::mock! {
         fn work_download_path(&self) -> domain::repository::work_download_path::MockWorkDownloadPathRepository;
         fn work_lnk(&self) -> domain::repository::work_lnk::MockWorkLnkRepository;
         fn work_like(&self) -> domain::repository::work_like::MockWorkLikeRepository;
+        fn work_link_pending_exe(&self) -> domain::work_link_pending_exe::MockWorkLinkPendingExeRepository;
         fn erogamescape(&self) -> domain::repository::erogamescape::MockErogamescapeRepository;
     }
 }
@@ -56,6 +58,7 @@ pub struct TestRepositories {
         Arc<Mutex<domain::repository::work_download_path::MockWorkDownloadPathRepository>>,
     pub work_lnk: Arc<Mutex<domain::repository::work_lnk::MockWorkLnkRepository>>,
     pub work_like: Arc<Mutex<domain::repository::work_like::MockWorkLikeRepository>>,
+    pub work_link_pending_exe: Arc<Mutex<domain::work_link_pending_exe::MockWorkLinkPendingExeRepository>>,
     pub erogamescape: Arc<Mutex<domain::repository::erogamescape::MockErogamescapeRepository>>,
 }
 
@@ -76,6 +79,7 @@ impl Default for TestRepositories {
             work_download_path: Arc::new(Mutex::new(Default::default())),
             work_lnk: Arc::new(Mutex::new(Default::default())),
             work_like: Arc::new(Mutex::new(Default::default())),
+            work_link_pending_exe: Arc::new(Mutex::new(Default::default())),
             erogamescape: Arc::new(Mutex::new(Default::default())),
         }
     }
@@ -97,6 +101,7 @@ impl domain::repository::RepositoriesExt for TestRepositories {
     type WorkDownloadPathRepo = TestRepositories;
     type WorkLnkRepo = TestRepositories;
     type WorkLikeRepo = TestRepositories;
+    type WorkLinkPendingExeRepo = TestRepositories;
     fn work(&self) -> Self::WorkRepo {
         self.clone()
     }
@@ -137,6 +142,9 @@ impl domain::repository::RepositoriesExt for TestRepositories {
         self.clone()
     }
     fn work_like(&self) -> Self::WorkLikeRepo {
+        self.clone()
+    }
+    fn work_link_pending_exe(&self) -> Self::WorkLinkPendingExeRepo {
         self.clone()
     }
 }
@@ -585,6 +593,16 @@ impl domain::repository::work_like::WorkLikeRepository for TestRepositories {
             .await
             .update_like_at_by_work_id(work_id, like_at)
             .await
+    }
+}
+
+#[cfg(test)]
+impl domain::work_link_pending_exe::WorkLinkPendingExeRepository for TestRepositories {
+    async fn list_all(&mut self) -> anyhow::Result<Vec<domain::work_link_pending_exe::WorkLinkPendingExe>> {
+        self.work_link_pending_exe.lock().await.list_all().await
+    }
+    async fn delete(&mut self, id: domain::Id<domain::work_link_pending_exe::WorkLinkPendingExe>) -> anyhow::Result<()> {
+        self.work_link_pending_exe.lock().await.delete(id).await
     }
 }
 

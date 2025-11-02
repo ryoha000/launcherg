@@ -26,7 +26,8 @@ use crate::{
         dmm_pack::DmmPackUseCase, erogamescape::ErogamescapeUseCase,
         extension_manager::ExtensionManagerUseCase, file::FileUseCase, host_log::HostLogUseCase,
         image::ImageUseCase, image_queue::ImageQueueUseCase, process::ProcessUseCase,
-        work::WorkUseCase, work_omit::WorkOmitUseCase, work_pipeline::WorkPipelineUseCase,
+        work::WorkUseCase, work_link_pending_exe::WorkLinkPendingExeUseCase,
+        work_omit::WorkOmitUseCase, work_pipeline::WorkPipelineUseCase,
     },
 };
 use domain::game_matcher::{GameMatcher, Matcher as GameMatcherImpl};
@@ -56,6 +57,7 @@ pub struct Modules {
     >,
     image_queue_use_case: ImageQueueUseCase<SqliteRepositoryManager, SqliteRepositories>,
     erogamescape_use_case: ErogamescapeUseCase<SqliteRepositoryManager, SqliteRepositories>,
+    work_link_pending_exe_use_case: WorkLinkPendingExeUseCase<SqliteRepositoryManager, SqliteRepositories, WorkLinkerImpl<SqliteRepositoryManager, SqliteRepositories, Windows>>,
     pubsub: PubSub,
     game_matcher: std::sync::Arc<dyn GameMatcher + Send + Sync>,
     image_queue_runner:
@@ -101,6 +103,9 @@ pub trait ModulesExt {
     fn erogamescape_use_case(
         &self,
     ) -> &ErogamescapeUseCase<SqliteRepositoryManager, SqliteRepositories>;
+    fn work_link_pending_exe_use_case(
+        &self,
+    ) -> &WorkLinkPendingExeUseCase<SqliteRepositoryManager, SqliteRepositories, WorkLinkerImpl<SqliteRepositoryManager, SqliteRepositories, Windows>>;
 }
 
 impl ModulesExt for Modules {
@@ -174,6 +179,11 @@ impl ModulesExt for Modules {
     ) -> &ErogamescapeUseCase<SqliteRepositoryManager, SqliteRepositories> {
         &self.erogamescape_use_case
     }
+    fn work_link_pending_exe_use_case(
+        &self,
+    ) -> &WorkLinkPendingExeUseCase<SqliteRepositoryManager, SqliteRepositories, WorkLinkerImpl<SqliteRepositoryManager, SqliteRepositories, Windows>> {
+        &self.work_link_pending_exe_use_case
+    }
 }
 
 impl Modules {
@@ -216,6 +226,8 @@ impl Modules {
             Arc::new(DirsSavePathResolver::default());
         let work_use_case: WorkUseCase<SqliteRepositoryManager, SqliteRepositories, Windows> =
             WorkUseCase::new(repo_manager.clone(), windows.clone(), save_path_resolver.clone());
+        let work_link_pending_exe_use_case: WorkLinkPendingExeUseCase<SqliteRepositoryManager, SqliteRepositories, WorkLinkerImpl<SqliteRepositoryManager, SqliteRepositories, Windows>> =
+            WorkLinkPendingExeUseCase::new(repo_manager.clone(), std::sync::Arc::new(WorkLinkerImpl::new(repo_manager.clone(), save_path_resolver.clone(), windows.clone())));
         let image_queue_use_case: ImageQueueUseCase<SqliteRepositoryManager, SqliteRepositories> =
             ImageQueueUseCase::new(repo_manager.clone());
 
@@ -280,6 +292,7 @@ impl Modules {
             erogamescape_use_case,
             dmm_pack_use_case,
             work_use_case,
+            work_link_pending_exe_use_case,
             work_pipeline_use_case,
             pubsub,
             game_matcher,

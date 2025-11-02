@@ -7,7 +7,7 @@ import { computeTabDeletionPlan, upsertKeyedTab, upsertSingletonTab } from '@/st
 
 export interface Tab {
   id: number
-  workId: number
+  workId: string
   type: string
   scrollTo: number
   title: string

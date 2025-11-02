@@ -12,7 +12,7 @@
   import { sidebarCollectionElements } from '@/store/sidebarCollectionElements'
   import Icon from '/icon.png'
 
-  const memoRegex = /^smde_memo-(\d+)$/
+  const memoRegex = /^smde_memo-(.+)$/
   const memoPromises = Promise.all(
     Object.keys(localStorage)
       .map(v => v.match(memoRegex)?.[1] ?? '')

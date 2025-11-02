@@ -1,6 +1,7 @@
 use std::collections::BTreeMap;
 
 use domain::repository::work_lnk::{NewWorkLnk, WorkLnk as DomainWorkLnk, WorkLnkRepository};
+use domain::work_link_pending_exe::WorkLinkPendingExeRepository;
 use domain::{
     repository::works::{DlsiteWorkRepository, DmmWorkRepository, WorkRepository},
     works::{
@@ -12,7 +13,7 @@ use domain::{
 use sqlx::query_as;
 
 use crate::sqliterepository::{
-    models::works::{WorkDetailsRow, WorkLnkRow, WorkTable},
+    models::works::{WorkDetailsRow, WorkLinkPendingExeRow, WorkLnkRow, WorkTable},
     sqliterepository::RepositoryImpl,
 };
 
@@ -723,6 +724,38 @@ impl WorkLnkRepository for RepositoryImpl<domain::repository::work_lnk::WorkLnk>
             .with_conn(|conn| {
                 Box::pin(async move {
                     sqlx::query(r#"DELETE FROM work_lnks WHERE id = ?"#)
+                        .bind(idv)
+                        .execute(conn)
+                        .await?;
+                    Ok(())
+                })
+            })
+            .await
+    }
+}
+
+impl WorkLinkPendingExeRepository for RepositoryImpl<domain::work_link_pending_exe::WorkLinkPendingExe> {
+    async fn list_all(&mut self) -> anyhow::Result<Vec<domain::work_link_pending_exe::WorkLinkPendingExe>> {
+        let rows: Vec<WorkLinkPendingExeRow> = self.executor.with_conn(|conn| {
+            Box::pin(async move {
+                let rows: Vec<WorkLinkPendingExeRow> = sqlx::query_as(
+                    r#"SELECT id, work_id, exe_path FROM work_link_pending_exe ORDER BY id ASC"#,
+                )
+                .fetch_all(conn)
+                .await?;
+                Ok(rows)
+            })
+        }).await?;
+
+        Ok(rows.into_iter().map(|r| r.into()).collect())
+    }
+
+    async fn delete(&mut self, id: domain::Id<domain::work_link_pending_exe::WorkLinkPendingExe>) -> anyhow::Result<()> {
+        let idv = id.value as i64;
+        self.executor
+            .with_conn(|conn| {
+                Box::pin(async move {
+                    sqlx::query(r#"DELETE FROM work_link_pending_exe WHERE id = ?"#)
                         .bind(idv)
                         .execute(conn)
                         .await?;

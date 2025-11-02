@@ -56,6 +56,7 @@ pub struct SqliteRepositories {
     work_download_path: RepositoryImpl<domain::work_download_path::WorkDownloadPath>,
     work_lnk: RepositoryImpl<domain::repository::work_lnk::WorkLnk>,
     work_like: RepositoryImpl<domain::works::WorkLike>,
+    work_link_pending_exe: RepositoryImpl<domain::work_link_pending_exe::WorkLinkPendingExe>,
     erogamescape: RepositoryImpl<domain::erogamescape::ErogamescapeInformation>,
 }
 
@@ -74,6 +75,7 @@ impl RepositoriesExt for SqliteRepositories {
     type WorkDownloadPathRepo = RepositoryImpl<domain::work_download_path::WorkDownloadPath>;
     type WorkLnkRepo = RepositoryImpl<domain::repository::work_lnk::WorkLnk>;
     type WorkLikeRepo = RepositoryImpl<domain::works::WorkLike>;
+    type WorkLinkPendingExeRepo = RepositoryImpl<domain::work_link_pending_exe::WorkLinkPendingExe>;
 
     fn work(&self) -> Self::WorkRepo {
         self.work.clone()
@@ -117,6 +119,9 @@ impl RepositoriesExt for SqliteRepositories {
     fn work_like(&self) -> Self::WorkLikeRepo {
         self.work_like.clone()
     }
+    fn work_link_pending_exe(&self) -> Self::WorkLinkPendingExeRepo {
+        self.work_link_pending_exe.clone()
+    }
 }
 
 impl SqliteRepositories {
@@ -149,6 +154,7 @@ impl SqliteRepositories {
             work_download_path: RepositoryImpl::new(executor.clone()),
             work_lnk: RepositoryImpl::new(executor.clone()),
             work_like: RepositoryImpl::new(executor.clone()),
+            work_link_pending_exe: RepositoryImpl::new(executor.clone()),
             erogamescape: RepositoryImpl::new(executor.clone()),
         }
     }

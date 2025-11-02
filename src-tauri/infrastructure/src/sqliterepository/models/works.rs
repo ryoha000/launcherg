@@ -259,3 +259,22 @@ impl From<crate::sqliterepository::models::works::WorkLnkRow>
         }
     }
 }
+
+#[derive(sqlx::FromRow, Clone)]
+pub struct WorkLinkPendingExeRow {
+    pub id: i64,
+    pub work_id: String,
+    pub exe_path: String,
+}
+
+impl From<crate::sqliterepository::models::works::WorkLinkPendingExeRow>
+    for domain::work_link_pending_exe::WorkLinkPendingExe
+{
+    fn from(v: crate::sqliterepository::models::works::WorkLinkPendingExeRow) -> Self {
+        domain::work_link_pending_exe::WorkLinkPendingExe {
+            id: domain::Id::new(v.id as i32),
+            work_id: domain::StrId::new(v.work_id),
+            exe_path: v.exe_path,
+        }
+    }
+}
