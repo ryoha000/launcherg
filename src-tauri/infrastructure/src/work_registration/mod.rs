@@ -320,9 +320,10 @@ where
 
                         // パス登録（LNK/EXE）
                         if let Some(ref path) = req.insert.path {
-                            match path {
+                            let src_path = match path {
                                 RegisterWorkPath::Lnk { lnk_path } => {
                                     to_insert_lnk.push((work_id.clone(), lnk_path.clone()));
+                                    lnk_path.clone()
                                 }
                                 RegisterWorkPath::Exe { exe_path } => {
                                     let dst = resolver.lnk_new_path(&work_id.value);
@@ -337,7 +338,45 @@ where
                                         icon_path: None,
                                     });
                                     to_insert_lnk.push((work_id.clone(), dst));
+                                    exe_path.clone()
                                 }
+                            };
+
+                            // install_at と original_path を記録
+                            if let Ok(meta) = std::fs::metadata(&src_path) {
+                                let created = meta.created().ok();
+                                let modified = meta.modified().ok();
+                                if let Some(best_st) = match (created, modified) {
+                                    (Some(c), Some(m)) => Some(if m > c { m } else { c }),
+                                    (Some(c), None) => Some(c),
+                                    (None, Some(m)) => Some(m),
+                                    _ => None,
+                                } {
+                                    // SystemTime を chrono::DateTime<Local> に変換
+                                    let best_dt_local =
+                                        chrono::DateTime::<chrono::Utc>::from(best_st)
+                                            .with_timezone(&chrono::Local);
+                                    if let Err(e) = repos
+                                        .work()
+                                        .update_install_by_work_id(
+                                            work_id.clone(),
+                                            best_dt_local,
+                                            src_path.clone(),
+                                        )
+                                        .await
+                                    {
+                                        log::warn!(
+                                            "Failed to update install_at for work_id={}: {}",
+                                            work_id.value,
+                                            e
+                                        );
+                                    }
+                                }
+                            } else {
+                                log::warn!(
+                                    "Failed to get metadata for path: {}",
+                                    src_path
+                                );
                             }
                         }
 

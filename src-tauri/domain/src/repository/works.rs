@@ -37,6 +37,12 @@ pub trait WorkRepository {
         work_id: StrId<Work>,
         last_play_at: DateTime<Local>,
     ) -> Result<()>;
+    async fn update_install_by_work_id(
+        &mut self,
+        work_id: StrId<Work>,
+        install_at: DateTime<Local>,
+        original_path: String,
+    ) -> Result<()>;
 }
 
 #[trait_variant::make(Send)]

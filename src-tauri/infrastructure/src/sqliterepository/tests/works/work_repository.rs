@@ -931,3 +931,112 @@ async fn test_update_last_play_at_by_work_id_upsert() {
         "初回と2回目で last_play_at が異なること"
     );
 }
+
+#[tokio::test]
+async fn test_update_install_by_work_id_upsert() {
+    use chrono::{DateTime, Local, NaiveDateTime};
+
+    let test_db = TestDatabase::new().await.unwrap();
+    let repo = test_db.sqlite_repository();
+
+    // Work を作成
+    let work_id = {
+        let mut r = repo.work();
+        r.upsert(&domain::works::NewWork::new("インストール日時更新テスト".into()))
+            .await
+            .unwrap()
+    };
+
+    // 初回 INSERT: install_at と original_path を設定
+    let first_install_at =
+        NaiveDateTime::parse_from_str("2024-01-15 10:00:00", "%Y-%m-%d %H:%M:%S").unwrap();
+    let first_install_at_dt: DateTime<Local> =
+        DateTime::from_naive_utc_and_offset(first_install_at, Local::now().offset().clone());
+    let first_original_path = "C:\\test\\game.exe".to_string();
+
+    {
+        let mut r = repo.work();
+        r.update_install_by_work_id(work_id.clone(), first_install_at_dt, first_original_path.clone())
+            .await
+            .unwrap();
+    }
+
+    // 初回 INSERT が正しく保存されたことを確認
+    let details = {
+        let mut r = repo.work();
+        r.find_details_by_work_id(work_id.clone())
+            .await
+            .unwrap()
+            .unwrap()
+    };
+    assert!(details.install_at.is_some());
+    let saved_first = details.install_at.unwrap();
+    assert_eq!(
+        saved_first.naive_utc(),
+        first_install_at,
+        "初回の install_at が正しく保存されていること"
+    );
+
+    // original_path をデータベースから直接確認
+    let row: Option<(Option<String>,)> = sqlx::query_as(
+        "SELECT original_path FROM work_installs WHERE work_id = ?",
+    )
+    .bind(&work_id.value)
+    .fetch_optional(&test_db.pool)
+    .await
+    .unwrap();
+    assert_eq!(
+        row.map(|r| r.0).flatten(),
+        Some(first_original_path),
+        "初回の original_path が正しく保存されていること"
+    );
+
+    // 2回目 UPDATE: install_at と original_path を更新
+    let second_install_at =
+        NaiveDateTime::parse_from_str("2024-01-20 15:30:00", "%Y-%m-%d %H:%M:%S").unwrap();
+    let second_install_at_dt: DateTime<Local> =
+        DateTime::from_naive_utc_and_offset(second_install_at, Local::now().offset().clone());
+    let second_original_path = "C:\\test\\updated\\game.exe".to_string();
+
+    {
+        let mut r = repo.work();
+        r.update_install_by_work_id(work_id.clone(), second_install_at_dt, second_original_path.clone())
+            .await
+            .unwrap();
+    }
+
+    // UPDATE が正しく反映されたことを確認
+    let details_after = {
+        let mut r = repo.work();
+        r.find_details_by_work_id(work_id.clone())
+            .await
+            .unwrap()
+            .unwrap()
+    };
+    assert!(details_after.install_at.is_some());
+    let saved_second = details_after.install_at.unwrap();
+    assert_eq!(
+        saved_second.naive_utc(),
+        second_install_at,
+        "更新後の install_at が正しく保存されていること"
+    );
+    assert_ne!(
+        saved_first.naive_utc(),
+        saved_second.naive_utc(),
+        "初回と2回目で install_at が異なること"
+    );
+
+    // original_path の更新を確認
+    let row_after: Option<(Option<String>,)> = sqlx::query_as(
+        "SELECT original_path FROM work_installs WHERE work_id = ?",
+    )
+    .bind(&work_id.value)
+    .fetch_optional(&test_db.pool)
+    .await
+    .unwrap();
+    assert_eq!(
+        row_after.map(|r| r.0).flatten(),
+        Some(second_original_path),
+        "更新後の original_path が正しく保存されていること"
+    );
+}

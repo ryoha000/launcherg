@@ -194,6 +194,7 @@ CREATE TABLE IF NOT EXISTS work_installs (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     work_id TEXT NOT NULL,
     install_at DATETIME NOT NULL,
+    original_path TEXT NOT NULL,
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     UNIQUE(work_id),
@@ -240,8 +241,16 @@ CREATE TABLE IF NOT EXISTS work_thumbnails (
 CREATE INDEX IF NOT EXISTS idx_work_thumbnails_work_id ON work_thumbnails(work_id);
 
 -- backfill: ce → work_*（work_id を CAST）
-INSERT OR IGNORE INTO work_installs (work_id, install_at, created_at, updated_at)
-SELECT CAST(ce.id AS TEXT), ce.install_at, ce.created_at, ce.updated_at
+INSERT OR IGNORE INTO work_installs (work_id, install_at, original_path, created_at, updated_at)
+SELECT CAST(ce.id AS TEXT),
+       ce.install_at,
+       CASE
+         WHEN ce.lnk_path IS NOT NULL AND ce.lnk_path <> '' THEN ce.lnk_path
+         WHEN ce.exe_path IS NOT NULL AND ce.exe_path <> '' THEN ce.exe_path
+         ELSE ''
+       END,
+       ce.created_at,
+       ce.updated_at
 FROM collection_elements ce WHERE ce.install_at IS NOT NULL;
 
 INSERT OR IGNORE INTO work_plays (work_id, last_play_at, created_at, updated_at)

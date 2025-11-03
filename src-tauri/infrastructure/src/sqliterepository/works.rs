@@ -410,6 +410,39 @@ impl WorkRepository for RepositoryImpl<Work> {
             .await?;
         Ok(())
     }
+
+    async fn update_install_by_work_id(
+        &mut self,
+        work_id: StrId<Work>,
+        install_at: chrono::DateTime<chrono::Local>,
+        original_path: String,
+    ) -> anyhow::Result<()> {
+        let wid = work_id.value.clone();
+        let install_at_naive = install_at.naive_utc();
+        self.executor
+            .with_conn(|conn| {
+                Box::pin(async move {
+                    sqlx::query(
+                        r#"
+                        INSERT INTO work_installs (work_id, install_at, original_path)
+                        VALUES (?, ?, ?)
+                        ON CONFLICT(work_id) DO UPDATE SET
+                            install_at = excluded.install_at,
+                            original_path = excluded.original_path,
+                            updated_at = CURRENT_TIMESTAMP
+                        "#,
+                    )
+                    .bind(wid)
+                    .bind(install_at_naive)
+                    .bind(original_path)
+                    .execute(conn)
+                    .await?;
+                    Ok::<(), anyhow::Error>(())
+                })
+            })
+            .await?;
+        Ok(())
+    }
 }
 
 impl DmmWorkRepository for RepositoryImpl<domain::works::DmmWork> {

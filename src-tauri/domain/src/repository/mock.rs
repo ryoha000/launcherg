@@ -190,6 +190,18 @@ impl crate::repository::works::WorkRepository for TestRepositories {
             .update_last_play_at_by_work_id(work_id, last_play_at)
             .await
     }
+    async fn update_install_by_work_id(
+        &mut self,
+        work_id: crate::StrId<crate::works::Work>,
+        install_at: chrono::DateTime<chrono::Local>,
+        original_path: String,
+    ) -> anyhow::Result<()> {
+        self.work
+            .lock()
+            .await
+            .update_install_by_work_id(work_id, install_at, original_path)
+            .await
+    }
 }
 
 impl crate::repository::erogamescape::ErogamescapeRepository for TestRepositories {
