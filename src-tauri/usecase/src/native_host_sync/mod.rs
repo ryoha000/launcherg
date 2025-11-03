@@ -3,21 +3,19 @@
 //! - EGS 情報があれば名称/詳細も upsert し、EGS マップを作成/更新する
 
 use derive_new::new;
-use domain::repository::work_omit::WorkOmitRepository;
 use domain::repository::works::WorkRepository;
 use domain::repository::works::{DlsiteWorkRepository, DmmWorkRepository};
 use domain::repository::{
     manager::RepositoryManager,
-    work_parent_packs::WorkParentPacksRepository, RepositoriesExt,
+    RepositoriesExt,
 };
-use domain::service::save_path_resolver::SavePathResolver;
+use domain::service::work_registration::WorkRegistrationService;
 use std::marker::PhantomData;
 use std::sync::Arc;
 
 mod dlsite;
 mod dmm;
 pub mod downloads;
-mod store;
 
 /// 拡張から渡された image_url/thumbnail_url を保存に適したサムネイルURLへ正規化する
 /// - DLsite: /resize/images2/.../_img_main_300x300.jpg → /modpub/images2/.../_img_main.jpg
@@ -86,21 +84,23 @@ pub struct EgsInfo {
 #[derive(new)]
 /// ストア情報をコレクションへ同期するユースケース。
 /// 内部で `CollectionRepository` を用いてマッピング作成・EGS 情報反映を行う。
-pub struct NativeHostSyncUseCase<M, R>
+pub struct NativeHostSyncUseCase<M, R, RS>
 where
     M: RepositoryManager<R>,
     R: RepositoriesExt + Send + Sync + 'static,
+    RS: WorkRegistrationService + Send + Sync + 'static,
 {
     manager: Arc<M>,
-    resolver: Arc<dyn SavePathResolver>,
+    registrar: Arc<RS>,
     #[new(default)]
     _marker: PhantomData<R>,
 }
 
-impl<M, R> NativeHostSyncUseCase<M, R>
+impl<M, R, RS> NativeHostSyncUseCase<M, R, RS>
 where
     M: RepositoryManager<R>,
     R: RepositoriesExt + Send + Sync + 'static,
+    RS: WorkRegistrationService + Send + Sync + 'static,
 {
     /// DMM の omit が付与された作品の一覧を返す（DMM情報必須）。
     pub async fn list_dmm_omit_works(&self) -> anyhow::Result<Vec<DmmOmitItem>> {

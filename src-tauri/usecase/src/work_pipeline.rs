@@ -4,23 +4,25 @@ use std::{marker::PhantomData, sync::Arc};
 
 use domain::pubsub::{DedupResultPayload, EnrichResultPayload, PubSubEvent, PubSubService};
 use domain::repository::{
-    all_game_cache::AllGameCacheRepository as _,
     explored_cache::ExploredCacheRepository as _, manager::RepositoryManager,
-    save_image_queue::ImageSaveQueueRepository as _, works::WorkRepository as _, RepositoriesExt,
+    works::WorkRepository as _, RepositoriesExt,
 };
-use domain::save_image_queue::{ImagePreprocess, ImageSrcType};
 use domain::scan::{
     CandidateKind, DuplicateResolver, FileSystem, MetadataExtractor, ResolvedWork, WorkCandidate,
     WorkCandidateOrResolvedWork,
 };
 use domain::service::save_path_resolver::SavePathResolver;
 use domain::service::work_linker::{WorkLinkTask, WorkLinker};
+use domain::service::work_registration::{
+    ImageApply, ImageSource, ImageStrategy, RegisterWorkPath, UniqueWorkKey, WorkInsert,
+    WorkRegistrationService,
+};
 use domain::StrId;
 use futures::StreamExt as _;
 use tokio::sync::mpsc;
 use tokio_stream::wrappers::ReceiverStream;
 
-pub struct WorkPipelineUseCase<M, R, P, FS, ME, DR, WL>
+pub struct WorkPipelineUseCase<M, R, P, FS, ME, DR, WL, RS>
 where
     M: RepositoryManager<R>,
     R: RepositoriesExt + Send + Sync + 'static,
@@ -29,6 +31,7 @@ where
     ME: MetadataExtractor,
     DR: DuplicateResolver,
     WL: WorkLinker,
+    RS: WorkRegistrationService + Send + Sync + 'static,
 {
     manager: Arc<M>,
     pubsub: P,
@@ -37,10 +40,11 @@ where
     dedup: Arc<DR>,
     resolver: Arc<dyn SavePathResolver>,
     linker: Arc<WL>,
+    registrar: Arc<RS>,
     _marker: PhantomData<R>,
 }
 
-impl<M, R, P, FS, ME, DR, WL> WorkPipelineUseCase<M, R, P, FS, ME, DR, WL>
+impl<M, R, P, FS, ME, DR, WL, RS> WorkPipelineUseCase<M, R, P, FS, ME, DR, WL, RS>
 where
     M: RepositoryManager<R>,
     R: RepositoriesExt + Send + Sync + 'static,
@@ -49,6 +53,7 @@ where
     ME: MetadataExtractor + Send + Sync + 'static,
     DR: DuplicateResolver,
     WL: WorkLinker + Send + Sync + 'static,
+    RS: WorkRegistrationService + Send + Sync + 'static,
 {
     pub fn new(
         manager: Arc<M>,
@@ -58,6 +63,7 @@ where
         dedup: Arc<DR>,
         resolver: Arc<dyn SavePathResolver>,
         linker: Arc<WL>,
+        registrar: Arc<RS>,
     ) -> Self {
         Self {
             manager,
@@ -67,6 +73,7 @@ where
             dedup,
             resolver,
             linker,
+            registrar,
             _marker: PhantomData,
         }
     }
@@ -236,106 +243,49 @@ where
     }
 
     pub(crate) async fn persist(&self, deduped: &[ResolvedWork]) -> anyhow::Result<usize> {
-        use std::collections::{HashMap, HashSet};
+        // ResolvedWork を WorkRegistrationRequest に変換
+        let requests: Vec<domain::service::work_registration::WorkRegistrationRequest> = deduped
+            .iter()
+            .map(|item| {
+                let item_file_path = item.candidate.path.to_string_lossy().to_string();
+                let path = match item.candidate.kind {
+                    CandidateKind::Exe => Some(RegisterWorkPath::Exe {
+                        exe_path: item_file_path.clone(),
+                    }),
+                    CandidateKind::Shortcut => Some(RegisterWorkPath::Lnk {
+                        lnk_path: item_file_path.clone(),
+                    }),
+                    CandidateKind::Folder | CandidateKind::Other => None,
+                };
 
-        let resolver = self.resolver.clone();
-        
-        // EGS IDを収集
-        let mut uniq_egs: Vec<i32> = Vec::new();
-        let mut seen_egs: HashSet<i32> = HashSet::new();
-        for it in deduped.iter() {
-            if seen_egs.insert(it.egs_id) {
-                uniq_egs.push(it.egs_id);
-            }
-        }
+                // icon: FromPath/OnlyIfMissing
+                let icon = path.as_ref().map(|p| ImageApply {
+                    strategy: ImageStrategy::OnlyIfMissing,
+                    source: ImageSource::FromPath(p.clone()),
+                });
 
-        // 単一トランザクションで全件処理（Work中心）
-        let count = self
-            .manager
-            .run_in_transaction(move |repos| {
-                let resolver = resolver.clone();
-                Box::pin(async move {
-                    let mut work_repo = repos.work();
-                    let resolver = resolver.clone();
+                // thumbnail: FromEgs/OnlyIfMissing
+                let thumbnail = Some(ImageApply {
+                    strategy: ImageStrategy::OnlyIfMissing,
+                    source: ImageSource::FromEgs,
+                });
 
-                    // 先読み: EGS -> AllGameCacheOneWithThumbnailUrl
-                    let mut egs_to_agc: HashMap<
-                        i32,
-                        domain::all_game_cache::AllGameCacheOneWithThumbnailUrl,
-                    > = HashMap::new();
-                    if !uniq_egs.is_empty() {
-                        let list = repos.all_game_cache().get_by_ids(uniq_egs.clone()).await?;
-                        for gc in list.into_iter() {
-                            egs_to_agc.insert(gc.id, gc);
-                        }
-                    }
-
-                    let mut processed = 0usize;
-                    for item in deduped.iter() {
-                        let title = item.title.clone();
-                        let item_file_path = item.candidate.path.to_string_lossy().to_string();
-                        // Work を EGS ID で検索。なければ新規作成
-                        let existing = work_repo
-                            .find_work_ids_by_erogamescape_ids(&[item.egs_id])
-                            .await?;
-                        let (work_id, is_new) = match existing.into_iter().next() {
-                            Some((_egs, id)) => (id, false),
-                            None => (
-                                work_repo
-                                    .upsert(&domain::works::NewWork::new(title.clone()))
-                                    .await?,
-                                true,
-                            ),
-                        };
-
-                        // EGS マップは新規作成時のみ upsert
-                        if is_new {
-                            repos
-                                .work()
-                                .upsert_erogamescape_map(work_id.clone(), item.egs_id)
-                                .await?;
-                        }
-
-                        // 画像保存キュー投入（既存ロジックを維持）
-                        let mut iq = repos.image_queue();
-                        if let Some(exec) = std::path::Path::new(&item_file_path).to_str() {
-                            let icon_dst = resolver.icon_png_path(&work_id.value);
-                            let src_type = match item.candidate.kind {
-                                CandidateKind::Exe => ImageSrcType::Exe,
-                                CandidateKind::Shortcut => ImageSrcType::Shortcut,
-                                CandidateKind::Folder => anyhow::bail!("folder is not supported"),
-                                CandidateKind::Other => anyhow::bail!("other is not supported"),
-                            };
-                            iq.enqueue(
-                                exec,
-                                src_type,
-                                &icon_dst,
-                                ImagePreprocess::ResizeAndCropSquare256,
-                            )
-                            .await?;
-                        }
-
-                        if let Some(gc) = egs_to_agc.get(&item.egs_id) {
-                            if !gc.thumbnail_url.is_empty() {
-                                let thumb_dst = resolver.thumbnail_png_path(&work_id.value);
-                                iq.enqueue(
-                                    &gc.thumbnail_url,
-                                    ImageSrcType::Url,
-                                    &thumb_dst,
-                                    ImagePreprocess::ResizeForWidth400,
-                                )
-                                .await?;
-                            }
-                        }
-
-                        processed += 1;
-                    }
-
-                    Ok::<usize, anyhow::Error>(processed)
-                })
+                domain::service::work_registration::WorkRegistrationRequest {
+                    keys: vec![UniqueWorkKey::ErogamescapeId(item.egs_id)],
+                    insert: WorkInsert {
+                        title: item.title.clone(),
+                        path,
+                        egs_info: None,
+                        icon,
+                        thumbnail,
+                        parent_pack_work_id: None,
+                    },
+                }
             })
-            .await?;
-        Ok(count)
+            .collect();
+
+        let _ = self.registrar.register(requests).await?;
+        Ok(deduped.len())
     }
 
     pub(crate) async fn update_explored_cache(

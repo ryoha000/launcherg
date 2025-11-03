@@ -10,3 +10,4 @@ pub mod sqliterepository;
 pub mod thumbnail;
 pub mod windowsimpl;
 pub mod work_linker;
+pub mod work_registration;

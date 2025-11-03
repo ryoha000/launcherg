@@ -10,6 +10,7 @@ mod tests {
         WorkCandidate, WorkCandidateOrResolvedWork,
     };
     use domain::service::work_linker::MockWorkLinker;
+    use domain::service::work_registration::MockWorkRegistrationService;
 
     use crate::repositorymock::{TestRepositories, TestRepositoryManager};
 
@@ -33,6 +34,15 @@ mod tests {
             .times(0..)
             .returning(|_| Box::pin(async { Ok::<_, anyhow::Error>(()) }));
         Arc::new(linker)
+    }
+
+    fn default_registrar() -> Arc<MockWorkRegistrationService> {
+        let mut registrar = MockWorkRegistrationService::new();
+        registrar
+            .expect_register()
+            .times(0..)
+            .returning(|_| Box::pin(async { Ok::<_, anyhow::Error>(Vec::new()) }));
+        Arc::new(registrar)
     }
 
     // smoke
@@ -62,7 +72,8 @@ mod tests {
         let manager = Arc::new(TestRepositoryManager::new(repos));
 
         let linker = default_linker();
-        let uc: WorkPipelineUseCase<_, _, _, _, _, _, _> = WorkPipelineUseCase::new(
+        let registrar = default_registrar();
+        let uc: WorkPipelineUseCase<_, _, _, _, _, _, _, _> = WorkPipelineUseCase::new(
             manager,
             pubsub.clone(),
             fs,
@@ -70,6 +81,7 @@ mod tests {
             dedup,
             Arc::new(domain::service::save_path_resolver::DirsSavePathResolver::default()),
             linker,
+            registrar,
         );
         let roots: Vec<PathBuf> = vec![];
         let _ = uc.start(roots, false).await.unwrap();
@@ -100,7 +112,8 @@ mod tests {
         let dedup = Arc::new(d);
         let manager = Arc::new(TestRepositoryManager::new(TestRepositories::default()));
         let linker = default_linker();
-        let uc: WorkPipelineUseCase<_, _, _, _, _, _, _> = WorkPipelineUseCase::new(
+        let registrar = default_registrar();
+        let uc: WorkPipelineUseCase<_, _, _, _, _, _, _, _> = WorkPipelineUseCase::new(
             manager,
             pubsub.clone(),
             fs,
@@ -108,6 +121,7 @@ mod tests {
             dedup,
             Arc::new(domain::service::save_path_resolver::DirsSavePathResolver::default()),
             linker,
+            registrar,
         );
         let _ = uc
             .enrich_candidates_parallel_stream(futures::stream::iter(vec![
@@ -143,7 +157,8 @@ mod tests {
         let dedup = Arc::new(MockDuplicateResolver::new());
         let manager = Arc::new(TestRepositoryManager::new(TestRepositories::default()));
         let linker = default_linker();
-        let uc: WorkPipelineUseCase<_, _, _, _, _, _, _> = WorkPipelineUseCase::new(
+        let registrar = default_registrar();
+        let uc: WorkPipelineUseCase<_, _, _, _, _, _, _, _> = WorkPipelineUseCase::new(
             manager,
             pubsub,
             fs,
@@ -151,6 +166,7 @@ mod tests {
             dedup,
             Arc::new(domain::service::save_path_resolver::DirsSavePathResolver::default()),
             linker,
+            registrar,
         );
         let _ = uc.open_candidate_stream(&[], false).await.unwrap();
     }
@@ -175,7 +191,8 @@ mod tests {
         }
         let manager = Arc::new(TestRepositoryManager::new(repos));
         let linker = default_linker();
-        let uc: WorkPipelineUseCase<_, _, _, _, _, _, _> = WorkPipelineUseCase::new(
+        let registrar = default_registrar();
+        let uc: WorkPipelineUseCase<_, _, _, _, _, _, _, _> = WorkPipelineUseCase::new(
             manager,
             pubsub,
             fs,
@@ -183,6 +200,7 @@ mod tests {
             dedup,
             Arc::new(domain::service::save_path_resolver::DirsSavePathResolver::default()),
             linker,
+            registrar,
         );
         let _ = uc.open_candidate_stream(&[], true).await.unwrap();
     }
@@ -199,7 +217,8 @@ mod tests {
         let dedup = Arc::new(d);
         let manager = Arc::new(TestRepositoryManager::new(TestRepositories::default()));
         let linker = default_linker();
-        let uc: WorkPipelineUseCase<_, _, _, _, _, _, _> = WorkPipelineUseCase::new(
+        let registrar = default_registrar();
+        let uc: WorkPipelineUseCase<_, _, _, _, _, _, _, _> = WorkPipelineUseCase::new(
             manager,
             pubsub.clone(),
             fs,
@@ -207,6 +226,7 @@ mod tests {
             dedup,
             Arc::new(domain::service::save_path_resolver::DirsSavePathResolver::default()),
             linker,
+            registrar,
         );
         let resolved = vec![
             ResolvedWork::new(
@@ -263,7 +283,8 @@ mod tests {
         }
         let manager = Arc::new(TestRepositoryManager::new(repos));
         let linker = default_linker();
-        let uc: WorkPipelineUseCase<_, _, _, _, _, _, _> = WorkPipelineUseCase::new(
+        let registrar = default_registrar();
+        let uc: WorkPipelineUseCase<_, _, _, _, _, _, _, _> = WorkPipelineUseCase::new(
             manager,
             pubsub,
             fs,
@@ -271,6 +292,7 @@ mod tests {
             dedup,
             Arc::new(domain::service::save_path_resolver::DirsSavePathResolver::default()),
             linker,
+            registrar,
         );
 
         let items = vec![ResolvedWork::new(
@@ -290,40 +312,35 @@ mod tests {
         let extractor = Arc::new(MockMetadataExtractor::new());
         let dedup = Arc::new(MockDuplicateResolver::new());
         let repos = TestRepositories::default();
-        {
-            let mut work = repos.work.lock().await;
-            work.expect_find_by_title()
-                .returning(|_| Box::pin(async { Ok(None) }));
-            work.expect_find_work_ids_by_erogamescape_ids()
-                .returning(|_| Box::pin(async { Ok::<_, anyhow::Error>(vec![]) }));
-            work.expect_upsert()
-                .returning(|_| Box::pin(async { Ok(domain::StrId::new("100".to_string())) }));
-            work.expect_upsert_erogamescape_map()
-                .returning(|_, _| Box::pin(async { Ok::<_, anyhow::Error>(()) }));
-        }
-        {
-            let mut agc = repos.all_game_cache.lock().await;
-            agc.expect_get_by_ids().returning(|_| {
-                Box::pin(async {
-                    Ok::<_, anyhow::Error>(vec![
-                        domain::all_game_cache::AllGameCacheOneWithThumbnailUrl {
-                            id: 10,
-                            gamename: "A".into(),
-                            thumbnail_url: "http://example.com/a.png".into(),
-                        },
-                    ])
-                })
-            });
-        }
-        {
-            let mut iq = repos.image_queue.lock().await;
-            iq.expect_enqueue().times(2).returning(|_, _, _, _| {
-                Box::pin(async { Ok::<_, anyhow::Error>(domain::Id::new(1)) })
-            });
-        }
         let manager = Arc::new(TestRepositoryManager::new(repos));
         let linker = default_linker();
-        let uc: WorkPipelineUseCase<_, _, _, _, _, _, _> = WorkPipelineUseCase::new(
+        let mut registrar = MockWorkRegistrationService::new();
+        registrar
+            .expect_register()
+            .times(1)
+            .returning(|requests| {
+                // WorkRegistrationRequestが正しく作成されていることを確認
+                assert_eq!(requests.len(), 1);
+                assert_eq!(requests[0].keys.len(), 1);
+                if let domain::service::work_registration::UniqueWorkKey::ErogamescapeId(id) = &requests[0].keys[0] {
+                    assert_eq!(*id, 10);
+                } else {
+                    panic!("Expected ErogamescapeId");
+                }
+                assert_eq!(requests[0].insert.title, "A");
+                assert!(requests[0].insert.path.is_some());
+                // icon と thumbnail が設定されていることを確認
+                assert!(requests[0].insert.icon.is_some());
+                assert!(requests[0].insert.thumbnail.is_some());
+                Box::pin(async {
+                    Ok::<_, anyhow::Error>(vec![domain::service::work_registration::WorkRegistrationResult {
+                        resolved_keys: vec![domain::service::work_registration::UniqueWorkKey::ErogamescapeId(10)],
+                        work_id: domain::StrId::new("100".to_string()),
+                    }])
+                })
+            });
+        let registrar = Arc::new(registrar);
+        let uc: WorkPipelineUseCase<_, _, _, _, _, _, _, _> = WorkPipelineUseCase::new(
             manager,
             pubsub,
             fs,
@@ -331,6 +348,7 @@ mod tests {
             dedup,
             Arc::new(domain::service::save_path_resolver::DirsSavePathResolver::default()),
             linker,
+            registrar,
         );
         let items = vec![ResolvedWork::new(
             WorkCandidate::new(PathBuf::from("C:/path/a.exe"), CandidateKind::Exe),
@@ -365,7 +383,13 @@ mod tests {
         }
         let manager = Arc::new(TestRepositoryManager::new(repos));
         let linker = default_linker();
-        let uc: WorkPipelineUseCase<_, _, _, _, _, _, _> = WorkPipelineUseCase::new(
+        let mut registrar = MockWorkRegistrationService::new();
+        registrar
+            .expect_register()
+            .times(1)
+            .returning(|_| Box::pin(async { Err(anyhow::anyhow!("fail")) }));
+        let registrar = Arc::new(registrar);
+        let uc: WorkPipelineUseCase<_, _, _, _, _, _, _, _> = WorkPipelineUseCase::new(
             manager,
             pubsub.clone(),
             fs,
@@ -373,6 +397,7 @@ mod tests {
             dedup,
             Arc::new(domain::service::save_path_resolver::DirsSavePathResolver::default()),
             linker,
+            registrar,
         );
         let items = vec![ResolvedWork::new(
             WorkCandidate::new(PathBuf::from("C:/path/a.exe"), CandidateKind::Exe),
@@ -408,7 +433,8 @@ mod tests {
         }
         let manager = Arc::new(TestRepositoryManager::new(repos));
         let linker = default_linker();
-        let uc: WorkPipelineUseCase<_, _, _, _, _, _, _> = WorkPipelineUseCase::new(
+        let registrar = default_registrar();
+        let uc: WorkPipelineUseCase<_, _, _, _, _, _, _, _> = WorkPipelineUseCase::new(
             manager,
             pubsub,
             fs,
@@ -416,6 +442,7 @@ mod tests {
             dedup,
             Arc::new(domain::service::save_path_resolver::DirsSavePathResolver::default()),
             linker,
+            registrar,
         );
         let _ = uc
             .update_explored_cache(vec!["a".into(), "b".into()])

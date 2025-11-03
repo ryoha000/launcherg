@@ -14,6 +14,8 @@ pub mod image_queue;
 pub mod models;
 pub mod native_host_sync;
 #[cfg(test)]
+mod native_host_sync_test;
+#[cfg(test)]
 mod native_messaging_mock;
 pub mod process;
 #[cfg(test)]

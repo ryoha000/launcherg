@@ -28,6 +28,7 @@ use infrastructure::{
     },
     windowsimpl::windows::Windows,
     work_linker::WorkLinkerImpl,
+    work_registration::WorkRegistrationServiceImpl,
 };
 use models::{
     common::{
@@ -45,7 +46,11 @@ use usecase::native_host_sync::{
 
 struct AppCtx {
     manager: Arc<SqliteRepositoryManager>,
-    sync_usecase: NativeHostSyncUseCase<SqliteRepositoryManager, SqliteRepositories>,
+    sync_usecase: NativeHostSyncUseCase<
+        SqliteRepositoryManager,
+        SqliteRepositories,
+        WorkRegistrationServiceImpl<SqliteRepositoryManager, SqliteRepositories, Windows>,
+    >,
     resolver: Arc<dyn SavePathResolver>,
     fs: Arc<LocalFileSystem>,
     dedup: Arc<HeuristicDuplicateResolver>,
@@ -135,13 +140,24 @@ async fn main() {
     let db_path = resolver.db_file_path();
     let repo_db = RepoDb::from_path(&db_path).await;
     let repo_manager = Arc::new(SqliteRepositoryManager::new(repo_db.pool_arc()));
-    let sync_usecase = NativeHostSyncUseCase::new(repo_manager.clone(), resolver.clone());
+    let windows = Arc::new(Windows::new());
+    let work_registration_service: Arc<
+        WorkRegistrationServiceImpl<SqliteRepositoryManager, SqliteRepositories, Windows>,
+    > = Arc::new(WorkRegistrationServiceImpl::new(
+        repo_manager.clone(),
+        resolver.clone(),
+        windows.clone(),
+    ));
+    let sync_usecase = NativeHostSyncUseCase::new(
+        repo_manager.clone(),
+        work_registration_service.clone(),
+    );
     let fs = Arc::new(LocalFileSystem::default());
     let dedup = Arc::new(HeuristicDuplicateResolver);
     let work_linker = Arc::new(WorkLinkerImpl::new(
         repo_manager.clone(),
         resolver.clone(),
-        Arc::new(Windows::new()),
+        windows.clone(),
     ));
     let ctx = AppCtx {
         manager: repo_manager,
@@ -847,7 +863,18 @@ mod tests {
         let db = setup_db().await;
         let repo_manager = StdArc::new(SqliteRepositoryManager::new(db.pool_arc()));
         let resolver = Arc::new(DirsSavePathResolver::default());
-        let usecase = NativeHostSyncUseCase::new(repo_manager.clone(), resolver.clone());
+        let windows = Arc::new(Windows::new());
+        let work_registration_service: Arc<
+            WorkRegistrationServiceImpl<SqliteRepositoryManager, SqliteRepositories, Windows>,
+        > = Arc::new(WorkRegistrationServiceImpl::new(
+            repo_manager.clone(),
+            resolver.clone(),
+            windows.clone(),
+        ));
+        let usecase = NativeHostSyncUseCase::new(
+            repo_manager.clone(),
+            work_registration_service.clone(),
+        );
 
         // まず parent 用の work を1件作成し、その work_id を後続で参照
         let parent_work_id: String = repo_manager
@@ -1195,7 +1222,18 @@ mod tests {
             let db = setup_db().await;
             let repo_manager = StdArc::new(SqliteRepositoryManager::new(db.pool_arc()));
             let resolver = Arc::new(DirsSavePathResolver::default());
-            let usecase = NativeHostSyncUseCase::new(repo_manager.clone(), resolver.clone());
+            let windows = Arc::new(Windows::new());
+            let work_registration_service: Arc<
+                WorkRegistrationServiceImpl<SqliteRepositoryManager, SqliteRepositories, Windows>,
+            > = Arc::new(WorkRegistrationServiceImpl::new(
+                repo_manager.clone(),
+                resolver.clone(),
+                windows.clone(),
+            ));
+            let usecase = NativeHostSyncUseCase::new(
+                repo_manager.clone(),
+                work_registration_service.clone(),
+            );
 
             // 同じDBを使いまわしていないか確認
             let works = repo_manager
@@ -1336,13 +1374,24 @@ mod tests {
         let db = RepoDb::from_path(&tmp_str).await;
         let repo_manager = StdArc::new(SqliteRepositoryManager::new(db.pool_arc()));
         let resolver = Arc::new(DirsSavePathResolver::default());
-        let usecase = NativeHostSyncUseCase::new(repo_manager.clone(), resolver.clone());
+        let windows = Arc::new(Windows::new());
+        let work_registration_service: Arc<
+            WorkRegistrationServiceImpl<SqliteRepositoryManager, SqliteRepositories, Windows>,
+        > = Arc::new(WorkRegistrationServiceImpl::new(
+            repo_manager.clone(),
+            resolver.clone(),
+            windows.clone(),
+        ));
+        let usecase = NativeHostSyncUseCase::new(
+            repo_manager.clone(),
+            work_registration_service.clone(),
+        );
         let fs = Arc::new(LocalFileSystem::default());
         let dedup = Arc::new(HeuristicDuplicateResolver);
         let work_linker = Arc::new(WorkLinkerImpl::new(
             repo_manager.clone(),
             resolver.clone(),
-            Arc::new(Windows::new()),
+            windows.clone(),
         ));
         let ctx = AppCtx {
             manager: repo_manager,
@@ -1380,13 +1429,24 @@ mod tests {
         let db = RepoDb::from_path(&tmp_str).await;
         let repo_manager = StdArc::new(SqliteRepositoryManager::new(db.pool_arc()));
         let resolver = Arc::new(DirsSavePathResolver::default());
-        let usecase = NativeHostSyncUseCase::new(repo_manager.clone(), resolver.clone());
+        let windows = Arc::new(Windows::new());
+        let work_registration_service: Arc<
+            WorkRegistrationServiceImpl<SqliteRepositoryManager, SqliteRepositories, Windows>,
+        > = Arc::new(WorkRegistrationServiceImpl::new(
+            repo_manager.clone(),
+            resolver.clone(),
+            windows.clone(),
+        ));
+        let usecase = NativeHostSyncUseCase::new(
+            repo_manager.clone(),
+            work_registration_service.clone(),
+        );
         let fs = Arc::new(LocalFileSystem::default());
         let dedup = Arc::new(HeuristicDuplicateResolver);
         let work_linker = Arc::new(WorkLinkerImpl::new(
             repo_manager.clone(),
             resolver.clone(),
-            Arc::new(Windows::new()),
+            windows.clone(),
         ));
         let ctx = AppCtx {
             manager: repo_manager,
@@ -1424,13 +1484,24 @@ mod tests {
         let db = RepoDb::from_path(&tmp_str).await;
         let repo_manager = StdArc::new(SqliteRepositoryManager::new(db.pool_arc()));
         let resolver = Arc::new(DirsSavePathResolver::default());
-        let usecase = NativeHostSyncUseCase::new(repo_manager.clone(), resolver.clone());
+        let windows = Arc::new(Windows::new());
+        let work_registration_service: Arc<
+            WorkRegistrationServiceImpl<SqliteRepositoryManager, SqliteRepositories, Windows>,
+        > = Arc::new(WorkRegistrationServiceImpl::new(
+            repo_manager.clone(),
+            resolver.clone(),
+            windows.clone(),
+        ));
+        let usecase = NativeHostSyncUseCase::new(
+            repo_manager.clone(),
+            work_registration_service.clone(),
+        );
         let fs = Arc::new(LocalFileSystem::default());
         let dedup = Arc::new(HeuristicDuplicateResolver);
         let work_linker = Arc::new(WorkLinkerImpl::new(
             repo_manager.clone(),
             resolver.clone(),
-            Arc::new(Windows::new()),
+            windows.clone(),
         ));
         let ctx = AppCtx {
             manager: repo_manager,

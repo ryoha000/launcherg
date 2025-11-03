@@ -20,6 +20,7 @@ use crate::{
         thumbnail::ThumbnailServiceImpl,
         windowsimpl::windows::Windows,
         work_linker::WorkLinkerImpl,
+        work_registration::WorkRegistrationServiceImpl,
     },
     usecase::{
         all_game_cache::AllGameCacheUseCase,
@@ -45,7 +46,12 @@ pub struct Modules {
     work_omit_use_case: WorkOmitUseCase<SqliteRepositoryManager, SqliteRepositories>,
     host_log_use_case: HostLogUseCase<SqliteRepositoryManager, SqliteRepositories>,
     dmm_pack_use_case: DmmPackUseCase<SqliteRepositoryManager, SqliteRepositories>,
-    work_use_case: WorkUseCase<SqliteRepositoryManager, SqliteRepositories, Windows>,
+    work_use_case: WorkUseCase<
+        SqliteRepositoryManager,
+        SqliteRepositories,
+        Windows,
+        WorkRegistrationServiceImpl<SqliteRepositoryManager, SqliteRepositories, Windows>,
+    >,
     work_pipeline_use_case: WorkPipelineUseCase<
         SqliteRepositoryManager,
         SqliteRepositories,
@@ -54,6 +60,7 @@ pub struct Modules {
         HeuristicMetadataExtractor,
         HeuristicDuplicateResolver,
         WorkLinkerImpl<SqliteRepositoryManager, SqliteRepositories, Windows>,
+        WorkRegistrationServiceImpl<SqliteRepositoryManager, SqliteRepositories, Windows>,
     >,
     image_queue_use_case: ImageQueueUseCase<SqliteRepositoryManager, SqliteRepositories>,
     erogamescape_use_case: ErogamescapeUseCase<SqliteRepositoryManager, SqliteRepositories>,
@@ -80,7 +87,14 @@ pub trait ModulesExt {
     fn work_omit_use_case(&self) -> &WorkOmitUseCase<SqliteRepositoryManager, SqliteRepositories>;
     fn host_log_use_case(&self) -> &HostLogUseCase<SqliteRepositoryManager, SqliteRepositories>;
     fn dmm_pack_use_case(&self) -> &DmmPackUseCase<SqliteRepositoryManager, SqliteRepositories>;
-    fn work_use_case(&self) -> &WorkUseCase<SqliteRepositoryManager, SqliteRepositories, Windows>;
+    fn work_use_case(
+        &self,
+    ) -> &WorkUseCase<
+        SqliteRepositoryManager,
+        SqliteRepositories,
+        Windows,
+        WorkRegistrationServiceImpl<SqliteRepositoryManager, SqliteRepositories, Windows>,
+    >;
     fn work_pipeline_use_case(
         &self,
     ) -> &WorkPipelineUseCase<
@@ -91,6 +105,7 @@ pub trait ModulesExt {
         HeuristicMetadataExtractor,
         HeuristicDuplicateResolver,
         WorkLinkerImpl<SqliteRepositoryManager, SqliteRepositories, Windows>,
+        WorkRegistrationServiceImpl<SqliteRepositoryManager, SqliteRepositories, Windows>,
     >;
     fn pubsub(&self) -> &Self::PubSub;
     fn game_matcher(&self) -> &std::sync::Arc<dyn GameMatcher + Send + Sync>;
@@ -141,7 +156,14 @@ impl ModulesExt for Modules {
     fn dmm_pack_use_case(&self) -> &DmmPackUseCase<SqliteRepositoryManager, SqliteRepositories> {
         &self.dmm_pack_use_case
     }
-    fn work_use_case(&self) -> &WorkUseCase<SqliteRepositoryManager, SqliteRepositories, Windows> {
+    fn work_use_case(
+        &self,
+    ) -> &WorkUseCase<
+        SqliteRepositoryManager,
+        SqliteRepositories,
+        Windows,
+        WorkRegistrationServiceImpl<SqliteRepositoryManager, SqliteRepositories, Windows>,
+    > {
         &self.work_use_case
     }
     fn work_pipeline_use_case(
@@ -154,6 +176,7 @@ impl ModulesExt for Modules {
         HeuristicMetadataExtractor,
         HeuristicDuplicateResolver,
         WorkLinkerImpl<SqliteRepositoryManager, SqliteRepositories, Windows>,
+        WorkRegistrationServiceImpl<SqliteRepositoryManager, SqliteRepositories, Windows>,
     > {
         &self.work_pipeline_use_case
     }
@@ -224,8 +247,23 @@ impl Modules {
             DmmPackUseCase::new(repo_manager.clone());
         let save_path_resolver: Arc<dyn domain::service::save_path_resolver::SavePathResolver> =
             Arc::new(DirsSavePathResolver::default());
-        let work_use_case: WorkUseCase<SqliteRepositoryManager, SqliteRepositories, Windows> =
-            WorkUseCase::new(repo_manager.clone(), windows.clone(), save_path_resolver.clone());
+        let work_registration_service: Arc<
+            WorkRegistrationServiceImpl<SqliteRepositoryManager, SqliteRepositories, Windows>,
+        > = Arc::new(WorkRegistrationServiceImpl::new(
+            repo_manager.clone(),
+            save_path_resolver.clone(),
+            windows.clone(),
+        ));
+        let work_use_case: WorkUseCase<
+            SqliteRepositoryManager,
+            SqliteRepositories,
+            Windows,
+            WorkRegistrationServiceImpl<SqliteRepositoryManager, SqliteRepositories, Windows>,
+        > = WorkUseCase::new(
+            repo_manager.clone(),
+            windows.clone(),
+            work_registration_service.clone(),
+        );
         let work_link_pending_exe_use_case: WorkLinkPendingExeUseCase<SqliteRepositoryManager, SqliteRepositories, WorkLinkerImpl<SqliteRepositoryManager, SqliteRepositories, Windows>> =
             WorkLinkPendingExeUseCase::new(repo_manager.clone(), std::sync::Arc::new(WorkLinkerImpl::new(repo_manager.clone(), save_path_resolver.clone(), windows.clone())));
         let image_queue_use_case: ImageQueueUseCase<SqliteRepositoryManager, SqliteRepositories> =
@@ -255,6 +293,7 @@ impl Modules {
             HeuristicMetadataExtractor,
             HeuristicDuplicateResolver,
             WorkLinkerImpl<SqliteRepositoryManager, SqliteRepositories, Windows>,
+            WorkRegistrationServiceImpl<SqliteRepositoryManager, SqliteRepositories, Windows>,
         > = WorkPipelineUseCase::new(
             repo_manager.clone(),
             pubsub.clone(),
@@ -267,6 +306,7 @@ impl Modules {
                 resolver.clone(),
                 windows.clone(),
             )),
+            work_registration_service.clone(),
         );
 
         // ImageQueue のイベントハンドラ: Tauri 側は PubSub を利用

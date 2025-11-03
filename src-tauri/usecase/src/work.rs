@@ -1,43 +1,41 @@
 use std::sync::Arc;
 
 use derive_new::new;
-use domain::repository::save_image_queue::ImageSaveQueueRepository as _;
 use domain::repository::work_parent_packs::WorkParentPacksRepository as _;
 use domain::repository::works::DmmWorkRepository as _;
 use domain::repository::{
     manager::RepositoryManager, work_like::WorkLikeRepository,
     work_lnk::WorkLnkRepository, works::WorkRepository, RepositoriesExt,
 };
-use domain::service::save_path_resolver::SavePathResolver;
+use domain::service::work_registration::{
+    ImageApply, ImageSource, ImageStrategy, RegisterWorkPath, UniqueWorkKey, WorkInsert,
+    WorkRegistrationService,
+};
 use domain::windows::{shell_link::ShellLink as ShellLinkTrait, WindowsExt};
 use domain::works::WorkDetails;
 use std::marker::PhantomData;
 
-#[derive(Clone, Debug)]
-pub enum RegisterWorkPathInput {
-    Exe { exe_path: String },
-    Lnk { lnk_path: String },
-}
-
 #[derive(new)]
-pub struct WorkUseCase<M, R, W>
+pub struct WorkUseCase<M, R, W, RS>
 where
     M: RepositoryManager<R>,
     R: RepositoriesExt + Send + Sync + 'static,
     W: WindowsExt + Send + Sync + 'static,
+    RS: WorkRegistrationService + Send + Sync + 'static,
 {
     manager: Arc<M>,
     windows: Arc<W>,
-    resolver: Arc<dyn SavePathResolver>,
+    registrar: Arc<RS>,
     #[new(default)]
     _marker: PhantomData<R>,
 }
 
-impl<M, R, W> WorkUseCase<M, R, W>
+impl<M, R, W, RS> WorkUseCase<M, R, W, RS>
 where
     M: RepositoryManager<R>,
     R: RepositoriesExt + Send + Sync + 'static,
     W: WindowsExt + Send + Sync + 'static,
+    RS: WorkRegistrationService + Send + Sync + 'static,
 {
     pub async fn list_all_details(&self) -> anyhow::Result<Vec<WorkDetails>> {
         self.manager
@@ -156,93 +154,37 @@ where
         erogamescape_id: i32,
         title: String,
         thumbnail_url: String,
-        path: RegisterWorkPathInput,
+        register_path: RegisterWorkPath,
     ) -> anyhow::Result<()> {
-        let resolver = self.resolver.clone();
-        self.manager
-            .run_in_transaction(|repos| {
-                let resolver = resolver.clone();
-                let title = title.clone();
-                let thumbnail_url = thumbnail_url.clone();
-                let path = path.clone();
-                let erogamescape_id = erogamescape_id;
-                Box::pin(async move {
-                    // 1) Work を EGS ID で検索。なければ新規作成
-                    let mut work_repo = repos.work();
-                    let existing = work_repo
-                        .find_work_ids_by_erogamescape_ids(&[erogamescape_id])
-                        .await?;
-                    let (work_id, is_new) = match existing.into_iter().next() {
-                        Some((_egs, id)) => (id, false),
-                        None => (
-                            work_repo
-                                .upsert(&domain::works::NewWork::new(title.clone()))
-                                .await?,
-                            true,
-                        ),
-                    };
+        // icon: FromPath/OnlyIfMissing (path がある場合のみ)
+        let icon = Some(ImageApply {
+            strategy: ImageStrategy::OnlyIfMissing,
+            source: ImageSource::FromPath(register_path.clone()),
+        });
 
-                    // 2) EGS マップは新規作成時のみ upsert
-                    if is_new {
-                        repos
-                            .work()
-                            .upsert_erogamescape_map(work_id.clone(), erogamescape_id)
-                            .await?;
-                    }
-
-                    // 3) パス登録（enum でパターンマッチ）
-                    match path {
-                        RegisterWorkPathInput::Lnk { lnk_path } => {
-                            // そのまま登録（既存ファイルパスを採用）
-                            let _ = repos
-                                .work_lnk()
-                                .insert(&domain::repository::work_lnk::NewWorkLnk {
-                                    work_id: work_id.clone(),
-                                    lnk_path,
-                                })
-                                .await?;
-                        }
-                        RegisterWorkPathInput::Exe { exe_path } => {
-                            // .lnk を生成して登録
-                            let dst = resolver.lnk_new_path(&work_id.value);
-                            if let Some(parent) = std::path::Path::new(&dst).parent() {
-                                let _ = std::fs::create_dir_all(parent);
-                            }
-                            let req = domain::windows::shell_link::CreateShortcutRequest {
-                                target_path: exe_path,
-                                dest_lnk_path: dst.clone(),
-                                working_dir: None,
-                                arguments: None,
-                                icon_path: None,
-                            };
-                            let _ = self.windows.shell_link().create_bulk(vec![req]);
-                            let _ = repos
-                                .work_lnk()
-                                .insert(&domain::repository::work_lnk::NewWorkLnk {
-                                    work_id: work_id.clone(),
-                                    lnk_path: dst,
-                                })
-                                .await?;
-                        }
-                    }
-
-                    // 4) サムネイルをキュー投入
-                    if !thumbnail_url.is_empty() {
-                        let thumb_dst = resolver.thumbnail_png_path(&work_id.value);
-                        let _ = repos
-                            .image_queue()
-                            .enqueue(
-                                &thumbnail_url,
-                                domain::save_image_queue::ImageSrcType::Url,
-                                &thumb_dst,
-                                domain::save_image_queue::ImagePreprocess::ResizeForWidth400,
-                            )
-                            .await;
-                    }
-
-                    Ok::<(), anyhow::Error>(())
-                })
+        // thumbnail: FromUrl/OnlyIfMissing (URL がある場合のみ)
+        let thumbnail = if thumbnail_url.is_empty() {
+            None
+        } else {
+            Some(ImageApply {
+                strategy: ImageStrategy::OnlyIfMissing,
+                source: ImageSource::FromUrl(thumbnail_url),
             })
-            .await
+        };
+
+        let req = domain::service::work_registration::WorkRegistrationRequest {
+            keys: vec![UniqueWorkKey::ErogamescapeId(erogamescape_id)],
+            insert: WorkInsert {
+                title,
+                path: Some(register_path),
+                egs_info: None,
+                icon,
+                thumbnail,
+                parent_pack_work_id: None,
+            },
+        };
+
+        let _ = self.registrar.register(vec![req]).await?;
+        Ok(())
     }
 }

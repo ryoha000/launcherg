@@ -8,7 +8,7 @@ use crate::interface::models::all_game_cache::AllGameCacheOne;
 use crate::interface::models::work_path_input::WorkPathInput;
 use domain::pubsub::event::{AppSignalEventPayload, AppSignalPayload, AppSignalSourcePayload, PubSubEvent};
 use domain::pubsub::PubSubService;
-use usecase::work::RegisterWorkPathInput as UsecaseWorkPathInput;
+use domain::service::work_registration::RegisterWorkPath;
 
 #[derive(serde::Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -102,8 +102,8 @@ pub async fn register_work_from_path(
     game_cache: AllGameCacheOne,
 ) -> anyhow::Result<(), CommandError> {
     let input = match path {
-        WorkPathInput::Exe { exe_path } => UsecaseWorkPathInput::Exe { exe_path },
-        WorkPathInput::Lnk { lnk_path } => UsecaseWorkPathInput::Lnk { lnk_path },
+        WorkPathInput::Exe { exe_path } => RegisterWorkPath::Exe { exe_path },
+        WorkPathInput::Lnk { lnk_path } => RegisterWorkPath::Lnk { lnk_path },
     };
 
     Ok(modules
