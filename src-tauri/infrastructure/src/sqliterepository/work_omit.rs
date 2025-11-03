@@ -1,5 +1,7 @@
 use crate::sqliterepository::sqliterepository::RepositoryImpl;
-use domain::{repository::work_omit::WorkOmitRepository, work_omit::WorkOmit, works::Work, Id, StrId};
+use domain::{
+    repository::work_omit::WorkOmitRepository, work_omit::WorkOmit, works::Work, Id, StrId,
+};
 
 impl WorkOmitRepository for RepositoryImpl<domain::work_omit::WorkOmit> {
     async fn add(&mut self, work_id: StrId<Work>) -> anyhow::Result<()> {

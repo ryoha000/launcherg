@@ -148,7 +148,10 @@ impl WorkRepository for RepositoryImpl<Work> {
         Ok(map.into_values().collect())
     }
 
-    async fn find_details_by_work_id(&mut self, work_id: StrId<Work>) -> anyhow::Result<Option<WorkDetails>> {
+    async fn find_details_by_work_id(
+        &mut self,
+        work_id: StrId<Work>,
+    ) -> anyhow::Result<Option<WorkDetails>> {
         let idv = work_id.value.clone();
         let rows = self.executor.with_conn(|conn| {
             Box::pin(async move {
@@ -217,14 +220,24 @@ impl WorkRepository for RepositoryImpl<Work> {
             let key = details.work.id.value.clone();
             match map.get_mut(&key) {
                 Some(entry) => {
-                    if entry.dmm.is_none() { entry.dmm = details.dmm; }
-                    if entry.dlsite.is_none() { entry.dlsite = details.dlsite; }
-                    if entry.erogamescape_information.is_none() { entry.erogamescape_information = details.erogamescape_information; }
+                    if entry.dmm.is_none() {
+                        entry.dmm = details.dmm;
+                    }
+                    if entry.dlsite.is_none() {
+                        entry.dlsite = details.dlsite;
+                    }
+                    if entry.erogamescape_information.is_none() {
+                        entry.erogamescape_information = details.erogamescape_information;
+                    }
                     entry.is_omitted |= details.is_omitted;
                     entry.is_dmm_pack |= details.is_dmm_pack;
-                    if entry.latest_download_path.is_none() { entry.latest_download_path = details.latest_download_path; }
+                    if entry.latest_download_path.is_none() {
+                        entry.latest_download_path = details.latest_download_path;
+                    }
                 }
-                None => { map.insert(key, details); }
+                None => {
+                    map.insert(key, details);
+                }
             }
         }
 
@@ -731,23 +744,33 @@ impl WorkLnkRepository for RepositoryImpl<domain::repository::work_lnk::WorkLnk>
     }
 }
 
-impl WorkLinkPendingExeRepository for RepositoryImpl<domain::work_link_pending_exe::WorkLinkPendingExe> {
-    async fn list_all(&mut self) -> anyhow::Result<Vec<domain::work_link_pending_exe::WorkLinkPendingExe>> {
-        let rows: Vec<WorkLinkPendingExeRow> = self.executor.with_conn(|conn| {
-            Box::pin(async move {
-                let rows: Vec<WorkLinkPendingExeRow> = sqlx::query_as(
+impl WorkLinkPendingExeRepository
+    for RepositoryImpl<domain::work_link_pending_exe::WorkLinkPendingExe>
+{
+    async fn list_all(
+        &mut self,
+    ) -> anyhow::Result<Vec<domain::work_link_pending_exe::WorkLinkPendingExe>> {
+        let rows: Vec<WorkLinkPendingExeRow> = self
+            .executor
+            .with_conn(|conn| {
+                Box::pin(async move {
+                    let rows: Vec<WorkLinkPendingExeRow> = sqlx::query_as(
                     r#"SELECT id, work_id, exe_path FROM work_link_pending_exe ORDER BY id ASC"#,
                 )
                 .fetch_all(conn)
                 .await?;
-                Ok(rows)
+                    Ok(rows)
+                })
             })
-        }).await?;
+            .await?;
 
         Ok(rows.into_iter().map(|r| r.into()).collect())
     }
 
-    async fn delete(&mut self, id: domain::Id<domain::work_link_pending_exe::WorkLinkPendingExe>) -> anyhow::Result<()> {
+    async fn delete(
+        &mut self,
+        id: domain::Id<domain::work_link_pending_exe::WorkLinkPendingExe>,
+    ) -> anyhow::Result<()> {
         let idv = id.value as i64;
         self.executor
             .with_conn(|conn| {

@@ -62,7 +62,11 @@ pub struct WorkDetailsRow {
 
 impl From<crate::sqliterepository::models::works::WorkDetailsRow> for domain::works::WorkDetails {
     fn from(r: crate::sqliterepository::models::works::WorkDetailsRow) -> Self {
-        use domain::{erogamescape::ErogamescapeInformation, works::{DlsiteWork, DmmWork, Work, WorkThumbnailSize}, Id, StrId};
+        use domain::{
+            erogamescape::ErogamescapeInformation,
+            works::{DlsiteWork, DmmWork, Work, WorkThumbnailSize},
+            Id, StrId,
+        };
         let mut details = domain::works::WorkDetails {
             work: Work {
                 id: StrId::new(r.work_id.clone()),

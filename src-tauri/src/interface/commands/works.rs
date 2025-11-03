@@ -1,12 +1,14 @@
+use chrono::Utc;
 use std::sync::Arc;
 use tauri::State;
-use chrono::Utc;
 
 use crate::interface::error::CommandError;
-use crate::interface::module::{Modules, ModulesExt};
 use crate::interface::models::all_game_cache::AllGameCacheOne;
 use crate::interface::models::work_path_input::WorkPathInput;
-use domain::pubsub::event::{AppSignalEventPayload, AppSignalPayload, AppSignalSourcePayload, PubSubEvent};
+use crate::interface::module::{Modules, ModulesExt};
+use domain::pubsub::event::{
+    AppSignalEventPayload, AppSignalPayload, AppSignalSourcePayload, PubSubEvent,
+};
 use domain::pubsub::PubSubService;
 use domain::service::work_registration::RegisterWorkPath;
 
@@ -37,7 +39,9 @@ pub async fn backfill_thumbnail_sizes(
             event: AppSignalEventPayload::RefetchWorks,
             issued_at: Utc::now(),
         };
-        modules.pubsub().notify(PubSubEvent::AppSignalRefetchWorks(payload))?;
+        modules
+            .pubsub()
+            .notify(PubSubEvent::AppSignalRefetchWorks(payload))?;
     }
     Ok(updated)
 }
@@ -121,5 +125,8 @@ pub async fn register_work_from_path(
 pub async fn process_pending_exe_links(
     modules: State<'_, Arc<Modules>>,
 ) -> anyhow::Result<(), CommandError> {
-    Ok(modules.work_link_pending_exe_use_case().process_pending_exe_links().await?)
+    Ok(modules
+        .work_link_pending_exe_use_case()
+        .process_pending_exe_links()
+        .await?)
 }

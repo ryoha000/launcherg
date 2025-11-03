@@ -1,9 +1,7 @@
 use std::sync::Arc;
 
 use derive_new::new;
-use domain::repository::{
-    manager::RepositoryManager, RepositoriesExt,
-};
+use domain::repository::{manager::RepositoryManager, RepositoriesExt};
 use domain::scan::CandidateKind;
 use domain::service::work_linker::{WorkLinkTask, WorkLinker};
 use domain::work_link_pending_exe::WorkLinkPendingExeRepository;
@@ -68,4 +66,3 @@ where
             .await
     }
 }
-

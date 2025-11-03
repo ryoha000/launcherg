@@ -40,11 +40,7 @@ where
     R: RepositoriesExt + Send + Sync + 'static,
     W: WindowsExt + Send + Sync + 'static,
 {
-    pub fn new(
-        manager: Arc<M>,
-        resolver: Arc<dyn SavePathResolver>,
-        windows: Arc<W>,
-    ) -> Self {
+    pub fn new(manager: Arc<M>, resolver: Arc<dyn SavePathResolver>, windows: Arc<W>) -> Self {
         Self {
             manager,
             resolver,
@@ -127,8 +123,10 @@ where
                         }
 
                         // DMM → Work ID（subcategory を含む）
-                        let mut dmm_to_work: HashMap<(String, String, String), domain::StrId<domain::works::Work>> =
-                            HashMap::new();
+                        let mut dmm_to_work: HashMap<
+                            (String, String, String),
+                            domain::StrId<domain::works::Work>,
+                        > = HashMap::new();
                         for key in dmm_keys.iter() {
                             if let Some(dmm) = repos
                                 .dmm_work()
@@ -140,8 +138,10 @@ where
                         }
 
                         // DLSITE → Work ID
-                        let mut dlsite_to_work: HashMap<(String, String), domain::StrId<domain::works::Work>> =
-                            HashMap::new();
+                        let mut dlsite_to_work: HashMap<
+                            (String, String),
+                            domain::StrId<domain::works::Work>,
+                        > = HashMap::new();
                         for key in dlsite_keys.iter() {
                             if let Some(dlsite) = repos
                                 .dlsite_work()
@@ -167,7 +167,10 @@ where
                         Ok::<
                             (
                                 HashMap<i32, domain::StrId<domain::works::Work>>,
-                                HashMap<(String, String, String), domain::StrId<domain::works::Work>>,
+                                HashMap<
+                                    (String, String, String),
+                                    domain::StrId<domain::works::Work>,
+                                >,
                                 HashMap<(String, String), domain::StrId<domain::works::Work>>,
                                 HashMap<
                                     i32,
@@ -175,7 +178,12 @@ where
                                 >,
                             ),
                             anyhow::Error,
-                        >((egs_to_work, dmm_to_work, dlsite_to_work, egs_to_agc))
+                        >((
+                            egs_to_work,
+                            dmm_to_work,
+                            dlsite_to_work,
+                            egs_to_agc,
+                        ))
                     })
                 })
                 .await?;
@@ -205,21 +213,17 @@ where
                         let mut existing_work_id = None;
                         for key in req.keys.iter() {
                             let found = match key {
-                                UniqueWorkKey::ErogamescapeId(id) => {
-                                    egs_to_work.get(id).cloned()
-                                }
+                                UniqueWorkKey::ErogamescapeId(id) => egs_to_work.get(id).cloned(),
                                 UniqueWorkKey::Dmm {
                                     store_id,
                                     category,
                                     subcategory,
-                                } => {
-                                    dmm_to_work
-                                        .get(&(store_id.clone(), category.clone(), subcategory.clone()))
-                                        .cloned()
-                                }
-                                UniqueWorkKey::Dlsite { store_id, category } => {
-                                    dlsite_to_work.get(&(store_id.clone(), category.clone())).cloned()
-                                }
+                                } => dmm_to_work
+                                    .get(&(store_id.clone(), category.clone(), subcategory.clone()))
+                                    .cloned(),
+                                UniqueWorkKey::Dlsite { store_id, category } => dlsite_to_work
+                                    .get(&(store_id.clone(), category.clone()))
+                                    .cloned(),
                             };
                             if found.is_some() {
                                 existing_work_id = found;
@@ -259,7 +263,13 @@ where
                                     subcategory,
                                 } => {
                                     // DMM: 事前に find_by_store_id で他Work割当をチェック
-                                    let existing = dmm_to_work.get(&(store_id.clone(), category.clone(), subcategory.clone())).cloned();
+                                    let existing = dmm_to_work
+                                        .get(&(
+                                            store_id.clone(),
+                                            category.clone(),
+                                            subcategory.clone(),
+                                        ))
+                                        .cloned();
                                     if let Some(existing_dmm) = existing {
                                         // 既に他Workに割当済みならスキップ
                                         if existing_dmm != work_id {
@@ -280,7 +290,9 @@ where
                                 }
                                 UniqueWorkKey::Dlsite { store_id, category } => {
                                     // DLsite: 事前に find_by_store_id で他Work割当をチェック
-                                    let existing = dlsite_to_work.get(&(store_id.clone(), category.clone())).cloned();
+                                    let existing = dlsite_to_work
+                                        .get(&(store_id.clone(), category.clone()))
+                                        .cloned();
                                     if let Some(existing_dlsite) = existing {
                                         // 既に他Workに割当済みならスキップ
                                         if existing_dlsite != work_id {
@@ -303,10 +315,7 @@ where
 
                         // EGS 情報の upsert
                         if let Some(ref egs_info) = req.insert.egs_info {
-                            repos
-                                .erogamescape()
-                                .upsert_information(egs_info)
-                                .await?;
+                            repos.erogamescape().upsert_information(egs_info).await?;
                         }
 
                         // パス登録（LNK/EXE）
@@ -407,10 +416,7 @@ where
                     for (work_id, lnk_path) in to_insert_lnk.into_iter() {
                         repos
                             .work_lnk()
-                            .insert(&NewWorkLnk {
-                                work_id,
-                                lnk_path,
-                            })
+                            .insert(&NewWorkLnk { work_id, lnk_path })
                             .await?;
                     }
 
@@ -424,11 +430,7 @@ where
 }
 
 /// 画像適用の戦略に基づいて、適用すべきかどうかを判定する
-fn should_apply_image(
-    strategy: ImageStrategy,
-    is_new_work: bool,
-    dst_exists: bool,
-) -> bool {
+fn should_apply_image(strategy: ImageStrategy, is_new_work: bool, dst_exists: bool) -> bool {
     match strategy {
         ImageStrategy::Always => true,
         ImageStrategy::OnlyIfNew => is_new_work,
@@ -462,12 +464,8 @@ fn resolve_image_src(
         }
         ImageSource::FromPath(path) => {
             let (src_path, src_type) = match path {
-                RegisterWorkPath::Lnk { lnk_path } => {
-                    (lnk_path.clone(), ImageSrcType::Shortcut)
-                }
-                RegisterWorkPath::Exe { exe_path } => {
-                    (exe_path.clone(), ImageSrcType::Exe)
-                }
+                RegisterWorkPath::Lnk { lnk_path } => (lnk_path.clone(), ImageSrcType::Shortcut),
+                RegisterWorkPath::Exe { exe_path } => (exe_path.clone(), ImageSrcType::Exe),
             };
             Some((src_path, src_type))
         }
@@ -476,4 +474,3 @@ fn resolve_image_src(
 
 #[cfg(test)]
 mod tests;
-

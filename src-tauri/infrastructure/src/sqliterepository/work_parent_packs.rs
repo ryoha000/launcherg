@@ -45,7 +45,10 @@ impl WorkParentPacksRepository for RepositoryImpl<domain::work_parent_pack::Work
         Ok(row.is_some())
     }
 
-    async fn find_parent_id(&mut self, work_id: StrId<Work>) -> anyhow::Result<Option<StrId<Work>>> {
+    async fn find_parent_id(
+        &mut self,
+        work_id: StrId<Work>,
+    ) -> anyhow::Result<Option<StrId<Work>>> {
         let wid = work_id.value.clone();
         let row: Option<(String,)> = self
             .executor

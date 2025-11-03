@@ -57,7 +57,8 @@ pub struct TestRepositories {
         Arc<Mutex<domain::repository::work_download_path::MockWorkDownloadPathRepository>>,
     pub work_lnk: Arc<Mutex<domain::repository::work_lnk::MockWorkLnkRepository>>,
     pub work_like: Arc<Mutex<domain::repository::work_like::MockWorkLikeRepository>>,
-    pub work_link_pending_exe: Arc<Mutex<domain::work_link_pending_exe::MockWorkLinkPendingExeRepository>>,
+    pub work_link_pending_exe:
+        Arc<Mutex<domain::work_link_pending_exe::MockWorkLinkPendingExeRepository>>,
     pub erogamescape: Arc<Mutex<domain::repository::erogamescape::MockErogamescapeRepository>>,
 }
 
@@ -166,7 +167,11 @@ impl domain::repository::works::WorkRepository for TestRepositories {
         &mut self,
         work_id: domain::StrId<domain::works::Work>,
     ) -> anyhow::Result<Option<domain::works::WorkDetails>> {
-        self.work.lock().await.find_details_by_work_id(work_id).await
+        self.work
+            .lock()
+            .await
+            .find_details_by_work_id(work_id)
+            .await
     }
     async fn find_work_ids_by_erogamescape_ids(
         &mut self,
@@ -197,7 +202,11 @@ impl domain::repository::works::WorkRepository for TestRepositories {
     async fn list_work_ids_missing_thumbnail_size(
         &mut self,
     ) -> anyhow::Result<Vec<domain::StrId<domain::works::Work>>> {
-        self.work.lock().await.list_work_ids_missing_thumbnail_size().await
+        self.work
+            .lock()
+            .await
+            .list_work_ids_missing_thumbnail_size()
+            .await
     }
 
     async fn upsert_work_thumbnail_size(
@@ -328,7 +337,10 @@ impl domain::repository::dmm_work_pack::DmmPackRepository for TestRepositories {
     async fn list(&mut self) -> anyhow::Result<Vec<domain::dmm_work_pack::DmmWorkPack>> {
         self.dmm_pack.lock().await.list().await
     }
-    async fn exists(&mut self, work_id: domain::StrId<domain::works::Work>) -> anyhow::Result<bool> {
+    async fn exists(
+        &mut self,
+        work_id: domain::StrId<domain::works::Work>,
+    ) -> anyhow::Result<bool> {
         self.dmm_pack.lock().await.exists(work_id).await
     }
 }
@@ -458,7 +470,10 @@ impl domain::repository::work_omit::WorkOmitRepository for TestRepositories {
     async fn list(&mut self) -> anyhow::Result<Vec<domain::work_omit::WorkOmit>> {
         self.work_omit.lock().await.list().await
     }
-    async fn exists(&mut self, work_id: domain::StrId<domain::works::Work>) -> anyhow::Result<bool> {
+    async fn exists(
+        &mut self,
+        work_id: domain::StrId<domain::works::Work>,
+    ) -> anyhow::Result<bool> {
         self.work_omit.lock().await.exists(work_id).await
     }
 }
@@ -597,10 +612,15 @@ impl domain::repository::work_like::WorkLikeRepository for TestRepositories {
 
 #[cfg(test)]
 impl domain::work_link_pending_exe::WorkLinkPendingExeRepository for TestRepositories {
-    async fn list_all(&mut self) -> anyhow::Result<Vec<domain::work_link_pending_exe::WorkLinkPendingExe>> {
+    async fn list_all(
+        &mut self,
+    ) -> anyhow::Result<Vec<domain::work_link_pending_exe::WorkLinkPendingExe>> {
         self.work_link_pending_exe.lock().await.list_all().await
     }
-    async fn delete(&mut self, id: domain::Id<domain::work_link_pending_exe::WorkLinkPendingExe>) -> anyhow::Result<()> {
+    async fn delete(
+        &mut self,
+        id: domain::Id<domain::work_link_pending_exe::WorkLinkPendingExe>,
+    ) -> anyhow::Result<()> {
         self.work_link_pending_exe.lock().await.delete(id).await
     }
 }

@@ -1,12 +1,12 @@
 use std::sync::Arc;
 use tempfile::TempDir;
 
+use crate::sqliterepository::sqliterepository::{SqliteRepositories, SqliteRepositoryManager};
+use crate::sqliterepository::tests::TestDatabase;
+use crate::windowsimpl::windows::Windows;
 use domain::repository::{
-    all_game_cache::AllGameCacheRepository,
-    save_image_queue::ImageSaveQueueRepository,
-    work_parent_packs::WorkParentPacksRepository,
-    works::WorkRepository,
-    RepositoriesExt,
+    all_game_cache::AllGameCacheRepository, save_image_queue::ImageSaveQueueRepository,
+    work_parent_packs::WorkParentPacksRepository, works::WorkRepository, RepositoriesExt,
 };
 use domain::service::save_path_resolver::{DirsSavePathResolver, SavePathResolver};
 use domain::service::work_registration::{
@@ -14,21 +14,16 @@ use domain::service::work_registration::{
     WorkRegistrationRequest, WorkRegistrationService,
 };
 use domain::works::NewWork;
-use crate::sqliterepository::tests::TestDatabase;
-use crate::sqliterepository::sqliterepository::{SqliteRepositoryManager, SqliteRepositories};
-use crate::windowsimpl::windows::Windows;
 
 use super::WorkRegistrationServiceImpl;
 
-fn create_service(test_db: &TestDatabase) -> WorkRegistrationServiceImpl<
-    SqliteRepositoryManager,
-    SqliteRepositories,
-    Windows,
-> {
+fn create_service(
+    test_db: &TestDatabase,
+) -> WorkRegistrationServiceImpl<SqliteRepositoryManager, SqliteRepositories, Windows> {
     let manager = Arc::new(
-        crate::sqliterepository::sqliterepository::SqliteRepositoryManager::new(
-            Arc::new(test_db.pool.clone()),
-        ),
+        crate::sqliterepository::sqliterepository::SqliteRepositoryManager::new(Arc::new(
+            test_db.pool.clone(),
+        )),
     );
     let resolver = Arc::new(DirsSavePathResolver::default());
     let windows = Arc::new(Windows::new());
@@ -120,9 +115,9 @@ async fn register_画像戦略_only_if_missing_はファイルが存在しない
     let resolver = Arc::new(DirsSavePathResolver::default());
     let resolver_for_check = resolver.clone();
     let manager = Arc::new(
-        crate::sqliterepository::sqliterepository::SqliteRepositoryManager::new(
-            Arc::new(test_db.pool.clone()),
-        ),
+        crate::sqliterepository::sqliterepository::SqliteRepositoryManager::new(Arc::new(
+            test_db.pool.clone(),
+        )),
     );
     let windows = Arc::new(Windows::new());
     let service = WorkRegistrationServiceImpl::new(manager, resolver, windows);
@@ -174,9 +169,9 @@ async fn register_画像ソース_from_path_でパスから抽出される() {
 
     let resolver = Arc::new(DirsSavePathResolver::default());
     let manager = Arc::new(
-        crate::sqliterepository::sqliterepository::SqliteRepositoryManager::new(
-            Arc::new(test_db.pool.clone()),
-        ),
+        crate::sqliterepository::sqliterepository::SqliteRepositoryManager::new(Arc::new(
+            test_db.pool.clone(),
+        )),
     );
     let windows = Arc::new(Windows::new());
     let service = WorkRegistrationServiceImpl::new(manager, resolver, windows);
@@ -323,4 +318,3 @@ async fn register_サムネイル戦略_only_if_missing_egs_から取得され�
         "https://example.com/thumbnail.png".to_string()
     );
 }
-

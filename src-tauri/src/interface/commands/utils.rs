@@ -14,7 +14,9 @@ pub async fn get_play_time_minutes(
     modules: State<'_, Arc<Modules>>,
     work_id: String,
 ) -> anyhow::Result<f32, CommandError> {
-    Ok(modules.file_use_case().get_play_time_minutes(StrId::<Work>::new(work_id))?)
+    Ok(modules
+        .file_use_case()
+        .get_play_time_minutes(StrId::<Work>::new(work_id))?)
 }
 
 #[tauri::command]

@@ -18,7 +18,8 @@ pub struct TestRepositories {
         Arc<Mutex<crate::repository::work_download_path::MockWorkDownloadPathRepository>>,
     pub work_lnk: Arc<Mutex<crate::repository::work_lnk::MockWorkLnkRepository>>,
     pub work_like: Arc<Mutex<crate::repository::work_like::MockWorkLikeRepository>>,
-    pub work_link_pending_exe: Arc<Mutex<crate::work_link_pending_exe::MockWorkLinkPendingExeRepository>>,
+    pub work_link_pending_exe:
+        Arc<Mutex<crate::work_link_pending_exe::MockWorkLinkPendingExeRepository>>,
     pub erogamescape: Arc<Mutex<crate::repository::erogamescape::MockErogamescapeRepository>>,
 }
 
@@ -124,7 +125,11 @@ impl crate::repository::works::WorkRepository for TestRepositories {
         &mut self,
         work_id: crate::StrId<crate::works::Work>,
     ) -> anyhow::Result<Option<crate::works::WorkDetails>> {
-        self.work.lock().await.find_details_by_work_id(work_id).await
+        self.work
+            .lock()
+            .await
+            .find_details_by_work_id(work_id)
+            .await
     }
     async fn find_work_ids_by_erogamescape_ids(
         &mut self,
@@ -155,7 +160,11 @@ impl crate::repository::works::WorkRepository for TestRepositories {
     async fn list_work_ids_missing_thumbnail_size(
         &mut self,
     ) -> anyhow::Result<Vec<crate::StrId<crate::works::Work>>> {
-        self.work.lock().await.list_work_ids_missing_thumbnail_size().await
+        self.work
+            .lock()
+            .await
+            .list_work_ids_missing_thumbnail_size()
+            .await
     }
 
     async fn upsert_work_thumbnail_size(
@@ -541,10 +550,15 @@ impl crate::repository::work_like::WorkLikeRepository for TestRepositories {
 }
 
 impl crate::work_link_pending_exe::WorkLinkPendingExeRepository for TestRepositories {
-    async fn list_all(&mut self) -> anyhow::Result<Vec<crate::work_link_pending_exe::WorkLinkPendingExe>> {
+    async fn list_all(
+        &mut self,
+    ) -> anyhow::Result<Vec<crate::work_link_pending_exe::WorkLinkPendingExe>> {
         self.work_link_pending_exe.lock().await.list_all().await
     }
-    async fn delete(&mut self, id: crate::Id<crate::work_link_pending_exe::WorkLinkPendingExe>) -> anyhow::Result<()> {
+    async fn delete(
+        &mut self,
+        id: crate::Id<crate::work_link_pending_exe::WorkLinkPendingExe>,
+    ) -> anyhow::Result<()> {
         self.work_link_pending_exe.lock().await.delete(id).await
     }
 }

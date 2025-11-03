@@ -9,10 +9,12 @@ mod tests {
     };
     use domain::StrId;
 
-    use crate::native_host_sync::{DmmSyncGameParam, DlsiteSyncGameParam, NativeHostSyncUseCase};
+    use crate::native_host_sync::{DlsiteSyncGameParam, DmmSyncGameParam, NativeHostSyncUseCase};
     use crate::repositorymock::{TestRepositories, TestRepositoryManager};
 
-    fn create_usecase<R: domain::service::work_registration::WorkRegistrationService + Send + Sync + 'static>(
+    fn create_usecase<
+        R: domain::service::work_registration::WorkRegistrationService + Send + Sync + 'static,
+    >(
         manager: Arc<TestRepositoryManager>,
         registrar: Arc<R>,
     ) -> NativeHostSyncUseCase<TestRepositoryManager, TestRepositories, R> {
@@ -23,25 +25,22 @@ mod tests {
     async fn sync_dmm_games_omit対象はフィルタされる() {
         let repos = TestRepositories::default();
         let manager = Arc::new(TestRepositoryManager::new(repos.clone()));
-        
+
         let omitted_work_id = StrId::new("omitted-work".to_string());
-        
+
         // work_omit().list() が omitted_work_id を返すように設定
         {
             let work_id_for_omit = omitted_work_id.clone();
             let mut mock_omit = repos.work_omit.lock().await;
-            mock_omit
-                .expect_list()
-                .times(1)
-                .returning(move || {
-                    let work_id = work_id_for_omit.clone();
-                    Box::pin(async move {
-                        Ok(vec![domain::work_omit::WorkOmit {
-                            id: domain::Id::new(1),
-                            work_id,
-                        }])
-                    })
-                });
+            mock_omit.expect_list().times(1).returning(move || {
+                let work_id = work_id_for_omit.clone();
+                Box::pin(async move {
+                    Ok(vec![domain::work_omit::WorkOmit {
+                        id: domain::Id::new(1),
+                        work_id,
+                    }])
+                })
+            });
         }
 
         // dmm_work().find_by_store_key() が omitted_work_id を返すように設定
@@ -98,25 +97,22 @@ mod tests {
     async fn sync_dlsite_games_omit対象はフィルタされる() {
         let repos = TestRepositories::default();
         let manager = Arc::new(TestRepositoryManager::new(repos.clone()));
-        
+
         let omitted_work_id = StrId::new("omitted-work".to_string());
-        
+
         // work_omit().list() が omitted_work_id を返すように設定
         {
             let work_id_for_omit = omitted_work_id.clone();
             let mut mock_omit = repos.work_omit.lock().await;
-            mock_omit
-                .expect_list()
-                .times(1)
-                .returning(move || {
-                    let work_id = work_id_for_omit.clone();
-                    Box::pin(async move {
-                        Ok(vec![domain::work_omit::WorkOmit {
-                            id: domain::Id::new(1),
-                            work_id,
-                        }])
-                    })
-                });
+            mock_omit.expect_list().times(1).returning(move || {
+                let work_id = work_id_for_omit.clone();
+                Box::pin(async move {
+                    Ok(vec![domain::work_omit::WorkOmit {
+                        id: domain::Id::new(1),
+                        work_id,
+                    }])
+                })
+            });
         }
 
         // dlsite_work().find_by_store_key() が omitted_work_id を返すように設定
@@ -126,9 +122,7 @@ mod tests {
             mock_dlsite
                 .expect_find_by_store_key()
                 .times(1)
-                .withf(|store_id: &str, category: &str| {
-                    store_id == "RJ1" && category == "game"
-                })
+                .withf(|store_id: &str, category: &str| store_id == "RJ1" && category == "game")
                 .returning(move |_, _| {
                     let work_id = work_id_for_dlsite.clone();
                     Box::pin(async move {
@@ -170,9 +164,9 @@ mod tests {
     async fn sync_dmm_games_omit対象でない場合は正常に登録される() {
         let repos = TestRepositories::default();
         let manager = Arc::new(TestRepositoryManager::new(repos.clone()));
-        
+
         let normal_work_id = StrId::new("normal-work".to_string());
-        
+
         // work_omit().list() が空を返すように設定
         {
             let mut mock_omit = repos.work_omit.lock().await;
@@ -252,7 +246,7 @@ mod tests {
     async fn sync_dmm_games_画像URLが設定される() {
         let repos = TestRepositories::default();
         let manager = Arc::new(TestRepositoryManager::new(repos.clone()));
-        
+
         // work_omit().list() が空を返すように設定
         {
             let mut mock_omit = repos.work_omit.lock().await;
@@ -283,26 +277,39 @@ mod tests {
                 assert!(req.insert.icon.is_some());
                 assert!(req.insert.thumbnail.is_some());
                 match &req.insert.icon.as_ref().unwrap().source {
-                    ImageSource::FromUrl(url) => assert_eq!(url, "https://pics.dmm.co.jp/image_ps.jpg"),
+                    ImageSource::FromUrl(url) => {
+                        assert_eq!(url, "https://pics.dmm.co.jp/image_ps.jpg")
+                    }
                     _ => panic!("Icon source should be FromUrl"),
                 }
                 match &req.insert.thumbnail.as_ref().unwrap().source {
                     ImageSource::FromUrl(url) => {
                         // normalize_thumbnail_url により ps.jpg が pl.jpg に変換される
-                        assert_eq!(url, "https://pics.dmm.co.jp/image_pl.jpg", "Thumbnail URL should be normalized from ps.jpg to pl.jpg");
+                        assert_eq!(
+                            url, "https://pics.dmm.co.jp/image_pl.jpg",
+                            "Thumbnail URL should be normalized from ps.jpg to pl.jpg"
+                        );
                     }
                     _ => panic!("Thumbnail source should be FromUrl"),
                 }
-                assert_eq!(req.insert.icon.as_ref().unwrap().strategy, ImageStrategy::OnlyIfNew);
-                assert_eq!(req.insert.thumbnail.as_ref().unwrap().strategy, ImageStrategy::OnlyIfNew);
-                
+                assert_eq!(
+                    req.insert.icon.as_ref().unwrap().strategy,
+                    ImageStrategy::OnlyIfNew
+                );
+                assert_eq!(
+                    req.insert.thumbnail.as_ref().unwrap().strategy,
+                    ImageStrategy::OnlyIfNew
+                );
+
                 Box::pin(async move {
                     Ok(requests
                         .iter()
-                        .map(|req| domain::service::work_registration::WorkRegistrationResult {
-                            resolved_keys: req.keys.clone(),
-                            work_id: StrId::new("new-work".to_string()),
-                        })
+                        .map(
+                            |req| domain::service::work_registration::WorkRegistrationResult {
+                                resolved_keys: req.keys.clone(),
+                                work_id: StrId::new("new-work".to_string()),
+                            },
+                        )
                         .collect())
                 })
             });
@@ -324,4 +331,3 @@ mod tests {
         assert_eq!(result, 1);
     }
 }
-

@@ -1,9 +1,6 @@
 use super::super::TestDatabase;
 use domain::repository::{
-    work_lnk::NewWorkLnk,
-    work_lnk::WorkLnkRepository,
-    works::WorkRepository,
-    RepositoriesExt,
+    work_lnk::NewWorkLnk, work_lnk::WorkLnkRepository, works::WorkRepository, RepositoriesExt,
 };
 use domain::works::NewWork;
 
@@ -87,4 +84,3 @@ async fn work_lnk_crud_一連の操作() {
     assert_eq!(list_after_delete.len(), 1);
     assert_eq!(list_after_delete[0].lnk_path, "C:/games/test2.lnk");
 }
-

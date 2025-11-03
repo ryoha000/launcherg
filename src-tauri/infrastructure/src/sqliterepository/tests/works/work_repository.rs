@@ -132,12 +132,10 @@ async fn work_find_details_by_work_id_正常系_各_join反映() {
     }
 
     // work_plays を追加
-    let play_at = NaiveDateTime::parse_from_str("2024-01-20 15:30:00", "%Y-%m-%d %H:%M:%S")
-        .unwrap();
-    let play_at_dt: DateTime<Local> = DateTime::from_naive_utc_and_offset(
-        play_at,
-        Local::now().offset().clone(),
-    );
+    let play_at =
+        NaiveDateTime::parse_from_str("2024-01-20 15:30:00", "%Y-%m-%d %H:%M:%S").unwrap();
+    let play_at_dt: DateTime<Local> =
+        DateTime::from_naive_utc_and_offset(play_at, Local::now().offset().clone());
     {
         let mut r = repo.work();
         r.update_last_play_at_by_work_id(work_id.clone(), play_at_dt)
@@ -160,18 +158,14 @@ async fn work_find_details_by_work_id_正常系_各_join反映() {
     // work_download_paths を追加
     {
         let mut r = repo.work_download_path();
-        r.add(work_id.clone(), "C:/downloads/test")
-            .await
-            .unwrap();
+        r.add(work_id.clone(), "C:/downloads/test").await.unwrap();
     }
 
     // work_likes を追加
-    let like_at = NaiveDateTime::parse_from_str("2024-01-25 12:00:00", "%Y-%m-%d %H:%M:%S")
-        .unwrap();
-    let like_at_dt: DateTime<Local> = DateTime::from_naive_utc_and_offset(
-        like_at,
-        Local::now().offset().clone(),
-    );
+    let like_at =
+        NaiveDateTime::parse_from_str("2024-01-25 12:00:00", "%Y-%m-%d %H:%M:%S").unwrap();
+    let like_at_dt: DateTime<Local> =
+        DateTime::from_naive_utc_and_offset(like_at, Local::now().offset().clone());
     {
         let mut r = repo.work_like();
         r.upsert(&NewWorkLike {
@@ -218,17 +212,17 @@ async fn work_find_details_by_work_id_正常系_各_join反映() {
     assert_eq!(egs_info.is_nukige, false);
 
     // Thumbnail
-    let thumb = d.thumbnail_size.as_ref().expect("ThumbnailSize should exist");
+    let thumb = d
+        .thumbnail_size
+        .as_ref()
+        .expect("ThumbnailSize should exist");
     assert_eq!(thumb.width, 1920);
     assert_eq!(thumb.height, 1080);
 
     // Play
     assert!(d.last_play_at.is_some());
     let play_dt = d.last_play_at.unwrap();
-    assert_eq!(
-        play_dt.naive_utc(),
-        play_at
-    );
+    assert_eq!(play_dt.naive_utc(), play_at);
 
     // Omit
     assert!(d.is_omitted);
@@ -256,9 +250,7 @@ async fn work_find_work_ids_by_erogamescape_ids_空配列は空() {
     // 空配列で検索
     let result = {
         let mut r = repo.work();
-        r.find_work_ids_by_erogamescape_ids(&[])
-            .await
-            .unwrap()
+        r.find_work_ids_by_erogamescape_ids(&[]).await.unwrap()
     };
     assert!(result.is_empty());
 }
@@ -514,7 +506,10 @@ async fn work_upsert_work_thumbnail_size_挿入と更新() {
         r.find_details_by_work_id(work_id.clone()).await.unwrap()
     };
     let details = details.expect("Details should exist");
-    let thumb = details.thumbnail_size.as_ref().expect("ThumbnailSize should exist");
+    let thumb = details
+        .thumbnail_size
+        .as_ref()
+        .expect("ThumbnailSize should exist");
     assert_eq!(thumb.width, 1920);
     assert_eq!(thumb.height, 1080);
 
@@ -539,7 +534,10 @@ async fn work_upsert_work_thumbnail_size_挿入と更新() {
         r.find_details_by_work_id(work_id.clone()).await.unwrap()
     };
     let details_after = details_after.expect("Details should exist");
-    let thumb2 = details_after.thumbnail_size.as_ref().expect("ThumbnailSize should exist");
+    let thumb2 = details_after
+        .thumbnail_size
+        .as_ref()
+        .expect("ThumbnailSize should exist");
     assert_eq!(thumb2.width, 2560);
     assert_eq!(thumb2.height, 1440);
 
@@ -746,12 +744,10 @@ async fn list_all_details_全要素_集約マージ() {
     }
 
     // work_plays を追加
-    let play_at = NaiveDateTime::parse_from_str("2024-06-15 20:00:00", "%Y-%m-%d %H:%M:%S")
-        .unwrap();
-    let play_at_dt: DateTime<Local> = DateTime::from_naive_utc_and_offset(
-        play_at,
-        Local::now().offset().clone(),
-    );
+    let play_at =
+        NaiveDateTime::parse_from_str("2024-06-15 20:00:00", "%Y-%m-%d %H:%M:%S").unwrap();
+    let play_at_dt: DateTime<Local> =
+        DateTime::from_naive_utc_and_offset(play_at, Local::now().offset().clone());
     {
         let mut r = repo.work();
         r.update_last_play_at_by_work_id(work_id.clone(), play_at_dt)
@@ -774,21 +770,15 @@ async fn list_all_details_全要素_集約マージ() {
     // work_download_paths を追加（複数パスを追加して、最新のものが取得されることを確認）
     {
         let mut r = repo.work_download_path();
-        r.add(work_id.clone(), "C:/downloads/old")
-            .await
-            .unwrap();
-        r.add(work_id.clone(), "C:/downloads/latest")
-            .await
-            .unwrap();
+        r.add(work_id.clone(), "C:/downloads/old").await.unwrap();
+        r.add(work_id.clone(), "C:/downloads/latest").await.unwrap();
     }
 
     // work_likes を追加
-    let like_at = NaiveDateTime::parse_from_str("2024-07-01 12:00:00", "%Y-%m-%d %H:%M:%S")
-        .unwrap();
-    let like_at_dt: DateTime<Local> = DateTime::from_naive_utc_and_offset(
-        like_at,
-        Local::now().offset().clone(),
-    );
+    let like_at =
+        NaiveDateTime::parse_from_str("2024-07-01 12:00:00", "%Y-%m-%d %H:%M:%S").unwrap();
+    let like_at_dt: DateTime<Local> =
+        DateTime::from_naive_utc_and_offset(like_at, Local::now().offset().clone());
     {
         let mut r = repo.work_like();
         r.upsert(&NewWorkLike {
@@ -879,12 +869,10 @@ async fn test_update_last_play_at_by_work_id_upsert() {
     };
 
     // 初回 INSERT: last_play_at を設定
-    let first_play_at = NaiveDateTime::parse_from_str("2024-01-15 10:00:00", "%Y-%m-%d %H:%M:%S")
-        .unwrap();
-    let first_play_at_dt: DateTime<Local> = DateTime::from_naive_utc_and_offset(
-        first_play_at,
-        Local::now().offset().clone(),
-    );
+    let first_play_at =
+        NaiveDateTime::parse_from_str("2024-01-15 10:00:00", "%Y-%m-%d %H:%M:%S").unwrap();
+    let first_play_at_dt: DateTime<Local> =
+        DateTime::from_naive_utc_and_offset(first_play_at, Local::now().offset().clone());
 
     {
         let mut r = repo.work();
@@ -896,7 +884,10 @@ async fn test_update_last_play_at_by_work_id_upsert() {
     // 初回 INSERT が正しく保存されたことを確認
     let details = {
         let mut r = repo.work();
-        r.find_details_by_work_id(work_id.clone()).await.unwrap().unwrap()
+        r.find_details_by_work_id(work_id.clone())
+            .await
+            .unwrap()
+            .unwrap()
     };
     assert!(details.last_play_at.is_some());
     let saved_first = details.last_play_at.unwrap();
@@ -907,12 +898,10 @@ async fn test_update_last_play_at_by_work_id_upsert() {
     );
 
     // 2回目 UPDATE: last_play_at を更新
-    let second_play_at = NaiveDateTime::parse_from_str("2024-01-20 15:30:00", "%Y-%m-%d %H:%M:%S")
-        .unwrap();
-    let second_play_at_dt: DateTime<Local> = DateTime::from_naive_utc_and_offset(
-        second_play_at,
-        Local::now().offset().clone(),
-    );
+    let second_play_at =
+        NaiveDateTime::parse_from_str("2024-01-20 15:30:00", "%Y-%m-%d %H:%M:%S").unwrap();
+    let second_play_at_dt: DateTime<Local> =
+        DateTime::from_naive_utc_and_offset(second_play_at, Local::now().offset().clone());
 
     {
         let mut r = repo.work();
@@ -924,7 +913,10 @@ async fn test_update_last_play_at_by_work_id_upsert() {
     // UPDATE が正しく反映されたことを確認
     let details_after = {
         let mut r = repo.work();
-        r.find_details_by_work_id(work_id.clone()).await.unwrap().unwrap()
+        r.find_details_by_work_id(work_id.clone())
+            .await
+            .unwrap()
+            .unwrap()
     };
     assert!(details_after.last_play_at.is_some());
     let saved_second = details_after.last_play_at.unwrap();
@@ -939,4 +931,3 @@ async fn test_update_last_play_at_by_work_id_upsert() {
         "初回と2回目で last_play_at が異なること"
     );
 }
-

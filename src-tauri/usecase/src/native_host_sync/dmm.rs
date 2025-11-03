@@ -60,8 +60,10 @@ where
             .await?;
 
         // 既存 Work ID を取得（ストアキーごと）
-        let mut work_id_by_key: std::collections::HashMap<DmmKey, Option<domain::StrId<domain::works::Work>>> = 
-            std::collections::HashMap::new();
+        let mut work_id_by_key: std::collections::HashMap<
+            DmmKey,
+            Option<domain::StrId<domain::works::Work>>,
+        > = std::collections::HashMap::new();
         for game in unique_games.iter() {
             let key = DmmKey::from_param(game);
             let work_id = self
@@ -81,11 +83,12 @@ where
         }
 
         // omit 対象をフィルタ
-        let mut requests: Vec<domain::service::work_registration::WorkRegistrationRequest> = Vec::new();
+        let mut requests: Vec<domain::service::work_registration::WorkRegistrationRequest> =
+            Vec::new();
         for game in unique_games.into_iter() {
             let key = DmmKey::from_param(&game);
             let work_id = work_id_by_key.get(&key).cloned().flatten();
-            
+
             // 除外対象ならスキップ
             if let Some(ref wid) = work_id {
                 if omitted_work_ids.contains(wid) {
@@ -144,17 +147,19 @@ where
                 .as_ref()
                 .map(|s| domain::StrId::new(s.clone()));
 
-            requests.push(domain::service::work_registration::WorkRegistrationRequest {
-                keys,
-                insert: WorkInsert {
-                    title: game.gamename,
-                    path: None,
-                    egs_info,
-                    icon,
-                    thumbnail,
-                    parent_pack_work_id,
+            requests.push(
+                domain::service::work_registration::WorkRegistrationRequest {
+                    keys,
+                    insert: WorkInsert {
+                        title: game.gamename,
+                        path: None,
+                        egs_info,
+                        icon,
+                        thumbnail,
+                        parent_pack_work_id,
+                    },
                 },
-            });
+            );
         }
 
         // WorkRegistrationService で一括登録

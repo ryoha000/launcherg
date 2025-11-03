@@ -315,30 +315,33 @@ mod tests {
         let manager = Arc::new(TestRepositoryManager::new(repos));
         let linker = default_linker();
         let mut registrar = MockWorkRegistrationService::new();
-        registrar
-            .expect_register()
-            .times(1)
-            .returning(|requests| {
-                // WorkRegistrationRequestが正しく作成されていることを確認
-                assert_eq!(requests.len(), 1);
-                assert_eq!(requests[0].keys.len(), 1);
-                if let domain::service::work_registration::UniqueWorkKey::ErogamescapeId(id) = &requests[0].keys[0] {
-                    assert_eq!(*id, 10);
-                } else {
-                    panic!("Expected ErogamescapeId");
-                }
-                assert_eq!(requests[0].insert.title, "A");
-                assert!(requests[0].insert.path.is_some());
-                // icon と thumbnail が設定されていることを確認
-                assert!(requests[0].insert.icon.is_some());
-                assert!(requests[0].insert.thumbnail.is_some());
-                Box::pin(async {
-                    Ok::<_, anyhow::Error>(vec![domain::service::work_registration::WorkRegistrationResult {
-                        resolved_keys: vec![domain::service::work_registration::UniqueWorkKey::ErogamescapeId(10)],
+        registrar.expect_register().times(1).returning(|requests| {
+            // WorkRegistrationRequestが正しく作成されていることを確認
+            assert_eq!(requests.len(), 1);
+            assert_eq!(requests[0].keys.len(), 1);
+            if let domain::service::work_registration::UniqueWorkKey::ErogamescapeId(id) =
+                &requests[0].keys[0]
+            {
+                assert_eq!(*id, 10);
+            } else {
+                panic!("Expected ErogamescapeId");
+            }
+            assert_eq!(requests[0].insert.title, "A");
+            assert!(requests[0].insert.path.is_some());
+            // icon と thumbnail が設定されていることを確認
+            assert!(requests[0].insert.icon.is_some());
+            assert!(requests[0].insert.thumbnail.is_some());
+            Box::pin(async {
+                Ok::<_, anyhow::Error>(vec![
+                    domain::service::work_registration::WorkRegistrationResult {
+                        resolved_keys: vec![
+                            domain::service::work_registration::UniqueWorkKey::ErogamescapeId(10),
+                        ],
                         work_id: domain::StrId::new("100".to_string()),
-                    }])
-                })
-            });
+                    },
+                ])
+            })
+        });
         let registrar = Arc::new(registrar);
         let uc: WorkPipelineUseCase<_, _, _, _, _, _, _, _> = WorkPipelineUseCase::new(
             manager,
@@ -449,5 +452,4 @@ mod tests {
             .await
             .unwrap();
     }
-
 }

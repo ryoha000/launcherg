@@ -148,10 +148,8 @@ async fn main() {
         resolver.clone(),
         windows.clone(),
     ));
-    let sync_usecase = NativeHostSyncUseCase::new(
-        repo_manager.clone(),
-        work_registration_service.clone(),
-    );
+    let sync_usecase =
+        NativeHostSyncUseCase::new(repo_manager.clone(), work_registration_service.clone());
     let fs = Arc::new(LocalFileSystem::default());
     let dedup = Arc::new(HeuristicDuplicateResolver);
     let work_linker = Arc::new(WorkLinkerImpl::new(
@@ -410,7 +408,8 @@ async fn handle_downloads_completed(
             return err(request_id, msg);
         }
         cleanup_download_paths([item.filename.as_str()]);
-        if let Err(err) = dispatch_refetch_work(&ctx.app_signal_router, work_id.value.clone()).await {
+        if let Err(err) = dispatch_refetch_work(&ctx.app_signal_router, work_id.value.clone()).await
+        {
             log_app_signal_dispatch_failure(
                 &ctx,
                 format!("dispatch_refetch_work work_id={}", work_id.value),
@@ -445,7 +444,8 @@ async fn handle_downloads_completed(
             return err(request_id, msg);
         }
         cleanup_download_paths(paths.iter().map(|p| p.as_str()));
-        if let Err(err) = dispatch_refetch_work(&ctx.app_signal_router, work_id.value.clone()).await {
+        if let Err(err) = dispatch_refetch_work(&ctx.app_signal_router, work_id.value.clone()).await
+        {
             log_app_signal_dispatch_failure(
                 &ctx,
                 format!("dispatch_refetch_work work_id={}", work_id.value),
@@ -871,10 +871,8 @@ mod tests {
             resolver.clone(),
             windows.clone(),
         ));
-        let usecase = NativeHostSyncUseCase::new(
-            repo_manager.clone(),
-            work_registration_service.clone(),
-        );
+        let usecase =
+            NativeHostSyncUseCase::new(repo_manager.clone(), work_registration_service.clone());
 
         // まず parent 用の work を1件作成し、その work_id を後続で参照
         let parent_work_id: String = repo_manager
@@ -958,7 +956,11 @@ mod tests {
             } else {
                 None
             };
-            let parent = if i < 10 { Some(parent_work_id.clone()) } else { None };
+            let parent = if i < 10 {
+                Some(parent_work_id.clone())
+            } else {
+                None
+            };
             params.push(DmmSyncGameParam {
                 store_id,
                 category,
@@ -1144,8 +1146,7 @@ mod tests {
                 }),
             },
             TestCase {
-                name: "work に紐づいているときに DMM の登録(erogamescape_id が既存)"
-                    .to_string(),
+                name: "work に紐づいているときに DMM の登録(erogamescape_id が既存)".to_string(),
                 params: vec![SyncGameParam::Dmm(vec![dmm_param_egs.clone()])],
                 setup: Box::new(|manager| {
                     Box::pin(async move {
@@ -1158,8 +1159,7 @@ mod tests {
                                             title: "Game 1".to_string(),
                                         })
                                         .await?;
-                                    work.upsert_erogamescape_map(work_id.clone(), 1)
-                                        .await?;
+                                    work.upsert_erogamescape_map(work_id.clone(), 1).await?;
 
                                     Ok(())
                                 })
@@ -1180,9 +1180,7 @@ mod tests {
                 }),
             },
             TestCase {
-                name:
-                    "work に紐づいているときに DLsite の登録(erogamescape_id が既存)"
-                        .to_string(),
+                name: "work に紐づいているときに DLsite の登録(erogamescape_id が既存)".to_string(),
                 params: vec![SyncGameParam::Dlsite(vec![dlsite_param_egs.clone()])],
                 setup: Box::new(|manager| {
                     Box::pin(async move {
@@ -1195,8 +1193,7 @@ mod tests {
                                             title: "Game 1".to_string(),
                                         })
                                         .await?;
-                                    work.upsert_erogamescape_map(work_id.clone(), 1)
-                                        .await?;
+                                    work.upsert_erogamescape_map(work_id.clone(), 1).await?;
 
                                     Ok(())
                                 })
@@ -1230,10 +1227,8 @@ mod tests {
                 resolver.clone(),
                 windows.clone(),
             ));
-            let usecase = NativeHostSyncUseCase::new(
-                repo_manager.clone(),
-                work_registration_service.clone(),
-            );
+            let usecase =
+                NativeHostSyncUseCase::new(repo_manager.clone(), work_registration_service.clone());
 
             // 同じDBを使いまわしていないか確認
             let works = repo_manager
@@ -1382,10 +1377,8 @@ mod tests {
             resolver.clone(),
             windows.clone(),
         ));
-        let usecase = NativeHostSyncUseCase::new(
-            repo_manager.clone(),
-            work_registration_service.clone(),
-        );
+        let usecase =
+            NativeHostSyncUseCase::new(repo_manager.clone(), work_registration_service.clone());
         let fs = Arc::new(LocalFileSystem::default());
         let dedup = Arc::new(HeuristicDuplicateResolver);
         let work_linker = Arc::new(WorkLinkerImpl::new(
@@ -1437,10 +1430,8 @@ mod tests {
             resolver.clone(),
             windows.clone(),
         ));
-        let usecase = NativeHostSyncUseCase::new(
-            repo_manager.clone(),
-            work_registration_service.clone(),
-        );
+        let usecase =
+            NativeHostSyncUseCase::new(repo_manager.clone(), work_registration_service.clone());
         let fs = Arc::new(LocalFileSystem::default());
         let dedup = Arc::new(HeuristicDuplicateResolver);
         let work_linker = Arc::new(WorkLinkerImpl::new(
@@ -1492,10 +1483,8 @@ mod tests {
             resolver.clone(),
             windows.clone(),
         ));
-        let usecase = NativeHostSyncUseCase::new(
-            repo_manager.clone(),
-            work_registration_service.clone(),
-        );
+        let usecase =
+            NativeHostSyncUseCase::new(repo_manager.clone(), work_registration_service.clone());
         let fs = Arc::new(LocalFileSystem::default());
         let dedup = Arc::new(HeuristicDuplicateResolver);
         let work_linker = Arc::new(WorkLinkerImpl::new(

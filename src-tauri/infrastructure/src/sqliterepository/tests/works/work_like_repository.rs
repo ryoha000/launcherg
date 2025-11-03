@@ -1,10 +1,6 @@
 use super::super::TestDatabase;
 use chrono::{DateTime, Local};
-use domain::repository::{
-    work_like::WorkLikeRepository,
-    works::WorkRepository,
-    RepositoriesExt,
-};
+use domain::repository::{work_like::WorkLikeRepository, works::WorkRepository, RepositoriesExt};
 use domain::works::{NewWork, NewWorkLike};
 
 #[tokio::test]
@@ -137,4 +133,3 @@ async fn work_like_update_like_at_by_work_id_分岐() {
     };
     assert!(deleted.is_none());
 }
-

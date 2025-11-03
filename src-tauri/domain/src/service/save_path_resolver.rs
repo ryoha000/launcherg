@@ -1,6 +1,6 @@
 use std::path::PathBuf;
 
-use crate::{StrId, works::Work};
+use crate::{works::Work, StrId};
 
 #[trait_variant::make(Send + Sync)]
 #[mockall::automock]

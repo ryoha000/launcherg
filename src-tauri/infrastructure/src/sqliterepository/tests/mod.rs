@@ -21,8 +21,8 @@ mod save_image_queue_test;
 mod work_lnk_test;
 mod work_omit_test;
 mod work_parent_packs_test;
-mod works_extra_test;
 mod works;
+mod works_extra_test;
 
 pub struct TestDatabase {
     pub pool: Pool<Sqlite>,

@@ -120,11 +120,7 @@ impl IconServiceImpl {
 }
 
 impl IconService for IconServiceImpl {
-    async fn save_icon_from_path(
-        &self,
-        id: &StrId<Work>,
-        source_path: &str,
-    ) -> anyhow::Result<()> {
+    async fn save_icon_from_path(&self, id: &StrId<Work>, source_path: &str) -> anyhow::Result<()> {
         match &self.backend {
             Backend::Tauri(handle) => {
                 let _ = domain_save_icon_to_png(handle, source_path, id)?.await??;
@@ -149,11 +145,7 @@ impl IconService for IconServiceImpl {
         }
     }
 
-    async fn save_icon_from_url(
-        &self,
-        id: &StrId<Work>,
-        url: &str,
-    ) -> anyhow::Result<()> {
+    async fn save_icon_from_url(&self, id: &StrId<Work>, url: &str) -> anyhow::Result<()> {
         if url.is_empty() {
             return Ok(());
         }

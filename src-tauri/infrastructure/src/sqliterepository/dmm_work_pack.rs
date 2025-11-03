@@ -1,6 +1,7 @@
 use crate::sqliterepository::sqliterepository::RepositoryImpl;
 use domain::{
-    dmm_work_pack::DmmWorkPack, repository::dmm_work_pack::DmmPackRepository, works::Work, Id, StrId,
+    dmm_work_pack::DmmWorkPack, repository::dmm_work_pack::DmmPackRepository, works::Work, Id,
+    StrId,
 };
 
 impl DmmPackRepository for RepositoryImpl<domain::dmm_work_pack::DmmWorkPack> {

@@ -412,7 +412,10 @@ mod tests {
         std::fs::write(&exe_path, b"dummy").unwrap();
 
         let result_path = uc
-            .handle_single(source_dir.path().to_string_lossy().as_ref(), StrId::new("42".to_string()))
+            .handle_single(
+                source_dir.path().to_string_lossy().as_ref(),
+                StrId::new("42".to_string()),
+            )
             .await
             .unwrap();
         assert!(result_path.starts_with(temp.path()));

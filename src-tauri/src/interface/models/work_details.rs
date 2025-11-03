@@ -89,12 +89,14 @@ impl From<WorkDetails> for WorkDetailsVm {
                 is_omitted: false,
             }),
             erogamescape_id: w.erogamescape_id,
-            erogamescape_information: w.erogamescape_information.map(|i| ErogamescapeInformationVm {
-                gamename_ruby: i.gamename_ruby,
-                brandname: i.brandname,
-                brandname_ruby: i.brandname_ruby,
-                sellday: i.sellday,
-                is_nukige: i.is_nukige,
+            erogamescape_information: w.erogamescape_information.map(|i| {
+                ErogamescapeInformationVm {
+                    gamename_ruby: i.gamename_ruby,
+                    brandname: i.brandname,
+                    brandname_ruby: i.brandname_ruby,
+                    sellday: i.sellday,
+                    is_nukige: i.is_nukige,
+                }
             }),
             is_omitted: w.is_omitted,
             is_dmm_pack: w.is_dmm_pack,

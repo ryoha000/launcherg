@@ -16,4 +16,3 @@ pub trait WorkLinkPendingExeRepository {
     /// レコードを削除
     async fn delete(&mut self, id: Id<WorkLinkPendingExe>) -> Result<()>;
 }
-

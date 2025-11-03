@@ -233,10 +233,8 @@ async fn dmm_find_by_store_keys_空_単一_複数() {
         .unwrap()
     };
     assert_eq!(multiple_result.len(), 3);
-    let mut result_store_ids: Vec<String> = multiple_result
-        .iter()
-        .map(|w| w.store_id.clone())
-        .collect();
+    let mut result_store_ids: Vec<String> =
+        multiple_result.iter().map(|w| w.store_id.clone()).collect();
     result_store_ids.sort();
     assert_eq!(result_store_ids, vec!["SID-K1", "SID-K2", "SID-K3"]);
 
@@ -265,11 +263,8 @@ async fn dmm_find_by_store_keys_空_単一_複数() {
     };
     // 存在する分のみ返る
     assert_eq!(mixed_result.len(), 2);
-    let mut mixed_store_ids: Vec<String> = mixed_result
-        .iter()
-        .map(|w| w.store_id.clone())
-        .collect();
+    let mut mixed_store_ids: Vec<String> =
+        mixed_result.iter().map(|w| w.store_id.clone()).collect();
     mixed_store_ids.sort();
     assert_eq!(mixed_store_ids, vec!["SID-K1", "SID-K2"]);
 }
-

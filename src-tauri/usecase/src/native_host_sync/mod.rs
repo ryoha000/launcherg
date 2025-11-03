@@ -5,10 +5,7 @@
 use derive_new::new;
 use domain::repository::works::WorkRepository;
 use domain::repository::works::{DlsiteWorkRepository, DmmWorkRepository};
-use domain::repository::{
-    manager::RepositoryManager,
-    RepositoriesExt,
-};
+use domain::repository::{manager::RepositoryManager, RepositoriesExt};
 use domain::service::work_registration::WorkRegistrationService;
 use std::marker::PhantomData;
 use std::sync::Arc;

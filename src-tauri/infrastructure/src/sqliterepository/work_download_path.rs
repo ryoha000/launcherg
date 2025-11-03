@@ -25,7 +25,10 @@ impl WorkDownloadPathRepository for RepositoryImpl<domain::work_download_path::W
         Ok(())
     }
 
-    async fn list_by_work(&mut self, work_id: StrId<Work>) -> anyhow::Result<Vec<WorkDownloadPath>> {
+    async fn list_by_work(
+        &mut self,
+        work_id: StrId<Work>,
+    ) -> anyhow::Result<Vec<WorkDownloadPath>> {
         let work_id_str = work_id.value.clone();
         let rows: Vec<(i64, String, String)> = self.executor.with_conn(|conn| {
             Box::pin(async move {

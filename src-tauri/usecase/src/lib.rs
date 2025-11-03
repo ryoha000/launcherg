@@ -9,7 +9,6 @@ mod extension_manager_test;
 pub mod file;
 pub mod game_identifier;
 pub mod host_log;
-pub mod image;
 pub mod image_queue;
 pub mod native_host_sync;
 #[cfg(test)]

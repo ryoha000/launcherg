@@ -23,12 +23,12 @@ use crate::{
         work_registration::WorkRegistrationServiceImpl,
     },
     usecase::{
-        all_game_cache::AllGameCacheUseCase,
-        dmm_pack::DmmPackUseCase, erogamescape::ErogamescapeUseCase,
-        extension_manager::ExtensionManagerUseCase, file::FileUseCase, host_log::HostLogUseCase,
-        image::ImageUseCase, image_queue::ImageQueueUseCase, process::ProcessUseCase,
-        work::WorkUseCase, work_link_pending_exe::WorkLinkPendingExeUseCase,
-        work_omit::WorkOmitUseCase, work_pipeline::WorkPipelineUseCase,
+        all_game_cache::AllGameCacheUseCase, dmm_pack::DmmPackUseCase,
+        erogamescape::ErogamescapeUseCase, extension_manager::ExtensionManagerUseCase,
+        file::FileUseCase, host_log::HostLogUseCase, image_queue::ImageQueueUseCase,
+        process::ProcessUseCase, work::WorkUseCase,
+        work_link_pending_exe::WorkLinkPendingExeUseCase, work_omit::WorkOmitUseCase,
+        work_pipeline::WorkPipelineUseCase,
     },
 };
 use domain::game_matcher::{GameMatcher, Matcher as GameMatcherImpl};
@@ -42,7 +42,6 @@ pub struct Modules {
     file_use_case: FileUseCase,
     all_game_cache_use_case: AllGameCacheUseCase<SqliteRepositoryManager, SqliteRepositories>,
     process_use_case: ProcessUseCase<Windows>,
-    image_use_case: ImageUseCase<ThumbnailServiceImpl, TauriIconServiceImpl, Windows>,
     work_omit_use_case: WorkOmitUseCase<SqliteRepositoryManager, SqliteRepositories>,
     host_log_use_case: HostLogUseCase<SqliteRepositoryManager, SqliteRepositories>,
     dmm_pack_use_case: DmmPackUseCase<SqliteRepositoryManager, SqliteRepositories>,
@@ -64,7 +63,11 @@ pub struct Modules {
     >,
     image_queue_use_case: ImageQueueUseCase<SqliteRepositoryManager, SqliteRepositories>,
     erogamescape_use_case: ErogamescapeUseCase<SqliteRepositoryManager, SqliteRepositories>,
-    work_link_pending_exe_use_case: WorkLinkPendingExeUseCase<SqliteRepositoryManager, SqliteRepositories, WorkLinkerImpl<SqliteRepositoryManager, SqliteRepositories, Windows>>,
+    work_link_pending_exe_use_case: WorkLinkPendingExeUseCase<
+        SqliteRepositoryManager,
+        SqliteRepositories,
+        WorkLinkerImpl<SqliteRepositoryManager, SqliteRepositories, Windows>,
+    >,
     pubsub: PubSub,
     game_matcher: std::sync::Arc<dyn GameMatcher + Send + Sync>,
     image_queue_runner:
@@ -83,7 +86,6 @@ pub trait ModulesExt {
     ) -> &AllGameCacheUseCase<SqliteRepositoryManager, SqliteRepositories>;
     fn file_use_case(&self) -> &FileUseCase;
     fn process_use_case(&self) -> &ProcessUseCase<Self::Windows>;
-    fn image_use_case(&self) -> &ImageUseCase<ThumbnailServiceImpl, TauriIconServiceImpl, Windows>;
     fn work_omit_use_case(&self) -> &WorkOmitUseCase<SqliteRepositoryManager, SqliteRepositories>;
     fn host_log_use_case(&self) -> &HostLogUseCase<SqliteRepositoryManager, SqliteRepositories>;
     fn dmm_pack_use_case(&self) -> &DmmPackUseCase<SqliteRepositoryManager, SqliteRepositories>;
@@ -120,7 +122,11 @@ pub trait ModulesExt {
     ) -> &ErogamescapeUseCase<SqliteRepositoryManager, SqliteRepositories>;
     fn work_link_pending_exe_use_case(
         &self,
-    ) -> &WorkLinkPendingExeUseCase<SqliteRepositoryManager, SqliteRepositories, WorkLinkerImpl<SqliteRepositoryManager, SqliteRepositories, Windows>>;
+    ) -> &WorkLinkPendingExeUseCase<
+        SqliteRepositoryManager,
+        SqliteRepositories,
+        WorkLinkerImpl<SqliteRepositoryManager, SqliteRepositories, Windows>,
+    >;
 }
 
 impl ModulesExt for Modules {
@@ -143,9 +149,6 @@ impl ModulesExt for Modules {
     }
     fn process_use_case(&self) -> &ProcessUseCase<Self::Windows> {
         &self.process_use_case
-    }
-    fn image_use_case(&self) -> &ImageUseCase<ThumbnailServiceImpl, TauriIconServiceImpl, Windows> {
-        &self.image_use_case
     }
     fn work_omit_use_case(&self) -> &WorkOmitUseCase<SqliteRepositoryManager, SqliteRepositories> {
         &self.work_omit_use_case
@@ -204,7 +207,11 @@ impl ModulesExt for Modules {
     }
     fn work_link_pending_exe_use_case(
         &self,
-    ) -> &WorkLinkPendingExeUseCase<SqliteRepositoryManager, SqliteRepositories, WorkLinkerImpl<SqliteRepositoryManager, SqliteRepositories, Windows>> {
+    ) -> &WorkLinkPendingExeUseCase<
+        SqliteRepositoryManager,
+        SqliteRepositories,
+        WorkLinkerImpl<SqliteRepositoryManager, SqliteRepositories, Windows>,
+    > {
         &self.work_link_pending_exe_use_case
     }
 }
@@ -228,13 +235,6 @@ impl Modules {
 
         let process_use_case: ProcessUseCase<Windows> = ProcessUseCase::new(windows.clone());
 
-        let image_use_case: ImageUseCase<ThumbnailServiceImpl, TauriIconServiceImpl, Windows> =
-            ImageUseCase::new(
-                thumbs.clone(),
-                Arc::new(icons),
-                resolver.clone(),
-                windows.clone(),
-            );
         let work_omit_use_case: WorkOmitUseCase<SqliteRepositoryManager, SqliteRepositories> =
             WorkOmitUseCase::new(repo_manager.clone());
         let host_log_use_case: HostLogUseCase<SqliteRepositoryManager, SqliteRepositories> =
@@ -264,8 +264,18 @@ impl Modules {
             windows.clone(),
             work_registration_service.clone(),
         );
-        let work_link_pending_exe_use_case: WorkLinkPendingExeUseCase<SqliteRepositoryManager, SqliteRepositories, WorkLinkerImpl<SqliteRepositoryManager, SqliteRepositories, Windows>> =
-            WorkLinkPendingExeUseCase::new(repo_manager.clone(), std::sync::Arc::new(WorkLinkerImpl::new(repo_manager.clone(), save_path_resolver.clone(), windows.clone())));
+        let work_link_pending_exe_use_case: WorkLinkPendingExeUseCase<
+            SqliteRepositoryManager,
+            SqliteRepositories,
+            WorkLinkerImpl<SqliteRepositoryManager, SqliteRepositories, Windows>,
+        > = WorkLinkPendingExeUseCase::new(
+            repo_manager.clone(),
+            std::sync::Arc::new(WorkLinkerImpl::new(
+                repo_manager.clone(),
+                save_path_resolver.clone(),
+                windows.clone(),
+            )),
+        );
         let image_queue_use_case: ImageQueueUseCase<SqliteRepositoryManager, SqliteRepositories> =
             ImageQueueUseCase::new(repo_manager.clone());
 
@@ -326,7 +336,6 @@ impl Modules {
             all_game_cache_use_case,
             file_use_case,
             process_use_case,
-            image_use_case,
             work_omit_use_case,
             host_log_use_case,
             erogamescape_use_case,

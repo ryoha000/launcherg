@@ -1,8 +1,8 @@
 use derive_new::new;
 use serde::{Deserialize, Serialize};
 
-use crate::{Id, StrId};
 use crate::erogamescape::ErogamescapeInformation;
+use crate::{Id, StrId};
 use chrono::{DateTime, Local};
 
 use crate::work_download_path::WorkDownloadPath;

@@ -1,6 +1,6 @@
 use chrono::{DateTime, Local};
 use derive_new::new;
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
 use crate::Id;
 

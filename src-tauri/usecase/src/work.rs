@@ -4,8 +4,8 @@ use derive_new::new;
 use domain::repository::work_parent_packs::WorkParentPacksRepository as _;
 use domain::repository::works::DmmWorkRepository as _;
 use domain::repository::{
-    manager::RepositoryManager, work_like::WorkLikeRepository,
-    work_lnk::WorkLnkRepository, works::WorkRepository, RepositoriesExt,
+    manager::RepositoryManager, work_like::WorkLikeRepository, work_lnk::WorkLnkRepository,
+    works::WorkRepository, RepositoriesExt,
 };
 use domain::service::work_registration::{
     ImageApply, ImageSource, ImageStrategy, RegisterWorkPath, UniqueWorkKey, WorkInsert,
@@ -43,11 +43,18 @@ where
             .await
     }
 
-
-    pub async fn find_details_by_work_id(&self, work_id: String) -> anyhow::Result<Option<WorkDetails>> {
+    pub async fn find_details_by_work_id(
+        &self,
+        work_id: String,
+    ) -> anyhow::Result<Option<WorkDetails>> {
         self.manager
             .run(|repos| {
-                Box::pin(async move { repos.work().find_details_by_work_id(domain::StrId::new(work_id)).await })
+                Box::pin(async move {
+                    repos
+                        .work()
+                        .find_details_by_work_id(domain::StrId::new(work_id))
+                        .await
+                })
             })
             .await
     }
@@ -107,7 +114,10 @@ where
         Ok(pid)
     }
 
-    pub async fn get_parent_dmm_pack_work_id(&self, work_id: String) -> anyhow::Result<Option<String>> {
+    pub async fn get_parent_dmm_pack_work_id(
+        &self,
+        work_id: String,
+    ) -> anyhow::Result<Option<String>> {
         let wid = domain::StrId::new(work_id);
         let parent = self
             .manager

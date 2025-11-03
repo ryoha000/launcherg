@@ -88,4 +88,3 @@ pub trait WorkRegistrationService {
         requests: Vec<WorkRegistrationRequest>,
     ) -> anyhow::Result<Vec<WorkRegistrationResult>>;
 }
-

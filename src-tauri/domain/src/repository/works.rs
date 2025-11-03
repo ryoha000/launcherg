@@ -11,7 +11,10 @@ pub trait WorkRepository {
     async fn upsert(&mut self, new_work: &NewWork) -> Result<StrId<Work>>;
     async fn find_by_title(&mut self, title: &str) -> Result<Option<Work>>;
     async fn list_all_details(&mut self) -> Result<Vec<WorkDetails>>;
-    async fn find_details_by_work_id(&mut self, work_id: StrId<Work>) -> Result<Option<WorkDetails>>;
+    async fn find_details_by_work_id(
+        &mut self,
+        work_id: StrId<Work>,
+    ) -> Result<Option<WorkDetails>>;
     async fn delete(&mut self, id: StrId<Work>) -> Result<()>;
     async fn find_work_ids_by_erogamescape_ids(
         &mut self,

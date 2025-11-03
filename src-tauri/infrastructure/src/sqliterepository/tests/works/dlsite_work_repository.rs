@@ -71,4 +71,3 @@ async fn dlsite_works_upsert_and_find_by_store_key() {
     assert!(updated_by_store_id.is_some());
     assert_eq!(updated_by_store_id.unwrap().category, "doujin");
 }
-

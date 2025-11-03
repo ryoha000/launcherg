@@ -6,5 +6,3 @@ pub enum WorkPathInput {
     Exe { exe_path: String },
     Lnk { lnk_path: String },
 }
-
-
