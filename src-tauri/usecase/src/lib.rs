@@ -26,3 +26,4 @@ pub mod work_omit;
 pub mod work_pipeline;
 #[cfg(test)]
 mod work_pipeline_test;
+pub mod work_thumbnail;

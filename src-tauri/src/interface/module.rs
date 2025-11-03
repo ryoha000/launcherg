@@ -7,7 +7,6 @@ use crate::{
     infrastructure::{
         heuristic_duplicate_resolver::HeuristicDuplicateResolver,
         heuristic_metadata_extractor::HeuristicMetadataExtractor,
-        icon::IconServiceImpl as TauriIconServiceImpl,
         image_queue_worker::handler::ImageQueuePubSubHandler,
         image_queue_worker::ImageQueueRunnerImpl,
         local_file_system::LocalFileSystem,
@@ -17,7 +16,6 @@ use crate::{
             driver::Db,
             sqliterepository::{SqliteRepositories, SqliteRepositoryManager},
         },
-        thumbnail::ThumbnailServiceImpl,
         windowsimpl::windows::Windows,
         work_linker::WorkLinkerImpl,
         work_registration::WorkRegistrationServiceImpl,
@@ -28,7 +26,7 @@ use crate::{
         file::FileUseCase, host_log::HostLogUseCase, image_queue::ImageQueueUseCase,
         process::ProcessUseCase, work::WorkUseCase,
         work_link_pending_exe::WorkLinkPendingExeUseCase, work_omit::WorkOmitUseCase,
-        work_pipeline::WorkPipelineUseCase,
+        work_pipeline::WorkPipelineUseCase, work_thumbnail::WorkThumbnailUseCase,
     },
 };
 use domain::game_matcher::{GameMatcher, Matcher as GameMatcherImpl};
@@ -72,6 +70,7 @@ pub struct Modules {
     game_matcher: std::sync::Arc<dyn GameMatcher + Send + Sync>,
     image_queue_runner:
         std::sync::Arc<ImageQueueRunnerImpl<SqliteRepositoryManager, SqliteRepositories, Windows>>,
+    work_thumbnail_use_case: WorkThumbnailUseCase<SqliteRepositoryManager, SqliteRepositories>,
 }
 pub trait ModulesExt {
     type Repositories: RepositoriesExt;
@@ -127,6 +126,9 @@ pub trait ModulesExt {
         SqliteRepositories,
         WorkLinkerImpl<SqliteRepositoryManager, SqliteRepositories, Windows>,
     >;
+    fn work_thumbnail_use_case(
+        &self,
+    ) -> &WorkThumbnailUseCase<SqliteRepositoryManager, SqliteRepositories>;
 }
 
 impl ModulesExt for Modules {
@@ -214,6 +216,11 @@ impl ModulesExt for Modules {
     > {
         &self.work_link_pending_exe_use_case
     }
+    fn work_thumbnail_use_case(
+        &self,
+    ) -> &WorkThumbnailUseCase<SqliteRepositoryManager, SqliteRepositories> {
+        &self.work_thumbnail_use_case
+    }
 }
 
 impl Modules {
@@ -222,9 +229,6 @@ impl Modules {
         let windows = Arc::new(Windows::new());
         let pubsub = PubSub::new(Arc::new(handle.clone()));
         let resolver = Arc::new(DirsSavePathResolver::default());
-
-        let thumbs = Arc::new(ThumbnailServiceImpl::new(resolver.clone()));
-        let icons = TauriIconServiceImpl::new_from_app_handle(Arc::new(handle.clone()));
 
         let extension_manager_use_case = ExtensionManagerUseCase::new(
             pubsub.clone(),
@@ -331,6 +335,11 @@ impl Modules {
             pubsub_handler,
         ));
 
+        let work_thumbnail_use_case: WorkThumbnailUseCase<
+            SqliteRepositoryManager,
+            SqliteRepositories,
+        > = WorkThumbnailUseCase::new(repo_manager.clone(), resolver.clone());
+
         Self {
             extension_manager_use_case,
             all_game_cache_use_case,
@@ -347,6 +356,7 @@ impl Modules {
             game_matcher,
             image_queue_runner,
             image_queue_use_case,
+            work_thumbnail_use_case,
         }
     }
 }

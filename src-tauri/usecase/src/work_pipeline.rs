@@ -2,10 +2,10 @@ use std::collections::{HashMap, HashSet};
 use std::sync::atomic::{AtomicI32, Ordering};
 use std::{marker::PhantomData, sync::Arc};
 
+use crate::work_thumbnail::WorkThumbnailUseCase;
 use domain::pubsub::{DedupResultPayload, EnrichResultPayload, PubSubEvent, PubSubService};
 use domain::repository::{
-    explored_cache::ExploredCacheRepository as _, manager::RepositoryManager,
-    works::WorkRepository as _, RepositoriesExt,
+    explored_cache::ExploredCacheRepository as _, manager::RepositoryManager, RepositoriesExt,
 };
 use domain::scan::{
     CandidateKind, DuplicateResolver, FileSystem, MetadataExtractor, ResolvedWork, WorkCandidate,
@@ -260,7 +260,7 @@ where
 
                 // icon: FromPath/OnlyIfMissing
                 let icon = path.as_ref().map(|p| ImageApply {
-                    strategy: ImageStrategy::OnlyIfMissing,
+                    strategy: ImageStrategy::Always,
                     source: ImageSource::FromPath(p.clone()),
                 });
 
@@ -316,34 +316,9 @@ where
     }
 
     pub async fn backfill_thumbnail_sizes(&self) -> anyhow::Result<usize> {
-        let resolver = self.resolver.clone();
-        let updated = self
-            .manager
-            .run(|repos| {
-                let resolver = resolver.clone();
-                Box::pin(async move {
-                    let mut work_repo = repos.work();
-                    let ids = work_repo.list_work_ids_missing_thumbnail_size().await?;
-                    let mut updated: usize = 0;
-                    if !ids.is_empty() {
-                        for id in ids.into_iter() {
-                            let path = resolver.thumbnail_png_path(&id.value);
-                            match image::image_dimensions(&path) {
-                                Ok((w, h)) => {
-                                    let _ = work_repo
-                                        .upsert_work_thumbnail_size(id, w as i32, h as i32)
-                                        .await;
-                                    updated += 1;
-                                }
-                                Err(_) => {}
-                            }
-                        }
-                    }
-                    Ok::<usize, anyhow::Error>(updated)
-                })
-            })
-            .await?;
-        Ok(updated)
+        let work_thumbnail_use_case =
+            WorkThumbnailUseCase::new(self.manager.clone(), self.resolver.clone());
+        work_thumbnail_use_case.backfill_thumbnail_sizes().await
     }
 
     pub(crate) async fn prepare_link_tasks(

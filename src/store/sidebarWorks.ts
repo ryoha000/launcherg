@@ -4,6 +4,7 @@ import { createWritable } from '@/lib/utils'
 export interface SidebarWorkItem {
   id: string
   title: string
+  icon?: { path: string }
   thumbnail?: { path: string, width?: number, height?: number }
   likeAt?: string | null
   installAt?: string | null
@@ -32,6 +33,7 @@ function createSidebarWorks() {
       rows.map(v => ({
         id: v.id,
         title: v.title,
+        icon: v.icon ?? undefined,
         thumbnail: v.thumbnail ?? undefined,
         likeAt: v.likeAt ?? null,
         installAt: v.installAt ?? null,

@@ -10,6 +10,7 @@ use domain::pubsub::event::{
     AppSignalEventPayload, AppSignalPayload, AppSignalSourcePayload, PubSubEvent,
 };
 use domain::pubsub::PubSubService;
+use domain::service::image_queue_drain::ImageQueueDrainService;
 use domain::service::work_registration::RegisterWorkPath;
 
 #[derive(serde::Serialize)]
@@ -30,7 +31,7 @@ pub async fn backfill_thumbnail_sizes(
     modules: State<'_, Arc<Modules>>,
 ) -> anyhow::Result<usize, CommandError> {
     let updated = modules
-        .work_pipeline_use_case()
+        .work_thumbnail_use_case()
         .backfill_thumbnail_sizes()
         .await?;
     if updated > 0 {
@@ -110,7 +111,8 @@ pub async fn register_work_from_path(
         WorkPathInput::Lnk { lnk_path } => RegisterWorkPath::Lnk { lnk_path },
     };
 
-    Ok(modules
+    // 1. Work を登録
+    modules
         .work_use_case()
         .register_work_from_input(
             game_cache.id,
@@ -118,7 +120,29 @@ pub async fn register_work_from_path(
             game_cache.thumbnail_url,
             input,
         )
-        .await?)
+        .await?;
+
+    // 2. ImageQueue の完了を待機
+    let runner = modules.image_queue_runner();
+    ImageQueueDrainService::drain_until_empty(runner.as_ref()).await?;
+
+    // 3. thumbnail_size を backfill
+    modules
+        .work_thumbnail_use_case()
+        .backfill_thumbnail_sizes()
+        .await?;
+
+    // 4. RefetchWorks を通知
+    let payload = AppSignalPayload {
+        source: AppSignalSourcePayload::NativeMessagingHost,
+        event: AppSignalEventPayload::RefetchWorks,
+        issued_at: Utc::now(),
+    };
+    modules
+        .pubsub()
+        .notify(PubSubEvent::AppSignalRefetchWorks(payload))?;
+
+    Ok(())
 }
 
 #[tauri::command]

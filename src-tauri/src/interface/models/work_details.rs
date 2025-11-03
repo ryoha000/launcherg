@@ -13,6 +13,7 @@ pub struct WorkDetailsVm {
     pub erogamescape_information: Option<ErogamescapeInformationVm>,
     pub is_omitted: bool,
     pub is_dmm_pack: bool,
+    pub icon: Option<IconVm>,
     pub thumbnail: Option<ThumbnailVm>,
     pub latest_download_path: Option<LatestWorkDownloadPathVm>,
     pub like_at: Option<String>,
@@ -67,9 +68,16 @@ pub struct ThumbnailVm {
     pub height: Option<i32>,
 }
 
+#[derive(serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct IconVm {
+    pub path: String,
+}
+
 impl From<WorkDetails> for WorkDetailsVm {
     fn from(w: WorkDetails) -> Self {
         let resolver = DirsSavePathResolver::default();
+        let icon_path = Some(resolver.icon_png_path(&w.work.id.value));
         let thumbnail_path = Some(resolver.thumbnail_png_path(&w.work.id.value));
         WorkDetailsVm {
             id: w.work.id.value.clone(),
@@ -100,6 +108,9 @@ impl From<WorkDetails> for WorkDetailsVm {
             }),
             is_omitted: w.is_omitted,
             is_dmm_pack: w.is_dmm_pack,
+            icon: icon_path.map(|p| IconVm {
+                path: p,
+            }),
             thumbnail: thumbnail_path.map(|p| ThumbnailVm {
                 path: p,
                 width: w.thumbnail_size.as_ref().map(|s| s.width),

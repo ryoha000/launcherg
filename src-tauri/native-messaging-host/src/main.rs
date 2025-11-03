@@ -43,6 +43,7 @@ use usecase::native_host_sync::downloads::DownloadsUseCase;
 use usecase::native_host_sync::{
     DlsiteSyncGameParam, DmmSyncGameParam, EgsInfo, NativeHostSyncUseCase,
 };
+use usecase::work_thumbnail::WorkThumbnailUseCase;
 
 struct AppCtx {
     manager: Arc<SqliteRepositoryManager>,
@@ -301,6 +302,12 @@ async fn handle_message(ctx: &AppCtx) -> HostResult<bool> {
                 handler,
             );
             let _ = worker.drain_until_empty().await;
+
+            // drain 完了後に thumbnail_size を backfill
+            let work_thumbnail_use_case =
+                WorkThumbnailUseCase::new(ctx.manager.clone(), ctx.resolver.clone());
+            let _ = work_thumbnail_use_case.backfill_thumbnail_sizes().await;
+
             return Ok(false);
         }
         _ => {}

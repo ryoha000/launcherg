@@ -312,7 +312,7 @@ export async function commandWorkOmitAll() {
 }
 
 // WorkDetails
-export interface WorkDetailsVm { id: string, title: string, dmm?: { id: number, storeId: string, category: string, subcategory: string }, dlsite?: { id: number, storeId: string, category: string }, erogamescapeId?: number | null, erogamescapeInformation?: { gamenameRuby: string, brandname: string, brandnameRuby: string, sellday: string, isNukige: boolean }, isOmitted: boolean, isDmmPack: boolean, thumbnail?: { path: string, width?: number, height?: number } | null, latestDownloadPath?: { id: number, workId: string, downloadPath: string } | null, likeAt?: string | null, installAt?: string | null, lastPlayAt?: string | null, registeredAt?: string | null }
+export interface WorkDetailsVm { id: string, title: string, dmm?: { id: number, storeId: string, category: string, subcategory: string }, dlsite?: { id: number, storeId: string, category: string }, erogamescapeId?: number | null, erogamescapeInformation?: { gamenameRuby: string, brandname: string, brandnameRuby: string, sellday: string, isNukige: boolean }, isOmitted: boolean, isDmmPack: boolean, icon?: { path: string } | null, thumbnail?: { path: string, width?: number, height?: number } | null, latestDownloadPath?: { id: number, workId: string, downloadPath: string } | null, likeAt?: string | null, installAt?: string | null, lastPlayAt?: string | null, registeredAt?: string | null }
 export async function commandGetWorkDetailsAll() {
   return await invoke<WorkDetailsVm[]>('get_work_details_all')
 }

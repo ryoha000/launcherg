@@ -9,7 +9,7 @@
 
   const { work }: Props = $props()
 
-  const iconSrc = $derived(work.thumbnail?.path ? convertFileSrc(work.thumbnail.path) : '')
+  const iconSrc = $derived(work.icon?.path ? convertFileSrc(work.icon.path) : '')
 </script>
 
 <div
