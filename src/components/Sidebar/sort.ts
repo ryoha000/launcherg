@@ -1,4 +1,4 @@
-import type { SidebarWorkItem, SidebarWorkItemsWithLabel } from '@/store/sidebarCollectionElements'
+import type { SidebarWorkItem, SidebarWorkItemsWithLabel } from '@/store/sidebarWorks'
 
 export type SortOrder
   = `${(typeof SORT_ORDER_TYPES)[keyof typeof SORT_ORDER_TYPES]}-${(typeof SORT_ORDER_BY)[keyof typeof SORT_ORDER_BY]}`

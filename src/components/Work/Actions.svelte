@@ -20,8 +20,8 @@
     commandUpdateWorkLike,
   } from '@/lib/command'
 
-  import { registerCollectionElementDetails } from '@/lib/registerCollectionElementDetails'
-  import { sidebarCollectionElements } from '@/store/sidebarCollectionElements'
+  import { registerErogamescapeInformations } from '@/lib/registerErogamescapeInformations'
+  import { sidebarWorks } from '@/store/sidebarWorks'
   import { deleteTab, selected, tabs } from '@/store/tabs'
 
   interface Props {
@@ -37,7 +37,7 @@
   const toggleLike = async () => {
     await commandUpdateWorkLike(workDetail.id, !isLike)
     isLike = !isLike
-    sidebarCollectionElements.updateLike(id, isLike)
+    sidebarWorks.updateLike(id, isLike)
   }
 
   const lnksPromise = $derived((async () => {
@@ -65,8 +65,8 @@
       path = { type: 'lnk', lnkPath: lnkPath as string }
     }
     await commandRegisterWorkFromPath({ path, gameCache })
-    await registerCollectionElementDetails()
-    await sidebarCollectionElements.refetch()
+    await registerErogamescapeInformations()
+    await sidebarWorks.refetch()
     if (isChangedGame) {
       deleteTab($tabs[$selected].id)
     }

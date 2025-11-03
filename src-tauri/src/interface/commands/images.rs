@@ -18,19 +18,6 @@ pub async fn upload_image(
 }
 
 #[tauri::command]
-pub async fn update_collection_element_icon(
-    _handle: AppHandle,
-    modules: State<'_, Arc<Modules>>,
-    id: String,
-    path: String,
-) -> anyhow::Result<(), CommandError> {
-    Ok(modules
-        .image_use_case()
-        .overwrite_icon_png(&domain::StrId::new(id), &path)
-        .await?)
-}
-
-#[tauri::command]
 pub async fn save_screenshot_by_pid(
     _handle: AppHandle,
     modules: State<'_, Arc<Modules>>,

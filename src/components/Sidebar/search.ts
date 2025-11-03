@@ -1,16 +1,16 @@
 import type { Attribute } from '@/components/Sidebar/searchAttributes'
 import type { SortOrder } from '@/components/Sidebar/sort'
 import type { Option } from '@/lib/trieFilter'
-import type { SidebarWorkItemsWithLabel } from '@/store/sidebarCollectionElements'
+import type { SidebarWorkItemsWithLabel } from '@/store/sidebarWorks'
 import {
 
   FILTER_BY_ATTRIBUTE,
 } from '@/components/Sidebar/searchAttributes'
 import { sort } from '@/components/Sidebar/sort'
-import { sidebarCollectionElements } from '@/store/sidebarCollectionElements'
+import { sidebarWorks } from '@/store/sidebarWorks'
 
 export function search(filteredOption: Option<string>[], attributes: Attribute[], order: SortOrder): SidebarWorkItemsWithLabel[] {
-  const filteredElements = sidebarCollectionElements
+  const filteredElements = sidebarWorks
     .value()
     .filter(
       element =>

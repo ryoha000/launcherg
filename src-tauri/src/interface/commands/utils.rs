@@ -1,5 +1,7 @@
 use domain::windows::shell_link::ShellLink as _;
 use domain::windows::WindowsExt as _;
+use domain::works::Work;
+use domain::StrId;
 use std::sync::Arc;
 use tauri::{AppHandle, State};
 use tauri_plugin_shell::ShellExt;
@@ -10,11 +12,9 @@ use crate::interface::module::{Modules, ModulesExt};
 #[tauri::command]
 pub async fn get_play_time_minutes(
     modules: State<'_, Arc<Modules>>,
-    collection_element_id: i32,
+    work_id: String,
 ) -> anyhow::Result<f32, CommandError> {
-    Ok(modules
-        .file_use_case()
-        .get_play_time_minutes(&crate::domain::Id::new(collection_element_id))?)
+    Ok(modules.file_use_case().get_play_time_minutes(StrId::<Work>::new(work_id))?)
 }
 
 #[tauri::command]

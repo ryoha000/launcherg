@@ -76,13 +76,10 @@ export async function commandListWorkLnks(workId: string) {
   return await invoke<[number, string][]>('list_work_lnks', { workId })
 }
 
-export async function commandGetPlayTomeMinutes(collectionElementId: number) {
-  return await invoke<number>('get_play_time_minutes', { collectionElementId })
+export async function commandGetPlayTomeMinutes(workId: string) {
+  return await invoke<number>('get_play_time_minutes', { workId })
 }
 
-// removed: commandGetCollectionElement
-
-// removed: commandDeleteCollectionElement
 export async function commandDeleteWork(workId: string) {
   return await invoke<void>('delete_work', { workId })
 }

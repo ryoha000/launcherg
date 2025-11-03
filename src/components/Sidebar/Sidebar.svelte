@@ -3,40 +3,40 @@
   import type { Option } from '@/lib/trieFilter'
   import { onMount } from 'svelte'
   import { fly } from 'svelte/transition'
-  import CollectionElements from '@/components/Sidebar/CollectionElements.svelte'
   import Header from '@/components/Sidebar/Header.svelte'
   import MinimalSidebar from '@/components/Sidebar/MinimalSidebar.svelte'
   import { search } from '@/components/Sidebar/search'
   import Search from '@/components/Sidebar/Search.svelte'
   import { searchAttributes } from '@/components/Sidebar/searchAttributes'
   import SubHeader from '@/components/Sidebar/SubHeader.svelte'
-  import { collectionElementsToOptions, useFilter } from '@/lib/filter'
+  import Works from '@/components/Sidebar/Works.svelte'
+  import { sidebarWorkItemsToOptions, useFilter } from '@/lib/filter'
   import { createWritable, localStorageWritable } from '@/lib/utils'
   import { query } from '@/store/query'
   import { showSidebar } from '@/store/showSidebar'
-  import { sidebarCollectionElements } from '@/store/sidebarCollectionElements'
+  import { sidebarWorks } from '@/store/sidebarWorks'
 
   onMount(async () => {
-    await sidebarCollectionElements.refetch()
+    await sidebarWorks.refetch()
   })
 
   const [elementOptions, getElementOptions] = createWritable<Option<string>[]>(
     [],
   )
-  sidebarCollectionElements.subscribe(v =>
-    elementOptions.set(collectionElementsToOptions(v)),
+  sidebarWorks.subscribe(v =>
+    elementOptions.set(sidebarWorkItemsToOptions(v)),
   )
 
   const { filtered } = useFilter(query, elementOptions, getElementOptions)
   const order = localStorageWritable<SortOrder>('sort-order', 'gamename-asc')
   const { attributes, toggleEnable } = searchAttributes()
 
-  const shown = sidebarCollectionElements.shown
+  const shown = sidebarWorks.shown
   filtered.subscribe(() => shown.set(search($filtered, $attributes, $order)))
   attributes.subscribe(() => shown.set(search($filtered, $attributes, $order)))
   order.subscribe(() => shown.set(search($filtered, $attributes, $order)))
 
-  sidebarCollectionElements.subscribe(() => {
+  sidebarWorks.subscribe(() => {
     shown.set(search($filtered, $attributes, $order))
   })
 </script>
@@ -62,7 +62,7 @@
           />
         </div>
         <div class='mt-1 min-h-0'>
-          <CollectionElements collectionElement={$shown} />
+          <Works works={$shown} />
         </div>
       </div>
     </div>

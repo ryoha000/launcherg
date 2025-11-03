@@ -9,7 +9,7 @@
     commandGetWorkDetailsByWorkId,
   } from '@/lib/command'
   import { showErrorToast, showInfoToast } from '@/lib/toast'
-  import { sidebarCollectionElements } from '@/store/sidebarCollectionElements'
+  import { sidebarWorks } from '@/store/sidebarWorks'
   import Icon from '/icon.png'
 
   const memoRegex = /^smde_memo-(.+)$/
@@ -22,7 +22,7 @@
 
   const isOpenGettingStarted = true
 
-  const shown = sidebarCollectionElements.shown
+  const shown = sidebarWorks.shown
   const flattenShown = derived(shown, $shown =>
     $shown.flatMap(v => v.elements))
 
@@ -37,7 +37,7 @@
       //   .map(v => v.id)
       // const caches = await scrapeAllGameCacheOnes(ids)
       // await commandUpdateAllGameCache(caches)
-      await sidebarCollectionElements.refetch()
+      await sidebarWorks.refetch()
       showInfoToast('サムネイルの再取得が完了しました')
     }
     catch (e) {
@@ -57,7 +57,7 @@
         <img src={Icon} alt='launcherg icon' class='h-12' />
         <div class='text-(8 text-primary) font-logo'>Launcherg</div>
       </div>
-      {#if $sidebarCollectionElements.length === 0 && isOpenGettingStarted}
+      {#if $sidebarWorks.length === 0 && isOpenGettingStarted}
         <div
           class='max-w-120 border border-(border-primary solid) rounded p-4 space-y-2'
         >
@@ -83,7 +83,7 @@
       <div class='space-y-2'>
         <div class='text-(h3 text-primary) font-medium'>Memo</div>
         {#await memoPromises then details}
-          {#if details.length === 0 && $sidebarCollectionElements.length !== 0}
+          {#if details.length === 0 && $sidebarWorks.length !== 0}
             <div
               class='max-w-120 border border-(border-primary solid) rounded p-4 space-y-2'
             >

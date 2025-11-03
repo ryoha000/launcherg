@@ -42,9 +42,9 @@
     idInput = `${id}`
   }
 
-  const { getNewCollectionElementByInputs } = useImportManually()
+  const { getNewWorkByInputs } = useImportManually()
   const onConfirm = async () => {
-    const val = await getNewCollectionElementByInputs(idInput, path)
+    const val = await getNewWorkByInputs(idInput, path)
     if (val) {
       onconfirm?.(val.exePath, val.lnkPath, val.gameCache)
     }

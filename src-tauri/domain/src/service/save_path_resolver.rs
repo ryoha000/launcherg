@@ -1,5 +1,7 @@
 use std::path::PathBuf;
 
+use crate::{StrId, works::Work};
+
 #[trait_variant::make(Send + Sync)]
 #[mockall::automock]
 pub trait SavePathResolver {
@@ -42,9 +44,9 @@ pub trait SavePathResolver {
             .to_string_lossy()
             .to_string()
     }
-    fn play_history_jsonl_path(&self, id: &str) -> String {
+    fn play_history_jsonl_path(&self, work_id: StrId<Work>) -> String {
         PathBuf::from(self.play_histories_dir())
-            .join(format!("{}.jsonl", id))
+            .join(format!("{}.jsonl", work_id.value))
             .to_string_lossy()
             .to_string()
     }

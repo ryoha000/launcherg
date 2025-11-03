@@ -9,15 +9,15 @@
   import { queryClient } from '@/lib/data/queryClient'
   import { useEvent } from '@/lib/event'
   import { runLocalMigrationV3 } from '@/lib/migrations/workCenteredV3'
-  import { registerCollectionElementDetails } from '@/lib/registerCollectionElementDetails'
+  import { registerErogamescapeInformations } from '@/lib/registerErogamescapeInformations'
   import { initializeAllGameCache } from '@/lib/scrape/scrapeAllGame'
   import { showErrorToast, showInfoToast } from '@/lib/toast'
   import { routes } from '@/router/route'
-  import { sidebarCollectionElements } from '@/store/sidebarCollectionElements'
+  import { sidebarWorks } from '@/store/sidebarWorks'
   import { initialize, routeLoaded } from '@/store/tabs'
 
   const appEvent = useEvent()
-  const setDetailPromise = $derived(registerCollectionElementDetails())
+  const setDetailPromise = $derived(registerErogamescapeInformations())
 
   const init = async () => {
     await runLocalMigrationV3()
@@ -48,7 +48,7 @@
       if (event.type !== 'refetchWorks')
         return
 
-      void sidebarCollectionElements.refetch()
+      void sidebarWorks.refetch()
     })
 
     return () => {

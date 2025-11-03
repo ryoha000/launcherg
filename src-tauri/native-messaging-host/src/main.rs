@@ -993,8 +993,8 @@ mod tests {
         // 2. DLsite でのみ管理
         // 3. DMM と DLsite で同じものが管理されている(DMM が既存)
         // 4. DMM と DLsite で同じものが管理されている(DLsite が既存)
-        // 5. collection_element に紐づいているときに DMM の登録(erogamescape_id が既存)
-        // 6. collection_element に紐づいているときに DLsite の登録(erogamescape_id が既存)
+        // 5. work に紐づいているときに DMM の登録(erogamescape_id が既存)
+        // 6. work に紐づいているときに DLsite の登録(erogamescape_id が既存)
 
         enum SyncGameParam {
             Dmm(Vec<DmmSyncGameParam>),

@@ -5,9 +5,9 @@
   import { useFileDrop } from '@/components/Home/fileDrop.svelte'
   import ImportManually from '@/components/Sidebar/ImportManually.svelte'
   import { commandRegisterWorkFromPath } from '@/lib/command'
-  import { registerCollectionElementDetails } from '@/lib/registerCollectionElementDetails'
+  import { registerErogamescapeInformations } from '@/lib/registerErogamescapeInformations'
   import { showInfoToast } from '@/lib/toast'
-  import { sidebarCollectionElements } from '@/store/sidebarCollectionElements'
+  import { sidebarWorks } from '@/store/sidebarWorks'
 
   const { targetFileAccessor, popToTargetFile, startListening, stopListening } = useFileDrop()
 
@@ -32,8 +32,8 @@
       path = { type: 'lnk', lnkPath: lnkPath as string }
     }
     await commandRegisterWorkFromPath({ path, gameCache })
-    await registerCollectionElementDetails()
-    await sidebarCollectionElements.refetch()
+    await registerErogamescapeInformations()
+    await sidebarWorks.refetch()
     showInfoToast(`${gameCache.gamename}を登録しました。`)
     isOpenImportFileDrop = false
     setTimeout(next, 0)

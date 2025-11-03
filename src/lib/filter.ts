@@ -1,11 +1,11 @@
 import type { Readable, Writable } from 'svelte/store'
-import type { SidebarWorkItem } from '@/store/sidebarCollectionElements'
+import type { SidebarWorkItem } from '@/store/sidebarWorks'
 import { writable } from 'svelte/store'
 import { toHiragana, toRomaji } from 'wanakana'
 
 export interface Option<T> { label: string, value: T, otherLabels?: string[] }
 
-export function collectionElementsToOptions(elements: SidebarWorkItem[]) {
+export function sidebarWorkItemsToOptions(elements: SidebarWorkItem[]) {
   return elements.map((v) => {
     const otherLabels: string[] = []
     if (v.gamenameRuby) {

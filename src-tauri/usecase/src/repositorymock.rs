@@ -31,7 +31,6 @@ mockall::mock! {
         fn work_omit(&self) -> domain::repository::work_omit::MockWorkOmitRepository;
         fn work_parent_packs(&self) -> domain::repository::work_parent_packs::MockWorkParentPacksRepository;
         fn dmm_pack(&self) -> domain::repository::dmm_work_pack::MockDmmPackRepository;
-        // 廃止: fn collection(&self) -> domain::repository::collection::MockCollectionRepository;
         fn work_download_path(&self) -> domain::repository::work_download_path::MockWorkDownloadPathRepository;
         fn work_lnk(&self) -> domain::repository::work_lnk::MockWorkLnkRepository;
         fn work_like(&self) -> domain::repository::work_like::MockWorkLikeRepository;

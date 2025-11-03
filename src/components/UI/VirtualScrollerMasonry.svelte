@@ -1,6 +1,6 @@
 <script lang='ts'>
   import type { Readable } from 'svelte/store'
-  import type { SidebarWorkItem } from '@/store/sidebarCollectionElements'
+  import type { SidebarWorkItem } from '@/store/sidebarWorks'
   import { onDestroy, onMount } from 'svelte'
   import ZappingGameItem from '@/components/Home/ZappingGameItem.svelte'
   import { useVirtualScrollerMasonry } from '@/components/UI/virtualScrollerMasonry'
@@ -51,7 +51,7 @@
       class='absolute'
       style='left: {left}px; top: {top}px; width: {width}px; height: {height}px;'
     >
-      <ZappingGameItem collectionElement={element} />
+      <ZappingGameItem work={element} />
     </div>
   {/each}
 </div>

@@ -68,10 +68,6 @@ fn main() {
                 log::error!("failed to start app signal listener: {err}");
             }
 
-            // migration: collection_element_paths -> work_lnks
-            // ベストエフォートで起動時に1回だけ実行
-            // 移行は usecase 経由でユーザー操作時に別コマンド化予定。起動時は何もしない。
-
             Ok(())
         })
         .plugin(
@@ -86,7 +82,6 @@ fn main() {
         .invoke_handler(tauri::generate_handler![
             commands::utils::get_nearest_key_and_distance,
             commands::images::upload_image,
-            commands::images::update_collection_element_icon,
             commands::utils::get_default_import_dirs,
             commands::scan::scan_start,
             commands::utils::get_play_time_minutes,

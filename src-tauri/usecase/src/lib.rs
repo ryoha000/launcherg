@@ -11,7 +11,6 @@ pub mod game_identifier;
 pub mod host_log;
 pub mod image;
 pub mod image_queue;
-pub mod models;
 pub mod native_host_sync;
 #[cfg(test)]
 mod native_host_sync_test;

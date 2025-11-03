@@ -62,7 +62,6 @@ pub struct WorkDetails {
     pub is_dmm_pack: bool,
     pub latest_download_path: Option<WorkDownloadPath>,
     pub like: Option<WorkLike>,
-    // Optional timestamps derived from collection elements
     #[new(default)]
     pub install_at: Option<DateTime<Local>>,
     #[new(default)]

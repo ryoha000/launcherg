@@ -7,9 +7,9 @@
   import APopover from '@/components/UI/APopover.svelte'
   import Button from '@/components/UI/Button.svelte'
   import { commandRegisterWorkFromPath } from '@/lib/command'
-  import { registerCollectionElementDetails } from '@/lib/registerCollectionElementDetails'
+  import { registerErogamescapeInformations } from '@/lib/registerErogamescapeInformations'
   import { showInfoToast } from '@/lib/toast'
-  import { sidebarCollectionElements } from '@/store/sidebarCollectionElements'
+  import { sidebarWorks } from '@/store/sidebarWorks'
 
   let isOpenImportAutomatically = $state(false)
   let isOpenImportManually = $state(false)
@@ -27,8 +27,8 @@
       path = { type: 'lnk', lnkPath: lnkPath as string }
     }
     await commandRegisterWorkFromPath({ path, gameCache })
-    await registerCollectionElementDetails()
-    await sidebarCollectionElements.refetch()
+    await registerErogamescapeInformations()
+    await sidebarWorks.refetch()
     isOpenImportManually = false
     showInfoToast(`${gameCache.gamename}を登録しました。`)
   }

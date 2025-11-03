@@ -3,7 +3,7 @@
   import Button from '@/components/UI/Button.svelte'
   import Modal from '@/components/UI/Modal.svelte'
   import { commandDeleteWork } from '@/lib/command'
-  import { sidebarCollectionElements } from '@/store/sidebarCollectionElements'
+  import { sidebarWorks } from '@/store/sidebarWorks'
   import { deleteTab, selected, tabs } from '@/store/tabs'
 
   interface Props {
@@ -15,7 +15,7 @@
 
   const deleteGame = async () => {
     await commandDeleteWork(workDetail.id)
-    await sidebarCollectionElements.refetch()
+    await sidebarWorks.refetch()
     deleteTab($tabs[$selected].id)
     isOpen = false
   }

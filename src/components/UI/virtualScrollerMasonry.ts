@@ -1,5 +1,5 @@
 import type { Readable } from 'svelte/store'
-import type { SidebarWorkItem } from '@/store/sidebarCollectionElements'
+import type { SidebarWorkItem } from '@/store/sidebarWorks'
 import { derived } from 'svelte/store'
 
 export function useVirtualScrollerMasonry(elements: Readable<SidebarWorkItem[]>, setVirtualHeight: (v: number) => void, contentsWidth: Readable<number>, contentsScrollY: Readable<number>, containerHeight: Readable<number>) {

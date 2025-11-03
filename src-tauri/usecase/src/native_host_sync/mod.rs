@@ -82,8 +82,6 @@ pub struct EgsInfo {
 // DMM 向けの計画決定ロジックは dmm.rs へ移動
 
 #[derive(new)]
-/// ストア情報をコレクションへ同期するユースケース。
-/// 内部で `CollectionRepository` を用いてマッピング作成・EGS 情報反映を行う。
 pub struct NativeHostSyncUseCase<M, R, RS>
 where
     M: RepositoryManager<R>,

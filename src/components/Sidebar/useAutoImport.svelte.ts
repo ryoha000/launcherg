@@ -1,7 +1,7 @@
 import { commandScanStart } from '@/lib/command'
-import { registerCollectionElementDetails } from '@/lib/registerCollectionElementDetails'
+import { registerErogamescapeInformations } from '@/lib/registerErogamescapeInformations'
 import { showInfoToast } from '@/lib/toast'
-import { sidebarCollectionElements } from '@/store/sidebarCollectionElements'
+import { sidebarWorks } from '@/store/sidebarWorks'
 
 export function useAutoImport() {
   let isLoading = $state(false)
@@ -11,8 +11,8 @@ export function useAutoImport() {
     isLoading = true
     try {
       const res = await commandScanStart(paths, useCache)
-      await registerCollectionElementDetails()
-      await sidebarCollectionElements.refetch()
+      await registerErogamescapeInformations()
+      await sidebarWorks.refetch()
 
       const text = res.length
         ? `「${res[0]}」${

@@ -27,7 +27,7 @@ export function useImportManually() {
     }
   }
 
-  const getNewCollectionElementByInputs = async (
+  const getNewWorkByInputs = async (
     idInput: string,
     pathInput: string,
   ) => {
@@ -51,5 +51,5 @@ export function useImportManually() {
     }
   }
 
-  return { getNewCollectionElementByInputs }
+  return { getNewWorkByInputs }
 }

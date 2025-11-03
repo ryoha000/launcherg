@@ -17,7 +17,7 @@
   import { useAddWorkOmitMutation, useRemoveWorkOmitMutation } from '@/lib/data/queries/workOmit'
   import { showErrorToast, showInfoToast } from '@/lib/toast'
   import { settings } from '@/store/settings'
-  import { sidebarCollectionElements } from '@/store/sidebarCollectionElements'
+  import { sidebarWorks } from '@/store/sidebarWorks'
 
   const workDetailsQuery = useWorkDetailsAllQuery()
 
@@ -55,7 +55,7 @@
   const performDeleteElement = async (id: string, _title?: string) => {
     try {
       await commandDeleteWork(id)
-      await sidebarCollectionElements.refetch()
+      await sidebarWorks.refetch()
       await get(workDetailsQuery).refetch()
       showInfoToast('削除しました')
     }
@@ -69,14 +69,14 @@
       dontAskAgain = false
     }
   }
-  const maybeDeleteOnFlagSet = async (collectionElementId?: string, title?: string) => {
-    if (!collectionElementId)
+  const maybeDeleteOnFlagSet = async (workId?: string, title?: string) => {
+    if (!workId)
       return
     if (getAutoDeletePref()) {
-      await performDeleteElement(collectionElementId, title)
+      await performDeleteElement(workId, title)
       return
     }
-    confirmDeleteTarget = { id: collectionElementId, title: title ?? '' }
+    confirmDeleteTarget = { id: workId, title: title ?? '' }
     isOpenConfirmDelete = true
   }
 
@@ -141,7 +141,6 @@
   }
 
   const updateDenied = async (arg: {
-    collectionElementId?: string
     storeType: number
     storeId: string
     title: string
@@ -149,14 +148,9 @@
     prevValue: boolean
     workId: string
   }) => {
-    const { collectionElementId, storeType, storeId, title, nextValue, prevValue, workId } = arg
+    const { storeType, storeId, title, nextValue, prevValue, workId } = arg
     if (nextValue === prevValue)
       return
-    if (!collectionElementId && !nextValue) {
-      // omit のみ運用: 未登録のゲームでは『連携除外』は解除できません
-      showErrorToast('未登録のゲームでは『連携除外』は解除できません。')
-      return
-    }
     try {
       if (nextValue) {
         // 統合後: workId ベースで登録
@@ -171,7 +165,7 @@
         : `「連携除外」解除: ${title}（${storeLabel} / ${storeId}）`,
       )
       if (nextValue) {
-        await maybeDeleteOnFlagSet(collectionElementId, title)
+        await maybeDeleteOnFlagSet(workId, title)
       }
     }
     catch (e) {

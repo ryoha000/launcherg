@@ -4,9 +4,10 @@ use std::sync::Arc;
 use base64::{engine::general_purpose, Engine as _};
 use derive_new::new;
 use domain::service::save_path_resolver::SavePathResolver;
+use domain::works::Work;
+use domain::StrId;
 
 use domain::file::PlayHistory;
-use domain::{collection::CollectionElement, Id};
 
 #[derive(new)]
 pub struct FileUseCase {
@@ -26,13 +27,8 @@ impl FileUseCase {
         file.write_all(&decoded_data)?;
         Ok(path)
     }
-    pub fn get_play_time_minutes(
-        &self,
-        collection_element_id: &Id<CollectionElement>,
-    ) -> anyhow::Result<f32> {
-        let path = self
-            .resolver
-            .play_history_jsonl_path(&collection_element_id.value.to_string());
+    pub fn get_play_time_minutes(&self, work_id: StrId<Work>) -> anyhow::Result<f32> {
+        let path = self.resolver.play_history_jsonl_path(work_id);
 
         let exist = std::path::Path::new(&path).exists();
         if !exist {

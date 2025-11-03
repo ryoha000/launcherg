@@ -41,54 +41,19 @@ export type VoiceActor = {
   importance: (typeof VoiceActorImportance)[keyof typeof VoiceActorImportance]
 } & Creator
 
-export interface Collection {
-  id: number
-  name: string
-}
-
-export interface CollectionElement {
-  id: number // 内部ID（CollectionElementの自前採番ID）
-  erogamescapeId?: number | null
-  gamename: string
-  gamenameRuby: string
-  brandname: string
-  brandnameRuby: string
-  sellday: string
-  isNukige: boolean
-  installAt: string | null
-  lastPlayAt: string | null
-  likeAt: string | null
-  registeredAt: string
-  exePath: string
-  lnkPath: string
-  icon: string
-  thumbnail: string
-  thumbnailWidth: number | null
-  thumbnailHeight: number | null
-  dmm?: DmmInfo | null
-  dlsite?: DlsiteInfo | null
-  canPlay: boolean
-  canInstall: boolean
-}
-
 // DLStoreInfo 廃止
 
 export interface DmmInfo {
   id: number
-  collectionElementId: number
+  workId: string
   category: string
   subcategory: string
 }
 
 export interface DlsiteInfo {
   id: number
-  collectionElementId: number
+  workId: string
   category: string
-}
-
-export interface CollectionElementsWithLabel {
-  label: string
-  elements: CollectionElement[]
 }
 
 export type SeiyaDataPair = [string, string]

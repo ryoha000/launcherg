@@ -1,4 +1,4 @@
-import type { SidebarWorkItem } from '@/store/sidebarCollectionElements'
+import type { SidebarWorkItem } from '@/store/sidebarWorks'
 import { createLocalStorageWritable } from '@/lib/utils'
 
 export const ATTRIBUTES = {

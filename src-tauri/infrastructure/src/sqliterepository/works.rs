@@ -133,8 +133,6 @@ impl WorkRepository for RepositoryImpl<Work> {
                     if entry.dlsite.is_none() {
                         entry.dlsite = details.dlsite;
                     }
-                    // 廃止: collection_element_id は Work 移行により不要
-                    // 廃止: erogamescape は erogamescape_information を使用
                     entry.is_omitted |= details.is_omitted;
                     entry.is_dmm_pack |= details.is_dmm_pack;
                     if entry.latest_download_path.is_none() {
@@ -221,7 +219,6 @@ impl WorkRepository for RepositoryImpl<Work> {
                 Some(entry) => {
                     if entry.dmm.is_none() { entry.dmm = details.dmm; }
                     if entry.dlsite.is_none() { entry.dlsite = details.dlsite; }
-                    // 廃止: collection_element_id と erogamescape は Work 移行により不要
                     if entry.erogamescape_information.is_none() { entry.erogamescape_information = details.erogamescape_information; }
                     entry.is_omitted |= details.is_omitted;
                     entry.is_dmm_pack |= details.is_dmm_pack;

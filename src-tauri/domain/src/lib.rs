@@ -4,7 +4,6 @@ use derive_new::new;
 use serde::{Deserialize, Serialize};
 
 pub mod all_game_cache;
-pub mod collection;
 pub mod distance;
 pub mod dmm_work_pack;
 pub mod erogamescape;
