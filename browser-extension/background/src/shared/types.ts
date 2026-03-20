@@ -40,7 +40,7 @@ export interface Browser {
     sendMessage: (tabId: number, message: unknown) => Promise<void>
   }
   scripting: {
-    executeScript: (tabId: number, files: string[]) => Promise<void>
+    executeScript: (tabId: number, files: string[], world?: chrome.scripting.ExecutionWorld) => Promise<void>
   }
 }
 

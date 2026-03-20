@@ -13,9 +13,25 @@ import { processPacks, syncDmmGames } from './orchestrator'
 import { createDmmRuntime } from './runtime'
 
 const log = logger('dmm-content-script')
+const CONTENT_SCRIPT_FLAG = '__launchergDmmContentScriptInstalled__'
+const CONTENT_SCRIPT_MARKER = 'data-launcherg-dmm-content-script-installed'
 const downloadTriggeredForUrl = new Set<string>()
 const isMarked = (url: string) => downloadTriggeredForUrl.has(url)
 const mark = (url: string) => void downloadTriggeredForUrl.add(url)
+
+function setContentScriptMarker(): void {
+  ;(window as typeof window & { [CONTENT_SCRIPT_FLAG]?: boolean })[CONTENT_SCRIPT_FLAG] = true
+  document.documentElement?.setAttribute(CONTENT_SCRIPT_MARKER, 'true')
+}
+
+function ensureContentScriptMarker(): void {
+  if (document.documentElement) {
+    setContentScriptMarker()
+    return
+  }
+
+  window.addEventListener('DOMContentLoaded', setContentScriptMarker, { once: true })
+}
 
 const runtime = createDmmRuntime({
   initialUrl: window.location.href,
@@ -49,6 +65,7 @@ function setupPageChangeObserver(): void {
 
 function main(): void {
   log.info('Script loaded')
+  ensureContentScriptMarker()
   addNotificationStyles()
   window.addEventListener('message', runtime.handleHookMessage)
   injectPageScript(chrome.runtime.getURL(DMM_LIBRARY_SCRIPT_PATH), DMM_LIBRARY_SCRIPT_ID)

@@ -33,7 +33,7 @@ describe('dlsite api parser', () => {
   })
 
   it('eXE 以外の作品は除外し、スキップした file_type を unique でログ出力する', () => {
-    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const warnSpy = vi.spyOn(console, 'debug').mockImplementation(() => {})
     setLogLevel('debug')
 
     try {

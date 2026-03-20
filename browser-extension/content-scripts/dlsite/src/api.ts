@@ -99,7 +99,7 @@ export function extractDlsiteGamesFromApiResponse(response: DlsiteWorksResponse)
   })
 
   if (skippedFileTypes.size > 0) {
-    log.warn('DLsite: EXE 以外の作品をスキップしました', {
+    log.debug('DLsite: EXE 以外の作品をスキップしました', {
       fileTypes: Array.from(skippedFileTypes).sort(),
     })
   }

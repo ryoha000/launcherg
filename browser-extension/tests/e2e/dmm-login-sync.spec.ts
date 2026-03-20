@@ -1,10 +1,11 @@
-import type { Page } from '@playwright/test'
+import type { Page, Worker } from '@playwright/test'
 import type { NativeMessageTs } from '../../shared/src/typeshare/native-messaging'
 import { readFileSync } from 'node:fs'
 import { dirname, resolve } from 'node:path'
 import process from 'node:process'
 import { fileURLToPath } from 'node:url'
 import { expect, test } from './helpers/dmm-fixtures'
+import { navigateToMyLibrary } from './helpers/auth'
 import {
   clearDownloadIntents,
   emitDownloadComplete,
@@ -16,7 +17,7 @@ import {
   waitForNativeMessageCall,
 } from './helpers/extension'
 
-// 所持ゲームの storeId は環境変数で指定（例: \"vsat_0158\"）
+// 所持ゲームの storeId は環境変数で指定（例: "vsat_0158"）
 // 未指定の場合は呼び出し自体の存在のみ確認する
 const EXPECTED_STORE_ID = process.env.DMM_EXPECTED_STORE_ID ?? ''
 const __filename = fileURLToPath(import.meta.url)
@@ -46,8 +47,6 @@ const sampleDmmPack = JSON.parse(readFileSync(resolve(__dirname, '../unit/data/s
     }> | null
   } | null
 }
-
-const sampleDmmLibrary = JSON.parse(readFileSync(resolve(__dirname, '../unit/data/sample_dmm.json'), 'utf-8'))
 
 function extractExpectedUrls(download: {
   combinedFileUrl?: string | null
@@ -93,50 +92,43 @@ async function openLaunchergDownloadPage(
   return downloadPage
 }
 
-async function triggerLibraryApi(page: Page, payload: unknown, pageNo = 1): Promise<void> {
-  const requestUrl = `https://dlsoft.dmm.co.jp/ajax/v1/library?page=${pageNo}`
-  await page.context().route(requestUrl, async (route) => {
-    await route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      body: JSON.stringify(payload),
-    })
-  })
+function extractSyncedStoreIds(message: NativeMessageTs['message']): string[] {
+  if (message.case !== 'SyncDmmGames')
+    return []
 
-  try {
-    await page.evaluate(async (url) => {
-      await fetch(url, { credentials: 'include' })
-    }, requestUrl)
-  }
-  finally {
-    await page.context().unroute(requestUrl)
-  }
+  return message.value.games
+    .map(game => game.id)
+    .filter((id): id is string => typeof id === 'string' && id.length > 0)
 }
 
-async function dumpPageState(page: Page): Promise<void> {
-  const state = await page.evaluate(() => {
-    const root = document.querySelector('#mylibrary')
-    const productList = document.querySelector('.productList')
-    const images = Array.from((productList || root || document).querySelectorAll('img'))
-      .slice(0, 20)
-      .map(img => ({
-        src: img.getAttribute('src'),
-        alt: img.getAttribute('alt'),
-      }))
+async function waitForDmmSyncMessage(
+  dmmServiceWorker: Worker,
+  expectedStoreId: string,
+): Promise<NativeMessageTs['message']> {
+  const calls = await waitForNativeMessageCall(
+    dmmServiceWorker,
+    (nativeCalls) => {
+      return nativeCalls.some((call) => {
+        const msg = call.message as NativeMessageTs
+        if (msg?.message?.case !== 'SyncDmmGames')
+          return false
+        return extractSyncedStoreIds(msg.message).includes(expectedStoreId)
+      })
+    },
+    15_000,
+  )
 
-    return {
-      url: location.href,
-      title: document.title,
-      bodyText: document.body.textContent?.slice(0, 1000) ?? '',
-      rootExists: !!root,
-      productListExists: !!productList,
-      imageCount: images.length,
-      images,
-      productListHtml: productList?.outerHTML.slice(0, 2000) ?? null,
-    }
+  const matched = calls.find((call) => {
+    const msg = call.message as NativeMessageTs
+    return msg?.message?.case === 'SyncDmmGames'
+      && extractSyncedStoreIds(msg.message).includes(expectedStoreId)
   })
 
-  console.warn('DMM page dump:', JSON.stringify(state, null, 2))
+  if (!matched) {
+    throw new Error(`SyncDmmGames に storeId "${expectedStoreId}" が見つかりませんでした`)
+  }
+
+  return (matched.message as NativeMessageTs).message
 }
 
 // ---------------------------------------------------------------------------
@@ -151,71 +143,18 @@ test.describe('DMM content-script 注入・NativeMessage 送信確認', () => {
     await resetNativeMessageSpy(dmmServiceWorker)
   })
 
-  // -------------------------------------------------------------------------
-  // シナリオ 1: sendNativeMessage が少なくとも1回呼ばれること
-  // -------------------------------------------------------------------------
-  test('マイライブラリ表示後に chrome.runtime.sendNativeMessage が呼ばれる', async ({ authenticatedDmmPage, dmmServiceWorker }) => {
-    try {
-      await triggerLibraryApi(authenticatedDmmPage, sampleDmmLibrary)
-
-      // content-script が抽出・同期を完了するまで待機（最大30秒）
-      const calls = await waitForNativeMessageCall(
-        dmmServiceWorker,
-        cs => cs.length > 0,
-        30_000,
-      )
-
-      expect(calls.length).toBeGreaterThan(0)
-    }
-    catch (error) {
-      await dumpPageState(authenticatedDmmPage)
-      throw error
-    }
-  })
-
-  // -------------------------------------------------------------------------
-  // シナリオ 2: SyncDmmGames が送信されること
-  // -------------------------------------------------------------------------
-  test('NativeMessage に SyncDmmGames が含まれる', async ({ authenticatedDmmPage, dmmServiceWorker }) => {
-    await triggerLibraryApi(authenticatedDmmPage, sampleDmmLibrary, 2)
-
-    const calls = await waitForNativeMessageCall(
-      dmmServiceWorker,
-      cs => cs.length > 0,
-      30_000,
-    )
-
-    const relevantCalls = calls.filter((c) => {
-      const msg = c.message as NativeMessageTs
-      return msg?.message?.case === 'SyncDmmGames'
-    })
-
-    expect(relevantCalls.length).toBeGreaterThan(0)
-  })
-
-  // -------------------------------------------------------------------------
-  // シナリオ 3: 期待する storeId を持つ作品が現行 DOM から抽出可能であること
-  // -------------------------------------------------------------------------
-  test('期待する storeId を持つ作品がマイライブラリ DOM に存在する', async ({ authenticatedDmmPage }) => {
+  test('マイライブラリ表示後に SyncDmmGames に期待する storeId が含まれる', async ({ authenticatedDmmPage, dmmServiceWorker }) => {
     if (!EXPECTED_STORE_ID) {
       test.skip(true, 'DMM_EXPECTED_STORE_ID が未設定のためスキップ')
       return
     }
 
-    const found = await authenticatedDmmPage.evaluate((expectedStoreId) => {
-      return Array.from(document.querySelectorAll<HTMLImageElement>('#mylibrary .productList img'))
-        .some(img => img.getAttribute('src')?.includes(`/${expectedStoreId}/`))
-    }, EXPECTED_STORE_ID)
+    await navigateToMyLibrary(authenticatedDmmPage)
+    const message = await waitForDmmSyncMessage(dmmServiceWorker, EXPECTED_STORE_ID)
 
-    expect(
-      found,
-      `storeId "${EXPECTED_STORE_ID}" を含む画像 URL がマイライブラリ DOM に見つかりませんでした。`,
-    ).toBe(true)
+    expect(extractSyncedStoreIds(message)).toContain(EXPECTED_STORE_ID)
   })
 
-  // -------------------------------------------------------------------------
-  // シナリオ 4: launcherg 付きのダウンロードURLから intent が保存される
-  // -------------------------------------------------------------------------
   test('非パック作品は detail/single を使って direct download を開始する', async ({ authenticatedDmmPage, dmmServiceWorker }) => {
     let singleRequestCount = 0
     await authenticatedDmmPage.context().route('https://dlsoft.dmm.co.jp/ajax/v1/library/detail/single/?productId=hobc_0157', async (route) => {
@@ -344,10 +283,11 @@ test.describe('DMM content-script 注入・NativeMessage 送信確認', () => {
         return msg?.message?.case === 'DownloadsCompleted'
       })
       const message = completed?.message as NativeMessageTs
+      const completedMessage = message.message.case === 'DownloadsCompleted' ? message.message : null
 
-      expect(message.message.case).toBe('DownloadsCompleted')
-      expect(message.message.value.intent.case).toBe('Dmm')
-      expect(message.message.value.intent.value.game_store_id).toBe('hobc_0157')
+      expect(completedMessage?.case).toBe('DownloadsCompleted')
+      expect(completedMessage?.value.intent.case).toBe('Dmm')
+      expect(completedMessage?.value.intent.value.game_store_id).toBe('hobc_0157')
 
       const intents = await getDownloadIntents(dmmServiceWorker)
       expect(intents.hobc_0157).toBeUndefined()

@@ -14,6 +14,8 @@ import { syncDlsiteGames } from './orchestrator'
 import { createDlsiteRuntime } from './runtime'
 
 const log = logger('dlsite-content-script')
+const CONTENT_SCRIPT_FLAG = '__launchergDlsiteContentScriptInstalled__'
+const CONTENT_SCRIPT_MARKER = 'data-launcherg-dlsite-content-script-installed'
 
 // ダウンロード起動の一度きり実行制御
 const processedUrlSet = new Set<string>()
@@ -22,6 +24,20 @@ function markProcessed(url: string): void {
 }
 function isProcessed(url: string): boolean {
   return processedUrlSet.has(url)
+}
+
+function setContentScriptMarker(): void {
+  ;(window as typeof window & { [CONTENT_SCRIPT_FLAG]?: boolean })[CONTENT_SCRIPT_FLAG] = true
+  document.documentElement?.setAttribute(CONTENT_SCRIPT_MARKER, 'true')
+}
+
+function ensureContentScriptMarker(): void {
+  if (document.documentElement) {
+    setContentScriptMarker()
+    return
+  }
+
+  window.addEventListener('DOMContentLoaded', setContentScriptMarker, { once: true })
 }
 
 const runtime = createDlsiteRuntime({
@@ -60,6 +76,7 @@ function setupPageChangeObserver(): void {
 
 function main(): void {
   log.info('Script loaded')
+  ensureContentScriptMarker()
 
   addNotificationStyles()
   window.addEventListener('message', runtime.handleHookMessage)

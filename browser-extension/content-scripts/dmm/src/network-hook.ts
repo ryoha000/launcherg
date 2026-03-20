@@ -1,4 +1,5 @@
 const INSTALL_FLAG = '__launchergDmmNetworkHookInstalled__'
+const INSTALL_MARKER = 'data-launcherg-dmm-network-hook-installed'
 const DMM_HOOK_MESSAGE_SOURCE = 'launcherg'
 const DMM_LIBRARY_MESSAGE_TYPE = 'launcherg:dmm-library-response'
 const DMM_LIBRARY_HOST = 'dlsoft.dmm.co.jp'
@@ -89,6 +90,13 @@ function install(): void {
     return
 
   globalWindow[INSTALL_FLAG] = true
+  const setMarker = (): void => {
+    document.documentElement?.setAttribute(INSTALL_MARKER, 'true')
+  }
+  if (document.documentElement)
+    setMarker()
+  else
+    window.addEventListener('DOMContentLoaded', setMarker, { once: true })
   installFetchHook()
   installXhrHook()
 }

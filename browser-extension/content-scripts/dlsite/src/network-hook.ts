@@ -1,4 +1,5 @@
 const INSTALL_FLAG = '__launchergDlsiteNetworkHookInstalled__'
+const INSTALL_MARKER = 'data-launcherg-dlsite-network-hook-installed'
 const DLSITE_HOOK_MESSAGE_SOURCE = 'launcherg'
 const DLSITE_WORKS_MESSAGE_TYPE = 'launcherg:dlsite-works-response'
 const DLSITE_WORKS_HOST = 'play.dlsite.com'
@@ -89,6 +90,13 @@ function install(): void {
     return
 
   globalWindow[INSTALL_FLAG] = true
+  const setMarker = (): void => {
+    document.documentElement?.setAttribute(INSTALL_MARKER, 'true')
+  }
+  if (document.documentElement)
+    setMarker()
+  else
+    window.addEventListener('DOMContentLoaded', setMarker, { once: true })
   installFetchHook()
   installXhrHook()
 }

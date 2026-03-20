@@ -30,6 +30,13 @@ tasks:
     description: ブラウザ拡張機能のE2Eテストを実行
     cmds:
       - pwsh.exe -NoProfile -Command "pnpm run test:playwright"
+  check:browser-extension:e2e:dlsite:
+    dir: browser-extension
+    dotenv:
+      - .env.test
+    description: ブラウザ拡張機能のDLsite E2Eテストを実行
+    cmds:
+      - pwsh.exe -NoProfile -Command "pnpm run test:playwright -- tests/e2e/dlsite-login-sync.spec.ts"
   check:browser-extension:background:
     dir: browser-extension/background
     description: ブラウザ拡張機能のバックグラウンドスクリプトをチェック

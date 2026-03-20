@@ -138,7 +138,7 @@ export async function waitForNativeMessageCall(
 export async function getDownloadIntents(sw: Worker): Promise<Record<string, unknown>> {
   return sw.evaluate(() => {
     return new Promise<Record<string, unknown>>((resolve) => {
-      chrome.storage.local.get(['download_intents'], (result) => {
+      chrome.storage.local.get(['download_intents'], (result: { download_intents?: Record<string, unknown> }) => {
         resolve((result?.download_intents as Record<string, unknown>) ?? {})
       })
     })

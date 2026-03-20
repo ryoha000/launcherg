@@ -82,9 +82,9 @@ export function createBrowser(): Browser {
       }),
     },
     scripting: {
-      executeScript: async (tabId, files) => {
+      executeScript: async (tabId, files, world) => {
         await new Promise<void>((resolve, reject) => {
-          chrome.scripting.executeScript({ target: { tabId }, files }, () => {
+          chrome.scripting.executeScript({ target: { tabId }, files, world }, () => {
             const err = chrome.runtime?.lastError
             if (err) {
               reject(new Error(err.message))

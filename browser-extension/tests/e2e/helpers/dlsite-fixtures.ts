@@ -1,27 +1,26 @@
 import type { Page, Worker } from '@playwright/test'
-import { loginToDmm } from './auth'
-import { getServiceWorker, setupDownloadsSpy, setupSendNativeMessageSpy } from './extension'
+import { loginToDlsite } from './auth'
+import { getServiceWorker, setupSendNativeMessageSpy } from './extension'
 import { test as base } from './fixtures'
 
 interface WorkerFixtures {
-  authenticatedDmmPage: Page
-  dmmServiceWorker: Worker
+  authenticatedDlsitePage: Page
+  dlsiteServiceWorker: Worker
 }
 
 export const test = base.extend<{}, WorkerFixtures>({
-  dmmServiceWorker: [
+  dlsiteServiceWorker: [
     async ({ persistentContext }, use) => {
       const sw = await getServiceWorker(persistentContext)
       await setupSendNativeMessageSpy(sw)
-      await setupDownloadsSpy(sw)
       await use(sw)
     },
     { scope: 'worker' },
   ],
-  authenticatedDmmPage: [
-    async ({ persistentContext, dmmServiceWorker: _dmmServiceWorker }, use) => {
+  authenticatedDlsitePage: [
+    async ({ persistentContext, dlsiteServiceWorker: _dlsiteServiceWorker }, use) => {
       const page = await persistentContext.newPage()
-      await loginToDmm(page)
+      await loginToDlsite(page)
       await use(page)
       await page.close()
     },
