@@ -1,5 +1,5 @@
 import type { DlsiteExtractedGame } from './types'
-import { normalizeTitle } from '@launcherg/shared'
+import { logger, normalizeTitle } from '@launcherg/shared'
 
 export const DLSITE_HOOK_MESSAGE_SOURCE = 'launcherg'
 export const DLSITE_WORKS_MESSAGE_TYPE = 'launcherg:dlsite-works-response'
@@ -8,10 +8,12 @@ export const DLSITE_WORKS_SCRIPT_PATH = 'content-scripts/dlsite-network-hook.js'
 
 const DLSITE_WORKS_HOST = 'play.dlsite.com'
 const DLSITE_WORKS_PATH = '/api/v3/content/works'
+const log = logger('dlsite-api')
 
 export interface DlsiteWorkItem {
   workno?: string
   site_id?: string
+  file_type?: string
   name?: {
     ja_JP?: string
   }
@@ -54,7 +56,15 @@ function normalizeDlsiteCategory(siteId: string | undefined): string | null {
   return siteId
 }
 
+function normalizeDlsiteFileType(fileType: string | undefined): string {
+  const normalized = fileType?.trim().toUpperCase()
+  return normalized || 'unknown'
+}
+
 export function convertDlsiteWorkItem(work: DlsiteWorkItem): DlsiteExtractedGame | null {
+  if (normalizeDlsiteFileType(work.file_type) !== 'EXE')
+    return null
+
   const storeId = work.workno || ''
   const category = normalizeDlsiteCategory(work.site_id)
   const title = normalizeTitle(work.name?.ja_JP || '')
@@ -76,9 +86,25 @@ export function extractDlsiteGamesFromApiResponse(response: DlsiteWorksResponse)
   if (!Array.isArray(works))
     return []
 
-  return works
-    .map(convertDlsiteWorkItem)
-    .filter((game): game is DlsiteExtractedGame => game !== null)
+  const skippedFileTypes = new Set<string>()
+  const games = works.flatMap((work) => {
+    const normalizedFileType = normalizeDlsiteFileType(work.file_type)
+    if (normalizedFileType !== 'EXE') {
+      skippedFileTypes.add(normalizedFileType)
+      return []
+    }
+
+    const game = convertDlsiteWorkItem(work)
+    return game ? [game] : []
+  })
+
+  if (skippedFileTypes.size > 0) {
+    log.warn('DLsite: EXE 以外の作品をスキップしました', {
+      fileTypes: Array.from(skippedFileTypes).sort(),
+    })
+  }
+
+  return games
 }
 
 export function buildDlsitePayloadKey(message: DlsiteWorksHookMessageData): string {

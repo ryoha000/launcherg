@@ -42,6 +42,7 @@ describe('dlsite runtime', () => {
         works: [{
           workno: 'RJ01007737',
           site_id: 'maniax',
+          file_type: 'EXE',
           name: { ja_JP: 'クロアプスクランブル' },
           work_files: {
             main: 'https://img.dlsite.jp/modpub/images2/work/doujin/RJ01008000/RJ01007737_img_main.jpg',
