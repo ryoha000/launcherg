@@ -286,33 +286,6 @@ async fn handle_message(ctx: &AppCtx) -> HostResult<bool> {
         })
         .await;
 
-    // 画像キューの drain は同期時のみ
-    match &message.message {
-        NativeMessageCase::SyncDmmGames(_) | NativeMessageCase::SyncDlsiteGames(_) => {
-            // Native Messaging Host 側では HostLog を使用
-            let handler = std::sync::Arc::new(
-                infrastructure::image_queue_worker::handler::ImageQueueHostLogHandler::new(
-                    ctx.manager.clone(),
-                ),
-            );
-            let worker = ImageQueueWorker::new_with_event_handler(
-                ctx.manager.clone(),
-                ctx.resolver.clone(),
-                Arc::new(Windows::new()),
-                handler,
-            );
-            let _ = worker.drain_until_empty().await;
-
-            // drain 完了後に thumbnail_size を backfill
-            let work_thumbnail_use_case =
-                WorkThumbnailUseCase::new(ctx.manager.clone(), ctx.resolver.clone());
-            let _ = work_thumbnail_use_case.backfill_thumbnail_sizes().await;
-
-            return Ok(false);
-        }
-        _ => {}
-    }
-
     let _ = ctx
         .manager
         .run(|repos| {
@@ -563,6 +536,30 @@ async fn dispatch_refetch_works(router: &Arc<InterprocessAppSignalRouter>) -> an
     router.dispatch(signal).await
 }
 
+async fn finalize_sync_and_notify(ctx: &AppCtx) -> anyhow::Result<()> {
+    // Native Messaging Host 側では HostLog を使用
+    let handler = std::sync::Arc::new(
+        infrastructure::image_queue_worker::handler::ImageQueueHostLogHandler::new(
+            ctx.manager.clone(),
+        ),
+    );
+    let worker = ImageQueueWorker::new_with_event_handler(
+        ctx.manager.clone(),
+        ctx.resolver.clone(),
+        Arc::new(Windows::new()),
+        handler,
+    );
+    worker.drain_until_empty().await?;
+
+    // drain 完了後に thumbnail_size を backfill
+    let work_thumbnail_use_case =
+        WorkThumbnailUseCase::new(ctx.manager.clone(), ctx.resolver.clone());
+    work_thumbnail_use_case.backfill_thumbnail_sizes().await?;
+
+    dispatch_refetch_works(&ctx.app_signal_router).await?;
+    Ok(())
+}
+
 fn cleanup_download_paths<I>(paths: I)
 where
     I: IntoIterator,
@@ -615,8 +612,24 @@ async fn handle_sync_dmm_games(
                 errors: vec![],
                 synced_games: input_ids.clone(),
             };
-            if let Err(err) = dispatch_refetch_works(&ctx.app_signal_router).await {
-                log_app_signal_dispatch_failure(&ctx, "dispatch_refetch_works", err).await;
+            if let Err(err) = finalize_sync_and_notify(ctx).await {
+                let err_msg = anyhow_chain_to_string(&err);
+                log::error!("failed to finalize sync dmm games: {}", err_msg);
+                if let Err(dispatch_err) =
+                    dispatch_show_error_message(&ctx.app_signal_router, err_msg.clone()).await
+                {
+                    log_app_signal_dispatch_failure(
+                        &ctx,
+                        format!("dispatch_show_error_message request_id={}", request_id),
+                        dispatch_err,
+                    )
+                    .await;
+                }
+                return fail_with_body(
+                    request_id,
+                    err_msg,
+                    NativeResponseCase::SyncGamesResult(result),
+                );
             }
             ok(request_id, NativeResponseCase::SyncGamesResult(result))
         }
@@ -661,8 +674,24 @@ async fn handle_sync_dlsite_games(
                 errors: vec![],
                 synced_games: input_ids.clone(),
             };
-            if let Err(err) = dispatch_refetch_works(&ctx.app_signal_router).await {
-                log_app_signal_dispatch_failure(&ctx, "dispatch_refetch_works", err).await;
+            if let Err(err) = finalize_sync_and_notify(ctx).await {
+                let err_msg = anyhow_chain_to_string(&err);
+                log::error!("failed to finalize sync dlsite games: {}", err_msg);
+                if let Err(dispatch_err) =
+                    dispatch_show_error_message(&ctx.app_signal_router, err_msg.clone()).await
+                {
+                    log_app_signal_dispatch_failure(
+                        &ctx,
+                        format!("dispatch_show_error_message request_id={}", request_id),
+                        dispatch_err,
+                    )
+                    .await;
+                }
+                return fail_with_body(
+                    request_id,
+                    err_msg,
+                    NativeResponseCase::SyncGamesResult(result),
+                );
             }
             ok(request_id, NativeResponseCase::SyncGamesResult(result))
         }

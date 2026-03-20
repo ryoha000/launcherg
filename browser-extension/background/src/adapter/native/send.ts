@@ -31,7 +31,7 @@ function createOnceSettled<T, E>(resolve: (value: T) => void, reject: (reason: E
 }
 
 export function createNativeMessenger(nativeHostName: string) {
-  const TIMEOUT_MS = 30000
+  const TIMEOUT_MS = 60000
 
   const sendJson = async <TRes = unknown>(message: NativeMessageTs): Promise<TRes | null> => {
     return new Promise((_resolve, _reject) => {
