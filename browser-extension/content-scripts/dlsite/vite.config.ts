@@ -7,7 +7,7 @@ export default defineConfig({
     outDir: '../../dist/content-scripts',
     lib: {
       entry: {
-        'dlsite-extractor': resolve(__dirname, 'src/main.ts'),
+        'dlsite-content-script': resolve(__dirname, 'src/main.ts'),
         'dlsite-network-hook': resolve(__dirname, 'src/network-hook.ts'),
       },
       formats: ['es'],

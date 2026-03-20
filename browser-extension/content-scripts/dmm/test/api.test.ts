@@ -5,7 +5,10 @@ import { describe, expect, it } from 'vitest'
 import {
   buildDmmPayloadKey,
   convertDmmLibraryItem,
+  extractDmmGamesFromSetDetailResponse,
   extractDmmGamesFromApiResponse,
+  extractDownloadUrlsFromSetDetail,
+  extractDownloadUrlsFromSingleDetail,
   isDmmLibraryApiUrl,
   splitDmmApiGames,
 } from '../src/api'
@@ -41,6 +44,59 @@ describe('dmm api parser', () => {
       title: '天つ籠ノ鳥BOX',
       imageUrl: 'https://pics.dmm.co.jp/digital/pcgame/purple_0028pack/purple_0028packps.jpg',
     })
+  })
+
+  it('sample_dmm_pack.json から childProducts を正しく変換できる', () => {
+    const jsonPath = resolve(__dirname, '../../../tests/unit/data/sample_dmm_pack.json')
+    const payload = JSON.parse(readFileSync(jsonPath, 'utf-8'))
+    const games = extractDmmGamesFromSetDetailResponse(payload)
+
+    expect(games).toEqual([
+      {
+        storeId: 'views_0528',
+        category: 'digital',
+        subcategory: 'pcgame',
+        title: 'アマツツミ',
+        imageUrl: 'https://pics.dmm.co.jp/digital/pcgame/views_0528/views_0528ps.jpg',
+      },
+      {
+        storeId: 'views_0571',
+        category: 'digital',
+        subcategory: 'pcgame',
+        title: 'アオイトリ',
+        imageUrl: 'https://pics.dmm.co.jp/digital/pcgame/views_0571/views_0571ps.jpg',
+      },
+      {
+        storeId: 'purple_0029',
+        category: 'digital',
+        subcategory: 'pcgame',
+        title: '天つ籠ノ鳥BOX ハイレゾ音源サウンドトラック',
+        imageUrl: 'https://pics.dmm.co.jp/digital/pcgame/purple_0029/purple_0029ps.jpg',
+      },
+    ])
+  })
+
+  it('download detail API から URL を正しい順で抽出できる', () => {
+    const notPackJsonPath = resolve(__dirname, '../../../tests/unit/data/sample_dmm_not_pack.json')
+    const packJsonPath = resolve(__dirname, '../../../tests/unit/data/sample_dmm_pack.json')
+    const notPackPayload = JSON.parse(readFileSync(notPackJsonPath, 'utf-8'))
+    const packPayload = JSON.parse(readFileSync(packJsonPath, 'utf-8'))
+
+    expect(extractDownloadUrlsFromSingleDetail(notPackPayload)).toEqual([
+      '/download/?filePath=%2Fbb%2Fpcgame%2Fhobc_0157%2Fhobc_0157.bat&productId=hobc_0157&floor=Apcgame',
+      '/download/?filePath=%2Fbb%2Fpcgame%2Fhobc_0157%2Fhobc_0157.000&productId=hobc_0157&floor=Apcgame',
+      '/download/?filePath=%2Fbb%2Fpcgame%2Fhobc_0157%2Fhobc_0157.001&productId=hobc_0157&floor=Apcgame',
+      '/download/?filePath=%2Fbb%2Fpcgame%2Fhobc_0157%2Fhobc_0157.002&productId=hobc_0157&floor=Apcgame',
+      '/download/?filePath=%2Fbb%2Fpcgame%2Fhobc_0157%2Fhobc_0157.003&productId=hobc_0157&floor=Apcgame',
+    ])
+
+    expect(extractDownloadUrlsFromSetDetail(packPayload, 'views_0571')).toEqual([
+      '/download/?filePath=%2Fbb%2Fpcgame%2Fviews_0571%2Fviews_0571.part1.exe&productId=views_0571&floor=Apcgame',
+      '/download/?filePath=%2Fbb%2Fpcgame%2Fviews_0571%2Fviews_0571.part2.rar&productId=views_0571&floor=Apcgame',
+      '/download/?filePath=%2Fbb%2Fpcgame%2Fviews_0571%2Fviews_0571.part3.rar&productId=views_0571&floor=Apcgame',
+      '/download/?filePath=%2Fbb%2Fpcgame%2Fviews_0571%2Fviews_0571.part4.rar&productId=views_0571&floor=Apcgame',
+      '/download/?filePath=%2Fbb%2Fpcgame%2Fviews_0571%2Fviews_0571.part5.rar&productId=views_0571&floor=Apcgame',
+    ])
   })
 
   it('payload key は同一 payload で安定する', () => {

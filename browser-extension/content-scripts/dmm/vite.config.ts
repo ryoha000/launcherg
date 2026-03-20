@@ -7,7 +7,7 @@ export default defineConfig({
     outDir: '../../dist/content-scripts',
     lib: {
       entry: {
-        'dmm-extractor': resolve(__dirname, 'src/main.ts'),
+        'dmm-content-script': resolve(__dirname, 'src/main.ts'),
         'dmm-network-hook': resolve(__dirname, 'src/network-hook.ts'),
       },
       formats: ['es'],

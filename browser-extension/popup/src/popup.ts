@@ -626,9 +626,9 @@ export class PopupController {
         if (/Receiving end does not exist/i.test(msg)) {
           const files: string[] = []
           if (isDMMGames)
-            files.push('content-scripts/dmm-extractor.js')
+            files.push('content-scripts/dmm-content-script.js')
           if (isDLsite)
-            files.push('content-scripts/dlsite-extractor.js')
+            files.push('content-scripts/dlsite-content-script.js')
           if (files.length > 0) {
             await chrome.scripting.executeScript({
               target: { tabId: currentTab.id },

@@ -12,7 +12,7 @@ import { initLaunchergDownloadOnceForUrl } from './download'
 import { fetchPackParentMap, processPacks, syncDmmGames } from './orchestrator'
 import { createDmmRuntime } from './runtime'
 
-const log = logger('dmm-extractor')
+const log = logger('dmm-content-script')
 const downloadTriggeredForUrl = new Set<string>()
 const isMarked = (url: string) => downloadTriggeredForUrl.has(url)
 const mark = (url: string) => void downloadTriggeredForUrl.add(url)

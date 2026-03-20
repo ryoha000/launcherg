@@ -48,6 +48,9 @@ export interface DmmPackChildDetail {
   product?: {
     productId?: string
     contentId?: string
+    floor?: string
+    title?: string
+    packageImageUrl?: string
   } | null
   download?: DmmDownloadInfo | null
 }
@@ -85,6 +88,14 @@ export function isDmmLibraryResponse(value: unknown): value is DmmLibraryRespons
   if (typeof value !== 'object' || value === null)
     return false
   return 'error' in value
+}
+
+interface DmmProductLike {
+  contentId?: string
+  productId?: string
+  floor?: string
+  title?: string
+  packageImageUrl?: string
 }
 
 function parseImageMeta(imageUrl: string | undefined, fallbackStoreId: string): Pick<DmmExtractedGame, 'storeId' | 'category' | 'subcategory' | 'imageUrl'> | null {
@@ -133,7 +144,7 @@ function parseFloorMeta(floor: string | undefined, fallbackStoreId: string, imag
   return null
 }
 
-export function convertDmmLibraryItem(item: DmmLibraryItem): DmmApiExtractedGame | null {
+function convertDmmProductLike(item: DmmProductLike): DmmExtractedGame | null {
   const fallbackStoreId = item.productId || item.contentId || ''
   const title = normalizeTitle(item.title || '')
   if (!fallbackStoreId || !title)
@@ -144,13 +155,23 @@ export function convertDmmLibraryItem(item: DmmLibraryItem): DmmApiExtractedGame
       || parseFloorMeta(item.floor, fallbackStoreId, item.packageImageUrl || '')
 
   if (!parsed) {
-    log.warn('Unable to parse DMM library item:', item)
+    log.warn('Unable to parse DMM product item:', item)
     return null
   }
 
   return {
     ...parsed,
     title,
+  }
+}
+
+export function convertDmmLibraryItem(item: DmmLibraryItem): DmmApiExtractedGame | null {
+  const base = convertDmmProductLike(item)
+  if (!base)
+    return null
+
+  return {
+    ...base,
     isPack: item.libraryProductType === 'set',
   }
 }
@@ -163,6 +184,16 @@ export function extractDmmGamesFromApiResponse(response: DmmLibraryResponse): Dm
   return library
     .map(convertDmmLibraryItem)
     .filter((game): game is DmmApiExtractedGame => game !== null)
+}
+
+export function extractDmmGamesFromSetDetailResponse(response: DmmSetDetailResponse): DmmExtractedGame[] {
+  const childProducts = response.body?.childProducts
+  if (!Array.isArray(childProducts))
+    return []
+
+  return childProducts
+    .map(child => convertDmmProductLike(child.product ?? {}))
+    .filter((game): game is DmmExtractedGame => game !== null)
 }
 
 export function splitDmmApiGames(games: DmmApiExtractedGame[]): {

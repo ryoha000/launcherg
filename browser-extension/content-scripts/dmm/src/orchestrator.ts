@@ -3,8 +3,20 @@ import type { DmmExtractedGame } from './types'
 
 import { sendExtensionRequest } from '@launcherg/shared'
 import { getCachedPackChildrenMulti, setCachedPackChildren } from './cache'
-import { fetchPackDetailHtmlForItemId, findDetailItemIdForStoreId } from './pack-helpers'
-import { parsePackModal } from './pack-parser'
+import { extractDmmGamesFromSetDetailResponse, type DmmSetDetailResponse } from './api'
+
+async function fetchJsonWithCookie<T>(url: string): Promise<T> {
+  const res = await fetch(url, { credentials: 'include' })
+  if (!res.ok)
+    throw new Error(`DMM API request failed: ${res.status} ${res.statusText}`)
+  return await res.json() as T
+}
+
+async function fetchPackDetailResponseForStoreId(storeId: string): Promise<DmmSetDetailResponse> {
+  const url = new URL('/ajax/v1/library/detail/set/', window.location.origin)
+  url.searchParams.set('productId', storeId)
+  return await fetchJsonWithCookie<DmmSetDetailResponse>(url.toString())
+}
 
 export async function fetchPackParentMap(): Promise<Map<string, number>> {
   const req: ExtensionRequest = {
@@ -61,13 +73,10 @@ export async function processPacks(packSet: Set<string>, parentMap?: Map<string,
       continue
     }
 
-    // キャッシュミス：DOM から detail item を探し、fetch→parse
-    const itemId = findDetailItemIdForStoreId(sid)
-    if (!itemId)
-      continue
+    // キャッシュミス：detail/set API を直接読んで childProducts を展開する
     try {
-      const html = await fetchPackDetailHtmlForItemId(itemId, 12000)
-      const games = parsePackModal(html)
+      const response = await fetchPackDetailResponseForStoreId(sid)
+      const games = extractDmmGamesFromSetDetailResponse(response)
       // 子リストを永続キャッシュに保存（parentPackWorkId は保存しない）
       await setCachedPackChildren(sid, games.map(({ parentPackWorkId: _omit, ...rest }) => rest))
 

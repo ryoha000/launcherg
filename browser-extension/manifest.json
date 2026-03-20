@@ -28,7 +28,7 @@
         "https://dlsoft.dmm.co.jp/*"
       ],
       "js": [
-        "content-scripts/dmm-extractor.js"
+        "content-scripts/dmm-content-script.js"
       ],
       "run_at": "document_start"
     },
@@ -37,7 +37,7 @@
         "https://play.dlsite.com/*"
       ],
       "js": [
-        "content-scripts/dlsite-extractor.js"
+        "content-scripts/dlsite-content-script.js"
       ],
       "run_at": "document_start"
     }

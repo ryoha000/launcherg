@@ -13,7 +13,7 @@ import { initLaunchergDownloadOnceForUrl } from './download'
 import { syncDlsiteGames } from './orchestrator'
 import { createDlsiteRuntime } from './runtime'
 
-const log = logger('dlsite-extractor')
+const log = logger('dlsite-content-script')
 
 // ダウンロード起動の一度きり実行制御
 const processedUrlSet = new Set<string>()
@@ -31,7 +31,6 @@ const runtime = createDlsiteRuntime({
   showErrorNotification: message => showInPageNotification(message, 'error'),
 })
 
-// ページ変更を監視する関数（SPA対応）
 function setupPageChangeObserver(): void {
   let currentUrl = window.location.href
   const observe = () => {
@@ -59,28 +58,22 @@ function setupPageChangeObserver(): void {
   window.addEventListener('DOMContentLoaded', observe, { once: true })
 }
 
-// メイン初期化処理
 function main(): void {
   log.info('Script loaded')
 
-  // CSSアニメーションを追加
   addNotificationStyles()
   window.addEventListener('message', runtime.handleHookMessage)
   injectPageScript(chrome.runtime.getURL(DLSITE_WORKS_SCRIPT_PATH), DLSITE_WORKS_SCRIPT_ID)
 
-  // ページ変更の監視を設定
   setupPageChangeObserver()
 
-  // 即座に抽出を開始（設定不要）
   setTimeout(() => {
-    // クエリパラメータ起動があれば処理
     void initLaunchergDownloadOnceForUrl(window.location.href, markProcessed, isProcessed)
   }, 1000)
 }
 
 main()
 
-// バックグラウンド/ポップアップからのメッセージを受け取って同期を実行
 chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   if (
     message?.type === 'manual_sync_request'

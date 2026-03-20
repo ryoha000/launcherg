@@ -35,9 +35,9 @@ async function sendMessageToTabWithInjection(
     }
     const files: string[] = []
     if (tab.url.includes('dlsoft.dmm.co.jp'))
-      files.push('content-scripts/dmm-extractor.js')
+      files.push('content-scripts/dmm-content-script.js')
     if (tab.url.includes('play.dlsite.com'))
-      files.push('content-scripts/dlsite-extractor.js')
+      files.push('content-scripts/dlsite-content-script.js')
 
     if (files.length === 0)
       return
