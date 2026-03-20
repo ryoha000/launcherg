@@ -541,7 +541,9 @@ async fn finalize_sync_and_notify(ctx: &AppCtx) -> anyhow::Result<()> {
         WorkThumbnailUseCase::new(ctx.manager.clone(), ctx.resolver.clone());
     work_thumbnail_use_case.backfill_thumbnail_sizes().await?;
 
-    dispatch_refetch_works(&ctx.app_signal_router).await?;
+    if let Err(err) = dispatch_refetch_works(&ctx.app_signal_router).await {
+        log_app_signal_dispatch_failure(ctx, "dispatch_refetch_works", err).await;
+    }
     Ok(())
 }
 
@@ -1495,6 +1497,68 @@ mod tests {
         if let Some(NativeResponseCase::SyncGamesResult(r)) = resp.response {
             assert_eq!(r.success_count, 0);
             assert!(r.synced_games.is_empty());
+        } else {
+            panic!("unexpected");
+        }
+    }
+
+    #[tokio::test]
+    async fn 同期dmm_アプリ未起動でも成功応答を返す() {
+        let tmp = std::env::temp_dir().join(format!(
+            "launcherg-dmm-no-app-{}.db3",
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_millis()
+        ));
+        let tmp_str = tmp.to_string_lossy().to_string().replace("\\", "/");
+        let db = RepoDb::from_path(&tmp_str).await;
+        let repo_manager = StdArc::new(SqliteRepositoryManager::new(db.pool_arc()));
+        let resolver = Arc::new(DirsSavePathResolver::default());
+        let windows = Arc::new(Windows::new());
+        let work_registration_service: Arc<
+            WorkRegistrationServiceImpl<SqliteRepositoryManager, SqliteRepositories, Windows>,
+        > = Arc::new(WorkRegistrationServiceImpl::new(
+            repo_manager.clone(),
+            resolver.clone(),
+            windows.clone(),
+        ));
+        let usecase =
+            NativeHostSyncUseCase::new(repo_manager.clone(), work_registration_service.clone());
+        let fs = Arc::new(LocalFileSystem::default());
+        let dedup = Arc::new(HeuristicDuplicateResolver);
+        let work_linker = Arc::new(WorkLinkerImpl::new(
+            repo_manager.clone(),
+            resolver.clone(),
+            windows.clone(),
+        ));
+        let ctx = AppCtx {
+            manager: repo_manager,
+            sync_usecase: usecase,
+            resolver,
+            fs,
+            dedup,
+            work_linker,
+            app_signal_router: Arc::new(InterprocessAppSignalRouter::new()),
+        };
+        let req = DmmSyncGamesRequestTs {
+            games: vec![models::sync::DmmGameTs {
+                id: "SID100".into(),
+                category: "game".into(),
+                subcategory: "pc".into(),
+                title: "Test Game".into(),
+                image_url: String::new(),
+                egs_info: None,
+                parent_pack: None,
+            }],
+            extension_id: "ext".into(),
+        };
+
+        let resp = handle_sync_dmm_games(&ctx, &req, "r1").await;
+        assert!(resp.success);
+        if let Some(NativeResponseCase::SyncGamesResult(r)) = resp.response {
+            assert_eq!(r.success_count, 1);
+            assert_eq!(r.synced_games, vec!["SID100".to_string()]);
         } else {
             panic!("unexpected");
         }
