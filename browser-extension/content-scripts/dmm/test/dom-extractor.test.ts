@@ -65,7 +65,7 @@ describe('dmm dom-extractor', () => {
     document.body.innerHTML = ''
   })
 
-  it('section 配下の画像はレコメンドのため除外される', () => {
+  it('旧構造では section 配下の画像をレコメンドとして除外する', () => {
     const root = document.createElement('div')
     root.id = 'mylibrary'
     root.innerHTML = `
@@ -83,6 +83,28 @@ describe('dmm dom-extractor', () => {
     const games = extractAllGames()
     expect(games.length).toBe(1)
     expect(games[0].storeId).toBe('a_1')
+
+    document.body.innerHTML = ''
+  })
+
+  it('現行構造では productList 配下の画像を section 配下でも抽出する', () => {
+    const root = document.createElement('div')
+    root.id = 'mylibrary'
+    root.innerHTML = `
+      <section class="libraryListPage__searchSection">
+        <div class="productList">
+          <div class="productCard">
+            <img src="https://pics.dmm.co.jp/digital/pcgame/current_1/current_1ps.jpg" alt="現在のタイトル" />
+          </div>
+        </div>
+      </section>
+    `
+    document.body.appendChild(root)
+
+    const games = extractAllGames()
+    expect(games.length).toBe(1)
+    expect(games[0].storeId).toBe('current_1')
+    expect(games[0].title).toBe('現在のタイトル')
 
     document.body.innerHTML = ''
   })

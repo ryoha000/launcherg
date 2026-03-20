@@ -16,6 +16,7 @@ pub struct WorkDetailsVm {
     pub icon: Option<IconVm>,
     pub thumbnail: Option<ThumbnailVm>,
     pub latest_download_path: Option<LatestWorkDownloadPathVm>,
+    pub original_path: Option<String>,
     pub like_at: Option<String>,
     pub install_at: Option<String>,
     pub last_play_at: Option<String>,
@@ -121,6 +122,7 @@ impl From<WorkDetails> for WorkDetailsVm {
                 work_id: p.work_id.value.clone(),
                 download_path: p.download_path,
             }),
+            original_path: w.original_path.clone(),
             like_at: w
                 .like
                 .as_ref()

@@ -23,6 +23,13 @@ tasks:
       - check:browser-extension:background
       - check:browser-extension:content-scripts
       - check:browser-extension:shared
+  check:browser-extension:e2e:
+    dir: browser-extension
+    dotenv:
+      - .env.test
+    description: ブラウザ拡張機能のE2Eテストを実行
+    cmds:
+      - pwsh.exe -NoProfile -Command "pnpm run test:playwright"
   check:browser-extension:background:
     dir: browser-extension/background
     description: ブラウザ拡張機能のバックグラウンドスクリプトをチェック

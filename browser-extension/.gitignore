@@ -2,6 +2,7 @@ node_modules/
 dist/
 *.log
 .env
+.env.test
 .DS_Store
 *.pem
 

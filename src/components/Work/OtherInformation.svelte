@@ -53,5 +53,8 @@
     <OtherInfomationSection label='Latest Download Path'>
       <pre class='whitespace-pre-wrap break-all'>{workDetail.latestDownloadPath?.downloadPath}</pre>
     </OtherInfomationSection>
+    <OtherInfomationSection label='Original Path'>
+      <pre class='whitespace-pre-wrap break-all'>{workDetail.originalPath}</pre>
+    </OtherInfomationSection>
   </div>
 </Modal>

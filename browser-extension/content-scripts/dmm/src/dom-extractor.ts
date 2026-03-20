@@ -62,7 +62,10 @@ export function extractAllGames(): DmmExtractedGame[] {
     log.debug('Library root not found, skipping extraction')
     return []
   }
-  const images = Array.from(scope.querySelectorAll('img')).filter(img => !img.closest('section'))
+
+  const productImages = Array.from(scope.querySelectorAll<HTMLImageElement>('.productList img'))
+  const fallbackImages = Array.from(scope.querySelectorAll<HTMLImageElement>('img')).filter(img => !img.closest('section'))
+  const images = productImages.length > 0 ? productImages : fallbackImages
   const games: DmmExtractedGame[] = []
   images.forEach((img, idx) => {
     const g = extractGameDataFromImage(img)

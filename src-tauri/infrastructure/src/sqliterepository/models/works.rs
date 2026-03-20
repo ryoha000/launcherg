@@ -53,6 +53,7 @@ pub struct WorkDetailsRow {
     pub latest_path_id: Option<i64>,
     pub latest_path_download_path: Option<String>,
     pub install_install_at: Option<sqlx::types::chrono::NaiveDateTime>,
+    pub install_original_path: Option<String>,
     pub play_last_play_at: Option<sqlx::types::chrono::NaiveDateTime>,
     pub like_id: Option<i64>,
     pub like_like_at: Option<sqlx::types::chrono::NaiveDateTime>,
@@ -83,6 +84,7 @@ impl From<crate::sqliterepository::models::works::WorkDetailsRow> for domain::wo
             install_at: r
                 .install_install_at
                 .map(|v| v.and_utc().with_timezone(&chrono::Local)),
+            original_path: r.install_original_path.clone(),
             last_play_at: r
                 .play_last_play_at
                 .map(|v| v.and_utc().with_timezone(&chrono::Local)),

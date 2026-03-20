@@ -65,6 +65,8 @@ pub struct WorkDetails {
     #[new(default)]
     pub install_at: Option<DateTime<Local>>,
     #[new(default)]
+    pub original_path: Option<String>,
+    #[new(default)]
     pub last_play_at: Option<DateTime<Local>>,
     #[new(default)]
     pub registered_at: Option<DateTime<Local>>,

@@ -35,3 +35,5 @@ src-tauri/bin/*.lnk
 native-messaging-manifest-installed.json
 
 .serena/cache/**
+
+target/**

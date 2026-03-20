@@ -9,24 +9,28 @@ import { extractAllGames, shouldExtract } from './dom-extractor'
 import { initLaunchergDownloadOnceForUrl } from './download'
 import { fetchOmitWorks, processPacks, syncDmmGames } from './orchestrator'
 
+const EXTRACTION_RETRY_WINDOW_MS = 30_000
+
 let isExtracting = false
 let currentUrl = window.location.href
+let extractionTimer: ReturnType<typeof setTimeout> | null = null
+const extractionStartedAtByUrl = new Map<string, number>()
 const log = logger('dmm-extractor')
 const lastSyncedUrls = new Set<string>()
 const downloadTriggeredForUrl = new Set<string>()
 const isMarked = (url: string) => downloadTriggeredForUrl.has(url)
 const mark = (url: string) => void downloadTriggeredForUrl.add(url)
 
-async function extractAndSync(): Promise<void> {
+async function extractAndSync(): Promise<boolean> {
   if (isExtracting) {
     log.debug('Already extracting, skipping')
-    return
+    return false
   }
 
   const rootElement = document.getElementById('mylibrary')
   if (!shouldExtract(window.location.hostname, rootElement)) {
     log.debug('Skip extraction: target container not found')
-    return
+    return false
   }
 
   isExtracting = true
@@ -34,8 +38,8 @@ async function extractAndSync(): Promise<void> {
   try {
     const games = extractAllGames()
     if (games.length === 0) {
-      log.info('No games found')
-      return
+      log.info('No games found yet')
+      return false
     }
     // 1) omit 情報を1回で取得（packSet と parentMap を同時に）
     const { packSet, parentMap } = await fetchOmitWorks()
@@ -49,14 +53,22 @@ async function extractAndSync(): Promise<void> {
     // 3) パック配下ゲームと通常ゲームを結合し、一度だけ同期
     const allGames: DmmExtractedGame[] = [...normalGames, ...packGames]
     await syncDmmGames(allGames)
+    return true
   }
   catch (error) {
     log.error('Extraction failed:', error)
     showInPageNotification('DMM: ゲーム情報の抽出に失敗しました', 'error')
+    return false
   }
   finally {
     isExtracting = false
   }
+}
+
+function shouldContinuePolling(url: string): boolean {
+  const startedAt = extractionStartedAtByUrl.get(url) ?? Date.now()
+  extractionStartedAtByUrl.set(url, startedAt)
+  return Date.now() - startedAt < EXTRACTION_RETRY_WINDOW_MS
 }
 
 async function initDmmExtractor(): Promise<void> {
@@ -73,18 +85,53 @@ async function initDmmExtractor(): Promise<void> {
   }
 
   await waitForPageLoad(500)
-  lastSyncedUrls.add(url)
-  log.info('Target page detected - Extracting once on DMM')
-  void extractAndSync()
+
+  if (url !== window.location.href || lastSyncedUrls.has(url)) {
+    return
+  }
+
+  log.info('Target page detected - Extracting on DMM')
+  const synced = await extractAndSync()
+  if (synced) {
+    lastSyncedUrls.add(url)
+    extractionStartedAtByUrl.delete(url)
+    return
+  }
+
+  if (shouldContinuePolling(url)) {
+    scheduleExtraction(2_000)
+    return
+  }
+
+  log.info('No games found before retry window elapsed')
+}
+
+function scheduleExtraction(delay = 500): void {
+  if (lastSyncedUrls.has(window.location.href)) {
+    return
+  }
+
+  if (extractionTimer) {
+    clearTimeout(extractionTimer)
+  }
+
+  extractionTimer = setTimeout(() => {
+    extractionTimer = null
+    void initDmmExtractor()
+  }, delay)
 }
 
 function setupPageChangeObserver(): void {
   const observer = new MutationObserver(() => {
     if (window.location.href !== currentUrl) {
       currentUrl = window.location.href
-      void initDmmExtractor()
+      extractionStartedAtByUrl.delete(currentUrl)
+      scheduleExtraction(0)
       void initLaunchergDownloadOnceForUrl(currentUrl, mark, isMarked)
+      return
     }
+
+    scheduleExtraction(500)
   })
   observer.observe(document.body, { childList: true, subtree: true })
 }
