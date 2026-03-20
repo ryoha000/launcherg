@@ -1,0 +1,77 @@
+{
+  "error": null,
+  "body": {
+    "totalCount": 224,
+    "library": [
+      {
+        "contentId": "ncpy_0007",
+        "productId": "ncpy_0007",
+        "deliveryBeginDate": "2021-10-29 00:00",
+        "libraryProductType": "single",
+        "floor": "Apcgame",
+        "title": "Monkeys!¡【萌えゲーアワード2021 イノベーション賞 受賞】",
+        "packageImageUrl": "https://pics.dmm.co.jp/digital/pcgame/ncpy_0007/ncpy_0007ps.jpg",
+        "brand": {
+          "name": "HARUKAZE",
+          "listUrl": "https://dlsoft.dmm.co.jp/list/?maker=31367&sort=ranking"
+        },
+        "authorArray": [
+          {
+            "name": "cake",
+            "listUrl": "https://dlsoft.dmm.co.jp/list/?author=259642&sort=ranking"
+          }
+        ],
+        "tagArray": [
+          {
+            "code": "browser",
+            "displayName": "ブラウザ対応"
+          }
+        ],
+        "catalog": {
+          "isDisplayCatalog": true,
+          "catalogPageUrl": "https://dlsoft.dmm.co.jp/detail/ncpy_0007/"
+        },
+        "review": {
+          "canReview": true,
+          "reviewWriteUrl": "https://review.dmm.co.jp/review-front/review/posting?content_id=ncpy_0007&shop_name=digital_pcgame"
+        }
+      },
+      {
+        "contentId": "purple_0028pack",
+        "productId": "purple_0028pack",
+        "deliveryBeginDate": "2022-09-30 00:00",
+        "libraryProductType": "set",
+        "floor": "Apcgame",
+        "title": "天つ籠ノ鳥BOX",
+        "packageImageUrl": "https://pics.dmm.co.jp/digital/pcgame/purple_0028pack/purple_0028packps.jpg",
+        "brand": {
+          "name": "パープルソフトウェア",
+          "listUrl": "https://dlsoft.dmm.co.jp/list/?maker=30810&sort=ranking"
+        },
+        "authorArray": [
+          {
+            "name": "克",
+            "listUrl": "https://dlsoft.dmm.co.jp/list/?author=27477&sort=ranking"
+          },
+          {
+            "name": "月杜尋",
+            "listUrl": "https://dlsoft.dmm.co.jp/list/?author=239619&sort=ranking"
+          },
+          {
+            "name": "あきお",
+            "listUrl": "https://dlsoft.dmm.co.jp/list/?author=300482&sort=ranking"
+          }
+        ],
+        "tagArray": [],
+        "catalog": {
+          "isDisplayCatalog": true,
+          "catalogPageUrl": "https://dlsoft.dmm.co.jp/detail/purple_0028pack/"
+        },
+        "review": {
+          "canReview": true,
+          "reviewWriteUrl": "https://review.dmm.co.jp/review-front/review/posting?content_id=purple_0028pack&shop_name=digital_pcgame"
+        }
+      }
+    ]
+  }
+}

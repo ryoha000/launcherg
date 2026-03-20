@@ -6,7 +6,7 @@ import { getCachedPackChildrenMulti, setCachedPackChildren } from './cache'
 import { fetchPackDetailHtmlForItemId, findDetailItemIdForStoreId } from './pack-helpers'
 import { parsePackModal } from './pack-parser'
 
-export async function fetchOmitWorks(): Promise<{ packSet: Set<string>, parentMap: Map<string, number> }> {
+export async function fetchPackParentMap(): Promise<Map<string, number>> {
   const req: ExtensionRequest = {
     requestId: Date.now().toString(36) + Math.random().toString(36).slice(2),
     request: { case: 'getDmmOmitWorks', value: {} },
@@ -15,13 +15,11 @@ export async function fetchOmitWorks(): Promise<{ packSet: Set<string>, parentMa
   if (res?.response?.case !== 'getDmmOmitWorksResult')
     throw new Error('Unexpected response from getDmmOmitWorks')
   const payload = res.response.value
-  const set = new Set<string>()
   const map = new Map<string, number>()
   for (const it of payload.items) {
-    set.add(it.dmm.storeId)
     map.set(it.dmm.storeId, it.workId)
   }
-  return { packSet: set, parentMap: map }
+  return map
 }
 
 export async function syncDmmGames(games: DmmExtractedGame[]): Promise<void> {

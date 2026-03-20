@@ -6,9 +6,10 @@ export default defineConfig({
     emptyOutDir: false,
     outDir: '../../dist/content-scripts',
     lib: {
-      entry: resolve(__dirname, 'src/main.ts'),
-      name: 'dmm-extractor',
-      fileName: 'dmm-extractor',
+      entry: {
+        'dmm-extractor': resolve(__dirname, 'src/main.ts'),
+        'dmm-network-hook': resolve(__dirname, 'src/network-hook.ts'),
+      },
       formats: ['es'],
     },
     rollupOptions: {

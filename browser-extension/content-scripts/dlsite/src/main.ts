@@ -1,24 +1,19 @@
-// DLsite用独立型抽出器のメインエントリーポイント
-
-import type { DlsiteGame, DlsiteSyncGamesRequest, ExtensionRequest } from '@launcherg/shared'
 import {
   addNotificationStyles,
+  injectPageScript,
   logger,
-  sendExtensionRequest,
   showInPageNotification,
-  waitForPageLoad,
 } from '@launcherg/shared'
-
+import {
+  DLSITE_WORKS_SCRIPT_ID,
+  DLSITE_WORKS_SCRIPT_PATH,
+} from './api'
 import { processGames } from './data-processor'
-import { extractAllGames, shouldExtract } from './dom-extractor'
 import { initLaunchergDownloadOnceForUrl } from './download'
+import { syncDlsiteGames } from './orchestrator'
+import { createDlsiteRuntime } from './runtime'
 
-// グローバル状態管理
-let isExtracting = false
-let currentUrl = window.location.href
 const log = logger('dlsite-extractor')
-let pollingTimerId: number | null = null
-let didInitialWait = false
 
 // ダウンロード起動の一度きり実行制御
 const processedUrlSet = new Set<string>()
@@ -29,127 +24,39 @@ function isProcessed(url: string): boolean {
   return processedUrlSet.has(url)
 }
 
-// 抽出と同期を実行するメイン関数
-async function extractAndSync(): Promise<void> {
-  const rootElement = document.getElementById('root')
-  if (!shouldExtract(window.location.hostname, rootElement)) {
-    log.debug('Not a target page - skipping extraction')
-    return
-  }
-
-  if (isExtracting) {
-    log.debug('Already extracting, skipping')
-    return
-  }
-
-  isExtracting = true
-
-  try {
-    // 初回のみページロード完了を待機
-    if (!didInitialWait) {
-      await waitForPageLoad(2000)
-      didInitialWait = true
-    }
-
-    // ゲーム情報を抽出
-    const games = extractAllGames()
-
-    if (games.length === 0) {
-      log.info('No games found')
-      return
-    }
-
-    log.info(`Found ${games.length} games`)
-
-    // DLsite特有の処理を適用
-    const processedGames = processGames(games)
-
-    // 同期リクエストを送信（DLsite専用）
-    const dlsiteGames: DlsiteGame[] = processedGames.map(g => ({
-      id: g.storeId,
-      category: g.category,
-      title: g.title,
-      imageUrl: g.imageUrl,
-    }))
-
-    const request: ExtensionRequest = {
-      requestId: Date.now().toString(36) + Math.random().toString(36).slice(2),
-      request: {
-        case: 'syncDlsiteGames',
-        value: { games: dlsiteGames } as DlsiteSyncGamesRequest,
-      },
-    }
-
-    try {
-      const responseJson = await sendExtensionRequest(request)
-      log.info('Sync successful:', responseJson)
-    }
-    catch (error) {
-      log.error('Sync failed:', error)
-    }
-  }
-  catch (error) {
-    log.error('Extraction failed:', error)
-    showInPageNotification('DLsite: 作品情報の抽出に失敗しました', 'error')
-  }
-  finally {
-    isExtracting = false
-  }
-}
-
-// DLsite抽出器を初期化する関数
-function initDLsiteExtractor(): void {
-  const rootElement = document.getElementById('root')
-
-  if (shouldExtract(window.location.hostname, rootElement)) {
-    log.info('Target page detected - Starting extraction on DLsite')
-    startPolling()
-  }
-  else {
-    log.debug('Not a target page - skipping extraction')
-    stopPolling()
-  }
-}
-
-function startPolling(): void {
-  if (pollingTimerId !== null)
-    return
-  // 即時実行 + 500ms間隔で実行
-  void extractAndSync()
-  pollingTimerId = window.setInterval(() => {
-    void extractAndSync()
-  }, 500)
-  log.debug('Started polling every 500ms')
-}
-
-function stopPolling(): void {
-  if (pollingTimerId !== null) {
-    clearInterval(pollingTimerId)
-    pollingTimerId = null
-    log.debug('Stopped polling')
-  }
-}
+const runtime = createDlsiteRuntime({
+  initialUrl: window.location.href,
+  processGames,
+  syncDlsiteGames,
+  showErrorNotification: message => showInPageNotification(message, 'error'),
+})
 
 // ページ変更を監視する関数（SPA対応）
 function setupPageChangeObserver(): void {
-  const observer = new MutationObserver(() => {
-    if (window.location.href !== currentUrl) {
-      currentUrl = window.location.href
-      // URL変更時に再度チェック
-      setTimeout(() => {
-        // 初期待機をリセット
-        didInitialWait = false
-        initDLsiteExtractor()
-        // クエリパラメータ起動があれば処理
-        void initLaunchergDownloadOnceForUrl(window.location.href, markProcessed, isProcessed)
-      }, 2000)
-    }
-  })
+  let currentUrl = window.location.href
+  const observe = () => {
+    const observer = new MutationObserver(() => {
+      const nextUrl = window.location.href
+      if (nextUrl === currentUrl)
+        return
 
-  observer.observe(document.body, {
-    childList: true,
-    subtree: true,
-  })
+      currentUrl = nextUrl
+      runtime.handleUrlChange(nextUrl)
+      void initLaunchergDownloadOnceForUrl(nextUrl, markProcessed, isProcessed)
+    })
+
+    observer.observe(document.body, {
+      childList: true,
+      subtree: true,
+    })
+  }
+
+  if (document.body) {
+    observe()
+    return
+  }
+
+  window.addEventListener('DOMContentLoaded', observe, { once: true })
 }
 
 // メイン初期化処理
@@ -158,13 +65,14 @@ function main(): void {
 
   // CSSアニメーションを追加
   addNotificationStyles()
+  window.addEventListener('message', runtime.handleHookMessage)
+  injectPageScript(chrome.runtime.getURL(DLSITE_WORKS_SCRIPT_PATH), DLSITE_WORKS_SCRIPT_ID)
 
   // ページ変更の監視を設定
   setupPageChangeObserver()
 
   // 即座に抽出を開始（設定不要）
   setTimeout(() => {
-    initDLsiteExtractor()
     // クエリパラメータ起動があれば処理
     void initLaunchergDownloadOnceForUrl(window.location.href, markProcessed, isProcessed)
   }, 1000)
@@ -178,8 +86,8 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     message?.type === 'manual_sync_request'
     || message?.type === 'periodic_sync_check'
   ) {
-    void extractAndSync()
-      .then(() => sendResponse({ success: true, message: 'DLsite: 同期を実行しました' }))
+    void runtime.syncLatest()
+      .then(result => sendResponse(result))
       .catch((err: unknown) => {
         const errorMessage = err instanceof Error ? err.message : String(err)
         sendResponse({ success: false, error: errorMessage })

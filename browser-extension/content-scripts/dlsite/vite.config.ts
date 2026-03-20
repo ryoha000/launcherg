@@ -6,9 +6,10 @@ export default defineConfig({
     emptyOutDir: false,
     outDir: '../../dist/content-scripts',
     lib: {
-      entry: resolve(__dirname, 'src/main.ts'),
-      name: 'dlsite-extractor',
-      fileName: 'dlsite-extractor',
+      entry: {
+        'dlsite-extractor': resolve(__dirname, 'src/main.ts'),
+        'dlsite-network-hook': resolve(__dirname, 'src/network-hook.ts'),
+      },
       formats: ['es'],
     },
     rollupOptions: {
