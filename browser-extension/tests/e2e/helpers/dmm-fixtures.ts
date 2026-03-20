@@ -1,7 +1,7 @@
 import type { Page, Worker } from '@playwright/test'
 import { loginToDmm, navigateToMyLibrary } from './auth'
 import { getServiceWorker, setupSendNativeMessageSpy } from './extension'
-import { expect, test as base } from './fixtures'
+import { test as base } from './fixtures'
 
 interface WorkerFixtures {
   authenticatedDmmPage: Page

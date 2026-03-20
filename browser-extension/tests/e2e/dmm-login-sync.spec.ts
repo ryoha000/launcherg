@@ -1,11 +1,11 @@
-import process from 'node:process'
 import type { Page } from '@playwright/test'
 import type { NativeMessageTs } from '../../shared/src/typeshare/native-messaging'
+import process from 'node:process'
+import { expect, test } from './helpers/dmm-fixtures'
 import {
   getNativeMessageCalls,
   waitForNativeMessageCall,
 } from './helpers/extension'
-import { expect, test } from './helpers/dmm-fixtures'
 
 // 所持ゲームの storeId は環境変数で指定（例: \"vsat_0158\"）
 // 未指定の場合は呼び出し自体の存在のみ確認する
