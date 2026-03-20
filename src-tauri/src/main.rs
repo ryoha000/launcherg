@@ -138,7 +138,6 @@ fn main() {
             commands::works::register_work_from_path,
             commands::works::process_pending_exe_links,
             commands::image_queue::get_image_save_queue,
-            commands::dmm_pack::get_parent_dmm_pack_keys,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

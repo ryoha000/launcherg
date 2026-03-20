@@ -57,7 +57,13 @@ export function syncGame(context: HandlerContext): Promise<void> {
       egs_info: toTypeshareEgsInfo(resolved[i]) ?? undefined,
       title: g.title,
       image_url: g.imageUrl,
-      parent_pack_work_id: g.parentPackWorkId,
+      parent_pack: g.parentPack
+        ? {
+          store_id: g.parentPack.storeId,
+          category: g.parentPack.category,
+          subcategory: g.parentPack.subcategory,
+        }
+        : undefined,
     }))
     const msg = buildMessage({
       case: 'SyncDmmGames',

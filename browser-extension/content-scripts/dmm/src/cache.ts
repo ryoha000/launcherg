@@ -1,6 +1,6 @@
 import type { DmmExtractedGame } from './types'
 
-type CachedChild = Omit<DmmExtractedGame, 'parentPackWorkId'>
+type CachedChild = Omit<DmmExtractedGame, 'parentPack'>
 
 function buildChildrenKey(storeId: string): string {
   return `dmm:pack:children:${storeId}`

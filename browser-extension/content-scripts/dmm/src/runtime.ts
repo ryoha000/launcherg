@@ -1,4 +1,4 @@
-import type { DmmLibraryHookMessageData } from './api'
+import type { DmmApiExtractedGame, DmmLibraryHookMessageData } from './api'
 import type { DmmExtractedGame } from './types'
 import {
   createUrlBoundPayloadCache,
@@ -24,8 +24,7 @@ export interface DmmSyncResult {
 
 export interface DmmRuntimeDeps {
   initialUrl: string
-  fetchPackParentMap: () => Promise<Map<string, number>>
-  processPacks: (packStoreIds: Set<string>, parentMap?: Map<string, number>) => Promise<DmmExtractedGame[]>
+  processPacks: (packGames: DmmApiExtractedGame[]) => Promise<DmmExtractedGame[]>
   syncDmmGames: (games: DmmExtractedGame[]) => Promise<void>
   showErrorNotification: (message: string) => void
 }
@@ -57,20 +56,23 @@ export function createDmmRuntime(deps: DmmRuntimeDeps): DmmRuntime {
       return { success: true, message: 'DMM: 最新のAPIレスポンスは同期済みです' }
     }
 
+    log.info('syncLatest start', { requestUrl: latestPayload.requestUrl })
     isSyncing = true
     try {
       const extractedGames = extractDmmGamesFromApiResponse(latestPayload.payload)
+      log.debug('extracted games', { count: extractedGames.length })
       if (extractedGames.length === 0) {
         return { success: false, message: 'DMM: 同期対象のゲームが見つかりませんでした', error: '同期対象が見つかりませんでした' }
       }
 
       const { normalGames, packGames } = splitDmmApiGames(extractedGames)
-      const packParentMap = packGames.length > 0 ? await deps.fetchPackParentMap() : undefined
+      log.info('split pack games', { normalCount: normalGames.length, packCount: packGames.length })
       const expandedPackGames = packGames.length > 0
-        ? await deps.processPacks(new Set(packGames.map(game => game.storeId)), packParentMap)
+        ? await deps.processPacks(packGames)
         : []
 
-      await deps.syncDmmGames([...normalGames, ...expandedPackGames])
+      log.info('expanded pack games', { childCount: expandedPackGames.length })
+      await deps.syncDmmGames([...normalGames, ...packGames, ...expandedPackGames])
       lastSyncedKey = payloadKey
       return { success: true, message: 'DMM: 同期を実行しました' }
     }
@@ -89,12 +91,14 @@ export function createDmmRuntime(deps: DmmRuntimeDeps): DmmRuntime {
     if (!isTypedWindowMessage<DmmLibraryHookMessageData>(event, DMM_HOOK_MESSAGE_SOURCE, DMM_LIBRARY_MESSAGE_TYPE))
       return
 
+    log.debug('hook message received', { requestUrl: event.data.requestUrl })
     payloadCache.set(event.data)
     void syncLatest()
   }
 
   function handleUrlChange(url: string): void {
     if (payloadCache.resetIfUrlChanged(url)) {
+      log.debug('url changed - reset sync cache', { url })
       lastSyncedKey = null
     }
   }

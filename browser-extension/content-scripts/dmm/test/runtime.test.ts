@@ -12,7 +12,6 @@ describe('dmm runtime', () => {
   it('payload 未取得時は再読み込みを促して失敗する', async () => {
     const runtime = createDmmRuntime({
       initialUrl: 'https://dlsoft.dmm.co.jp/mylibrary/',
-      fetchPackParentMap: vi.fn(async () => new Map()),
       processPacks: vi.fn(async () => []),
       syncDmmGames: vi.fn(async () => {}),
       showErrorNotification: vi.fn(),
@@ -29,7 +28,6 @@ describe('dmm runtime', () => {
     const syncDmmGames = vi.fn(async () => {})
     const runtime = createDmmRuntime({
       initialUrl: 'https://dlsoft.dmm.co.jp/mylibrary/',
-      fetchPackParentMap: vi.fn(async () => new Map()),
       processPacks: vi.fn(async () => []),
       syncDmmGames,
       showErrorNotification: vi.fn(),
@@ -68,7 +66,6 @@ describe('dmm runtime', () => {
   it('uRL変更時に cache をリセットする', async () => {
     const runtime = createDmmRuntime({
       initialUrl: 'https://dlsoft.dmm.co.jp/mylibrary/?page=1',
-      fetchPackParentMap: vi.fn(async () => new Map()),
       processPacks: vi.fn(async () => []),
       syncDmmGames: vi.fn(async () => {}),
       showErrorNotification: vi.fn(),

@@ -4,5 +4,9 @@ export interface DmmExtractedGame {
   subcategory: string
   title: string
   imageUrl: string
-  parentPackWorkId?: number
+  parentPack?: {
+    storeId: string
+    category: string
+    subcategory: string
+  }
 }

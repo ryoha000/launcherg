@@ -17,7 +17,6 @@ pub enum NativeMessageCase {
     GetStatus(GetStatusRequestTs),
     SetConfig(super::status::ExtensionConfigTs),
     HealthCheck(HealthCheckRequestTs),
-    GetDmmOmitWorks(super::packs::GetDmmOmitWorksRequestTs),
 }
 
 #[typeshare]
@@ -45,7 +44,6 @@ pub enum NativeResponseCase {
     StatusResult(super::status::SyncStatusTs),
     ConfigResult(super::status::ConfigUpdateResultTs),
     HealthCheckResult(HealthCheckResultTs),
-    DmmOmitWorks(Vec<super::packs::DmmOmitWorkItemTs>),
 }
 
 #[typeshare]

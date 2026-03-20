@@ -174,9 +174,9 @@ test.describe('DMM content-script 注入・NativeMessage 送信確認', () => {
   })
 
   // -------------------------------------------------------------------------
-  // シナリオ 2: SyncDmmGames または GetDmmOmitWorks が送信されること
+  // シナリオ 2: SyncDmmGames が送信されること
   // -------------------------------------------------------------------------
-  test('NativeMessage に SyncDmmGames または GetDmmOmitWorks が含まれる', async ({ authenticatedDmmPage, dmmServiceWorker }) => {
+  test('NativeMessage に SyncDmmGames が含まれる', async ({ authenticatedDmmPage, dmmServiceWorker }) => {
     await triggerLibraryApi(authenticatedDmmPage, sampleDmmLibrary, 2)
 
     const calls = await waitForNativeMessageCall(
@@ -187,10 +187,7 @@ test.describe('DMM content-script 注入・NativeMessage 送信確認', () => {
 
     const relevantCalls = calls.filter((c) => {
       const msg = c.message as NativeMessageTs
-      return (
-        msg?.message?.case === 'SyncDmmGames'
-        || msg?.message?.case === 'GetDmmOmitWorks'
-      )
+      return msg?.message?.case === 'SyncDmmGames'
     })
 
     expect(relevantCalls.length).toBeGreaterThan(0)

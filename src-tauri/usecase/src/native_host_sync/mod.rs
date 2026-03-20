@@ -38,6 +38,13 @@ pub(crate) fn normalize_thumbnail_url(src_url: &str) -> String {
 
 // 旧 build_icon_dst_path / build_thumbnail_resized_dst_path は SavePathResolver に移管
 
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+pub struct DmmPackKey {
+    pub store_id: String,
+    pub category: String,
+    pub subcategory: String,
+}
+
 #[derive(Clone, Debug)]
 /// DMM 由来のゲーム同期パラメータ。キーは `(store_id, category, subcategory)`。
 /// - `egs` が `Some` の場合、EGS 情報をコレクションへ反映し、EGS マップも作成/更新する。
@@ -49,7 +56,7 @@ pub struct DmmSyncGameParam {
     pub gamename: String,
     pub egs: Option<EgsInfo>,
     pub image_url: String,
-    pub parent_pack_work_id: Option<String>,
+    pub parent_pack: Option<DmmPackKey>,
 }
 
 #[derive(Clone, Debug)]

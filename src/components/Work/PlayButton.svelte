@@ -8,7 +8,6 @@
   import PlayPopover from '@/components/Work/PlayPopover.svelte'
   import { commandOpenUrl } from '@/lib/command'
   import { useWorkLnkQuery } from '@/lib/data/queries/workLnk'
-  import { useParentDmmPackKeysQuery } from '@/lib/data/queries/workParentDmmPack'
 
   interface Props {
     workDetail: WorkDetailsVm
@@ -19,8 +18,6 @@
   const workLnkQuery = useWorkLnkQuery(workDetail.id)
   const isNotInstalled = $derived(!$workLnkQuery.data?.length)
 
-  const parentDmmPackKeysQuery = useParentDmmPackKeysQuery(workDetail.id)
-
   const { start } = useStart(workDetail, workLnkQuery)
 
   const dmmUrlForInstall = $derived.by<string | null>(() => {
@@ -28,7 +25,6 @@
     if (!dmm) {
       return null
     }
-    const parent = $parentDmmPackKeysQuery.data ?? null
     const payload = {
       type: 'download',
       value: {
@@ -37,13 +33,7 @@
           category: dmm.category,
           subcategory: dmm.subcategory,
         },
-        parentPack: parent
-          ? {
-            storeId: parent.storeId,
-            category: parent.category,
-            subcategory: parent.subcategory,
-          }
-          : undefined,
+        parentPack: dmm.parentPack ?? undefined,
       },
     }
     const url = new URL('https://dlsoft.dmm.co.jp/library/')

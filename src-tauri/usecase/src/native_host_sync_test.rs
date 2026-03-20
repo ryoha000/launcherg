@@ -62,17 +62,17 @@ mod tests {
                             store_id: "SID1".to_string(),
                             category: "game".to_string(),
                             subcategory: "pc".to_string(),
+                            parent_pack: None,
                         }))
                     })
                 });
         }
 
-        // WorkRegistrationService は空のリクエストで呼ばれる（omit フィルタで除外されるため）
+        // WorkRegistrationService は呼ばれない（omit フィルタで除外されるため）
         let mut mock_registrar = MockWorkRegistrationService::new();
         mock_registrar
             .expect_register()
-            .times(1)
-            .withf(|requests: &Vec<WorkRegistrationRequest>| requests.is_empty())
+            .times(0)
             .returning(|_| Box::pin(async move { Ok(Vec::new()) }));
         let registrar = Arc::new(mock_registrar);
 
@@ -85,7 +85,7 @@ mod tests {
             gamename: "Omitted Game".to_string(),
             egs: None,
             image_url: String::new(),
-            parent_pack_work_id: None,
+            parent_pack: None,
         }];
 
         let result = usecase.sync_dmm_games(params).await.unwrap();
@@ -195,6 +195,7 @@ mod tests {
                             store_id: "SID2".to_string(),
                             category: "game".to_string(),
                             subcategory: "pc".to_string(),
+                            parent_pack: None,
                         }))
                     })
                 });
@@ -234,7 +235,7 @@ mod tests {
             gamename: "Normal Game".to_string(),
             egs: None,
             image_url: String::new(),
-            parent_pack_work_id: None,
+            parent_pack: None,
         }];
 
         let result = usecase.sync_dmm_games(params).await.unwrap();
@@ -324,7 +325,7 @@ mod tests {
             gamename: "New Game".to_string(),
             egs: None,
             image_url: "https://pics.dmm.co.jp/image_ps.jpg".to_string(),
-            parent_pack_work_id: None,
+            parent_pack: None,
         }];
 
         let result = usecase.sync_dmm_games(params).await.unwrap();

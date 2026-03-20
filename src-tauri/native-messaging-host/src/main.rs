@@ -36,7 +36,6 @@ use models::{
         NativeResponseCase, NativeResponseTs,
     },
     downloads::DownloadsCompletedRequestTs,
-    packs::{DmmOmitDmmPartTs, DmmOmitWorkItemTs, GetDmmOmitWorksRequestTs},
     sync::{DlsiteSyncGamesRequestTs, DmmSyncGamesRequestTs, SyncBatchResultTs},
 };
 use usecase::native_host_sync::downloads::DownloadsUseCase;
@@ -242,9 +241,6 @@ async fn handle_message(ctx: &AppCtx) -> HostResult<bool> {
         }
         NativeMessageCase::SyncDlsiteGames(req) => {
             handle_sync_dlsite_games(ctx, req, &message.request_id).await
-        }
-        NativeMessageCase::GetDmmOmitWorks(req) => {
-            handle_get_dmm_omit_works(ctx, req, &message.request_id).await
         }
         NativeMessageCase::DownloadsCompleted(req) => {
             handle_downloads_completed(ctx, req, &message.request_id).await
@@ -604,6 +600,17 @@ async fn handle_sync_dmm_games(
     request_id: &str,
 ) -> NativeResponseTs {
     let (input_ids, params) = to_dmm_params(request);
+    if input_ids.is_empty() {
+        return ok(
+            request_id,
+            NativeResponseCase::SyncGamesResult(SyncBatchResultTs {
+                success_count: 0,
+                error_count: 0,
+                errors: vec![],
+                synced_games: vec![],
+            }),
+        );
+    }
     match ctx.sync_usecase.sync_dmm_games(params).await {
         Ok(success_count) => {
             let result = SyncBatchResultTs {
@@ -666,6 +673,17 @@ async fn handle_sync_dlsite_games(
     request_id: &str,
 ) -> NativeResponseTs {
     let (input_ids, params) = to_dlsite_params(request);
+    if input_ids.is_empty() {
+        return ok(
+            request_id,
+            NativeResponseCase::SyncGamesResult(SyncBatchResultTs {
+                success_count: 0,
+                error_count: 0,
+                errors: vec![],
+                synced_games: vec![],
+            }),
+        );
+    }
     match ctx.sync_usecase.sync_dlsite_games(params).await {
         Ok(success_count) => {
             let result = SyncBatchResultTs {
@@ -719,30 +737,6 @@ async fn handle_sync_dlsite_games(
                 NativeResponseCase::SyncGamesResult(result),
             )
         }
-    }
-}
-
-async fn handle_get_dmm_omit_works(
-    ctx: &AppCtx,
-    _request: &GetDmmOmitWorksRequestTs,
-    request_id: &str,
-) -> NativeResponseTs {
-    match ctx.sync_usecase.list_dmm_omit_works().await {
-        Ok(items) => {
-            let list: Vec<DmmOmitWorkItemTs> = items
-                .into_iter()
-                .map(|it| DmmOmitWorkItemTs {
-                    work_id: it.work_id,
-                    dmm: DmmOmitDmmPartTs {
-                        store_id: it.store_id,
-                        category: it.category,
-                        subcategory: it.subcategory,
-                    },
-                })
-                .collect();
-            ok(request_id, NativeResponseCase::DmmOmitWorks(list))
-        }
-        Err(e) => err(request_id, anyhow_chain_to_string(&e)),
     }
 }
 
@@ -847,7 +841,11 @@ fn to_dmm_params(request: &DmmSyncGamesRequestTs) -> (Vec<String>, Vec<DmmSyncGa
             gamename: g.title.clone(),
             image_url: g.image_url.clone(),
             egs: g.egs_info.as_ref().map(map_egs_ts),
-            parent_pack_work_id: g.parent_pack_work_id.clone(),
+            parent_pack: g.parent_pack.as_ref().map(|parent| usecase::native_host_sync::DmmPackKey {
+                store_id: parent.store_id.clone(),
+                category: parent.category.clone(),
+                subcategory: parent.subcategory.clone(),
+            }),
         })
         .collect();
     (input_ids, params)
@@ -911,7 +909,7 @@ mod tests {
             NativeHostSyncUseCase::new(repo_manager.clone(), work_registration_service.clone());
 
         // まず parent 用の work を1件作成し、その work_id を後続で参照
-        let parent_work_id: String = repo_manager
+        let _parent_work_id: String = repo_manager
             .run(|repos| {
                 Box::pin(async move {
                     // work を先に作成
@@ -973,7 +971,7 @@ mod tests {
             .await
             .unwrap();
 
-        // 入力生成: 半分はEGSあり、うち10件はparent_pack_work_idを設定
+        // 入力生成: 半分はEGSあり、うち10件は parent_pack を設定
         let mut params: Vec<DmmSyncGameParam> = Vec::with_capacity(1000);
         for i in 0..1000 {
             let store_id = format!("SID{:04}", i);
@@ -993,7 +991,11 @@ mod tests {
                 None
             };
             let parent = if i < 10 {
-                Some(parent_work_id.clone())
+                Some(usecase::native_host_sync::DmmPackKey {
+                    store_id: "PARENT_SID".to_string(),
+                    category: "game".to_string(),
+                    subcategory: "pack".to_string(),
+                })
             } else {
                 None
             };
@@ -1004,7 +1006,7 @@ mod tests {
                 gamename: format!("Game {:04}", i),
                 egs,
                 image_url: String::new(),
-                parent_pack_work_id: parent,
+                parent_pack: parent,
             });
         }
 
@@ -1067,7 +1069,7 @@ mod tests {
             gamename: "Game 1".to_string(),
             egs: Some(egs.clone()),
             image_url: "https://example.com/image1_ps.jpg".to_string(),
-            parent_pack_work_id: None,
+            parent_pack: None,
         };
         let dmm_param = DmmSyncGameParam {
             store_id: "SID2".to_string(),
@@ -1076,7 +1078,7 @@ mod tests {
             gamename: "Game 2".to_string(),
             egs: None,
             image_url: "https://example.com/image2_ps.jpg".to_string(),
-            parent_pack_work_id: None,
+            parent_pack: None,
         };
 
         let dlsite_param_egs = DlsiteSyncGameParam {
@@ -1358,7 +1360,11 @@ mod tests {
                     sellday: "s".into(),
                     is_nukige: false,
                 }),
-                parent_pack_work_id: Some("10".to_string()),
+                parent_pack: Some(models::sync::DmmPackKeyTs {
+                    store_id: "PARENT".to_string(),
+                    category: "game".to_string(),
+                    subcategory: "pack".to_string(),
+                }),
             }],
             extension_id: "ext".into(),
         };
@@ -1369,7 +1375,14 @@ mod tests {
         assert_eq!(params[0].subcategory, "pc");
         assert_eq!(params[0].gamename, "T");
         assert!(params[0].egs.is_some());
-        assert_eq!(params[0].parent_pack_work_id, Some("10".to_string()));
+        assert_eq!(
+            params[0].parent_pack,
+            Some(usecase::native_host_sync::DmmPackKey {
+                store_id: "PARENT".to_string(),
+                category: "game".to_string(),
+                subcategory: "pack".to_string(),
+            })
+        );
     }
 
     #[test]
@@ -1498,57 +1511,4 @@ mod tests {
         }
     }
 
-    #[tokio::test]
-    async fn 省略作品一覧_空配列() {
-        let tmp = std::env::temp_dir().join(format!(
-            "launcherg-omit-empty-{}.db3",
-            std::time::SystemTime::now()
-                .duration_since(std::time::UNIX_EPOCH)
-                .unwrap()
-                .as_millis()
-        ));
-        let tmp_str = tmp.to_string_lossy().to_string().replace("\\", "/");
-        let db = RepoDb::from_path(&tmp_str).await;
-        let repo_manager = StdArc::new(SqliteRepositoryManager::new(db.pool_arc()));
-        let resolver = Arc::new(DirsSavePathResolver::default());
-        let windows = Arc::new(Windows::new());
-        let work_registration_service: Arc<
-            WorkRegistrationServiceImpl<SqliteRepositoryManager, SqliteRepositories, Windows>,
-        > = Arc::new(WorkRegistrationServiceImpl::new(
-            repo_manager.clone(),
-            resolver.clone(),
-            windows.clone(),
-        ));
-        let usecase =
-            NativeHostSyncUseCase::new(repo_manager.clone(), work_registration_service.clone());
-        let fs = Arc::new(LocalFileSystem::default());
-        let dedup = Arc::new(HeuristicDuplicateResolver);
-        let work_linker = Arc::new(WorkLinkerImpl::new(
-            repo_manager.clone(),
-            resolver.clone(),
-            windows.clone(),
-        ));
-        let ctx = AppCtx {
-            manager: repo_manager,
-            sync_usecase: usecase,
-            resolver,
-            fs,
-            dedup,
-            work_linker,
-            app_signal_router: Arc::new(InterprocessAppSignalRouter::new()),
-        };
-        let resp = handle_get_dmm_omit_works(
-            &ctx,
-            &GetDmmOmitWorksRequestTs {
-                extension_id: "ext".into(),
-            },
-            "r2",
-        )
-        .await;
-        assert!(resp.success);
-        match resp.response {
-            Some(NativeResponseCase::DmmOmitWorks(v)) => assert!(v.is_empty()),
-            _ => panic!("unexpected"),
-        }
-    }
 }

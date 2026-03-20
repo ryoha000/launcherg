@@ -9,7 +9,7 @@ import {
   DMM_LIBRARY_SCRIPT_PATH,
 } from './api'
 import { initLaunchergDownloadOnceForUrl } from './download'
-import { fetchPackParentMap, processPacks, syncDmmGames } from './orchestrator'
+import { processPacks, syncDmmGames } from './orchestrator'
 import { createDmmRuntime } from './runtime'
 
 const log = logger('dmm-content-script')
@@ -19,7 +19,6 @@ const mark = (url: string) => void downloadTriggeredForUrl.add(url)
 
 const runtime = createDmmRuntime({
   initialUrl: window.location.href,
-  fetchPackParentMap,
   processPacks,
   syncDmmGames,
   showErrorNotification: message => showInPageNotification(message, 'error'),

@@ -20,6 +20,15 @@ pub struct DmmWork {
     pub store_id: String,
     pub category: String,
     pub subcategory: String,
+    #[new(default)]
+    pub parent_pack: Option<DmmPackKey>,
+}
+
+#[derive(new, Clone, Debug, Serialize, Deserialize, PartialEq, Eq, Hash)]
+pub struct DmmPackKey {
+    pub store_id: String,
+    pub category: String,
+    pub subcategory: String,
 }
 
 #[derive(new, Clone, Debug, Serialize, Deserialize)]

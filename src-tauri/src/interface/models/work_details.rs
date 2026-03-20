@@ -1,5 +1,6 @@
 use domain::service::save_path_resolver::{DirsSavePathResolver, SavePathResolver};
 
+use crate::interface::models::parent_dmm_pack::DmmPackKeysVm;
 use crate::domain::works::WorkDetails;
 
 #[derive(serde::Serialize)]
@@ -30,6 +31,7 @@ pub struct DmmSideVm {
     pub store_id: String,
     pub category: String,
     pub subcategory: String,
+    pub parent_pack: Option<DmmPackKeysVm>,
     pub is_omitted: bool,
     pub is_pack: bool,
 }
@@ -88,6 +90,11 @@ impl From<WorkDetails> for WorkDetailsVm {
                 store_id: d.store_id,
                 category: d.category,
                 subcategory: d.subcategory,
+                parent_pack: d.parent_pack.map(|p| DmmPackKeysVm {
+                    store_id: p.store_id,
+                    category: p.category,
+                    subcategory: p.subcategory,
+                }),
                 is_omitted: false,
                 is_pack: false,
             }),

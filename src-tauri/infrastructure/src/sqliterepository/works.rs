@@ -74,6 +74,9 @@ impl WorkRepository for RepositoryImpl<Work> {
                         dw.store_id as dmm_store_id,
                         dw.category as dmm_category,
                         dw.subcategory as dmm_subcategory,
+                        pdw.store_id as parent_dmm_store_id,
+                        pdw.category as parent_dmm_category,
+                        pdw.subcategory as parent_dmm_subcategory,
                         NULL as ce_id,
                         wem.id as egs_id,
                         wem.erogamescape_id as egs_erogamescape_id,
@@ -110,7 +113,9 @@ impl WorkRepository for RepositoryImpl<Work> {
                     LEFT JOIN work_installs AS wi ON wi.work_id = w.id
                     LEFT JOIN work_plays AS wp ON wp.work_id = w.id
                     LEFT JOIN work_omits oo ON oo.work_id = w.id
+                    LEFT JOIN work_parent_packs wpp ON wpp.work_id = w.id
                     LEFT JOIN dmm_work_packs pp ON pp.work_id = w.id
+                    LEFT JOIN dmm_works pdw ON pdw.work_id = wpp.parent_pack_work_id
                     LEFT JOIN dlsite_works lw ON lw.work_id = w.id
                     LEFT JOIN work_likes wl ON wl.work_id = w.id
                     ORDER BY w.id ASC
@@ -166,6 +171,9 @@ impl WorkRepository for RepositoryImpl<Work> {
                         dw.store_id as dmm_store_id,
                         dw.category as dmm_category,
                         dw.subcategory as dmm_subcategory,
+                        pdw.store_id as parent_dmm_store_id,
+                        pdw.category as parent_dmm_category,
+                        pdw.subcategory as parent_dmm_subcategory,
                         NULL as ce_id,
                         wem.id as egs_id,
                         wem.erogamescape_id as egs_erogamescape_id,
@@ -200,7 +208,9 @@ impl WorkRepository for RepositoryImpl<Work> {
                     LEFT JOIN erogamescape_information ei ON ei.id = wem.erogamescape_id
                     LEFT JOIN work_thumbnails AS wt ON wt.work_id = w.id
                     LEFT JOIN work_omits oo ON oo.work_id = w.id
+                    LEFT JOIN work_parent_packs wpp ON wpp.work_id = w.id
                     LEFT JOIN dmm_work_packs pp ON pp.work_id = w.id
+                    LEFT JOIN dmm_works pdw ON pdw.work_id = wpp.parent_pack_work_id
                     LEFT JOIN dlsite_works lw ON lw.work_id = w.id
                     LEFT JOIN work_installs AS wi ON wi.work_id = w.id
                     LEFT JOIN work_plays AS wp ON wp.work_id = w.id

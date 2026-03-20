@@ -30,6 +30,9 @@ pub struct WorkDetailsRow {
     pub dmm_store_id: Option<String>,
     pub dmm_category: Option<String>,
     pub dmm_subcategory: Option<String>,
+    pub parent_dmm_store_id: Option<String>,
+    pub parent_dmm_category: Option<String>,
+    pub parent_dmm_subcategory: Option<String>,
     pub ce_id: Option<i64>,
     pub egs_id: Option<i64>,
     pub egs_erogamescape_id: Option<i32>,
@@ -101,6 +104,20 @@ impl From<crate::sqliterepository::models::works::WorkDetailsRow> for domain::wo
                 store_id: r.dmm_store_id.unwrap_or_default(),
                 category: r.dmm_category.unwrap_or_default(),
                 subcategory: r.dmm_subcategory.unwrap_or_default(),
+                parent_pack: match (
+                    r.parent_dmm_store_id.clone(),
+                    r.parent_dmm_category.clone(),
+                    r.parent_dmm_subcategory.clone(),
+                ) {
+                    (Some(store_id), Some(category), Some(subcategory)) => Some(
+                        domain::works::DmmPackKey {
+                            store_id,
+                            category,
+                            subcategory,
+                        },
+                    ),
+                    _ => None,
+                },
             });
             details.is_dmm_pack = r.dmm_pack_id.is_some();
         }
@@ -193,6 +210,7 @@ impl TryFrom<crate::sqliterepository::models::works::DmmWorkTable> for domain::w
             store_id: v.store_id,
             category: v.category,
             subcategory: v.subcategory,
+            parent_pack: None,
         })
     }
 }

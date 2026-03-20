@@ -3,7 +3,7 @@ use domain::repository::work_omit::WorkOmitRepository;
 use domain::service::work_registration::{
     ImageApply, ImageSource, ImageStrategy, UniqueWorkKey, WorkInsert,
 };
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 struct DmmKey {
@@ -12,14 +12,20 @@ struct DmmKey {
     subcategory: String,
 }
 
-// 旧スナップショット/適用関連は共通パイプラインへ移行済み
-
 impl DmmKey {
-    fn from_param(p: &DmmSyncGameParam) -> DmmKey {
-        DmmKey {
-            store_id: p.store_id.clone(),
-            category: p.category.clone(),
-            subcategory: p.subcategory.clone(),
+    fn from_game(game: &DmmSyncGameParam) -> Self {
+        Self {
+            store_id: game.store_id.clone(),
+            category: game.category.clone(),
+            subcategory: game.subcategory.clone(),
+        }
+    }
+
+    fn from_pack(pack: &DmmPackKey) -> Self {
+        Self {
+            store_id: pack.store_id.clone(),
+            category: pack.category.clone(),
+            subcategory: pack.subcategory.clone(),
         }
     }
 }
@@ -32,138 +38,179 @@ where
 {
     /// DMM のゲーム情報を同期する。
     /// - 既存チェック: `(store_id, category, subcategory)` が存在すればスキップ（冪等）
+    /// - 先に pack 親を含まない作品を登録して work_id を確定し、その後 child に parent_pack_work_id を埋める
     /// - `egs: Some` の場合、EGS に紐づく要素を用意・更新した上で DMM マッピングを upsert
     /// - `egs: None` の場合、空要素を採番し DMM マッピングのみ upsert
-    /// 戻り値: 新規に作成/更新した件数
-    /// エラー: 最初に失敗した地点で早期終了し伝播
     pub async fn sync_dmm_games(&self, games: Vec<DmmSyncGameParam>) -> anyhow::Result<u32> {
-        // key でユニーク化
-        let mut seen: HashSet<DmmKey> = HashSet::new();
-        let mut unique_games: Vec<DmmSyncGameParam> = Vec::with_capacity(games.len());
-        for g in games.into_iter() {
-            let k = DmmKey::from_param(&g);
-            if seen.insert(k) {
-                unique_games.push(g);
+        log::info!("sync_dmm_games start: {}", games.len());
+
+        let mut seen = HashSet::<DmmKey>::new();
+        let mut unique_games = Vec::with_capacity(games.len());
+        for game in games {
+            if seen.insert(DmmKey::from_game(&game)) {
+                unique_games.push(game);
             }
         }
 
-        // 除外対象 Work ID を事前に取得（別トランザクション）
+        let root_count = unique_games.iter().filter(|game| game.parent_pack.is_none()).count();
+        let child_count = unique_games.len().saturating_sub(root_count);
+        log::info!("sync_dmm_games split: roots={}, children={}", root_count, child_count);
+
         let omitted_work_ids: HashSet<domain::StrId<domain::works::Work>> = self
             .manager
             .run(|repos| {
                 Box::pin(async move {
                     let mut repo = repos.work_omit();
                     let list = repo.list().await?;
-                    Ok(list.into_iter().map(|o| o.work_id).collect())
+                    Ok(list.into_iter().map(|item| item.work_id).collect())
                 })
             })
             .await?;
 
-        // 既存 Work ID を取得（ストアキーごと）
-        let mut work_id_by_key: std::collections::HashMap<
-            DmmKey,
-            Option<domain::StrId<domain::works::Work>>,
-        > = std::collections::HashMap::new();
-        for game in unique_games.iter() {
-            let key = DmmKey::from_param(game);
-            let work_id = self
-                .manager
-                .run(|repos| {
-                    let key = key.clone();
-                    Box::pin(async move {
-                        let mut repo = repos.dmm_work();
-                        Ok(repo
+        let mut keys_to_lookup: Vec<DmmKey> = unique_games.iter().map(DmmKey::from_game).collect();
+        for game in &unique_games {
+            if let Some(parent) = &game.parent_pack {
+                keys_to_lookup.push(DmmKey::from_pack(parent));
+            }
+        }
+        keys_to_lookup.sort_by(|a, b| {
+            (a.store_id.as_str(), a.category.as_str(), a.subcategory.as_str())
+                .cmp(&(b.store_id.as_str(), b.category.as_str(), b.subcategory.as_str()))
+        });
+        keys_to_lookup.dedup();
+
+        let existing_work_ids: HashMap<DmmKey, domain::StrId<domain::works::Work>> = self
+            .manager
+            .run(|repos| {
+                let keys = keys_to_lookup.clone();
+                Box::pin(async move {
+                    let mut map = HashMap::new();
+                    let mut repo = repos.dmm_work();
+                    for key in keys {
+                        if let Some(work) = repo
                             .find_by_store_key(&key.store_id, &key.category, &key.subcategory)
                             .await?
-                            .map(|w| w.work_id))
-                    })
+                        {
+                            map.insert(key, work.work_id);
+                        }
+                    }
+                    Ok::<_, anyhow::Error>(map)
                 })
-                .await?;
-            work_id_by_key.insert(key, work_id);
-        }
+            })
+            .await?;
 
-        // omit 対象をフィルタ
-        let mut requests: Vec<domain::service::work_registration::WorkRegistrationRequest> =
-            Vec::new();
-        for game in unique_games.into_iter() {
-            let key = DmmKey::from_param(&game);
-            let work_id = work_id_by_key.get(&key).cloned().flatten();
-
-            // 除外対象ならスキップ
-            if let Some(ref wid) = work_id {
-                if omitted_work_ids.contains(wid) {
-                    continue;
-                }
-            }
-
-            // keys の構築（EGS があれば優先）
-            let mut keys = Vec::new();
-            keys.push(UniqueWorkKey::Dmm {
+        let build_request = |game: &DmmSyncGameParam| {
+            let mut keys = vec![UniqueWorkKey::Dmm {
                 store_id: game.store_id.clone(),
                 category: game.category.clone(),
                 subcategory: game.subcategory.clone(),
-            });
+            }];
 
-            if let Some(ref egs_info) = game.egs {
+            if let Some(egs_info) = &game.egs {
                 keys.push(UniqueWorkKey::ErogamescapeId(egs_info.erogamescape_id));
             }
-            // EGS 情報の構築
-            let egs_info = game.egs.as_ref().map(|e| {
+
+            let egs_info = game.egs.as_ref().map(|egs| {
                 domain::erogamescape::NewErogamescapeInformation::new(
-                    e.erogamescape_id,
-                    if e.gamename_ruby.is_empty() {
+                    egs.erogamescape_id,
+                    if egs.gamename_ruby.is_empty() {
                         game.gamename.clone()
                     } else {
-                        e.gamename_ruby.clone()
+                        egs.gamename_ruby.clone()
                     },
-                    e.brandname.clone(),
-                    e.brandname_ruby.clone(),
-                    e.sellday.clone(),
-                    e.is_nukige,
+                    egs.brandname.clone(),
+                    egs.brandname_ruby.clone(),
+                    egs.sellday.clone(),
+                    egs.is_nukige,
                 )
             });
 
-            // 画像処理の設定
-            let icon = if !game.image_url.is_empty() {
+            let icon = if game.image_url.is_empty() {
+                None
+            } else {
                 Some(ImageApply {
                     strategy: ImageStrategy::OnlyIfNew,
                     source: ImageSource::FromUrl(game.image_url.clone()),
                 })
-            } else {
-                None
             };
-            let thumbnail = if !game.image_url.is_empty() {
+            let thumbnail = if game.image_url.is_empty() {
+                None
+            } else {
                 Some(ImageApply {
                     strategy: ImageStrategy::OnlyIfNew,
                     source: ImageSource::FromUrl(normalize_thumbnail_url(&game.image_url)),
                 })
-            } else {
-                None
             };
 
-            // 親パック Work ID
-            let parent_pack_work_id = game
-                .parent_pack_work_id
-                .as_ref()
-                .map(|s| domain::StrId::new(s.clone()));
-
-            requests.push(
-                domain::service::work_registration::WorkRegistrationRequest {
-                    keys,
-                    insert: WorkInsert {
-                        title: game.gamename,
-                        path: None,
-                        egs_info,
-                        icon,
-                        thumbnail,
-                        parent_pack_work_id,
-                    },
+            domain::service::work_registration::WorkRegistrationRequest {
+                keys,
+                insert: WorkInsert {
+                    title: game.gamename.clone(),
+                    path: None,
+                    egs_info,
+                    icon,
+                    thumbnail,
+                    parent_pack_work_id: None,
                 },
-            );
+            }
+        };
+
+        let mut root_requests: Vec<(DmmKey, domain::service::work_registration::WorkRegistrationRequest)> =
+            Vec::new();
+        let mut child_requests: Vec<(
+            DmmKey,
+            DmmKey,
+            domain::service::work_registration::WorkRegistrationRequest,
+        )> = Vec::new();
+
+        for game in &unique_games {
+            let key = DmmKey::from_game(game);
+            if let Some(work_id) = existing_work_ids.get(&key) {
+                if omitted_work_ids.contains(work_id) {
+                    log::debug!("skip omitted work: {}", key.store_id);
+                    continue;
+                }
+            }
+
+            let request = build_request(game);
+            if let Some(parent_pack) = &game.parent_pack {
+                child_requests.push((key, DmmKey::from_pack(parent_pack), request));
+            } else {
+                root_requests.push((key, request));
+            }
         }
 
-        // WorkRegistrationService で一括登録
-        let results = self.registrar.register(requests).await?;
-        Ok(results.len() as u32)
+        let root_only_requests: Vec<_> = root_requests.iter().map(|(_, request)| request.clone()).collect();
+        let root_results = if root_only_requests.is_empty() {
+            Vec::new()
+        } else {
+            self.registrar.register(root_only_requests).await?
+        };
+
+        let mut resolved_work_ids = existing_work_ids;
+        for ((key, _), result) in root_requests.iter().zip(root_results.iter()) {
+            resolved_work_ids.insert(key.clone(), result.work_id.clone());
+        }
+
+        let mut child_only_requests = Vec::with_capacity(child_requests.len());
+        for (child_key, parent_key, mut request) in child_requests {
+            if let Some(parent_work_id) = resolved_work_ids.get(&parent_key).cloned() {
+                request.insert.parent_pack_work_id = Some(parent_work_id);
+            } else {
+                log::warn!(
+                    "parent pack work id not found: child={} parent={}",
+                    child_key.store_id,
+                    parent_key.store_id
+                );
+            }
+            child_only_requests.push(request);
+        }
+
+        let child_results = if child_only_requests.is_empty() {
+            Vec::new()
+        } else {
+            self.registrar.register(child_only_requests).await?
+        };
+        Ok((root_results.len() + child_results.len()) as u32)
     }
 }

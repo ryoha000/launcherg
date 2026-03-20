@@ -45,6 +45,7 @@ export function parseLaunchergParam(): LaunchergDownloadParam | null {
       && (parsed as any).type === 'download'
       && typeof (parsed as any).value === 'object' && (parsed as any).value !== null
     ) {
+      log.debug('launcherg param parsed', { hasParentPack: !!(parsed as LaunchergDownloadParam).value.parentPack })
       return parsed as LaunchergDownloadParam
     }
     return null
@@ -68,15 +69,20 @@ function toAbsoluteDownloadUrl(path: string): string {
 }
 
 async function fetchJsonWithCookie<T>(url: string): Promise<T> {
+  log.debug('fetch start', url)
   const res = await fetch(url, { credentials: 'include' })
-  if (!res.ok)
+  if (!res.ok) {
+    log.error('fetch failed', { url, status: res.status, statusText: res.statusText })
     throw new Error(`DMM API request failed: ${res.status} ${res.statusText}`)
+  }
+  log.debug('fetch ok', { url, status: res.status })
   return await res.json() as T
 }
 
 async function fetchSingleDownloadUrls(storeId: string): Promise<string[]> {
   const url = new URL('/ajax/v1/library/detail/single/', window.location.origin)
   url.searchParams.set('productId', storeId)
+  log.info('fetch single download urls', { storeId, url: url.toString() })
   const payload = await fetchJsonWithCookie<DmmSingleDetailResponse>(url.toString())
   return extractDownloadUrlsFromSingleDetail(payload).map(toAbsoluteDownloadUrl)
 }
@@ -84,6 +90,7 @@ async function fetchSingleDownloadUrls(storeId: string): Promise<string[]> {
 async function fetchPackDownloadUrls(parentPackStoreId: string, childStoreId: string): Promise<string[]> {
   const url = new URL('/ajax/v1/library/detail/set/', window.location.origin)
   url.searchParams.set('productId', parentPackStoreId)
+  log.info('fetch pack download urls', { parentPackStoreId, childStoreId, url: url.toString() })
   const payload = await fetchJsonWithCookie<DmmSetDetailResponse>(url.toString())
   return extractDownloadUrlsFromSetDetail(payload, childStoreId).map(toAbsoluteDownloadUrl)
 }
@@ -114,6 +121,11 @@ export async function initLaunchergDownloadOnceForUrl(url: string, mark: (url: s
     const downloadUrls = p.value.parentPack
       ? await fetchPackDownloadUrls(p.value.parentPack.storeId, p.value.game.storeId)
       : await fetchSingleDownloadUrls(p.value.game.storeId)
+    log.info('download urls resolved', {
+      storeId: p.value.game.storeId,
+      parentPack: p.value.parentPack,
+      count: downloadUrls.length,
+    })
 
     await setDownloadIntent(p.value.game.storeId, {
       store: 'DMM',
@@ -123,8 +135,10 @@ export async function initLaunchergDownloadOnceForUrl(url: string, mark: (url: s
       completed: 0,
       startedAt: Date.now(),
     })
+    log.debug('download intent stored', { storeId: p.value.game.storeId, expected: downloadUrls.length })
 
     const response = await startDmmDownloads(p.value.game.storeId, downloadUrls)
+    log.debug('startDmmDownloads response', response)
     if (!response?.success) {
       const message = response?.error || 'DMM: ダウンロード開始に失敗しました'
       showInPageNotification(message, 'error')

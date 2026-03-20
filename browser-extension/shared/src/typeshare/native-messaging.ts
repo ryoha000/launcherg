@@ -16,6 +16,12 @@ export interface EgsInfoTs {
 	is_nukige: boolean;
 }
 
+export interface DmmPackKeyTs {
+	store_id: string;
+	category: string;
+	subcategory: string;
+}
+
 export interface DlsiteGameTs {
 	id: string;
 	category: string;
@@ -36,18 +42,7 @@ export interface DmmGameTs {
 	title: string;
 	image_url: string;
 	egs_info?: EgsInfoTs;
-	parent_pack_work_id?: number;
-}
-
-export interface DmmOmitDmmPartTs {
-	store_id: string;
-	category: string;
-	subcategory: string;
-}
-
-export interface DmmOmitWorkItemTs {
-	work_id: number;
-	dmm: DmmOmitDmmPartTs;
+	parent_pack?: DmmPackKeyTs;
 }
 
 export interface DmmSyncGamesRequestTs {
@@ -91,10 +86,6 @@ export interface ExtensionConfigTs {
 	debug_mode: boolean;
 }
 
-export interface GetDmmOmitWorksRequestTs {
-	extension_id: string;
-}
-
 export interface GetStatusRequestTs {
 }
 
@@ -112,8 +103,7 @@ export type NativeMessageCase =
 	| { case: "DownloadsCompleted", value: DownloadsCompletedRequestTs }
 	| { case: "GetStatus", value: GetStatusRequestTs }
 	| { case: "SetConfig", value: ExtensionConfigTs }
-	| { case: "HealthCheck", value: HealthCheckRequestTs }
-	| { case: "GetDmmOmitWorks", value: GetDmmOmitWorksRequestTs };
+	| { case: "HealthCheck", value: HealthCheckRequestTs };
 
 export interface NativeMessageTs {
 	request_id: string;
@@ -124,8 +114,7 @@ export type NativeResponseCase =
 	| { case: "SyncGamesResult", value: SyncBatchResultTs }
 	| { case: "StatusResult", value: SyncStatusTs }
 	| { case: "ConfigResult", value: ConfigUpdateResultTs }
-	| { case: "HealthCheckResult", value: HealthCheckResultTs }
-	| { case: "DmmOmitWorks", value: DmmOmitWorkItemTs[] };
+	| { case: "HealthCheckResult", value: HealthCheckResultTs };
 
 export interface NativeResponseTs {
 	success: boolean;
@@ -154,4 +143,3 @@ export interface SyncStatusTs {
 	connection_status: string;
 	error_message: string;
 }
-

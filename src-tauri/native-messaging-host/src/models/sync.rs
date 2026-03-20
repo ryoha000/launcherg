@@ -2,6 +2,14 @@ use typeshare::typeshare;
 
 #[typeshare]
 #[derive(serde::Serialize, serde::Deserialize, Clone, Debug)]
+pub struct DmmPackKeyTs {
+    pub store_id: String,
+    pub category: String,
+    pub subcategory: String,
+}
+
+#[typeshare]
+#[derive(serde::Serialize, serde::Deserialize, Clone, Debug)]
 pub struct DmmGameTs {
     pub id: String,
     pub category: String,
@@ -9,7 +17,7 @@ pub struct DmmGameTs {
     pub title: String,
     pub image_url: String,
     pub egs_info: Option<EgsInfoTs>,
-    pub parent_pack_work_id: Option<String>,
+    pub parent_pack: Option<DmmPackKeyTs>,
 }
 
 #[typeshare]
