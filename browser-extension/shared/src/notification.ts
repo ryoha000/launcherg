@@ -7,6 +7,11 @@ export function showInPageNotification(
   message: string,
   type: 'success' | 'error',
 ): void {
+  const parent = document.body ?? document.documentElement
+  if (!parent) {
+    return
+  }
+
   const notification = document.createElement('div')
   notification.style.cssText = `
     position: fixed;
@@ -24,7 +29,7 @@ export function showInPageNotification(
   `
 
   notification.textContent = message
-  document.body.appendChild(notification)
+  parent.appendChild(notification)
 
   // 4秒後に自動削除
   setTimeout(() => {
@@ -36,7 +41,17 @@ export function showInPageNotification(
 
 // 通知アニメーションスタイルを追加する関数
 export function addNotificationStyles(): void {
+  if (document.getElementById('launcherg-notification-styles')) {
+    return
+  }
+
+  const parent = document.head ?? document.documentElement
+  if (!parent) {
+    return
+  }
+
   const style = document.createElement('style')
+  style.id = 'launcherg-notification-styles'
   style.textContent = `
     @keyframes slideIn {
       from {
@@ -49,7 +64,7 @@ export function addNotificationStyles(): void {
       }
     }
   `
-  document.head.appendChild(style)
+  parent.appendChild(style)
 }
 
 // 通知リクエストを作成する純粋関数

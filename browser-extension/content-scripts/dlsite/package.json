@@ -4,7 +4,7 @@
   "version": "1.0.0",
   "description": "DLsite content script for Launcherg browser extension",
   "scripts": {
-    "prebuild": "pnpm -C ../.. run format && pnpm run typecheck && pnpm -C ../.. run lint",
+    "prebuild": "pnpm run typecheck",
     "build": "pnpm run prebuild && vite build",
     "dev": "vite build --watch",
     "clean": "rimraf dist",

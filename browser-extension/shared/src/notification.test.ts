@@ -67,12 +67,27 @@ describe('notification', () => {
       expect(notification.style.padding).toBe('12px 20px')
       expect(notification.style.borderRadius).toBe('4px')
     })
+
+    it('body が無くても documentElement に通知を追加できる', () => {
+      const appendChildSpy = vi.spyOn(document.documentElement, 'appendChild')
+      const bodyGetter = vi.spyOn(document, 'body', 'get').mockReturnValue(
+        null as unknown as HTMLElement,
+      )
+
+      showInPageNotification('body なし', 'success')
+
+      expect(appendChildSpy).toHaveBeenCalled()
+
+      bodyGetter.mockRestore()
+      appendChildSpy.mockRestore()
+    })
   })
 
   describe('addNotificationStyles', () => {
     afterEach(() => {
       // スタイルタグのクリーンアップ
       document.head.innerHTML = ''
+      document.documentElement.querySelector('#launcherg-notification-styles')?.remove()
     })
 
     it('アニメーションスタイルを追加する', () => {
@@ -83,6 +98,27 @@ describe('notification', () => {
       expect(style?.textContent).toContain('@keyframes slideIn')
       expect(style?.textContent).toContain('transform: translateX(100%)')
       expect(style?.textContent).toContain('transform: translateX(0)')
+    })
+
+    it('head が無くても documentElement にスタイルを追加できる', () => {
+      const appendChildSpy = vi.spyOn(document.documentElement, 'appendChild')
+      const headGetter = vi.spyOn(document, 'head', 'get').mockReturnValue(
+        null as unknown as HTMLHeadElement,
+      )
+
+      addNotificationStyles()
+
+      expect(appendChildSpy).toHaveBeenCalled()
+
+      headGetter.mockRestore()
+      appendChildSpy.mockRestore()
+    })
+
+    it('スタイルタグを重複追加しない', () => {
+      addNotificationStyles()
+      addNotificationStyles()
+
+      expect(document.querySelectorAll('#launcherg-notification-styles')).toHaveLength(1)
     })
   })
 
