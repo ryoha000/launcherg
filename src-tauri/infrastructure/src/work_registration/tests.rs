@@ -14,20 +14,76 @@ use domain::service::work_registration::{
     WorkRegistrationRequest, WorkRegistrationService,
 };
 use domain::works::NewWork;
+use domain::windows::{
+    process::MockProcessWindows, proctail::MockProcTail,
+    proctail_manager::MockProcTailManagerTrait, shell_link::MockShellLink, WindowsExt,
+};
 
 use super::WorkRegistrationServiceImpl;
 
 fn create_service(
     test_db: &TestDatabase,
-) -> WorkRegistrationServiceImpl<SqliteRepositoryManager, SqliteRepositories, Windows> {
+) -> WorkRegistrationServiceImpl<
+    SqliteRepositoryManager,
+    SqliteRepositories,
+    crate::windowsimpl::windows::Windows,
+> {
+    let windows = Arc::new(crate::windowsimpl::windows::Windows::new());
+    create_service_with_windows(test_db, windows)
+}
+
+fn create_service_with_windows<W>(
+    test_db: &TestDatabase,
+    windows: Arc<W>,
+) -> WorkRegistrationServiceImpl<SqliteRepositoryManager, SqliteRepositories, W>
+where
+    W: WindowsExt + Send + Sync + 'static,
+{
     let manager = Arc::new(
         crate::sqliterepository::sqliterepository::SqliteRepositoryManager::new(Arc::new(
             test_db.pool.clone(),
         )),
     );
     let resolver = Arc::new(DirsSavePathResolver::default());
-    let windows = Arc::new(Windows::new());
     WorkRegistrationServiceImpl::new(manager, resolver, windows)
+}
+
+struct TestWindows {
+    process: MockProcessWindows,
+    proctail: MockProcTail,
+    proctail_manager: MockProcTailManagerTrait,
+    shell_link: MockShellLink,
+}
+
+impl TestWindows {
+    fn new(shell_link: MockShellLink) -> Self {
+        Self {
+            process: MockProcessWindows::new(),
+            proctail: MockProcTail::new(),
+            proctail_manager: MockProcTailManagerTrait::new(),
+            shell_link,
+        }
+    }
+}
+
+impl WindowsExt for TestWindows {
+    type ProcessWindows = MockProcessWindows;
+    type ProcTail = MockProcTail;
+    type ProcTailManager = MockProcTailManagerTrait;
+    type ShellLink = MockShellLink;
+
+    fn process(&self) -> &Self::ProcessWindows {
+        &self.process
+    }
+    fn proctail(&self) -> &Self::ProcTail {
+        &self.proctail
+    }
+    fn proctail_manager(&self) -> &Self::ProcTailManager {
+        &self.proctail_manager
+    }
+    fn shell_link(&self) -> &Self::ShellLink {
+        &self.shell_link
+    }
 }
 
 #[tokio::test]
@@ -203,6 +259,53 @@ async fn register_画像ソース_from_path_でパスから抽出される() {
     let queue_items = repo.image_queue().list(true, 10).await.unwrap();
     assert_eq!(queue_items.len(), 1);
     assert_eq!(queue_items[0].src, exe_path.to_string_lossy().to_string());
+}
+
+#[tokio::test]
+async fn register_exe登録時はlnkのworking_dirがexeのあるディレクトリになる() {
+    let test_db = TestDatabase::new().await.unwrap();
+    let temp_dir = TempDir::new().unwrap();
+    let exe_path = temp_dir.path().join("test.exe");
+    std::fs::write(&exe_path, b"fake exe").unwrap();
+
+    let manager = Arc::new(
+        crate::sqliterepository::sqliterepository::SqliteRepositoryManager::new(Arc::new(
+            test_db.pool.clone(),
+        )),
+    );
+    let resolver = Arc::new(DirsSavePathResolver::default());
+    let exe_path_str = exe_path.to_string_lossy().to_string();
+    let expected_working_dir = temp_dir.path().display().to_string();
+
+    let mut shell = MockShellLink::new();
+    shell
+        .expect_create_bulk()
+        .withf(move |reqs| {
+            reqs.len() == 1
+                && reqs[0].target_path == exe_path_str
+                && reqs[0].working_dir.as_deref() == Some(expected_working_dir.as_str())
+        })
+        .returning(|_| Ok(()));
+
+    let windows = Arc::new(TestWindows::new(shell));
+    let service = WorkRegistrationServiceImpl::new(manager, resolver, windows);
+
+    let requests = vec![WorkRegistrationRequest {
+        keys: vec![UniqueWorkKey::ErogamescapeId(1)],
+        insert: WorkInsert {
+            title: "Test Work".to_string(),
+            path: Some(RegisterWorkPath::Exe {
+                exe_path: exe_path.to_string_lossy().to_string(),
+            }),
+            egs_info: None,
+            icon: None,
+            thumbnail: None,
+            parent_pack_work_id: None,
+        },
+    }];
+
+    let results = service.register(requests).await.unwrap();
+    assert_eq!(results.len(), 1);
 }
 
 #[tokio::test]

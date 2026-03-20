@@ -330,10 +330,13 @@ where
                                     if let Some(parent) = Path::new(&dst).parent() {
                                         let _ = std::fs::create_dir_all(parent);
                                     }
+                                    let working_dir = Path::new(exe_path)
+                                        .parent()
+                                        .map(|p| p.display().to_string());
                                     exe_reqs.push(CreateShortcutRequest {
                                         target_path: exe_path.clone(),
                                         dest_lnk_path: dst.clone(),
-                                        working_dir: None,
+                                        working_dir,
                                         arguments: None,
                                         icon_path: None,
                                     });

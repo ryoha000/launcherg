@@ -98,10 +98,13 @@ where
                     }
                 }
                 CandidateKind::Exe => {
+                    let working_dir = Path::new(&task.src)
+                        .parent()
+                        .map(|p| p.display().to_string());
                     exe_reqs.push(CreateShortcutRequest {
                         target_path: task.src.clone(),
                         dest_lnk_path: task.dst.clone(),
-                        working_dir: None,
+                        working_dir,
                         arguments: None,
                         icon_path: None,
                     });
@@ -230,11 +233,16 @@ mod tests {
         let manager = Arc::new(TestRepositoryManager::new(repos.clone()));
 
         let resolver = Arc::new(TestResolver::new(tmp.path().to_string_lossy().to_string()));
+        let expected_working_dir = tmp.path().display().to_string();
 
         let mut shell = MockShellLink::new();
         shell
             .expect_create_bulk()
-            .withf(|reqs| reqs.len() == 1 && reqs[0].target_path.ends_with("game.exe"))
+            .withf(move |reqs| {
+                reqs.len() == 1
+                    && reqs[0].target_path.ends_with("game.exe")
+                    && reqs[0].working_dir.as_deref() == Some(expected_working_dir.as_str())
+            })
             .returning(|_| Ok(()));
         let windows = Arc::new(TestWindows::new(shell));
 
