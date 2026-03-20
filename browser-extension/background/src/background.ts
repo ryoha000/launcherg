@@ -50,6 +50,36 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     return false
   }
 
+  if (message && typeof message === 'object' && (message as any).type === 'start_dmm_downloads') {
+    const urls = Array.isArray((message as any).payload?.urls)
+      ? (message as any).payload.urls.filter((value: unknown): value is string => typeof value === 'string' && value.length > 0)
+      : []
+
+    void (async () => {
+      const failedUrls: string[] = []
+      let startedCount = 0
+
+      for (const url of urls) {
+        try {
+          await chrome.downloads.download({ url, saveAs: false })
+          startedCount += 1
+        }
+        catch {
+          failedUrls.push(url)
+        }
+      }
+
+      sendResponse({
+        success: failedUrls.length === 0,
+        startedCount,
+        failedUrls,
+        error: failedUrls.length > 0 ? '一部のDMMダウンロード開始に失敗しました' : undefined,
+      })
+    })()
+
+    return true
+  }
+
   void (async () => {
     const response = await handle(message)
     sendResponse(response)

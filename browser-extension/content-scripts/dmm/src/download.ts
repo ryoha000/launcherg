@@ -1,9 +1,13 @@
-import { logger, setDownloadIntent, showInPageNotification, waitForPageLoad } from '@launcherg/shared'
-import { collectDownloadLinks } from './download-modal'
-import { findDetailItemIdForStoreId } from './pack-helpers'
-import { findChildGameImage } from './pack-parser'
+import { logger, setDownloadIntent, showInPageNotification } from '@launcherg/shared'
+import {
+  extractDownloadUrlsFromSetDetail,
+  extractDownloadUrlsFromSingleDetail,
+  type DmmSetDetailResponse,
+  type DmmSingleDetailResponse,
+} from './api'
 
 const log = logger('dmm-download')
+const DMM_DOWNLOAD_PARAM_SESSION_KEY = 'launcherg:dmm-download-param'
 
 export interface LaunchergDownloadParam {
   type: 'download'
@@ -16,10 +20,25 @@ export interface LaunchergDownloadParam {
 export function parseLaunchergParam(): LaunchergDownloadParam | null {
   try {
     const url = new URL(window.location.href)
-    const raw = url.searchParams.get('launcherg')
-    if (!raw)
+    const hashParams = new URLSearchParams(url.hash.startsWith('#') ? url.hash.slice(1) : url.hash)
+    const raw = url.searchParams.get('launcherg') || hashParams.get('launcherg')
+    if (raw) {
+      try {
+        sessionStorage.setItem(DMM_DOWNLOAD_PARAM_SESSION_KEY, raw)
+      }
+      catch {}
+    }
+    const candidate = raw ?? (() => {
+      try {
+        return sessionStorage.getItem(DMM_DOWNLOAD_PARAM_SESSION_KEY)
+      }
+      catch {
+        return null
+      }
+    })()
+    if (!candidate)
       return null
-    const decoded = decodeURIComponent(raw)
+    const decoded = decodeURIComponent(candidate)
     const parsed = JSON.parse(decoded) as unknown
     if (
       typeof parsed === 'object' && parsed !== null
@@ -44,30 +63,43 @@ export function closeCurrentTab(): void {
   catch {}
 }
 
-export async function performDownloadByStoreId(storeId: string): Promise<void> {
-  await waitForPageLoad(800)
-  const id = findDetailItemIdForStoreId(storeId)
-  if (!id) {
-    showInPageNotification('DMM: 対象ゲームが見つかりませんでした', 'error')
-    return
-  }
-  const container = document.getElementById(id)
-  if (!container) {
-    showInPageNotification('DMM: 対象要素が見つかりませんでした', 'error')
-    return
-  }
-  const img = container.querySelector('img') as HTMLImageElement | null
-  if (!img) {
-    showInPageNotification('DMM: クリック対象の画像が見つかりませんでした', 'error')
-    return
-  }
-  try {
-    img.scrollIntoView({ block: 'center' })
-  }
-  catch {}
-  await new Promise(r => setTimeout(r, 200))
-  img.click()
-  showInPageNotification('DMM: ダウンロードを開始しました', 'success')
+function toAbsoluteDownloadUrl(path: string): string {
+  return new URL(path, window.location.origin).toString()
+}
+
+async function fetchJsonWithCookie<T>(url: string): Promise<T> {
+  const res = await fetch(url, { credentials: 'include' })
+  if (!res.ok)
+    throw new Error(`DMM API request failed: ${res.status} ${res.statusText}`)
+  return await res.json() as T
+}
+
+async function fetchSingleDownloadUrls(storeId: string): Promise<string[]> {
+  const url = new URL('/ajax/v1/library/detail/single/', window.location.origin)
+  url.searchParams.set('productId', storeId)
+  const payload = await fetchJsonWithCookie<DmmSingleDetailResponse>(url.toString())
+  return extractDownloadUrlsFromSingleDetail(payload).map(toAbsoluteDownloadUrl)
+}
+
+async function fetchPackDownloadUrls(parentPackStoreId: string, childStoreId: string): Promise<string[]> {
+  const url = new URL('/ajax/v1/library/detail/set/', window.location.origin)
+  url.searchParams.set('productId', parentPackStoreId)
+  const payload = await fetchJsonWithCookie<DmmSetDetailResponse>(url.toString())
+  return extractDownloadUrlsFromSetDetail(payload, childStoreId).map(toAbsoluteDownloadUrl)
+}
+
+interface StartDmmDownloadsResponse {
+  success?: boolean
+  startedCount?: number
+  failedUrls?: string[]
+  error?: string
+}
+
+async function startDmmDownloads(storeId: string, urls: string[]): Promise<StartDmmDownloadsResponse> {
+  return await chrome.runtime.sendMessage({
+    type: 'start_dmm_downloads',
+    payload: { storeId, urls },
+  }) as StartDmmDownloadsResponse
 }
 
 export async function initLaunchergDownloadOnceForUrl(url: string, mark: (url: string) => void, isMarked: (url: string) => boolean): Promise<void> {
@@ -77,71 +109,37 @@ export async function initLaunchergDownloadOnceForUrl(url: string, mark: (url: s
   if (!p || p.type !== 'download')
     return
   mark(url)
-  log.info('Launcherg download param detected - triggering click')
+  log.info('Launcherg download param detected - direct download flow start')
   try {
-    // 親パックが指定されている場合は、親の img をクリック → パックモーダル内から該当ゲーム img をクリック
-    if (p.value.parentPack) {
-      await performDownloadByStoreId(p.value.parentPack.storeId)
-      await waitForPageLoad(800)
-      const childImg = findChildGameImage(document, p.value.game.storeId)
-      if (childImg) {
-        try {
-          childImg.scrollIntoView({ block: 'center' })
-        }
-        catch {}
-        await new Promise(r => setTimeout(r, 200))
-        childImg.click()
-      }
-      // 子ゲームのモーダルが開いた後、リンク件数を算出し intent を保存してからクリック
-      await waitForPageLoad(800)
-      const links = collectDownloadLinks(document, p.value.game.storeId)
-      try {
-        await setDownloadIntent(p.value.game.storeId, {
-          store: 'DMM',
-          game: p.value.game,
-          parentPack: p.value.parentPack,
-          expected: links.length,
-          completed: 0,
-          startedAt: Date.now(),
-        })
-      }
-      catch {}
-      log.info('ダウンロードリンクをクリック', { links })
-      for (const a of links) {
-        try {
-          a.click()
-          await new Promise(r => setTimeout(r, 1000))
-        }
-        catch {}
-      }
+    const downloadUrls = p.value.parentPack
+      ? await fetchPackDownloadUrls(p.value.parentPack.storeId, p.value.game.storeId)
+      : await fetchSingleDownloadUrls(p.value.game.storeId)
+
+    await setDownloadIntent(p.value.game.storeId, {
+      store: 'DMM',
+      game: p.value.game,
+      parentPack: p.value.parentPack,
+      expected: downloadUrls.length,
+      completed: 0,
+      startedAt: Date.now(),
+    })
+
+    const response = await startDmmDownloads(p.value.game.storeId, downloadUrls)
+    if (!response?.success) {
+      const message = response?.error || 'DMM: ダウンロード開始に失敗しました'
+      showInPageNotification(message, 'error')
+      return
     }
-    else {
-      await performDownloadByStoreId(p.value.game.storeId)
-      // モーダル待機→リンク件数を算出し intent を保存してからクリック
-      await waitForPageLoad(800)
-      const links = collectDownloadLinks(document, p.value.game.storeId)
-      try {
-        await setDownloadIntent(p.value.game.storeId, {
-          store: 'DMM',
-          game: p.value.game,
-          parentPack: undefined,
-          expected: links.length,
-          completed: 0,
-          startedAt: Date.now(),
-        })
-      }
-      catch {}
-      log.info('ダウンロードリンクをクリック', { links })
-      for (const a of links) {
-        try {
-          a.click()
-          await new Promise(r => setTimeout(r, 1000))
-        }
-        catch {}
-      }
+
+    try {
+      sessionStorage.removeItem(DMM_DOWNLOAD_PARAM_SESSION_KEY)
     }
-  }
-  finally {
+    catch {}
+    showInPageNotification(`DMM: ダウンロードを開始しました (${response.startedCount ?? downloadUrls.length}件)`, 'success')
     closeCurrentTab()
+  }
+  catch (error) {
+    const message = error instanceof Error ? error.message : String(error)
+    showInPageNotification(message, 'error')
   }
 }

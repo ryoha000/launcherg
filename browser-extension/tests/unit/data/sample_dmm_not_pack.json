@@ -1,0 +1,68 @@
+{
+  "error": null,
+  "body": {
+    "productDetail": {
+      "product": {
+        "contentId": "hobc_0157",
+        "productId": "hobc_0157",
+        "deliveryBeginDate": "2008-12-12 09:59",
+        "libraryProductType": "single",
+        "floor": "Apcgame",
+        "title": "\u30ab\u30bf\u30cf\u30cd",
+        "packageImageUrl": "https:\/\/pics.dmm.co.jp\/digital\/pcgame\/hobc_0157\/hobc_0157ps.jpg",
+        "brand": {
+          "name": "Tarte",
+          "listUrl": "https:\/\/dlsoft.dmm.co.jp\/list\/?maker=30371&sort=ranking"
+        },
+        "authorArray": [
+          {
+            "name": "\u7b1b",
+            "listUrl": "https:\/\/dlsoft.dmm.co.jp\/list\/?author=237066&sort=ranking"
+          }
+        ],
+        "tagArray": [],
+        "catalog": {
+          "isDisplayCatalog": true,
+          "catalogPageUrl": "https:\/\/dlsoft.dmm.co.jp\/detail\/hobc_0157\/"
+        },
+        "review": {
+          "canReview": true,
+          "reviewWriteUrl": "https:\/\/review.dmm.co.jp\/review-front\/review\/posting?content_id=hobc_0157&shop_name=digital_pcgame"
+        }
+      },
+      "download": {
+        "canDownload": true,
+        "deliveryDate": "2008-12-12 09:59",
+        "fileType": "zip",
+        "volume": "2097.17",
+        "osList": {
+          "win": "2000\/XP",
+          "osx": null,
+          "android": null,
+          "ios": null
+        },
+        "singleFileUrl": null,
+        "combinedFileUrl": "\/download\/?filePath=%2Fbb%2Fpcgame%2Fhobc_0157%2Fhobc_0157.bat&productId=hobc_0157&floor=Apcgame",
+        "splitFileUrlArray": [
+          "\/download\/?filePath=%2Fbb%2Fpcgame%2Fhobc_0157%2Fhobc_0157.000&productId=hobc_0157&floor=Apcgame",
+          "\/download\/?filePath=%2Fbb%2Fpcgame%2Fhobc_0157%2Fhobc_0157.001&productId=hobc_0157&floor=Apcgame",
+          "\/download\/?filePath=%2Fbb%2Fpcgame%2Fhobc_0157%2Fhobc_0157.002&productId=hobc_0157&floor=Apcgame",
+          "\/download\/?filePath=%2Fbb%2Fpcgame%2Fhobc_0157%2Fhobc_0157.003&productId=hobc_0157&floor=Apcgame"
+        ],
+        "requirementToolArray": [
+          {
+            "text": "\u89e3\u51cd\u30bd\u30d5\u30c8",
+            "url": "https:\/\/support.dmm.co.jp\/dlsoft\/article\/38309"
+          }
+        ]
+      },
+      "browser": null,
+      "makerKeyNameArray": []
+    },
+    "order": {
+      "orderDate": "2026-01-12 15:54",
+      "orderItemNo": "200901733",
+      "shippingItem": null
+    }
+  }
+}

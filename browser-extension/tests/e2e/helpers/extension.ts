@@ -62,6 +62,36 @@ export async function setupSendNativeMessageSpy(sw: Worker): Promise<void> {
   })
 }
 
+export async function setupDownloadsSpy(sw: Worker): Promise<void> {
+  await sw.evaluate(() => {
+    ;(globalThis as any).__downloadCalls = []
+    ;(globalThis as any).__downloadItemsById = {}
+    ;(globalThis as any).__nextDownloadId = 1
+
+    const downloads = (globalThis as any).chrome.downloads
+    downloads.download = (options: { url: string }, callback?: (downloadId?: number) => void) => {
+      const id = (globalThis as any).__nextDownloadId++
+      ;(globalThis as any).__downloadCalls.push({ id, url: options?.url, options })
+      ;(globalThis as any).__downloadItemsById[id] = {
+        id,
+        url: options?.url,
+        filename: `mock-${id}.bin`,
+      }
+      if (callback)
+        callback(id)
+      return Promise.resolve(id)
+    }
+
+    downloads.search = (query: { id?: number }, callback?: (items: any[]) => void) => {
+      const item = query?.id ? (globalThis as any).__downloadItemsById[query.id] : undefined
+      const result = item ? [item] : []
+      if (callback)
+        callback(result)
+      return Promise.resolve(result)
+    }
+  })
+}
+
 /**
  * spy に記録された sendNativeMessage 呼び出し一覧を取得する。
  */
@@ -102,5 +132,103 @@ export async function waitForNativeMessageCall(
   const calls = await getNativeMessageCalls(sw)
   throw new Error(
     `waitForNativeMessageCall: タイムアウト (${timeoutMs}ms) 。記録された呼び出し: ${JSON.stringify(calls)}`,
+  )
+}
+
+export async function getDownloadIntents(sw: Worker): Promise<Record<string, unknown>> {
+  return sw.evaluate(() => {
+    return new Promise<Record<string, unknown>>((resolve) => {
+      chrome.storage.local.get(['download_intents'], (result) => {
+        resolve((result?.download_intents as Record<string, unknown>) ?? {})
+      })
+    })
+  })
+}
+
+export async function clearDownloadIntents(sw: Worker): Promise<void> {
+  await sw.evaluate(() => {
+    return new Promise<void>((resolve) => {
+      chrome.storage.local.set({ download_intents: {} }, () => resolve())
+    })
+  })
+}
+
+export async function getDownloadCalls(sw: Worker): Promise<Array<{ id: number, url: string }>> {
+  return sw.evaluate(() => {
+    return (globalThis as any).__downloadCalls ?? []
+  })
+}
+
+export async function resetDownloadSpy(sw: Worker): Promise<void> {
+  await sw.evaluate(() => {
+    ;(globalThis as any).__downloadCalls = []
+    ;(globalThis as any).__downloadItemsById = {}
+    ;(globalThis as any).__nextDownloadId = 1
+  })
+}
+
+export async function waitForDownloadCalls(
+  sw: Worker,
+  predicate: (calls: Array<{ id: number, url: string }>) => boolean,
+  timeoutMs = 30_000,
+): Promise<Array<{ id: number, url: string }>> {
+  const deadline = Date.now() + timeoutMs
+  while (Date.now() < deadline) {
+    const calls = await getDownloadCalls(sw)
+    if (predicate(calls))
+      return calls
+    await new Promise(r => setTimeout(r, 500))
+  }
+
+  const calls = await getDownloadCalls(sw)
+  throw new Error(
+    `waitForDownloadCalls: タイムアウト (${timeoutMs}ms) 。記録された download 呼び出し: ${JSON.stringify(calls)}`,
+  )
+}
+
+export async function emitDownloadComplete(
+  sw: Worker,
+  downloadId: number,
+  item: { url: string, filename: string },
+): Promise<void> {
+  await sw.evaluate(async ({ downloadId, item }) => {
+    ;(globalThis as any).__downloadItemsById = {
+      ...((globalThis as any).__downloadItemsById ?? {}),
+      [downloadId]: {
+        id: downloadId,
+        url: item.url,
+        filename: item.filename,
+      },
+    }
+
+    const handler = (globalThis as any).__launchergDownloadsOnChangedHandler
+    if (typeof handler !== 'function')
+      throw new Error('downloads.onChanged handler が見つかりません')
+
+    await handler({
+      id: downloadId,
+      state: { current: 'complete', previous: 'in_progress' },
+    })
+  }, { downloadId, item })
+}
+
+export async function waitForDownloadIntent(
+  sw: Worker,
+  storeId: string,
+  timeoutMs = 30_000,
+): Promise<unknown> {
+  const deadline = Date.now() + timeoutMs
+  while (Date.now() < deadline) {
+    const intents = await getDownloadIntents(sw)
+    const entry = intents[storeId]
+    if (entry) {
+      return entry
+    }
+    await new Promise(r => setTimeout(r, 500))
+  }
+
+  const intents = await getDownloadIntents(sw)
+  throw new Error(
+    `waitForDownloadIntent: タイムアウト (${timeoutMs}ms) 。記録された intent: ${JSON.stringify(intents)}`,
   )
 }

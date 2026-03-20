@@ -1,6 +1,6 @@
 import type { Page, Worker } from '@playwright/test'
 import { loginToDmm, navigateToMyLibrary } from './auth'
-import { getServiceWorker, setupSendNativeMessageSpy } from './extension'
+import { getServiceWorker, setupDownloadsSpy, setupSendNativeMessageSpy } from './extension'
 import { test as base } from './fixtures'
 
 interface WorkerFixtures {
@@ -13,6 +13,7 @@ export const test = base.extend<Record<string, never>, WorkerFixtures>({
     async ({ persistentContext }, use) => {
       const sw = await getServiceWorker(persistentContext)
       await setupSendNativeMessageSpy(sw)
+      await setupDownloadsSpy(sw)
       await use(sw)
     },
     { scope: 'worker' },

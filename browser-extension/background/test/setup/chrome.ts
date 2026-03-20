@@ -24,6 +24,7 @@ const runtime = {
 const tabs = {
   query: vi.fn<() => Promise<chrome.tabs.Tab[]>>(async () => []),
   sendMessage: vi.fn<() => Promise<void>>(async () => {}),
+  remove: vi.fn((_: number, cb?: () => void) => cb && cb()),
   onUpdated: { addListener: vi.fn() },
 }
 
@@ -44,7 +45,13 @@ const storage = {
   },
 }
 
-Object.defineProperty(globalThis, 'chrome', { value: { alarms, runtime, tabs, notifications, scripting, storage }, configurable: true })
+const downloads = {
+  download: vi.fn(async () => 1),
+  search: vi.fn((_: chrome.downloads.DownloadQuery, cb: (items: chrome.downloads.DownloadItem[]) => void) => cb([])),
+  onChanged: { addListener: vi.fn() },
+}
+
+Object.defineProperty(globalThis, 'chrome', { value: { alarms, runtime, tabs, notifications, scripting, storage, downloads }, configurable: true })
 
 // helper to reset between tests if needed
 export function resetChromeMocks() {
@@ -55,11 +62,15 @@ export function resetChromeMocks() {
   runtime.onMessage.addListener.mockReset?.()
   tabs.query.mockReset()
   tabs.sendMessage.mockReset()
+  tabs.remove.mockReset()
   tabs.onUpdated.addListener.mockReset?.()
   notifications.create.mockReset()
   scripting.executeScript.mockReset()
   storage.local.get.mockReset()
   storage.local.set.mockReset()
+  downloads.download.mockReset()
+  downloads.search.mockReset()
+  downloads.onChanged.addListener.mockReset?.()
   sendNativeMessageMock.mockReset()
   runtime.lastError = undefined
 }

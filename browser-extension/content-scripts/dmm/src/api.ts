@@ -28,6 +28,37 @@ export interface DmmLibraryResponse {
   } | null
 }
 
+export interface DmmDownloadInfo {
+  canDownload?: boolean
+  singleFileUrl?: string | null
+  combinedFileUrl?: string | null
+  splitFileUrlArray?: Array<string | null> | null
+}
+
+export interface DmmSingleDetailResponse {
+  error: string | null
+  body?: {
+    productDetail?: {
+      download?: DmmDownloadInfo | null
+    } | null
+  } | null
+}
+
+export interface DmmPackChildDetail {
+  product?: {
+    productId?: string
+    contentId?: string
+  } | null
+  download?: DmmDownloadInfo | null
+}
+
+export interface DmmSetDetailResponse {
+  error: string | null
+  body?: {
+    childProducts?: DmmPackChildDetail[] | null
+  } | null
+}
+
 export interface DmmLibraryHookMessageData {
   source: typeof DMM_HOOK_MESSAGE_SOURCE
   type: typeof DMM_LIBRARY_MESSAGE_TYPE
@@ -158,4 +189,41 @@ export function buildDmmPayloadKey(message: DmmLibraryHookMessageData): string {
     .map(item => `${item.productId || item.contentId || ''}:${item.libraryProductType || ''}`)
     .join('|')
   return `${message.requestUrl}::${ids}`
+}
+
+function pushIfPresent(target: string[], value: string | null | undefined): void {
+  if (typeof value === 'string' && value.length > 0)
+    target.push(value)
+}
+
+function resolveDownloadUrls(download: DmmDownloadInfo | null | undefined): string[] {
+  if (!download?.canDownload)
+    throw new Error('DMM: ダウンロードできません')
+
+  const urls: string[] = []
+  pushIfPresent(urls, download.combinedFileUrl)
+  for (const url of download.splitFileUrlArray ?? [])
+    pushIfPresent(urls, url)
+  pushIfPresent(urls, download.singleFileUrl)
+
+  if (urls.length === 0)
+    throw new Error('DMM: ダウンロードURLが見つかりませんでした')
+
+  return urls
+}
+
+export function extractDownloadUrlsFromSingleDetail(response: DmmSingleDetailResponse): string[] {
+  return resolveDownloadUrls(response.body?.productDetail?.download)
+}
+
+export function extractDownloadUrlsFromSetDetail(response: DmmSetDetailResponse, storeId: string): string[] {
+  const child = (response.body?.childProducts ?? []).find((item) => {
+    const productId = item.product?.productId || item.product?.contentId || ''
+    return productId === storeId
+  })
+
+  if (!child)
+    throw new Error(`DMM: パック内に対象作品が見つかりませんでした (${storeId})`)
+
+  return resolveDownloadUrls(child.download)
 }

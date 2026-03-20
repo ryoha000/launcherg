@@ -46,8 +46,8 @@
           : undefined,
       },
     }
-    const url = new URL('https://dlsoft.dmm.co.jp/mylibrary/')
-    url.searchParams.set('launcherg', JSON.stringify(payload))
+    const url = new URL('https://dlsoft.dmm.co.jp/library/')
+    url.hash = new URLSearchParams({ launcherg: JSON.stringify(payload) }).toString()
     return url.toString()
   })
   const dlsiteUrlForInstall = $derived.by(() => {

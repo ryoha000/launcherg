@@ -1,0 +1,231 @@
+{
+  "error": null,
+  "body": {
+    "product": {
+      "contentId": "purple_0028pack",
+      "productId": "purple_0028pack",
+      "deliveryBeginDate": "2022-09-30 00:00",
+      "libraryProductType": "set",
+      "floor": "Apcgame",
+      "title": "\u5929\u3064\u7c60\u30ce\u9ce5BOX",
+      "packageImageUrl": "https:\/\/pics.dmm.co.jp\/digital\/pcgame\/purple_0028pack\/purple_0028packps.jpg",
+      "brand": {
+        "name": "\u30d1\u30fc\u30d7\u30eb\u30bd\u30d5\u30c8\u30a6\u30a7\u30a2",
+        "listUrl": "https:\/\/dlsoft.dmm.co.jp\/list\/?maker=30810&sort=ranking"
+      },
+      "authorArray": [
+        {
+          "name": "\u514b",
+          "listUrl": "https:\/\/dlsoft.dmm.co.jp\/list\/?author=27477&sort=ranking"
+        },
+        {
+          "name": "\u6708\u675c\u5c0b",
+          "listUrl": "https:\/\/dlsoft.dmm.co.jp\/list\/?author=239619&sort=ranking"
+        },
+        {
+          "name": "\u3042\u304d\u304a",
+          "listUrl": "https:\/\/dlsoft.dmm.co.jp\/list\/?author=300482&sort=ranking"
+        }
+      ],
+      "tagArray": [],
+      "catalog": {
+        "isDisplayCatalog": true,
+        "catalogPageUrl": "https:\/\/dlsoft.dmm.co.jp\/detail\/purple_0028pack\/"
+      },
+      "review": {
+        "canReview": true,
+        "reviewWriteUrl": "https:\/\/review.dmm.co.jp\/review-front\/review\/posting?content_id=purple_0028pack&shop_name=digital_pcgame"
+      }
+    },
+    "childProducts": [
+      {
+        "product": {
+          "contentId": "views_0528",
+          "productId": "views_0528",
+          "deliveryBeginDate": "2017-04-28 10:00",
+          "libraryProductType": "single",
+          "floor": "Apcgame",
+          "title": "\u30a2\u30de\u30c4\u30c4\u30df\u3010\u840c\u3048\u30b2\u30fc\u30a2\u30ef\u30fc\u30c92016 \u4e3b\u984c\u6b4c\u8cde \u53d7\u8cde\u3011",
+          "packageImageUrl": "https:\/\/pics.dmm.co.jp\/digital\/pcgame\/views_0528\/views_0528ps.jpg",
+          "brand": {
+            "name": "\u30d1\u30fc\u30d7\u30eb\u30bd\u30d5\u30c8\u30a6\u30a7\u30a2",
+            "listUrl": "https:\/\/dlsoft.dmm.co.jp\/list\/?maker=30810&sort=ranking"
+          },
+          "authorArray": [
+            {
+              "name": "\u514b",
+              "listUrl": "https:\/\/dlsoft.dmm.co.jp\/list\/?author=27477&sort=ranking"
+            },
+            {
+              "name": "\u6708\u675c\u5c0b",
+              "listUrl": "https:\/\/dlsoft.dmm.co.jp\/list\/?author=239619&sort=ranking"
+            }
+          ],
+          "tagArray": [],
+          "catalog": {
+            "isDisplayCatalog": true,
+            "catalogPageUrl": "https:\/\/dlsoft.dmm.co.jp\/detail\/views_0528\/"
+          },
+          "review": {
+            "canReview": true,
+            "reviewWriteUrl": "https:\/\/review.dmm.co.jp\/review-front\/review\/posting?content_id=views_0528&shop_name=digital_pcgame"
+          }
+        },
+        "download": {
+          "canDownload": true,
+          "deliveryDate": "2017-04-28 10:00",
+          "fileType": "rar",
+          "volume": "3871.09",
+          "osList": {
+            "win": "Vista\/7\/8.1\/10",
+            "osx": null,
+            "android": null,
+            "ios": null
+          },
+          "singleFileUrl": null,
+          "combinedFileUrl": "\/download\/?filePath=%2Fbb%2Fpcgame%2Fviews_0528%2Fviews_0528.part1.exe&productId=views_0528&floor=Apcgame",
+          "splitFileUrlArray": [
+            "\/download\/?filePath=%2Fbb%2Fpcgame%2Fviews_0528%2Fviews_0528.part2.rar&productId=views_0528&floor=Apcgame",
+            "\/download\/?filePath=%2Fbb%2Fpcgame%2Fviews_0528%2Fviews_0528.part3.rar&productId=views_0528&floor=Apcgame",
+            "\/download\/?filePath=%2Fbb%2Fpcgame%2Fviews_0528%2Fviews_0528.part4.rar&productId=views_0528&floor=Apcgame"
+          ],
+          "requirementToolArray": [
+            {
+              "text": "\u89e3\u51cd\u30bd\u30d5\u30c8",
+              "url": "https:\/\/support.dmm.co.jp\/dlsoft\/article\/38309"
+            },
+            {
+              "text": "\u30bd\u30d5\u30c8\u96fb\u6c60\u30e9\u30f3\u30bf\u30a4\u30e0\u6700\u65b0\u7248",
+              "url": "https:\/\/www.soft-denchi.jp\/comdocs\/dlguide\/index.htm"
+            }
+          ]
+        },
+        "browser": null,
+        "makerKeyNameArray": []
+      },
+      {
+        "product": {
+          "contentId": "views_0571",
+          "productId": "views_0571",
+          "deliveryBeginDate": "2018-01-26 10:00",
+          "libraryProductType": "single",
+          "floor": "Apcgame",
+          "title": "\u30a2\u30aa\u30a4\u30c8\u30ea\u3010\u840c\u3048\u30b2\u30fc\u30a2\u30ef\u30fc\u30c92017 \u4e3b\u984c\u6b4c\u8cde \u53d7\u8cde\u3011",
+          "packageImageUrl": "https:\/\/pics.dmm.co.jp\/digital\/pcgame\/views_0571\/views_0571ps.jpg",
+          "brand": {
+            "name": "\u30d1\u30fc\u30d7\u30eb\u30bd\u30d5\u30c8\u30a6\u30a7\u30a2",
+            "listUrl": "https:\/\/dlsoft.dmm.co.jp\/list\/?maker=30810&sort=ranking"
+          },
+          "authorArray": [
+            {
+              "name": "\u514b",
+              "listUrl": "https:\/\/dlsoft.dmm.co.jp\/list\/?author=27477&sort=ranking"
+            },
+            {
+              "name": "\u3042\u304d\u304a",
+              "listUrl": "https:\/\/dlsoft.dmm.co.jp\/list\/?author=300482&sort=ranking"
+            }
+          ],
+          "tagArray": [],
+          "catalog": {
+            "isDisplayCatalog": true,
+            "catalogPageUrl": "https:\/\/dlsoft.dmm.co.jp\/detail\/views_0571\/"
+          },
+          "review": {
+            "canReview": true,
+            "reviewWriteUrl": "https:\/\/review.dmm.co.jp\/review-front\/review\/posting?content_id=views_0571&shop_name=digital_pcgame"
+          }
+        },
+        "download": {
+          "canDownload": true,
+          "deliveryDate": "2018-01-26 10:00",
+          "fileType": "rar",
+          "volume": "4009.82",
+          "osList": {
+            "win": "7\/8.1\/10",
+            "osx": null,
+            "android": null,
+            "ios": null
+          },
+          "singleFileUrl": null,
+          "combinedFileUrl": "\/download\/?filePath=%2Fbb%2Fpcgame%2Fviews_0571%2Fviews_0571.part1.exe&productId=views_0571&floor=Apcgame",
+          "splitFileUrlArray": [
+            "\/download\/?filePath=%2Fbb%2Fpcgame%2Fviews_0571%2Fviews_0571.part2.rar&productId=views_0571&floor=Apcgame",
+            "\/download\/?filePath=%2Fbb%2Fpcgame%2Fviews_0571%2Fviews_0571.part3.rar&productId=views_0571&floor=Apcgame",
+            "\/download\/?filePath=%2Fbb%2Fpcgame%2Fviews_0571%2Fviews_0571.part4.rar&productId=views_0571&floor=Apcgame",
+            "\/download\/?filePath=%2Fbb%2Fpcgame%2Fviews_0571%2Fviews_0571.part5.rar&productId=views_0571&floor=Apcgame"
+          ],
+          "requirementToolArray": [
+            {
+              "text": "\u89e3\u51cd\u30bd\u30d5\u30c8",
+              "url": "https:\/\/support.dmm.co.jp\/dlsoft\/article\/38309"
+            },
+            {
+              "text": "\u30bd\u30d5\u30c8\u96fb\u6c60\u30e9\u30f3\u30bf\u30a4\u30e0\u6700\u65b0\u7248",
+              "url": "https:\/\/www.soft-denchi.jp\/comdocs\/dlguide\/index.htm"
+            }
+          ]
+        },
+        "browser": null,
+        "makerKeyNameArray": []
+      },
+      {
+        "product": {
+          "contentId": "purple_0029",
+          "productId": "purple_0029",
+          "deliveryBeginDate": "2022-09-29 00:00",
+          "libraryProductType": "single",
+          "floor": "Apcgame",
+          "title": "\u5929\u3064\u7c60\u30ce\u9ce5BOX \u30cf\u30a4\u30ec\u30be\u97f3\u6e90\u30b5\u30a6\u30f3\u30c9\u30c8\u30e9\u30c3\u30af",
+          "packageImageUrl": "https:\/\/pics.dmm.co.jp\/digital\/pcgame\/purple_0029\/purple_0029ps.jpg",
+          "brand": {
+            "name": "\u30d1\u30fc\u30d7\u30eb\u30bd\u30d5\u30c8\u30a6\u30a7\u30a2",
+            "listUrl": "https:\/\/dlsoft.dmm.co.jp\/list\/?maker=30810&sort=ranking"
+          },
+          "authorArray": [],
+          "tagArray": [],
+          "catalog": {
+            "isDisplayCatalog": false,
+            "catalogPageUrl": null
+          },
+          "review": {
+            "canReview": true,
+            "reviewWriteUrl": "https:\/\/review.dmm.co.jp\/review-front\/review\/posting?content_id=purple_0029&shop_name=digital_pcgame"
+          }
+        },
+        "download": {
+          "canDownload": true,
+          "deliveryDate": "2022-09-29 00:00",
+          "fileType": "rar",
+          "volume": "3747.11",
+          "osList": {
+            "win": "\u5168\u3066",
+            "osx": null,
+            "android": null,
+            "ios": null
+          },
+          "singleFileUrl": null,
+          "combinedFileUrl": "\/download\/?filePath=%2Fbb%2Fpcgame%2Fpurple_0029%2Fpurple_0029.part1.exe&productId=purple_0029&floor=Apcgame",
+          "splitFileUrlArray": [
+            "\/download\/?filePath=%2Fbb%2Fpcgame%2Fpurple_0029%2Fpurple_0029.part2.rar&productId=purple_0029&floor=Apcgame",
+            "\/download\/?filePath=%2Fbb%2Fpcgame%2Fpurple_0029%2Fpurple_0029.part3.rar&productId=purple_0029&floor=Apcgame"
+          ],
+          "requirementToolArray": [
+            {
+              "text": "\u89e3\u51cd\u30bd\u30d5\u30c8",
+              "url": "https:\/\/support.dmm.co.jp\/dlsoft\/article\/38309"
+            }
+          ]
+        },
+        "browser": null,
+        "makerKeyNameArray": []
+      }
+    ],
+    "makerKeyNameArray": [],
+    "order": {
+      "orderDate": "2024-07-12 21:22",
+      "orderItemNo": "197119078",
+      "shippingItem": null
+    }
+  }
+}

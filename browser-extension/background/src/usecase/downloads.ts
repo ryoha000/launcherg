@@ -4,6 +4,16 @@ import { incrementCompletedAndPushItem, logger, readAllDownloadIntents, removeDo
 
 const log = logger('background:downloads')
 
+declare global {
+  interface Window {
+    __launchergDownloadsOnChangedHandler?: (delta: chrome.downloads.DownloadDelta) => void | Promise<void>
+  }
+  /* eslint-disable-next-line ts/consistent-type-definitions */
+  interface ServiceWorkerGlobalScope {
+    __launchergDownloadsOnChangedHandler?: (delta: chrome.downloads.DownloadDelta) => void | Promise<void>
+  }
+}
+
 export function setupDownloadsHandler(context: HandlerContext): void {
   if (
     typeof chrome === 'undefined'
@@ -17,7 +27,7 @@ export function setupDownloadsHandler(context: HandlerContext): void {
 
   log.debug('downloads.onChanged リスナーを登録します')
 
-  chrome.downloads.onChanged.addListener(async (delta) => {
+  const onChanged = async (delta: chrome.downloads.DownloadDelta) => {
     try {
       log.debug('downloads.onChanged を受信', delta)
 
@@ -40,6 +50,9 @@ export function setupDownloadsHandler(context: HandlerContext): void {
       const storeId = (() => {
         try {
           const u = new URL(item.url ?? '')
+          const productId = u.searchParams.get('productId')
+          if (productId)
+            return productId
           // DLsite: https://play.dlsite.com/api/v3/download?workno=RJ01363269
           const workno = u.searchParams.get('workno')
           if (workno)
@@ -104,5 +117,8 @@ export function setupDownloadsHandler(context: HandlerContext): void {
     catch (e) {
       log.error('downloads.onChanged handler error', e)
     }
-  })
+  }
+
+  chrome.downloads.onChanged.addListener(onChanged)
+  ;(globalThis as ServiceWorkerGlobalScope).__launchergDownloadsOnChangedHandler = onChanged
 }
