@@ -8,6 +8,9 @@
   const { work }: Props = $props()
 
   const imgSrc = $derived(work.thumbnail?.path ? convertFileSrc(work.thumbnail.path) : '')
+  const hasSizedThumbnail = $derived(
+    !!work.thumbnail?.path && !!work.thumbnail?.width && !!work.thumbnail?.height,
+  )
 </script>
 
 <div
@@ -19,7 +22,7 @@
     use:route
     class='block h-full w-full'
   >
-    {#if work.thumbnail?.path}
+    {#if hasSizedThumbnail}
       <img
         decoding='async'
         class='h-full w-full rounded object-contain'
