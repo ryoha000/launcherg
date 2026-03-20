@@ -3,9 +3,20 @@
   // import { commandGetCollectionElement, commandGetWorkDetailsByCollectionElement, commandOpenFolder, commandOpenUrl } from '@/lib/command'
   // import { useWorkDetailsQuery } from '@/lib/data/queries/workDetails'
 
-  let { route }: { route?: { result: { path: { params: { id?: string } } } } } = $props()
+  let { route }: {
+    route?: {
+      result: {
+        path: { params: { id?: string } }
+        querystring?: { params?: Record<string, unknown> }
+      }
+    }
+  } = $props()
   const idParam = $derived(route?.result?.path?.params?.id || '')
   const workId = $derived(idParam)
+  const autoPlay = $derived.by(() => {
+    const play = route?.result?.querystring?.params?.play
+    return play === 'true' || play === true
+  })
 
 // async function openDmmDownload(dmm: { storeId: string, category: string, subcategory: string }) {
   //   const payload = {
@@ -66,5 +77,5 @@
       </button>
     </div>
   {/if} -->
-  <WorkErogameScape {workId} />
+  <WorkErogameScape {workId} {autoPlay} />
 </div>

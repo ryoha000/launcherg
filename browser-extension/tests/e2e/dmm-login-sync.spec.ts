@@ -2,8 +2,8 @@ import type { Page } from '@playwright/test'
 import type { NativeMessageTs } from '../../shared/src/typeshare/native-messaging'
 import { readFileSync } from 'node:fs'
 import { dirname, resolve } from 'node:path'
-import { fileURLToPath } from 'node:url'
 import process from 'node:process'
+import { fileURLToPath } from 'node:url'
 import { expect, test } from './helpers/dmm-fixtures'
 import {
   clearDownloadIntents,

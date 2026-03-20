@@ -28,6 +28,7 @@
       ]
     },
     "shell:allow-open",
+    "deep-link:allow-get-current",
     "dialog:allow-open",
     {
       "identifier": "http:default",

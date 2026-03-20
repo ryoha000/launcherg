@@ -59,4 +59,14 @@ describe('tabs/delete: 削除後の遷移・選択の決定', () => {
     expect(plan.shouldDelete).toBe(true)
     expect(plan.navigateToPath).toBe('/works/3')
   })
+
+  it('次のタブに href があればそれを優先して遷移する', () => {
+    const tabs = [
+      t(1, 'settings', ''),
+      { ...t(2, 'works', '42'), href: '/works/42?gamename=%E3%82%B2%E3%83%BC%E3%83%A0A' },
+    ]
+    const plan = computeTabDeletionPlan({ tabs, selectedIndex: 0, deleteId: 1, registry: REG })
+    expect(plan.shouldDelete).toBe(true)
+    expect(plan.navigateToPath).toBe('/works/42?gamename=%E3%82%B2%E3%83%BC%E3%83%A0A')
+  })
 })

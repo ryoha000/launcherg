@@ -69,7 +69,7 @@ export function keyedTab(
 export type TabAction
   = | { mode: 'none' }
     | { mode: 'singleton', type: string, title: string }
-    | { mode: 'keyed', type: string, key: string, title?: string }
+    | { mode: 'keyed', type: string, key: string, title?: string, href: string }
 
 export function getTabActionFromLocation(
   registry: readonly Descriptor[],
@@ -77,6 +77,7 @@ export function getTabActionFromLocation(
     path: string
     pathParams?: Record<string, unknown>
     queryParams?: Record<string, unknown>
+    href?: string
   },
 ): TabAction {
   const matched = matchByTemplate(registry, input.path)
@@ -105,7 +106,13 @@ export function getTabActionFromLocation(
       })
       if (key === undefined || key === null)
         return { mode: 'none' }
-      return { mode: 'keyed', type: descriptor.kind, key, title }
+      return {
+        mode: 'keyed',
+        type: descriptor.kind,
+        key,
+        title,
+        href: input.href ?? buildHref(input.path, input.queryParams),
+      }
     }
     default: {
       const _exhaustive: never = tab
@@ -137,6 +144,24 @@ export function buildPath(
   }
 }
 
+export function stripQueryParams(
+  href: string,
+  keys: string[],
+): string {
+  try {
+    const url = new URL(href, 'http://launcherg.local')
+    for (const key of keys) {
+      url.searchParams.delete(key)
+    }
+
+    const search = url.searchParams.toString()
+    return `${url.pathname}${search ? `?${search}` : ''}${url.hash}`
+  }
+  catch {
+    return href
+  }
+}
+
 // 内部: pathTemplate と path をマッチさせ簡易 params を得る
 function matchByTemplate(
   registry: readonly Descriptor[],
@@ -157,6 +182,28 @@ function matchByTemplate(
 
 function normalizeTemplate(template: string): string {
   return template.replace(/\(\?:\?<[^>]+>[^)]+\)/g, '')
+}
+
+function buildHref(path: string, queryParams?: Record<string, unknown>): string {
+  if (!queryParams)
+    return path
+
+  const params = new URLSearchParams()
+  for (const [key, value] of Object.entries(queryParams)) {
+    if (value === undefined || value === null)
+      continue
+
+    if (Array.isArray(value)) {
+      for (const item of value)
+        params.append(key, String(item))
+      continue
+    }
+
+    params.append(key, String(value))
+  }
+
+  const querystring = params.toString()
+  return querystring ? `${path}?${querystring}` : path
 }
 
 function compileTemplateToRegex(template: string): RegExp {

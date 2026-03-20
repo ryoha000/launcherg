@@ -1,10 +1,10 @@
 import type { DmmGame, DmmSyncGamesRequest } from '@launcherg/shared'
+import type { DmmApiExtractedGame, DmmSetDetailResponse } from './api'
 import type { DmmExtractedGame } from './types'
-import type { DmmApiExtractedGame } from './api'
-
 import { logger, sendExtensionRequest } from '@launcherg/shared'
+
+import { extractDmmGamesFromSetDetailResponse } from './api'
 import { getCachedPackChildrenMulti, setCachedPackChildren } from './cache'
-import { extractDmmGamesFromSetDetailResponse, type DmmSetDetailResponse } from './api'
 
 const log = logger('dmm-orchestrator')
 

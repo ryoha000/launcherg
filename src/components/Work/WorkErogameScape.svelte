@@ -6,9 +6,12 @@
   import { useEvent } from '@/lib/event'
   import { works } from '@/store/works'
 
-  interface Props { workId: string }
+  interface Props {
+    workId: string
+    autoPlay?: boolean
+  }
 
-  const { workId }: Props = $props()
+  const { workId, autoPlay = false }: Props = $props()
 
   const workDetailQuery = useWorkDetailsByWorkIdQuery(workId)
   const appEvent = useEvent()
@@ -47,7 +50,7 @@
       </div>
     {:then workInformation}
       {#if $workDetailQuery.data}
-        <WorkLayout workDetail={$workDetailQuery.data} {workInformation} />
+        <WorkLayout workDetail={$workDetailQuery.data} {workInformation} {autoPlay} />
       {:else}
         <div class='h-full w-full flex items-center justify-center'>
           <span class='text-gray-500'>Loading...</span>

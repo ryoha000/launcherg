@@ -26,6 +26,27 @@ async fn work_parent_packs_normal_flows() {
 }
 
 #[tokio::test]
+async fn work_parent_packs_duplicate_add_is_noop() {
+    let test_db = TestDatabase::new().await.unwrap();
+    let repo = test_db.sqlite_repository();
+
+    let (wid, pid) = {
+        let mut r = repo.work();
+        let w = r.upsert(&NewWork { title: "W".into() }).await.unwrap();
+        let p = r.upsert(&NewWork { title: "P".into() }).await.unwrap();
+        (w, p)
+    };
+
+    {
+        let mut r = repo.work_parent_packs();
+        r.add(wid.clone(), pid.clone()).await.unwrap();
+        r.add(wid.clone(), pid.clone()).await.unwrap();
+        assert!(r.exists(wid.clone(), pid.clone()).await.unwrap());
+        assert_eq!(r.find_parent_id(wid).await.unwrap().unwrap().value, pid.value);
+    }
+}
+
+#[tokio::test]
 async fn work_parent_packs_find_parent_id_should_return_parent() {
     let test_db = TestDatabase::new().await.unwrap();
     let repo = test_db.sqlite_repository();

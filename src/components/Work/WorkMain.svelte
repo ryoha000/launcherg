@@ -10,9 +10,10 @@
   interface Props {
     workDetail: WorkDetailsVm
     workInformation: Work | undefined
+    autoPlay?: boolean
   }
 
-  const { workDetail, workInformation }: Props = $props()
+  const { workDetail, workInformation, autoPlay = false }: Props = $props()
 
   const seiyaUrlPromise = $derived(seiya.getUrl(workDetail.title))
   const summaryValue = $derived([
@@ -31,7 +32,7 @@
 <div class='max-w-full space-y-4'>
   <div class='text-(h1 text-primary) font-bold'>{workDetail.title}</div>
   {#await seiyaUrlPromise then seiyaUrl}
-    <Actions {workDetail} id={workDetail.id} {seiyaUrl} />
+    <Actions {workDetail} id={workDetail.id} {seiyaUrl} autoPlay={autoPlay} />
   {/await}
   <div class='flex items-center'>
     <LinkButton href={workInformation?.officialHomePage ?? ''} text='Official' withIcon />

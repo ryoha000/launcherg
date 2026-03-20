@@ -9,18 +9,20 @@ impl WorkParentPacksRepository for RepositoryImpl<domain::work_parent_pack::Work
     ) -> anyhow::Result<()> {
         let work_id_str = work_id.value.clone();
         let parent_pack_work_id_str = parent_pack_work_id.value.clone();
-        self.executor.with_conn(|conn| {
-            Box::pin(async move {
-                let _row: (i64,) = sqlx::query_as(
-                    r#"INSERT OR IGNORE INTO work_parent_packs (work_id, parent_pack_work_id) VALUES (?, ?) RETURNING 1"#,
-                )
-                .bind(work_id_str)
-                .bind(parent_pack_work_id_str)
-                .fetch_one(conn)
-                .await?;
-                Ok::<(), anyhow::Error>(())
+        self.executor
+            .with_conn(|conn| {
+                Box::pin(async move {
+                    sqlx::query(
+                        r#"INSERT OR IGNORE INTO work_parent_packs (work_id, parent_pack_work_id) VALUES (?, ?)"#,
+                    )
+                    .bind(work_id_str)
+                    .bind(parent_pack_work_id_str)
+                    .execute(conn)
+                    .await?;
+                    Ok::<(), anyhow::Error>(())
+                })
             })
-        }).await?;
+            .await?;
         Ok(())
     }
 

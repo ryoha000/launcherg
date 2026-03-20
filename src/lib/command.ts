@@ -219,6 +219,18 @@ export async function commandOpenUrl(url: string) {
   return await invoke<void>('open_url', { url })
 }
 
+export async function commandShowOsNotification(
+  title: string,
+  body?: string,
+  activationUrl?: string,
+) {
+  return await invoke<void>('show_os_notification', {
+    title,
+    body,
+    activationUrl,
+  })
+}
+
 // 拡張機能連携用の新しいコマンド
 
 export async function commandGetSyncStatus() {

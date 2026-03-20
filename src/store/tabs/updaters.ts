@@ -24,14 +24,26 @@ export function upsertKeyedTab(
 ): { nextTabs: Tab[], selectedIndex: number } {
   const keyStr = String(action.key)
   const idx = tabs.findIndex(v => v.type === action.type && v.workId === keyStr)
-  if (idx !== -1)
-    return { nextTabs: tabs, selectedIndex: idx }
+  if (idx !== -1) {
+    const nextTabs = tabs.map((tab, tabIndex) => {
+      if (tabIndex !== idx)
+        return tab
+
+      return {
+        ...tab,
+        title: action.title ?? tab.title,
+        href: action.href,
+      }
+    })
+    return { nextTabs, selectedIndex: idx }
+  }
   const newTab: Tab = {
     id: Date.now(),
     type: action.type,
     workId: keyStr,
     scrollTo: 0,
     title: action.title ?? 'エラー: タイトル不明',
+    href: action.href,
   }
   const nextTabs = [...tabs, newTab]
   return { nextTabs, selectedIndex: nextTabs.length - 1 }
@@ -78,6 +90,6 @@ export function computeTabDeletionPlan(params: {
     return { shouldDelete: true, navigateToPath: '/', selectedIndexAfterDelete: null }
 
   const descriptor = registry.find(d => d.kind === nextTab.type)
-  const path = descriptor ? buildPath(descriptor, nextTab.workId) : '/'
+  const path = nextTab.href ?? (descriptor ? buildPath(descriptor, nextTab.workId) : '/')
   return { shouldDelete: true, navigateToPath: path, selectedIndexAfterDelete: null }
 }

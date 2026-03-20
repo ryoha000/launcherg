@@ -7,6 +7,7 @@ import {
   pathParamExtractor,
   queryParamExtractor,
   singletonTab,
+  stripQueryParams,
 } from '@/store/tabs/schema'
 
 function d(partial: Omit<Descriptor, 'component'>): Descriptor<any> {
@@ -61,14 +62,21 @@ describe('tabs/schema: getTabActionFromLocation', () => {
       d({
         kind: 'works',
         pathTemplate: '/works/:id(\\d+)',
-        tab: keyedTab(pathParamExtractor('id'), queryParamExtractor('title')),
+        tab: keyedTab(pathParamExtractor('id'), queryParamExtractor('gamename')),
       }),
     ]
     const act = getTabActionFromLocation(reg, {
       path: '/works/123',
-      queryParams: { title: 'ゲームA' },
+      queryParams: { gamename: 'ゲームA', play: 'true' },
+      href: '/works/123?gamename=%E3%82%B2%E3%83%BC%E3%83%A0A',
     })
-    expect(act).toEqual({ mode: 'keyed', type: 'works', key: '123', title: 'ゲームA' })
+    expect(act).toEqual({
+      mode: 'keyed',
+      type: 'works',
+      key: '123',
+      title: 'ゲームA',
+      href: '/works/123?gamename=%E3%82%B2%E3%83%BC%E3%83%A0A',
+    })
   })
 
   it('keyed: extractor 側で decode され、editor は加工のみ行う', () => {
@@ -82,8 +90,15 @@ describe('tabs/schema: getTabActionFromLocation', () => {
     const act = getTabActionFromLocation(reg, {
       path: '/memos/7',
       queryParams: { gamename: encodeURIComponent('タイトル') },
+      href: '/memos/7?gamename=%E3%83%86%E3%82%BF%E3%82%A4%E3%83%88%E3%83%AB',
     })
-    expect(act).toEqual({ mode: 'keyed', type: 'memos', key: '7', title: 'メモ - タイトル' })
+    expect(act).toEqual({
+      mode: 'keyed',
+      type: 'memos',
+      key: '7',
+      title: 'メモ - タイトル',
+      href: '/memos/7?gamename=%E3%83%86%E3%82%BF%E3%82%A4%E3%83%88%E3%83%AB',
+    })
   })
 
   it('keyed: キーが取得できなければ none', () => {
@@ -115,5 +130,13 @@ describe('tabs/schema: buildPath', () => {
     })
     expect(buildPath(k, '456')).toBe('/works/456')
     expect(buildPath(k)).toBe('/works/:id(\\d+)')
+  })
+})
+
+describe('tabs/schema: stripQueryParams', () => {
+  it('指定した query param だけを除去し、他は保持する', () => {
+    expect(stripQueryParams('/works/123?gamename=%E3%82%B2%E3%83%BC%E3%83%A0A&play=true#tab', ['play'])).toBe(
+      '/works/123?gamename=%E3%82%B2%E3%83%BC%E3%83%A0A#tab',
+    )
   })
 })

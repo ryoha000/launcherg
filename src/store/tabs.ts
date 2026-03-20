@@ -2,7 +2,7 @@ import type { Hook } from '@mateothegreat/svelte5-router'
 import { goto } from '@mateothegreat/svelte5-router'
 import { createLocalStorageWritable } from '@/lib/utils'
 import { ROUTE_REGISTRY } from '@/router/const'
-import { buildPath, getTabActionFromLocation } from '@/store/tabs/schema'
+import { buildPath, getTabActionFromLocation, stripQueryParams } from '@/store/tabs/schema'
 import { computeTabDeletionPlan, upsertKeyedTab, upsertSingletonTab } from '@/store/tabs/updaters'
 
 export interface Tab {
@@ -11,6 +11,7 @@ export interface Tab {
   type: string
   scrollTo: number
   title: string
+  href?: string
 }
 
 function createTabs() {
@@ -23,11 +24,16 @@ function createTabs() {
     const queryParams = typeof event.result.querystring.params === 'object'
       ? (event.result.querystring.params as Record<string, unknown>)
       : undefined
+    const href = stripQueryParams(
+      `${window.location.pathname}${window.location.search}${window.location.hash}`,
+      ['play'],
+    )
 
     const action = getTabActionFromLocation(ROUTE_REGISTRY, {
       path,
       pathParams: event.result.path.params as Record<string, unknown> | undefined,
       queryParams,
+      href,
     })
 
     switch (action.mode) {
@@ -96,7 +102,7 @@ function createTabs() {
     const tab = _tabs[index]
     const descriptor = ROUTE_REGISTRY.find(d => d.kind === tab.type)
     if (descriptor) {
-      goto(buildPath(descriptor, tab.workId))
+      goto(tab.href ?? buildPath(descriptor, tab.workId))
     }
     else {
       goto('/')

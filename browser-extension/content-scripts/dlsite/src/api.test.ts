@@ -1,8 +1,8 @@
 import { readFileSync } from 'node:fs'
 import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { describe, expect, it, vi } from 'vitest'
 import { setLogLevel } from '@launcherg/shared'
+import { describe, expect, it, vi } from 'vitest'
 import {
   buildDlsitePayloadKey,
   convertDlsiteWorkItem,
@@ -32,7 +32,7 @@ describe('dlsite api parser', () => {
     }])
   })
 
-  it('EXE 以外の作品は除外し、スキップした file_type を unique でログ出力する', () => {
+  it('eXE 以外の作品は除外し、スキップした file_type を unique でログ出力する', () => {
     const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
     setLogLevel('debug')
 

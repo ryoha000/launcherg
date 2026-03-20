@@ -5,8 +5,8 @@ import { describe, expect, it } from 'vitest'
 import {
   buildDmmPayloadKey,
   convertDmmLibraryItem,
-  extractDmmGamesFromSetDetailResponse,
   extractDmmGamesFromApiResponse,
+  extractDmmGamesFromSetDetailResponse,
   extractDownloadUrlsFromSetDetail,
   extractDownloadUrlsFromSingleDetail,
   isDmmLibraryApiUrl,

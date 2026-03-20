@@ -1,9 +1,9 @@
+import type { DmmSetDetailResponse, DmmSingleDetailResponse } from './api'
 import { logger, setDownloadIntent, showInPageNotification } from '@launcherg/shared'
 import {
+
   extractDownloadUrlsFromSetDetail,
   extractDownloadUrlsFromSingleDetail,
-  type DmmSetDetailResponse,
-  type DmmSingleDetailResponse,
 } from './api'
 
 const log = logger('dmm-download')

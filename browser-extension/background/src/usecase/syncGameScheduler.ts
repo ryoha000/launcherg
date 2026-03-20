@@ -59,10 +59,10 @@ export function syncGame(context: HandlerContext): Promise<void> {
       image_url: g.imageUrl,
       parent_pack: g.parentPack
         ? {
-          store_id: g.parentPack.storeId,
-          category: g.parentPack.category,
-          subcategory: g.parentPack.subcategory,
-        }
+            store_id: g.parentPack.storeId,
+            category: g.parentPack.category,
+            subcategory: g.parentPack.subcategory,
+          }
         : undefined,
     }))
     const msg = buildMessage({

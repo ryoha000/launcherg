@@ -8,17 +8,38 @@
   import PlayPopover from '@/components/Work/PlayPopover.svelte'
   import { commandOpenUrl } from '@/lib/command'
   import { useWorkLnkQuery } from '@/lib/data/queries/workLnk'
+  import { stripQueryParams } from '@/store/tabs/schema'
 
   interface Props {
     workDetail: WorkDetailsVm
+    autoPlay?: boolean
   }
 
-  let { workDetail }: Props = $props()
+  let { workDetail, autoPlay = false }: Props = $props()
 
   const workLnkQuery = useWorkLnkQuery(workDetail.id)
   const isNotInstalled = $derived(!$workLnkQuery.data?.length)
 
   const { start } = useStart(workDetail, workLnkQuery)
+  let autoPlayHandled = $state(false)
+
+  const consumeAutoPlayQuery = () => {
+    const nextHref = stripQueryParams(window.location.href, ['play'])
+    window.history.replaceState({}, '', nextHref)
+  }
+
+  const maybeAutoPlay = () => {
+    if (!autoPlay || autoPlayHandled || isNotInstalled) {
+      return
+    }
+    autoPlayHandled = true
+    consumeAutoPlayQuery()
+    void start('default')
+  }
+
+  $effect(() => {
+    maybeAutoPlay()
+  })
 
   const dmmUrlForInstall = $derived.by<string | null>(() => {
     const dmm = workDetail.dmm

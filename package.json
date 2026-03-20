@@ -24,6 +24,7 @@
     "@tauri-apps/plugin-dialog": "2.3.0",
     "@tauri-apps/plugin-fs": "2.4.0",
     "@tauri-apps/plugin-http": "2.5.0",
+    "@tauri-apps/plugin-deep-link": "2.4.7",
     "@tauri-apps/plugin-shell": "2.3.0",
     "@unocss/reset": "66.3.3",
     "easymde": "2.20.0",

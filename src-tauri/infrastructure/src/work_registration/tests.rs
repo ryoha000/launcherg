@@ -244,6 +244,49 @@ async fn register_親パック関連付けが正しく実行される() {
 }
 
 #[tokio::test]
+async fn register_親パック関連付けの再登録でもエラーにならない() {
+    let test_db = TestDatabase::new().await.unwrap();
+    let service = create_service(&test_db);
+    let repo = test_db.sqlite_repository();
+
+    let parent_work = {
+        let mut r = repo.work();
+        r.upsert(&NewWork {
+            title: "Parent".to_string(),
+        })
+        .await
+        .unwrap()
+    };
+
+    let requests = vec![WorkRegistrationRequest {
+        keys: vec![UniqueWorkKey::ErogamescapeId(1)],
+        insert: WorkInsert {
+            title: "Child Work".to_string(),
+            path: None,
+            egs_info: None,
+            icon: None,
+            thumbnail: None,
+            parent_pack_work_id: Some(parent_work.clone()),
+        },
+    }];
+
+    let first_results = service.register(requests.clone()).await.unwrap();
+    assert_eq!(first_results.len(), 1);
+
+    let second_results = service.register(requests).await.unwrap();
+    assert_eq!(second_results.len(), 1);
+    assert_eq!(second_results[0].work_id.value, first_results[0].work_id.value);
+
+    let mut r = repo.work_parent_packs();
+    let found_parent = r
+        .find_parent_id(second_results[0].work_id.clone())
+        .await
+        .unwrap();
+    assert!(found_parent.is_some());
+    assert_eq!(found_parent.unwrap().value, parent_work.value);
+}
+
+#[tokio::test]
 async fn register_画像戦略_never_は適用されない() {
     let test_db = TestDatabase::new().await.unwrap();
     let service = create_service(&test_db);

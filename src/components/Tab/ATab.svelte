@@ -31,6 +31,8 @@
 
   const navigate = () => {
     const d = ROUTE_REGISTRY.find(r => r.kind === tab.type)
+    if (tab.href)
+      return goto(tab.href)
     if (!d)
       return goto('/')
     goto(buildPath(d, tab.workId))

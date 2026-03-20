@@ -466,17 +466,6 @@ async fn notify_app_signal(ctx: &AppCtx, message: &NativeMessageCase) -> anyhow:
             "DLsite との連携リクエストを受信しました（対象 {} 件）。処理が完了すると画面が自動で更新されます。",
             req.games.len()
         )),
-        NativeMessageCase::DownloadsCompleted(req) => {
-            let store_label = match &req.intent {
-                models::downloads::DownloadIntentTs::Dmm { .. } => "DMM GAMES",
-                models::downloads::DownloadIntentTs::Dlsite { .. } => "DLsite",
-            };
-            Some(format!(
-                "{} のダウンロード完了情報を受信しました（対象 {} 件）。処理が完了すると画面が自動で更新されます。",
-                store_label,
-                req.items.len()
-            ))
-        }
         _ => None,
     };
 

@@ -28,9 +28,10 @@
     workDetail: WorkDetailsVm
     id: string
     seiyaUrl: string
+    autoPlay?: boolean
   }
 
-  const { workDetail, id, seiyaUrl }: Props = $props()
+  const { workDetail, id, seiyaUrl, autoPlay = false }: Props = $props()
 
   let isLike = $state(!!workDetail.likeAt)
 
@@ -80,7 +81,7 @@
 
 {#await lnksPromise then lnks}
   <div class='min-w-0 w-full flex flex-wrap items-center gap-4'>
-    <PlayButton workDetail={workDetail} />
+    <PlayButton workDetail={workDetail} autoPlay={autoPlay} />
     <Button
       leftIcon='i-material-symbols-drive-file-rename-outline'
       text='Memo'

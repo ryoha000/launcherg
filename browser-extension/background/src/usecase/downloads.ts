@@ -8,7 +8,7 @@ declare global {
   interface Window {
     __launchergDownloadsOnChangedHandler?: (delta: chrome.downloads.DownloadDelta) => void | Promise<void>
   }
-  /* eslint-disable-next-line ts/consistent-type-definitions */
+
   interface ServiceWorkerGlobalScope {
     __launchergDownloadsOnChangedHandler?: (delta: chrome.downloads.DownloadDelta) => void | Promise<void>
   }

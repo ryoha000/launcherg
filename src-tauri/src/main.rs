@@ -21,15 +21,34 @@ use interface::{
     module::{Modules, ModulesExt},
 };
 use tauri::{async_runtime::block_on, Manager};
+use tauri_plugin_deep_link::DeepLinkExt;
 use tauri_plugin_log::{Target, TargetKind};
 
 fn main() {
-    tauri::Builder::default()
+    let mut builder = tauri::Builder::default();
+
+    #[cfg(desktop)]
+    {
+        builder = builder.plugin(tauri_plugin_single_instance::init(|app, args, cwd| {
+            log::info!(
+                "single instance triggered by deep link or duplicate launch: args={args:?}, cwd={cwd:?}"
+            );
+
+            if let Some(window) = app.get_webview_window("main") {
+                let _ = window.show();
+                let _ = window.set_focus();
+            }
+        }));
+    }
+
+    builder
+        .plugin(tauri_plugin_deep_link::init())
         .plugin(tauri_plugin_http::init())
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_clipboard_manager::init())
+        .plugin(tauri_plugin_notification::init())
         .setup(|app| {
             // folder の中身を移動して folder を削除する
             // C:\Users\ryoha\AppData\Roaming\launcherg -> C:\Users\ryoha\AppData\Roaming\ryoha.moe\launcherg
@@ -66,6 +85,13 @@ fn main() {
                 ))
             {
                 log::error!("failed to start app signal listener: {err}");
+            }
+
+            #[cfg(desktop)]
+            {
+                if let Err(err) = app.deep_link().register_all() {
+                    log::error!("failed to register deep link schemes: {err}");
+                }
             }
 
             Ok(())
@@ -112,6 +138,7 @@ fn main() {
             commands::process_manager::proctail_manager_is_running,
             commands::utils::open_url,
             commands::matcher::get_game_candidates_by_name,
+            commands::notification::show_os_notification,
             commands::extension::get_sync_status,
             commands::extension::set_extension_config,
             commands::extension::generate_extension_package,
