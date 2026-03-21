@@ -14,6 +14,7 @@ mod embedded {
 }
 
 mod all_game_cache_test;
+mod app_settings_test;
 mod explored_cache_test;
 mod native_host_log_test;
 mod save_image_queue_test;

@@ -6,6 +6,7 @@ pub mod image_queue_worker;
 pub mod local_file_system;
 pub mod native_messaging;
 pub mod pubsubimpl;
+pub mod save_path_resolver;
 pub mod sqliterepository;
 pub mod thumbnail;
 pub mod windowsimpl;

@@ -7,11 +7,19 @@ use crate::{works::Work, StrId};
 pub trait SavePathResolver {
     fn root_dir(&self) -> String;
 
+    fn image_storage_root_dir(&self) -> String {
+        self.root_dir()
+    }
+
+    fn downloaded_game_storage_root_dir(&self) -> String {
+        self.root_dir()
+    }
+
     fn icons_dir(&self) -> String {
-        self.join_and_ensure("game-icons")
+        self.join_and_ensure_with_base(&self.image_storage_root_dir(), "game-icons")
     }
     fn thumbnails_dir(&self) -> String {
-        self.join_and_ensure("thumbnails")
+        self.join_and_ensure_with_base(&self.image_storage_root_dir(), "thumbnails")
     }
     fn screenshots_dir(&self) -> String {
         self.join_and_ensure("screenshots")
@@ -140,14 +148,18 @@ pub trait SavePathResolver {
 
     // helper
     fn join_and_ensure(&self, sub: &str) -> String {
-        let p = PathBuf::from(self.root_dir()).join(sub);
+        self.join_and_ensure_with_base(&self.root_dir(), sub)
+    }
+
+    fn join_and_ensure_with_base(&self, base: &str, sub: &str) -> String {
+        let p = PathBuf::from(base).join(sub);
         std::fs::create_dir_all(&p).ok();
         p.to_string_lossy().to_string()
     }
 
     // downloaded games root directory
     fn downloaded_games_dir(&self) -> String {
-        self.join_and_ensure("downloaded_games")
+        self.join_and_ensure_with_base(&self.downloaded_game_storage_root_dir(), "downloaded_games")
     }
 }
 

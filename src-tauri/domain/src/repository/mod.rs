@@ -1,4 +1,5 @@
 pub mod all_game_cache;
+pub mod app_settings;
 pub mod erogamescape;
 pub mod explored_cache;
 pub mod manager;
@@ -25,6 +26,7 @@ pub trait RepositoriesExt {
     type WorkLnkRepo: work_lnk::WorkLnkRepository;
     type WorkLikeRepo: work_like::WorkLikeRepository;
     type WorkLinkPendingExeRepo: crate::work_link_pending_exe::WorkLinkPendingExeRepository;
+    type AppSettingsRepo: app_settings::AppSettingsRepository;
 
     fn work(&self) -> Self::WorkRepo;
     fn dmm_work(&self) -> Self::DmmWorkRepo;
@@ -39,4 +41,5 @@ pub trait RepositoriesExt {
     fn work_lnk(&self) -> Self::WorkLnkRepo;
     fn work_like(&self) -> Self::WorkLikeRepo;
     fn work_link_pending_exe(&self) -> Self::WorkLinkPendingExeRepo;
+    fn app_settings(&self) -> Self::AppSettingsRepo;
 }

@@ -121,6 +121,8 @@ fn main() {
             commands::utils::get_exe_path_by_lnk,
             commands::all_game_cache::get_game_cache_by_id,
             commands::images::save_screenshot_by_pid,
+            commands::storage_paths::get_storage_settings,
+            commands::storage_paths::set_storage_settings,
             commands::process_proctail::proctail_add_watch_target,
             commands::process_proctail::proctail_remove_watch_target,
             commands::process_proctail::proctail_get_watch_targets,

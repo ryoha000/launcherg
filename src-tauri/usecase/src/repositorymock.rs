@@ -8,6 +8,7 @@ mockall::mock! {
     impl domain::repository::RepositoriesExt for RepositoriesExtMock {
         type ExploredCacheRepo = domain::repository::explored_cache::MockExploredCacheRepository;
         type AllGameCacheRepo = domain::repository::all_game_cache::MockAllGameCacheRepository;
+        type AppSettingsRepo = domain::repository::app_settings::MockAppSettingsRepository;
         type ImageQueueRepo = domain::repository::save_image_queue::MockImageSaveQueueRepository;
         type HostLogRepo = domain::repository::native_host_log::MockNativeHostLogRepository;
         type DmmWorkRepo = domain::repository::works::MockDmmWorkRepository;
@@ -23,6 +24,7 @@ mockall::mock! {
         fn dmm_work(&self) -> domain::repository::works::MockDmmWorkRepository;
         fn dlsite_work(&self) -> domain::repository::works::MockDlsiteWorkRepository;
         fn all_game_cache(&self) -> domain::repository::all_game_cache::MockAllGameCacheRepository;
+        fn app_settings(&self) -> domain::repository::app_settings::MockAppSettingsRepository;
         fn explored_cache(&self) -> domain::repository::explored_cache::MockExploredCacheRepository;
         fn image_queue(&self) -> domain::repository::save_image_queue::MockImageSaveQueueRepository;
         fn host_log(&self) -> domain::repository::native_host_log::MockNativeHostLogRepository;
@@ -40,6 +42,7 @@ mockall::mock! {
 pub struct TestRepositories {
     pub explored_cache: Arc<Mutex<domain::repository::explored_cache::MockExploredCacheRepository>>,
     pub all_game_cache: Arc<Mutex<domain::repository::all_game_cache::MockAllGameCacheRepository>>,
+    pub app_settings: Arc<Mutex<domain::repository::app_settings::MockAppSettingsRepository>>,
     pub image_queue: Arc<Mutex<domain::repository::save_image_queue::MockImageSaveQueueRepository>>,
     pub host_log: Arc<Mutex<domain::repository::native_host_log::MockNativeHostLogRepository>>,
     pub dmm_work: Arc<Mutex<domain::repository::works::MockDmmWorkRepository>>,
@@ -62,6 +65,7 @@ impl Default for TestRepositories {
         Self {
             explored_cache: Arc::new(Mutex::new(Default::default())),
             all_game_cache: Arc::new(Mutex::new(Default::default())),
+            app_settings: Arc::new(Mutex::new(Default::default())),
             image_queue: Arc::new(Mutex::new(Default::default())),
             host_log: Arc::new(Mutex::new(Default::default())),
             dmm_work: Arc::new(Mutex::new(Default::default())),
@@ -83,6 +87,7 @@ impl domain::repository::RepositoriesExt for TestRepositories {
     type DmmWorkRepo = TestRepositories;
     type DlsiteWorkRepo = TestRepositories;
     type AllGameCacheRepo = TestRepositories;
+    type AppSettingsRepo = TestRepositories;
     type ExploredCacheRepo = TestRepositories;
     type ImageQueueRepo = TestRepositories;
     type HostLogRepo = TestRepositories;
@@ -102,6 +107,9 @@ impl domain::repository::RepositoriesExt for TestRepositories {
         self.clone()
     }
     fn all_game_cache(&self) -> Self::AllGameCacheRepo {
+        self.clone()
+    }
+    fn app_settings(&self) -> Self::AppSettingsRepo {
         self.clone()
     }
     fn explored_cache(&self) -> Self::ExploredCacheRepo {
@@ -350,6 +358,20 @@ impl domain::repository::all_game_cache::AllGameCacheRepository for TestReposito
         name: &str,
     ) -> anyhow::Result<Vec<domain::all_game_cache::AllGameCacheOneWithThumbnailUrl>> {
         self.all_game_cache.lock().await.search_by_name(name).await
+    }
+}
+
+impl domain::repository::app_settings::AppSettingsRepository for TestRepositories {
+    async fn get_storage_settings(
+        &mut self,
+    ) -> anyhow::Result<domain::repository::app_settings::AppStorageSettings> {
+        self.app_settings.lock().await.get_storage_settings().await
+    }
+    async fn set_storage_settings(
+        &mut self,
+        settings: &domain::repository::app_settings::AppStorageSettings,
+    ) -> anyhow::Result<()> {
+        self.app_settings.lock().await.set_storage_settings(settings).await
     }
 }
 

@@ -10,7 +10,11 @@ pub async fn get_work_details_all(
     modules: State<'_, Arc<Modules>>,
 ) -> anyhow::Result<Vec<WorkDetailsVm>, CommandError> {
     let rows = modules.work_use_case().list_all_details().await?;
-    Ok(rows.into_iter().map(|w| w.into()).collect())
+    let resolver = modules.save_path_resolver().clone();
+    Ok(rows
+        .into_iter()
+        .map(|w| WorkDetailsVm::from_work_details_with_resolver(w, resolver.as_ref()))
+        .collect())
 }
 
 #[tauri::command]
@@ -22,5 +26,6 @@ pub async fn get_work_details_by_work_id(
         .work_use_case()
         .find_details_by_work_id(work_id)
         .await?;
-    Ok(row.map(|w| w.into()))
+    let resolver = modules.save_path_resolver().clone();
+    Ok(row.map(|w| WorkDetailsVm::from_work_details_with_resolver(w, resolver.as_ref())))
 }

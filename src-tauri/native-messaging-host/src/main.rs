@@ -21,6 +21,7 @@ use infrastructure::{
     app_signal_router::interprocess::client::InterprocessAppSignalRouter,
     image_queue_worker::ImageQueueWorker,
     local_file_system::LocalFileSystem,
+    save_path_resolver::{DbSavePathResolver, StoragePathSettingsStore},
     sqliterepository::{
         driver::Db as RepoDb, sqliterepository::SqliteRepositories,
         sqliterepository::SqliteRepositoryManager,
@@ -37,6 +38,7 @@ use models::{
     downloads::DownloadsCompletedRequestTs,
     sync::{DlsiteSyncGamesRequestTs, DmmSyncGamesRequestTs, SyncBatchResultTs},
 };
+use usecase::app_settings::AppSettingsUseCase;
 use usecase::native_host_sync::downloads::DownloadsUseCase;
 use usecase::native_host_sync::{
     DlsiteSyncGameParam, DmmSyncGameParam, EgsInfo, NativeHostSyncUseCase,
@@ -45,12 +47,14 @@ use usecase::work_thumbnail::WorkThumbnailUseCase;
 
 struct AppCtx {
     manager: Arc<SqliteRepositoryManager>,
+    app_settings_use_case: AppSettingsUseCase<SqliteRepositoryManager, SqliteRepositories>,
     sync_usecase: NativeHostSyncUseCase<
         SqliteRepositoryManager,
         SqliteRepositories,
         WorkRegistrationServiceImpl<SqliteRepositoryManager, SqliteRepositories, Windows>,
     >,
     resolver: Arc<dyn SavePathResolver>,
+    storage_path_settings: Arc<StoragePathSettingsStore>,
     fs: Arc<LocalFileSystem>,
     work_linker: Arc<WorkLinkerImpl<SqliteRepositoryManager, SqliteRepositories, Windows>>,
     app_signal_router: Arc<InterprocessAppSignalRouter>,
@@ -132,13 +136,25 @@ async fn main() {
         .target(env_logger::Target::Stderr)
         .init();
 
-    let resolver = Arc::new(DirsSavePathResolver::default());
+    let fixed_root = DirsSavePathResolver::default().root_dir();
     // ensure sidecar (extract-icon.exe) is present next to host executable
     let _ = ensure_extract_icon_sidecar();
-    let db_path = resolver.db_file_path();
+    let db_path = DirsSavePathResolver::default().db_file_path();
     let repo_db = RepoDb::from_path(&db_path).await;
     let repo_manager = Arc::new(SqliteRepositoryManager::new(repo_db.pool_arc()));
     let windows = Arc::new(Windows::new());
+    let app_settings_use_case = AppSettingsUseCase::new(repo_manager.clone());
+    let initial_storage_settings = app_settings_use_case
+        .get_storage_settings()
+        .await
+        .unwrap_or_default();
+    let storage_path_settings = Arc::new(StoragePathSettingsStore::new(
+        initial_storage_settings.clone().into(),
+    ));
+    let resolver: Arc<dyn SavePathResolver> = Arc::new(DbSavePathResolver::new(
+        fixed_root,
+        storage_path_settings.clone(),
+    ));
     let work_registration_service: Arc<
         WorkRegistrationServiceImpl<SqliteRepositoryManager, SqliteRepositories, Windows>,
     > = Arc::new(WorkRegistrationServiceImpl::new(
@@ -156,8 +172,10 @@ async fn main() {
     ));
     let ctx = AppCtx {
         manager: repo_manager,
+        app_settings_use_case,
         sync_usecase,
         resolver,
+        storage_path_settings,
         fs,
         work_linker,
         app_signal_router: Arc::new(InterprocessAppSignalRouter::new()),
@@ -180,6 +198,10 @@ async fn main() {
 }
 
 async fn handle_message(ctx: &AppCtx) -> HostResult<bool> {
+    if let Err(err) = reload_storage_settings(ctx).await {
+        log::warn!("failed to reload storage settings: {err}");
+    }
+
     let message_bytes = match read_framed().await {
         Ok(Some(bytes)) => bytes,
         Ok(None) => return Ok(false),
@@ -300,6 +322,12 @@ async fn handle_message(ctx: &AppCtx) -> HostResult<bool> {
         .await;
 
     Ok(true)
+}
+
+async fn reload_storage_settings(ctx: &AppCtx) -> anyhow::Result<()> {
+    let settings = ctx.app_settings_use_case.get_storage_settings().await?;
+    ctx.storage_path_settings.set(settings.into());
+    Ok(())
 }
 async fn handle_downloads_completed(
     ctx: &AppCtx,
@@ -876,6 +904,41 @@ mod tests {
         RepoDb::from_path(&tmp_str).await
     }
 
+    async fn build_test_ctx(
+        repo_manager: StdArc<SqliteRepositoryManager>,
+        resolver: Arc<dyn SavePathResolver>,
+        _windows: Arc<Windows>,
+        _work_registration_service: Arc<
+            WorkRegistrationServiceImpl<SqliteRepositoryManager, SqliteRepositories, Windows>,
+        >,
+        sync_usecase: NativeHostSyncUseCase<
+            SqliteRepositoryManager,
+            SqliteRepositories,
+            WorkRegistrationServiceImpl<SqliteRepositoryManager, SqliteRepositories, Windows>,
+        >,
+        fs: Arc<LocalFileSystem>,
+        work_linker: Arc<WorkLinkerImpl<SqliteRepositoryManager, SqliteRepositories, Windows>>,
+    ) -> AppCtx {
+        let app_settings_use_case = AppSettingsUseCase::new(repo_manager.clone());
+        let storage_path_settings = Arc::new(StoragePathSettingsStore::new(
+            app_settings_use_case
+                .get_storage_settings()
+                .await
+                .unwrap_or_default()
+                .into(),
+        ));
+        AppCtx {
+            manager: repo_manager,
+            app_settings_use_case,
+            sync_usecase,
+            resolver,
+            storage_path_settings,
+            fs,
+            work_linker,
+            app_signal_router: Arc::new(InterprocessAppSignalRouter::new()),
+        }
+    }
+
     #[tokio::test]
     #[ignore]
     async fn 統合_dmm_1000件_20秒以内_半数egs_10件parent() {
@@ -1419,14 +1482,16 @@ mod tests {
             resolver.clone(),
             windows.clone(),
         ));
-        let ctx = AppCtx {
-            manager: repo_manager,
-            sync_usecase: usecase,
+        let ctx = build_test_ctx(
+            repo_manager,
             resolver,
+            windows,
+            work_registration_service,
+            usecase,
             fs,
             work_linker,
-            app_signal_router: Arc::new(InterprocessAppSignalRouter::new()),
-        };
+        )
+        .await;
         let req = DmmSyncGamesRequestTs {
             games: vec![],
             extension_id: "ext".into(),
@@ -1470,14 +1535,16 @@ mod tests {
             resolver.clone(),
             windows.clone(),
         ));
-        let ctx = AppCtx {
-            manager: repo_manager,
-            sync_usecase: usecase,
+        let ctx = build_test_ctx(
+            repo_manager,
             resolver,
+            windows,
+            work_registration_service,
+            usecase,
             fs,
             work_linker,
-            app_signal_router: Arc::new(InterprocessAppSignalRouter::new()),
-        };
+        )
+        .await;
         let req = DlsiteSyncGamesRequestTs {
             games: vec![],
             extension_id: "ext".into(),
@@ -1521,14 +1588,16 @@ mod tests {
             resolver.clone(),
             windows.clone(),
         ));
-        let ctx = AppCtx {
-            manager: repo_manager,
-            sync_usecase: usecase,
+        let ctx = build_test_ctx(
+            repo_manager,
             resolver,
+            windows,
+            work_registration_service,
+            usecase,
             fs,
             work_linker,
-            app_signal_router: Arc::new(InterprocessAppSignalRouter::new()),
-        };
+        )
+        .await;
         let req = DmmSyncGamesRequestTs {
             games: vec![models::sync::DmmGameTs {
                 id: "SID100".into(),

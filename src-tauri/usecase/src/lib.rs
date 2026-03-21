@@ -1,4 +1,5 @@
 pub mod all_game_cache;
+pub mod app_settings;
 mod all_game_cache_test;
 pub mod erogamescape;
 pub mod error;

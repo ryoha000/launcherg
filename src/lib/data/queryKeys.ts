@@ -11,4 +11,7 @@ export const queryKeys = {
     unfinished: () => ['imageQueue', 'unfinished'] as const,
     finished: () => ['imageQueue', 'finished'] as const,
   },
+  storagePaths: {
+    all: () => ['storagePaths'] as const,
+  },
 }

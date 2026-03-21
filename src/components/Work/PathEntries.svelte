@@ -42,11 +42,11 @@
     </div>
     <div class='min-w-0'>
       {#if item.path}
-        <div class="{rowClass} group relative transition-all">
+        <div class='{rowClass} group relative transition-all'>
           <div class={valueClass}>
             {item.path}
           </div>
-          <div class='absolute right-2 top-1/2 flex -translate-y-1/2 items-center gap-1 pl-2 opacity-0 transition-opacity group-focus-within:opacity-100 group-hover:opacity-100'>
+          <div class='absolute right-2 top-1/2 flex items-center gap-1 pl-2 opacity-0 transition-opacity -translate-y-1/2 group-focus-within:opacity-100 group-hover:opacity-100'>
             <ButtonIcon
               icon='i-material-symbols-content-copy-outline-rounded'
               onclick={() => copyPath(item.path)}

@@ -9,12 +9,14 @@ use anyhow::Context as _;
 use fast_image_resize as fr;
 use image::{io::Reader as ImageReader, ColorType, ImageEncoder};
 
-use domain::service::save_path_resolver::{DirsSavePathResolver, SavePathResolver};
+use domain::service::save_path_resolver::SavePathResolver;
 use domain::{thumbnail::ThumbnailService, works::Work, StrId};
 
-pub fn build_thumbnail_paths(id: &StrId<Work>, src_url: &str) -> anyhow::Result<(String, String)> {
-    // 互換: 既存の呼び出し用（今後は SavePathResolver へ移行）
-    let resolver = DirsSavePathResolver::default();
+pub fn build_thumbnail_paths(
+    resolver: &dyn SavePathResolver,
+    id: &StrId<Work>,
+    src_url: &str,
+) -> anyhow::Result<(String, String)> {
     let resized = resolver.thumbnail_png_path(&id.value);
     let ext = std::path::Path::new(src_url)
         .extension()
@@ -72,15 +74,20 @@ pub fn resize_image(src: &str, dst: &str, dst_width_px: u32) -> anyhow::Result<(
     Ok(())
 }
 
-pub async fn save_thumbnail(id: &StrId<Work>, url: &str, width: u32) -> anyhow::Result<()> {
+pub async fn save_thumbnail(
+    resolver: &dyn SavePathResolver,
+    id: &StrId<Work>,
+    url: &str,
+    width: u32,
+) -> anyhow::Result<()> {
     if url.is_empty() {
         return Ok(());
     }
-    let (_orig, resized) = build_thumbnail_paths(id, url)?;
+    let (_orig, resized) = build_thumbnail_paths(resolver, id, url)?;
     if Path::new(&resized).exists() {
         return Ok(());
     }
-    let (orig, resized) = build_thumbnail_paths(id, url)?;
+    let (orig, resized) = build_thumbnail_paths(resolver, id, url)?;
     download_to_file(url, &orig).await?;
     resize_image(&orig, &resized, width)?;
     Ok(())
@@ -98,7 +105,7 @@ impl ThumbnailServiceImpl {
 
 impl ThumbnailService for ThumbnailServiceImpl {
     async fn save_thumbnail(&self, id: &StrId<Work>, url: &str) -> anyhow::Result<()> {
-        save_thumbnail(id, url, 400).await
+        save_thumbnail(self.resolver.as_ref(), id, url, 400).await
     }
 
     async fn get_thumbnail_size(&self, id: &StrId<Work>) -> anyhow::Result<Option<(u32, u32)>> {

@@ -22,7 +22,7 @@ use tauri_plugin_shell::process::CommandEvent;
 use tauri_plugin_shell::ShellExt;
 use windows::core::PCWSTR;
 
-use crate::service::save_path_resolver::{DirsSavePathResolver, SavePathResolver};
+use crate::service::save_path_resolver::SavePathResolver;
 
 use super::StrId;
 
@@ -79,10 +79,11 @@ fn get_ini_value(contents: &str, key: &str) -> Option<String> {
 // (icons dir constant is no longer used; path resolution is centralized in SavePathResolver)
 pub fn save_icon_to_png(
     handle: &Arc<AppHandle>,
+    resolver: &dyn SavePathResolver,
     file_path: &str,
     work_id: &StrId<crate::works::Work>,
 ) -> anyhow::Result<JoinHandle<anyhow::Result<()>>> {
-    let save_png_path = DirsSavePathResolver::default().icon_png_path(&work_id.value);
+    let save_png_path = resolver.icon_png_path(&work_id.value);
 
     let is_exe = file_path.to_lowercase().ends_with("exe");
     let is_ico = file_path.to_lowercase().ends_with("ico");

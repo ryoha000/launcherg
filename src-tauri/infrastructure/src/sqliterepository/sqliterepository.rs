@@ -47,6 +47,7 @@ pub struct SqliteRepositories {
     dmm_work: RepositoryImpl<domain::works::DmmWork>,
     dlsite_work: RepositoryImpl<domain::works::DlsiteWork>,
     all_game_cache: RepositoryImpl<domain::all_game_cache::AllGameCache>,
+    app_settings: RepositoryImpl<domain::repository::app_settings::AppStorageSettings>,
     explored_cache: RepositoryImpl<domain::explored_cache::ExploredCache>,
     image_queue: RepositoryImpl<domain::save_image_queue::ImageSaveQueueRow>,
     host_log: RepositoryImpl<domain::native_host_log::NativeHostLogRow>,
@@ -63,6 +64,7 @@ impl RepositoriesExt for SqliteRepositories {
     type DmmWorkRepo = RepositoryImpl<domain::works::DmmWork>;
     type DlsiteWorkRepo = RepositoryImpl<domain::works::DlsiteWork>;
     type AllGameCacheRepo = RepositoryImpl<domain::all_game_cache::AllGameCache>;
+    type AppSettingsRepo = RepositoryImpl<domain::repository::app_settings::AppStorageSettings>;
     type ExploredCacheRepo = RepositoryImpl<domain::explored_cache::ExploredCache>;
     type ImageQueueRepo = RepositoryImpl<domain::save_image_queue::ImageSaveQueueRow>;
     type HostLogRepo = RepositoryImpl<domain::native_host_log::NativeHostLogRow>;
@@ -84,6 +86,9 @@ impl RepositoriesExt for SqliteRepositories {
     }
     fn all_game_cache(&self) -> Self::AllGameCacheRepo {
         self.all_game_cache.clone()
+    }
+    fn app_settings(&self) -> Self::AppSettingsRepo {
+        self.app_settings.clone()
     }
     fn explored_cache(&self) -> Self::ExploredCacheRepo {
         self.explored_cache.clone()
@@ -135,6 +140,7 @@ impl SqliteRepositories {
             dmm_work: RepositoryImpl::new(executor.clone()),
             dlsite_work: RepositoryImpl::new(executor.clone()),
             all_game_cache: RepositoryImpl::new(executor.clone()),
+            app_settings: RepositoryImpl::new(executor.clone()),
             explored_cache: RepositoryImpl::new(executor.clone()),
             image_queue: RepositoryImpl::new(executor.clone()),
             host_log: RepositoryImpl::new(executor.clone()),

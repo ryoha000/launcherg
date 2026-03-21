@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use crate::{
-    domain::service::save_path_resolver::DirsSavePathResolver,
+    domain::service::save_path_resolver::{DirsSavePathResolver, SavePathResolver},
     domain::windows::WindowsExt,
     domain::{pubsub::PubSubService, repository::RepositoriesExt},
     infrastructure::{
@@ -12,6 +12,7 @@ use crate::{
         local_file_system::LocalFileSystem,
         native_messaging::NativeMessagingHostClientFactoryImpl,
         pubsubimpl::pubsub::{PubSub, PubSubExt},
+        save_path_resolver::{DbSavePathResolver, StoragePathSettingsStore},
         sqliterepository::{
             driver::Db,
             sqliterepository::{SqliteRepositories, SqliteRepositoryManager},
@@ -21,10 +22,10 @@ use crate::{
         work_registration::WorkRegistrationServiceImpl,
     },
     usecase::{
-        all_game_cache::AllGameCacheUseCase, erogamescape::ErogamescapeUseCase,
-        extension_manager::ExtensionManagerUseCase, file::FileUseCase,
-        host_log::HostLogUseCase, image_queue::ImageQueueUseCase, process::ProcessUseCase,
-        work::WorkUseCase, work_link_pending_exe::WorkLinkPendingExeUseCase,
+        all_game_cache::AllGameCacheUseCase, app_settings::AppSettingsUseCase,
+        erogamescape::ErogamescapeUseCase, extension_manager::ExtensionManagerUseCase,
+        file::FileUseCase, host_log::HostLogUseCase, image_queue::ImageQueueUseCase,
+        process::ProcessUseCase, work::WorkUseCase, work_link_pending_exe::WorkLinkPendingExeUseCase,
         work_pipeline::WorkPipelineUseCase, work_thumbnail::WorkThumbnailUseCase,
     },
 };
@@ -68,6 +69,9 @@ pub struct Modules {
     image_queue_runner:
         std::sync::Arc<ImageQueueRunnerImpl<SqliteRepositoryManager, SqliteRepositories, Windows>>,
     work_thumbnail_use_case: WorkThumbnailUseCase<SqliteRepositoryManager, SqliteRepositories>,
+    save_path_resolver: Arc<dyn domain::service::save_path_resolver::SavePathResolver>,
+    app_settings_use_case: AppSettingsUseCase<SqliteRepositoryManager, SqliteRepositories>,
+    storage_path_settings: Arc<StoragePathSettingsStore>,
 }
 pub trait ModulesExt {
     type Repositories: RepositoriesExt;
@@ -124,6 +128,11 @@ pub trait ModulesExt {
     fn work_thumbnail_use_case(
         &self,
     ) -> &WorkThumbnailUseCase<SqliteRepositoryManager, SqliteRepositories>;
+    fn save_path_resolver(&self) -> &Arc<dyn domain::service::save_path_resolver::SavePathResolver>;
+    fn app_settings_use_case(
+        &self,
+    ) -> &AppSettingsUseCase<SqliteRepositoryManager, SqliteRepositories>;
+    fn storage_path_settings(&self) -> &Arc<StoragePathSettingsStore>;
 }
 
 impl ModulesExt for Modules {
@@ -210,6 +219,17 @@ impl ModulesExt for Modules {
     ) -> &WorkThumbnailUseCase<SqliteRepositoryManager, SqliteRepositories> {
         &self.work_thumbnail_use_case
     }
+    fn save_path_resolver(&self) -> &Arc<dyn domain::service::save_path_resolver::SavePathResolver> {
+        &self.save_path_resolver
+    }
+    fn app_settings_use_case(
+        &self,
+    ) -> &AppSettingsUseCase<SqliteRepositoryManager, SqliteRepositories> {
+        &self.app_settings_use_case
+    }
+    fn storage_path_settings(&self) -> &Arc<StoragePathSettingsStore> {
+        &self.storage_path_settings
+    }
 }
 
 impl Modules {
@@ -217,7 +237,18 @@ impl Modules {
         let repo_manager = Arc::new(SqliteRepositoryManager::new(db.pool_arc()));
         let windows = Arc::new(Windows::new());
         let pubsub = PubSub::new(Arc::new(handle.clone()));
-        let resolver = Arc::new(DirsSavePathResolver::default());
+        let fixed_root = DirsSavePathResolver::default().root_dir();
+        let app_settings_use_case = AppSettingsUseCase::new(repo_manager.clone());
+        let initial_storage_settings = app_settings_use_case
+            .get_storage_settings()
+            .await
+            .unwrap_or_default();
+        let storage_path_settings = Arc::new(StoragePathSettingsStore::new(
+            initial_storage_settings.clone().into(),
+        ));
+        let resolver: Arc<dyn domain::service::save_path_resolver::SavePathResolver> = Arc::new(
+            DbSavePathResolver::new(fixed_root, storage_path_settings.clone()),
+        );
 
         let extension_manager_use_case = ExtensionManagerUseCase::new(
             pubsub.clone(),
@@ -234,13 +265,11 @@ impl Modules {
             SqliteRepositoryManager,
             SqliteRepositories,
         > = ErogamescapeUseCase::new(repo_manager.clone());
-        let save_path_resolver: Arc<dyn domain::service::save_path_resolver::SavePathResolver> =
-            Arc::new(DirsSavePathResolver::default());
         let work_registration_service: Arc<
             WorkRegistrationServiceImpl<SqliteRepositoryManager, SqliteRepositories, Windows>,
         > = Arc::new(WorkRegistrationServiceImpl::new(
             repo_manager.clone(),
-            save_path_resolver.clone(),
+            resolver.clone(),
             windows.clone(),
         ));
         let work_use_case: WorkUseCase<
@@ -261,7 +290,7 @@ impl Modules {
             repo_manager.clone(),
             std::sync::Arc::new(WorkLinkerImpl::new(
                 repo_manager.clone(),
-                save_path_resolver.clone(),
+                resolver.clone(),
                 windows.clone(),
             )),
         );
@@ -340,6 +369,9 @@ impl Modules {
             image_queue_runner,
             image_queue_use_case,
             work_thumbnail_use_case,
+            save_path_resolver: resolver,
+            app_settings_use_case,
+            storage_path_settings,
         }
     }
 }

@@ -79,7 +79,10 @@ pub fn process_square_icon(src: &str, dst: &str, target_short_px: u32) -> anyhow
 }
 
 enum Backend {
-    Tauri(Arc<AppHandle>),
+    Tauri {
+        handle: Arc<AppHandle>,
+        resolver: Arc<dyn SavePathResolver>,
+    },
     Host { resolver: Arc<dyn SavePathResolver> },
 }
 
@@ -88,9 +91,12 @@ pub struct IconServiceImpl {
 }
 
 impl IconServiceImpl {
-    pub fn new_from_app_handle(handle: Arc<AppHandle>) -> Self {
+    pub fn new_from_app_handle(
+        handle: Arc<AppHandle>,
+        resolver: Arc<dyn SavePathResolver>,
+    ) -> Self {
         Self {
-            backend: Backend::Tauri(handle),
+            backend: Backend::Tauri { handle, resolver },
         }
     }
     pub fn new_from_root_path(_root_dir: String) -> Self {
@@ -122,8 +128,9 @@ impl IconServiceImpl {
 impl IconService for IconServiceImpl {
     async fn save_icon_from_path(&self, id: &StrId<Work>, source_path: &str) -> anyhow::Result<()> {
         match &self.backend {
-            Backend::Tauri(handle) => {
-                let _ = domain_save_icon_to_png(handle, source_path, id)?.await??;
+            Backend::Tauri { handle, resolver } => {
+                let _ = domain_save_icon_to_png(handle, resolver.as_ref(), source_path, id)?
+                    .await??;
                 Ok(())
             }
             Backend::Host { resolver } => {
@@ -150,8 +157,7 @@ impl IconService for IconServiceImpl {
             return Ok(());
         }
         match &self.backend {
-            Backend::Tauri(_handle) => {
-                let resolver = DirsSavePathResolver::default();
+            Backend::Tauri { resolver, .. } => {
                 let save_path = resolver.icon_png_path(&id.value);
                 // 既に存在すればスキップ
                 if Path::new(&save_path).exists() {
@@ -218,8 +224,7 @@ impl IconService for IconServiceImpl {
 
     async fn save_default_icon(&self, id: &StrId<Work>) -> anyhow::Result<()> {
         match &self.backend {
-            Backend::Tauri(_handle) => {
-                let resolver = DirsSavePathResolver::default();
+            Backend::Tauri { resolver, .. } => {
                 let save_path = resolver.icon_png_path(&id.value);
                 Self::write_default_icon(&save_path)
             }

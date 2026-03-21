@@ -5,6 +5,7 @@ use tauri::async_runtime::Mutex;
 pub struct TestRepositories {
     pub explored_cache: Arc<Mutex<crate::repository::explored_cache::MockExploredCacheRepository>>,
     pub all_game_cache: Arc<Mutex<crate::repository::all_game_cache::MockAllGameCacheRepository>>,
+    pub app_settings: Arc<Mutex<crate::repository::app_settings::MockAppSettingsRepository>>,
     pub image_queue: Arc<Mutex<crate::repository::save_image_queue::MockImageSaveQueueRepository>>,
     pub host_log: Arc<Mutex<crate::repository::native_host_log::MockNativeHostLogRepository>>,
     pub dmm_work: Arc<Mutex<crate::repository::works::MockDmmWorkRepository>>,
@@ -26,6 +27,7 @@ impl Default for TestRepositories {
         Self {
             explored_cache: Arc::new(Mutex::new(Default::default())),
             all_game_cache: Arc::new(Mutex::new(Default::default())),
+            app_settings: Arc::new(Mutex::new(Default::default())),
             image_queue: Arc::new(Mutex::new(Default::default())),
             host_log: Arc::new(Mutex::new(Default::default())),
             dmm_work: Arc::new(Mutex::new(Default::default())),
@@ -46,6 +48,7 @@ impl crate::repository::RepositoriesExt for TestRepositories {
     type DmmWorkRepo = TestRepositories;
     type DlsiteWorkRepo = TestRepositories;
     type AllGameCacheRepo = TestRepositories;
+    type AppSettingsRepo = TestRepositories;
     type ExploredCacheRepo = TestRepositories;
     type ImageQueueRepo = TestRepositories;
     type HostLogRepo = TestRepositories;
@@ -65,6 +68,9 @@ impl crate::repository::RepositoriesExt for TestRepositories {
         self.clone()
     }
     fn all_game_cache(&self) -> Self::AllGameCacheRepo {
+        self.clone()
+    }
+    fn app_settings(&self) -> Self::AppSettingsRepo {
         self.clone()
     }
     fn explored_cache(&self) -> Self::ExploredCacheRepo {
@@ -308,6 +314,20 @@ impl crate::repository::all_game_cache::AllGameCacheRepository for TestRepositor
         name: &str,
     ) -> anyhow::Result<Vec<crate::all_game_cache::AllGameCacheOneWithThumbnailUrl>> {
         self.all_game_cache.lock().await.search_by_name(name).await
+    }
+}
+
+impl crate::repository::app_settings::AppSettingsRepository for TestRepositories {
+    async fn get_storage_settings(
+        &mut self,
+    ) -> anyhow::Result<crate::repository::app_settings::AppStorageSettings> {
+        self.app_settings.lock().await.get_storage_settings().await
+    }
+    async fn set_storage_settings(
+        &mut self,
+        settings: &crate::repository::app_settings::AppStorageSettings,
+    ) -> anyhow::Result<()> {
+        self.app_settings.lock().await.set_storage_settings(settings).await
     }
 }
 

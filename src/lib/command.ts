@@ -341,6 +341,19 @@ export async function commandBackfillThumbnailSizes() {
   return await invoke<number>('backfill_thumbnail_sizes')
 }
 
+export interface StoragePathSettingsVm {
+  imageStorageDir: string | null
+  downloadedGameStorageDir: string | null
+}
+
+export async function commandGetStorageSettings() {
+  return await invoke<StoragePathSettingsVm>('get_storage_settings')
+}
+
+export async function commandSetStorageSettings(settings: StoragePathSettingsVm) {
+  return await invoke<StoragePathSettingsVm>('set_storage_settings', { settings })
+}
+
 // Process pending exe links (work_link_pending_exe)
 export async function commandProcessPendingExeLinks() {
   return await invoke<void>('process_pending_exe_links')

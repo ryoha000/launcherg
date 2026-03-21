@@ -1,7 +1,10 @@
 <script lang='ts'>
   import { goto } from '@mateothegreat/svelte5-router'
+  import { get } from 'svelte/store'
   import Button from '@/components/UI/Button.svelte'
   import Input from '@/components/UI/Input.svelte'
+  import InputPath from '@/components/UI/InputPath.svelte'
+  import { useStorageSettingsMutation, useStorageSettingsQuery } from '@/lib/data/queries/storagePaths'
 
   let settings = $state({
     theme: 'dark',
@@ -11,8 +14,48 @@
     maxRecentGames: '10',
   })
 
+  let storageSettings = $state({
+    imageStorageDir: '',
+    downloadedGameStorageDir: '',
+  })
+  let storageSettingsInitialized = $state(false)
+  let storageMessage = $state('')
+  let storageError = $state('')
+
+  const storageSettingsQuery = useStorageSettingsQuery()
+  const storageSettingsMutation = useStorageSettingsMutation()
+
+  $effect(() => {
+    const data = $storageSettingsQuery.data
+    if (!data || storageSettingsInitialized) {
+      return
+    }
+    storageSettings = {
+      imageStorageDir: data.imageStorageDir ?? '',
+      downloadedGameStorageDir: data.downloadedGameStorageDir ?? '',
+    }
+    storageSettingsInitialized = true
+  })
+
   function saveSettings() {
-  // TODO: Tauriコマンドを使って設定を保存
+    storageError = ''
+    storageMessage = ''
+    void (async () => {
+      try {
+        const saved = await get(storageSettingsMutation).mutateAsync({
+          imageStorageDir: storageSettings.imageStorageDir.trim() || null,
+          downloadedGameStorageDir: storageSettings.downloadedGameStorageDir.trim() || null,
+        })
+        storageSettings = {
+          imageStorageDir: saved.imageStorageDir ?? '',
+          downloadedGameStorageDir: saved.downloadedGameStorageDir ?? '',
+        }
+        storageMessage = '保存しました'
+      }
+      catch (err) {
+        storageError = err instanceof Error ? err.message : String(err)
+      }
+    })()
   }
 
   function resetSettings() {
@@ -22,6 +65,13 @@
       showNotifications: true,
       defaultDirectory: '',
       maxRecentGames: '10',
+    }
+    storageError = ''
+    storageMessage = ''
+    const data = $storageSettingsQuery.data
+    storageSettings = {
+      imageStorageDir: data?.imageStorageDir ?? '',
+      downloadedGameStorageDir: data?.downloadedGameStorageDir ?? '',
     }
   }
 
@@ -84,6 +134,46 @@
         <div>
           <Input bind:value={settings.maxRecentGames} placeholder='10' />
         </div>
+      </div>
+    </div>
+
+    <!-- 保存先設定 -->
+    <div>
+      <h2 class='mb-3 text-(lg text-primary) font-semibold'>保存先設定</h2>
+      <div class='space-y-4'>
+        <div>
+          <InputPath
+            bind:path={storageSettings.imageStorageDir}
+            label='画像保存先'
+            placeholder='既定の保存先を使用'
+            directory={true}
+            withFilter={false}
+          />
+          <p class='mt-2 text-(sm text-secondary)'>
+            thumbnails と icons のみが対象です。既存データは移動されません。
+          </p>
+        </div>
+        <div>
+          <InputPath
+            bind:path={storageSettings.downloadedGameStorageDir}
+            label='ダウンロードゲーム保存先'
+            placeholder='既定の保存先を使用'
+            directory={true}
+            withFilter={false}
+          />
+          <p class='mt-2 text-(sm text-secondary)'>
+            downloaded_games のみが対象です。既存データは移動されません。
+          </p>
+        </div>
+        <div class='border border-(border-primary) rounded bg-(bg-secondary) p-3 text-(sm text-secondary)'>
+          保存先が無効な場合は保存に失敗します。固定パスへの自動フォールバックは行いません。
+        </div>
+        {#if storageMessage}
+          <p class='text-text-success text-(sm)'>{storageMessage}</p>
+        {/if}
+        {#if storageError}
+          <p class='text-text-error text-(sm)'>{storageError}</p>
+        {/if}
       </div>
     </div>
 

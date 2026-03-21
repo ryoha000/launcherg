@@ -1,4 +1,5 @@
 pub mod all_game_cache;
+pub mod app_settings;
 pub mod driver;
 pub mod erogamescape;
 pub mod explored_cache;

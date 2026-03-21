@@ -1,3 +1,5 @@
+use std::path::Path;
+
 use domain::service::save_path_resolver::{DirsSavePathResolver, SavePathResolver};
 
 use crate::interface::models::parent_dmm_pack::DmmPackKeysVm;
@@ -75,8 +77,24 @@ pub struct IconVm {
 impl From<WorkDetails> for WorkDetailsVm {
     fn from(w: WorkDetails) -> Self {
         let resolver = DirsSavePathResolver::default();
-        let icon_path = Some(resolver.icon_png_path(&w.work.id.value));
-        let thumbnail_path = Some(resolver.thumbnail_png_path(&w.work.id.value));
+        Self::from_work_details_with_resolver(w, &resolver)
+    }
+}
+
+impl WorkDetailsVm {
+    pub fn from_work_details_with_resolver(
+        w: WorkDetails,
+        resolver: &dyn SavePathResolver,
+    ) -> Self {
+        let legacy_resolver = DirsSavePathResolver::default();
+        let icon_path = pick_existing_path(
+            resolver.icon_png_path(&w.work.id.value),
+            legacy_resolver.icon_png_path(&w.work.id.value),
+        );
+        let thumbnail_path = pick_existing_path(
+            resolver.thumbnail_png_path(&w.work.id.value),
+            legacy_resolver.thumbnail_png_path(&w.work.id.value),
+        );
         WorkDetailsVm {
             id: w.work.id.value.clone(),
             title: w.work.title,
@@ -137,5 +155,15 @@ impl From<WorkDetails> for WorkDetailsVm {
                 .as_ref()
                 .map(|d| d.format("%Y-%m-%d %H:%M:%S").to_string()),
         }
+    }
+}
+
+fn pick_existing_path(current: String, legacy: String) -> Option<String> {
+    if Path::new(&current).exists() {
+        Some(current)
+    } else if Path::new(&legacy).exists() {
+        Some(legacy)
+    } else {
+        Some(current)
     }
 }
