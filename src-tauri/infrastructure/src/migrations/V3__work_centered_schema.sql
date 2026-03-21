@@ -77,36 +77,21 @@ CREATE INDEX IF NOT EXISTS idx_native_host_logs_created_at
 ON native_messaging_host_logs(created_at);
 
 -- 4) ユーザー操作系（works.id TEXT を参照）
-CREATE TABLE IF NOT EXISTS work_omits (
+CREATE TABLE IF NOT EXISTS work_parent_packs (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     work_id TEXT NOT NULL,
+    parent_pack_store_id TEXT NOT NULL,
+    parent_pack_category TEXT NOT NULL,
+    parent_pack_subcategory TEXT NOT NULL,
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     UNIQUE(work_id),
     FOREIGN KEY(work_id) REFERENCES works(id) ON DELETE CASCADE
 );
 
-CREATE TABLE IF NOT EXISTS dmm_work_packs (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    work_id TEXT NOT NULL UNIQUE,
-    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY(work_id) REFERENCES works(id) ON DELETE CASCADE
-);
-
-CREATE INDEX IF NOT EXISTS idx_dmm_work_packs_work_id ON dmm_work_packs(work_id);
-
-CREATE TABLE IF NOT EXISTS work_parent_packs (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    work_id TEXT NOT NULL,
-    parent_pack_work_id TEXT NOT NULL,
-    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE(work_id, parent_pack_work_id),
-    FOREIGN KEY(work_id) REFERENCES works(id) ON DELETE CASCADE,
-    FOREIGN KEY(parent_pack_work_id) REFERENCES works(id) ON DELETE CASCADE
-);
-
 CREATE INDEX IF NOT EXISTS idx_work_parent_packs_work_id ON work_parent_packs(work_id);
-CREATE INDEX IF NOT EXISTS idx_work_parent_packs_parent_id ON work_parent_packs(parent_pack_work_id);
+CREATE INDEX IF NOT EXISTS idx_work_parent_packs_parent_key
+ON work_parent_packs(parent_pack_store_id, parent_pack_category, parent_pack_subcategory);
 
 CREATE TABLE IF NOT EXISTS work_download_paths (
     id INTEGER PRIMARY KEY AUTOINCREMENT,

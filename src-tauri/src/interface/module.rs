@@ -21,11 +21,10 @@ use crate::{
         work_registration::WorkRegistrationServiceImpl,
     },
     usecase::{
-        all_game_cache::AllGameCacheUseCase, dmm_pack::DmmPackUseCase,
-        erogamescape::ErogamescapeUseCase, extension_manager::ExtensionManagerUseCase,
-        file::FileUseCase, host_log::HostLogUseCase, image_queue::ImageQueueUseCase,
-        process::ProcessUseCase, work::WorkUseCase,
-        work_link_pending_exe::WorkLinkPendingExeUseCase, work_omit::WorkOmitUseCase,
+        all_game_cache::AllGameCacheUseCase, erogamescape::ErogamescapeUseCase,
+        extension_manager::ExtensionManagerUseCase, file::FileUseCase,
+        host_log::HostLogUseCase, image_queue::ImageQueueUseCase, process::ProcessUseCase,
+        work::WorkUseCase, work_link_pending_exe::WorkLinkPendingExeUseCase,
         work_pipeline::WorkPipelineUseCase, work_thumbnail::WorkThumbnailUseCase,
     },
 };
@@ -40,9 +39,7 @@ pub struct Modules {
     file_use_case: FileUseCase,
     all_game_cache_use_case: AllGameCacheUseCase<SqliteRepositoryManager, SqliteRepositories>,
     process_use_case: ProcessUseCase<Windows>,
-    work_omit_use_case: WorkOmitUseCase<SqliteRepositoryManager, SqliteRepositories>,
     host_log_use_case: HostLogUseCase<SqliteRepositoryManager, SqliteRepositories>,
-    dmm_pack_use_case: DmmPackUseCase<SqliteRepositoryManager, SqliteRepositories>,
     work_use_case: WorkUseCase<
         SqliteRepositoryManager,
         SqliteRepositories,
@@ -85,9 +82,7 @@ pub trait ModulesExt {
     ) -> &AllGameCacheUseCase<SqliteRepositoryManager, SqliteRepositories>;
     fn file_use_case(&self) -> &FileUseCase;
     fn process_use_case(&self) -> &ProcessUseCase<Self::Windows>;
-    fn work_omit_use_case(&self) -> &WorkOmitUseCase<SqliteRepositoryManager, SqliteRepositories>;
     fn host_log_use_case(&self) -> &HostLogUseCase<SqliteRepositoryManager, SqliteRepositories>;
-    fn dmm_pack_use_case(&self) -> &DmmPackUseCase<SqliteRepositoryManager, SqliteRepositories>;
     fn work_use_case(
         &self,
     ) -> &WorkUseCase<
@@ -152,14 +147,8 @@ impl ModulesExt for Modules {
     fn process_use_case(&self) -> &ProcessUseCase<Self::Windows> {
         &self.process_use_case
     }
-    fn work_omit_use_case(&self) -> &WorkOmitUseCase<SqliteRepositoryManager, SqliteRepositories> {
-        &self.work_omit_use_case
-    }
     fn host_log_use_case(&self) -> &HostLogUseCase<SqliteRepositoryManager, SqliteRepositories> {
         &self.host_log_use_case
-    }
-    fn dmm_pack_use_case(&self) -> &DmmPackUseCase<SqliteRepositoryManager, SqliteRepositories> {
-        &self.dmm_pack_use_case
     }
     fn work_use_case(
         &self,
@@ -239,16 +228,12 @@ impl Modules {
 
         let process_use_case: ProcessUseCase<Windows> = ProcessUseCase::new(windows.clone());
 
-        let work_omit_use_case: WorkOmitUseCase<SqliteRepositoryManager, SqliteRepositories> =
-            WorkOmitUseCase::new(repo_manager.clone());
         let host_log_use_case: HostLogUseCase<SqliteRepositoryManager, SqliteRepositories> =
             HostLogUseCase::new(repo_manager.clone());
         let erogamescape_use_case: ErogamescapeUseCase<
             SqliteRepositoryManager,
             SqliteRepositories,
         > = ErogamescapeUseCase::new(repo_manager.clone());
-        let dmm_pack_use_case: DmmPackUseCase<SqliteRepositoryManager, SqliteRepositories> =
-            DmmPackUseCase::new(repo_manager.clone());
         let save_path_resolver: Arc<dyn domain::service::save_path_resolver::SavePathResolver> =
             Arc::new(DirsSavePathResolver::default());
         let work_registration_service: Arc<
@@ -345,10 +330,8 @@ impl Modules {
             all_game_cache_use_case,
             file_use_case,
             process_use_case,
-            work_omit_use_case,
             host_log_use_case,
             erogamescape_use_case,
-            dmm_pack_use_case,
             work_use_case,
             work_link_pending_exe_use_case,
             work_pipeline_use_case,

@@ -12,8 +12,6 @@ pub struct WorkDetailsVm {
     pub dlsite: Option<DlsiteSideVm>,
     pub erogamescape_id: Option<i32>,
     pub erogamescape_information: Option<ErogamescapeInformationVm>,
-    pub is_omitted: bool,
-    pub is_dmm_pack: bool,
     pub icon: Option<IconVm>,
     pub thumbnail: Option<ThumbnailVm>,
     pub latest_download_path: Option<LatestWorkDownloadPathVm>,
@@ -32,8 +30,6 @@ pub struct DmmSideVm {
     pub category: String,
     pub subcategory: String,
     pub parent_pack: Option<DmmPackKeysVm>,
-    pub is_omitted: bool,
-    pub is_pack: bool,
 }
 
 #[derive(serde::Serialize)]
@@ -42,7 +38,6 @@ pub struct DlsiteSideVm {
     pub id: i32,
     pub store_id: String,
     pub category: String,
-    pub is_omitted: bool,
 }
 
 #[derive(serde::Serialize)]
@@ -95,14 +90,11 @@ impl From<WorkDetails> for WorkDetailsVm {
                     category: p.category,
                     subcategory: p.subcategory,
                 }),
-                is_omitted: false,
-                is_pack: false,
             }),
             dlsite: w.dlsite.map(|d| DlsiteSideVm {
                 id: d.id.value,
                 store_id: d.store_id,
                 category: d.category,
-                is_omitted: false,
             }),
             erogamescape_id: w.erogamescape_id,
             erogamescape_information: w.erogamescape_information.map(|i| {
@@ -114,8 +106,6 @@ impl From<WorkDetails> for WorkDetailsVm {
                     is_nukige: i.is_nukige,
                 }
             }),
-            is_omitted: w.is_omitted,
-            is_dmm_pack: w.is_dmm_pack,
             icon: icon_path.map(|p| IconVm {
                 path: p,
             }),

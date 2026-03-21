@@ -48,8 +48,6 @@ pub struct WorkDetailsRow {
     pub egs_info_updated_at: Option<sqlx::types::chrono::NaiveDateTime>,
     pub cet_width: Option<i64>,
     pub cet_height: Option<i64>,
-    pub omit_id: Option<i64>,
-    pub dmm_pack_id: Option<i64>,
     pub dlsite_id: Option<i64>,
     pub dlsite_store_id: Option<String>,
     pub dlsite_category: Option<String>,
@@ -80,8 +78,6 @@ impl From<crate::sqliterepository::models::works::WorkDetailsRow> for domain::wo
             dlsite: None,
             erogamescape_id: r.egs_erogamescape_id,
             erogamescape_information: None,
-            is_omitted: false,
-            is_dmm_pack: false,
             latest_download_path: None,
             like: None,
             install_at: r
@@ -119,7 +115,6 @@ impl From<crate::sqliterepository::models::works::WorkDetailsRow> for domain::wo
                     _ => None,
                 },
             });
-            details.is_dmm_pack = r.dmm_pack_id.is_some();
         }
 
         if let Some(path_id) = r.latest_path_id {
@@ -139,10 +134,6 @@ impl From<crate::sqliterepository::models::works::WorkDetailsRow> for domain::wo
                 store_id: r.dlsite_store_id.unwrap_or_default(),
                 category: r.dlsite_category.unwrap_or_default(),
             });
-        }
-
-        if let Some(_) = r.omit_id {
-            details.is_omitted = true;
         }
 
         // Map erogamescape_information when available

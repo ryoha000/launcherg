@@ -10,8 +10,6 @@ mockall::mock! {
         type AllGameCacheRepo = domain::repository::all_game_cache::MockAllGameCacheRepository;
         type ImageQueueRepo = domain::repository::save_image_queue::MockImageSaveQueueRepository;
         type HostLogRepo = domain::repository::native_host_log::MockNativeHostLogRepository;
-        type WorkOmitRepo = domain::repository::work_omit::MockWorkOmitRepository;
-        type DmmPackRepo = domain::repository::dmm_work_pack::MockDmmPackRepository;
         type DmmWorkRepo = domain::repository::works::MockDmmWorkRepository;
         type DlsiteWorkRepo = domain::repository::works::MockDlsiteWorkRepository;
         type WorkRepo = domain::repository::works::MockWorkRepository;
@@ -28,9 +26,7 @@ mockall::mock! {
         fn explored_cache(&self) -> domain::repository::explored_cache::MockExploredCacheRepository;
         fn image_queue(&self) -> domain::repository::save_image_queue::MockImageSaveQueueRepository;
         fn host_log(&self) -> domain::repository::native_host_log::MockNativeHostLogRepository;
-        fn work_omit(&self) -> domain::repository::work_omit::MockWorkOmitRepository;
         fn work_parent_packs(&self) -> domain::repository::work_parent_packs::MockWorkParentPacksRepository;
-        fn dmm_pack(&self) -> domain::repository::dmm_work_pack::MockDmmPackRepository;
         fn work_download_path(&self) -> domain::repository::work_download_path::MockWorkDownloadPathRepository;
         fn work_lnk(&self) -> domain::repository::work_lnk::MockWorkLnkRepository;
         fn work_like(&self) -> domain::repository::work_like::MockWorkLikeRepository;
@@ -46,8 +42,6 @@ pub struct TestRepositories {
     pub all_game_cache: Arc<Mutex<domain::repository::all_game_cache::MockAllGameCacheRepository>>,
     pub image_queue: Arc<Mutex<domain::repository::save_image_queue::MockImageSaveQueueRepository>>,
     pub host_log: Arc<Mutex<domain::repository::native_host_log::MockNativeHostLogRepository>>,
-    pub work_omit: Arc<Mutex<domain::repository::work_omit::MockWorkOmitRepository>>,
-    pub dmm_pack: Arc<Mutex<domain::repository::dmm_work_pack::MockDmmPackRepository>>,
     pub dmm_work: Arc<Mutex<domain::repository::works::MockDmmWorkRepository>>,
     pub dlsite_work: Arc<Mutex<domain::repository::works::MockDlsiteWorkRepository>>,
     pub work: Arc<Mutex<domain::repository::works::MockWorkRepository>>,
@@ -70,8 +64,6 @@ impl Default for TestRepositories {
             all_game_cache: Arc::new(Mutex::new(Default::default())),
             image_queue: Arc::new(Mutex::new(Default::default())),
             host_log: Arc::new(Mutex::new(Default::default())),
-            work_omit: Arc::new(Mutex::new(Default::default())),
-            dmm_pack: Arc::new(Mutex::new(Default::default())),
             dmm_work: Arc::new(Mutex::new(Default::default())),
             dlsite_work: Arc::new(Mutex::new(Default::default())),
             work: Arc::new(Mutex::new(Default::default())),
@@ -94,9 +86,7 @@ impl domain::repository::RepositoriesExt for TestRepositories {
     type ExploredCacheRepo = TestRepositories;
     type ImageQueueRepo = TestRepositories;
     type HostLogRepo = TestRepositories;
-    type WorkOmitRepo = TestRepositories;
     type WorkParentPacksRepo = TestRepositories;
-    type DmmPackRepo = TestRepositories;
     type ErogamescapeRepo = TestRepositories;
     type WorkDownloadPathRepo = TestRepositories;
     type WorkLnkRepo = TestRepositories;
@@ -123,13 +113,7 @@ impl domain::repository::RepositoriesExt for TestRepositories {
     fn host_log(&self) -> Self::HostLogRepo {
         self.clone()
     }
-    fn work_omit(&self) -> Self::WorkOmitRepo {
-        self.clone()
-    }
     fn work_parent_packs(&self) -> Self::WorkParentPacksRepo {
-        self.clone()
-    }
-    fn dmm_pack(&self) -> Self::DmmPackRepo {
         self.clone()
     }
     fn erogamescape(&self) -> Self::ErogamescapeRepo {
@@ -339,25 +323,6 @@ impl domain::repository::works::DlsiteWorkRepository for TestRepositories {
 }
 
 #[cfg(test)]
-impl domain::repository::dmm_work_pack::DmmPackRepository for TestRepositories {
-    async fn add(&mut self, work_id: domain::StrId<domain::works::Work>) -> anyhow::Result<()> {
-        self.dmm_pack.lock().await.add(work_id).await
-    }
-    async fn remove(&mut self, work_id: domain::StrId<domain::works::Work>) -> anyhow::Result<()> {
-        self.dmm_pack.lock().await.remove(work_id).await
-    }
-    async fn list(&mut self) -> anyhow::Result<Vec<domain::dmm_work_pack::DmmWorkPack>> {
-        self.dmm_pack.lock().await.list().await
-    }
-    async fn exists(
-        &mut self,
-        work_id: domain::StrId<domain::works::Work>,
-    ) -> anyhow::Result<bool> {
-        self.dmm_pack.lock().await.exists(work_id).await
-    }
-}
-
-#[cfg(test)]
 impl domain::repository::all_game_cache::AllGameCacheRepository for TestRepositories {
     async fn get_by_ids(
         &mut self,
@@ -472,56 +437,37 @@ impl domain::repository::native_host_log::NativeHostLogRepository for TestReposi
 }
 
 #[cfg(test)]
-impl domain::repository::work_omit::WorkOmitRepository for TestRepositories {
-    async fn add(&mut self, work_id: domain::StrId<domain::works::Work>) -> anyhow::Result<()> {
-        self.work_omit.lock().await.add(work_id).await
-    }
-    async fn remove(&mut self, work_id: domain::StrId<domain::works::Work>) -> anyhow::Result<()> {
-        self.work_omit.lock().await.remove(work_id).await
-    }
-    async fn list(&mut self) -> anyhow::Result<Vec<domain::work_omit::WorkOmit>> {
-        self.work_omit.lock().await.list().await
-    }
-    async fn exists(
-        &mut self,
-        work_id: domain::StrId<domain::works::Work>,
-    ) -> anyhow::Result<bool> {
-        self.work_omit.lock().await.exists(work_id).await
-    }
-}
-
-#[cfg(test)]
 impl domain::repository::work_parent_packs::WorkParentPacksRepository for TestRepositories {
     async fn add(
         &mut self,
         work_id: domain::StrId<domain::works::Work>,
-        parent_pack_work_id: domain::StrId<domain::works::Work>,
+        parent_pack: domain::work_parent_pack::ParentPackKey,
     ) -> anyhow::Result<()> {
         self.work_parent_packs
             .lock()
             .await
-            .add(work_id, parent_pack_work_id)
+            .add(work_id, parent_pack)
             .await
     }
     async fn exists(
         &mut self,
         work_id: domain::StrId<domain::works::Work>,
-        parent_pack_work_id: domain::StrId<domain::works::Work>,
+        parent_pack: domain::work_parent_pack::ParentPackKey,
     ) -> anyhow::Result<bool> {
         self.work_parent_packs
             .lock()
             .await
-            .exists(work_id, parent_pack_work_id)
+            .exists(work_id, parent_pack)
             .await
     }
-    async fn find_parent_id(
+    async fn find_parent_key(
         &mut self,
         work_id: domain::StrId<domain::works::Work>,
-    ) -> anyhow::Result<Option<domain::StrId<domain::works::Work>>> {
+    ) -> anyhow::Result<Option<domain::work_parent_pack::ParentPackKey>> {
         self.work_parent_packs
             .lock()
             .await
-            .find_parent_id(work_id)
+            .find_parent_key(work_id)
             .await
     }
 }

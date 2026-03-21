@@ -3,8 +3,6 @@
 //! - EGS 情報があれば名称/詳細も upsert し、EGS マップを作成/更新する
 
 use derive_new::new;
-use domain::repository::works::WorkRepository;
-use domain::repository::works::{DlsiteWorkRepository, DmmWorkRepository};
 use domain::repository::{manager::RepositoryManager, RepositoriesExt};
 use domain::service::work_registration::WorkRegistrationService;
 use std::marker::PhantomData;
@@ -92,50 +90,9 @@ where
     R: RepositoriesExt + Send + Sync + 'static,
     RS: WorkRegistrationService + Send + Sync + 'static,
 {
+    #[allow(dead_code)]
     manager: Arc<M>,
     registrar: Arc<RS>,
     #[new(default)]
     _marker: PhantomData<R>,
-}
-
-impl<M, R, RS> NativeHostSyncUseCase<M, R, RS>
-where
-    M: RepositoryManager<R>,
-    R: RepositoriesExt + Send + Sync + 'static,
-    RS: WorkRegistrationService + Send + Sync + 'static,
-{
-    /// DMM の omit が付与された作品の一覧を返す（DMM情報必須）。
-    pub async fn list_dmm_omit_works(&self) -> anyhow::Result<Vec<DmmOmitItem>> {
-        let all = self
-            .manager
-            .run(|repos| {
-                Box::pin(async move {
-                    let mut repo = repos.work();
-                    repo.list_all_details().await
-                })
-            })
-            .await?;
-        let mut out: Vec<DmmOmitItem> = Vec::new();
-        for w in all.into_iter() {
-            if w.is_omitted {
-                if let Some(dmm) = w.dmm {
-                    out.push(DmmOmitItem {
-                        work_id: w.work.id.value.clone(),
-                        store_id: dmm.store_id,
-                        category: dmm.category,
-                        subcategory: dmm.subcategory,
-                    });
-                }
-            }
-        }
-        Ok(out)
-    }
-}
-
-#[derive(Clone, Debug)]
-pub struct DmmOmitItem {
-    pub work_id: String,
-    pub store_id: String,
-    pub category: String,
-    pub subcategory: String,
 }

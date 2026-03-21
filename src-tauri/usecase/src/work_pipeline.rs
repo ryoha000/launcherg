@@ -278,7 +278,7 @@ where
                         egs_info: None,
                         icon,
                         thumbnail,
-                        parent_pack_work_id: None,
+                        parent_pack_dmm_key: None,
                     },
                 }
             })

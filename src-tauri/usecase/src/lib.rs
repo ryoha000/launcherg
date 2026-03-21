@@ -1,6 +1,5 @@
 pub mod all_game_cache;
 mod all_game_cache_test;
-pub mod dmm_pack;
 pub mod erogamescape;
 pub mod error;
 pub mod extension_installer;
@@ -22,7 +21,6 @@ mod repositorymock;
 mod windowsmock;
 pub mod work;
 pub mod work_link_pending_exe;
-pub mod work_omit;
 pub mod work_pipeline;
 #[cfg(test)]
 mod work_pipeline_test;

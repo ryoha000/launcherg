@@ -436,10 +436,10 @@ where
                         }
 
                         // 親パック関連付け
-                        if let Some(parent_pack_id) = req.insert.parent_pack_work_id.clone() {
+                        if let Some(parent_pack_key) = req.insert.parent_pack_dmm_key.clone() {
                             repos
                                 .work_parent_packs()
-                                .add(work_id.clone(), parent_pack_id)
+                                .add(work_id.clone(), parent_pack_key)
                                 .await?;
                         }
 
