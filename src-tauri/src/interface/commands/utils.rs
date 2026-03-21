@@ -21,15 +21,7 @@ pub async fn get_play_time_minutes(
 
 #[tauri::command]
 pub fn open_folder(path: String) -> anyhow::Result<(), CommandError> {
-    let p = std::path::Path::new(&path);
-    let path = match p.is_file() {
-        true => p
-            .parent()
-            .ok_or(anyhow::anyhow!("parent not found"))?
-            .to_string_lossy()
-            .to_string(),
-        false => path,
-    };
+    let path = resolve_open_folder_path(&path)?;
     let err_msg: anyhow::Error = anyhow::anyhow!("Failed to open folder at path: {}", path);
     std::process::Command::new("explorer")
         .arg(path)
@@ -37,6 +29,29 @@ pub fn open_folder(path: String) -> anyhow::Result<(), CommandError> {
         .map_err(|_| err_msg)?;
 
     Ok(())
+}
+
+fn resolve_open_folder_path(path: &str) -> anyhow::Result<String> {
+    let mut resolved_path = path.to_string();
+    if path.to_lowercase().ends_with(".lnk") {
+        let windows = crate::infrastructure::windowsimpl::windows::Windows::new();
+        if let Ok(metadatas) = windows.shell_link().get_lnk_metadatas(vec![path.to_string()]) {
+            if let Some(meta) = metadatas.get(path) {
+                resolved_path = meta.path.clone();
+            }
+        }
+    }
+
+    let resolved = std::path::Path::new(&resolved_path);
+    if resolved.is_file() {
+        Ok(resolved
+            .parent()
+            .ok_or(anyhow::anyhow!("parent not found"))?
+            .to_string_lossy()
+            .to_string())
+    } else {
+        Ok(resolved_path)
+    }
 }
 
 #[tauri::command]

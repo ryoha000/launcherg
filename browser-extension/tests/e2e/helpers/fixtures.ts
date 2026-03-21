@@ -19,7 +19,7 @@ interface WorkerFixtures {
 }
 
 /** テスト全体で共有する persistentContext（Service Worker 込み） */
-export const test = base.extend<{}, WorkerFixtures>({
+export const test = base.extend<object, WorkerFixtures>({
   persistentContext: [
     // Playwright の fixture シグネチャに合わせて空の分割代入を使う。
     // eslint-disable-next-line no-empty-pattern

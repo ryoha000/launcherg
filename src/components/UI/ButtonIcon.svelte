@@ -4,7 +4,7 @@
 
   interface Props {
     icon: string
-    tooltip?: TippyOption | undefined
+    tooltip?: Partial<TippyOption> | undefined
     onclick?: (event: Event) => void
   }
 

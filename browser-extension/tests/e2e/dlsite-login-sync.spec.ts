@@ -1,8 +1,8 @@
 import type { Page, Worker } from '@playwright/test'
 import type { NativeMessageTs } from '../../shared/src/typeshare/native-messaging'
 import process from 'node:process'
+import { navigateToDlsiteLibrary } from './helpers/auth'
 import { expect, test } from './helpers/dlsite-fixtures'
-import { navigateToDlsiteLibrary, triggerDlsiteLibrarySync } from './helpers/auth'
 import { resetNativeMessageSpy, waitForNativeMessageCall } from './helpers/extension'
 
 // 所持作品の storeId は環境変数で指定（例: "RJ109462"）

@@ -46,6 +46,13 @@
     return lnks
   })())
 
+  const openGameFolder = (fallbackLnkPath?: string) => {
+    const path = workDetail.originalPath ?? fallbackLnkPath
+    if (path) {
+      void commandOpenFolder(path)
+    }
+  }
+
   let isOpenImportManually = $state(false)
   const onChangeGame = async (
     exePath: string | null,
@@ -107,7 +114,7 @@
             onclose={() => close()}
             onselectChange={() => (isOpenImportManually = true)}
             onselectDelete={() => (isOpenDelete = true)}
-            onselectOpen={() => lnks.length > 0 && commandOpenFolder(lnks[0].lnkPath)}
+            onselectOpen={() => openGameFolder(lnks[0]?.lnkPath)}
             onselectOtherInfomation={() => (isOpenOtherInformation = true)}
           />
         {/snippet}

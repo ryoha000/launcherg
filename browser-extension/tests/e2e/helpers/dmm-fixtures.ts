@@ -8,7 +8,7 @@ interface WorkerFixtures {
   dmmServiceWorker: Worker
 }
 
-export const test = base.extend<{}, WorkerFixtures>({
+export const test = base.extend<object, WorkerFixtures>({
   dmmServiceWorker: [
     async ({ persistentContext }, use) => {
       const sw = await getServiceWorker(persistentContext)

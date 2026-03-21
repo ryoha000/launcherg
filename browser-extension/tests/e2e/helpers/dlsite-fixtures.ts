@@ -8,7 +8,7 @@ interface WorkerFixtures {
   dlsiteServiceWorker: Worker
 }
 
-export const test = base.extend<{}, WorkerFixtures>({
+export const test = base.extend<object, WorkerFixtures>({
   dlsiteServiceWorker: [
     async ({ persistentContext }, use) => {
       const sw = await getServiceWorker(persistentContext)

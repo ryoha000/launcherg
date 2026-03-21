@@ -2,6 +2,7 @@
   import type { WorkDetailsVm } from '@/lib/command'
   import Modal from '@/components/UI/Modal.svelte'
   import OtherInfomationSection from '@/components/Work/OtherInfomationSection.svelte'
+  import PathEntries from '@/components/Work/PathEntries.svelte'
 
   interface Props {
     isOpen: boolean
@@ -47,14 +48,14 @@
         </div>
       {/if}
     </OtherInfomationSection>
-    <OtherInfomationSection label='Thumbnail Path'>
-      <pre class='whitespace-pre-wrap break-all'>{workDetail.thumbnail}</pre>
-    </OtherInfomationSection>
-    <OtherInfomationSection label='Latest Download Path'>
-      <pre class='whitespace-pre-wrap break-all'>{workDetail.latestDownloadPath?.downloadPath}</pre>
-    </OtherInfomationSection>
-    <OtherInfomationSection label='Original Path'>
-      <pre class='whitespace-pre-wrap break-all'>{workDetail.originalPath}</pre>
+    <OtherInfomationSection label='Paths'>
+      <PathEntries
+        items={[
+          { label: 'サムネイル', path: workDetail.thumbnail?.path },
+          { label: 'ダウンロード', path: workDetail.latestDownloadPath?.downloadPath },
+          { label: 'ゲーム', path: workDetail.originalPath },
+        ]}
+      />
     </OtherInfomationSection>
   </div>
 </Modal>
