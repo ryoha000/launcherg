@@ -37,6 +37,28 @@ pub const REMOVE_WORDS: [&str; 9] = [
     "DL版",
 ];
 
+/// インストール済みディレクトリで主 exe として優先したいファイル名
+pub const INSTALL_PRIORITY_NAMES: [&str; 6] = [
+    "setup.exe",
+    "game.exe",
+    "start.exe",
+    "startmenu.exe",
+    "siglusengine.exe",
+    "startup.exe",
+];
+
+/// インストール済みディレクトリで helper として後回しにしたいファイル名
+pub const INSTALL_HELPER_NAMES: [&str; 5] = [
+    "tracelog.exe",
+    "unitycrashhandler64.exe",
+    "エンジン設定.exe",
+    "supporttools.exe",
+    "uninst.exe",
+];
+
+/// インストール済み候補の走査から除外したいディレクトリ名
+pub const INSTALL_EXCLUDE_DIR_NAMES: [&str; 1] = ["setup"];
+
 /// 無視するゲームID
 pub const IGNORE_GAME_ID: [i32; 4] = [2644, 63, 2797, 10419];
 

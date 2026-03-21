@@ -1,15 +1,17 @@
 use chrono::Local;
+use std::cmp::Reverse;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
 use domain::{
+    game_matcher::config::{INSTALL_EXCLUDE_DIR_NAMES, INSTALL_HELPER_NAMES, INSTALL_PRIORITY_NAMES},
     repository::{
         manager::RepositoryManager,
         work_download_path::WorkDownloadPathRepository,
-        works::{DlsiteWorkRepository, DmmWorkRepository},
+        works::{DlsiteWorkRepository, DmmWorkRepository, WorkRepository},
         RepositoriesExt,
     },
-    scan::{DuplicateResolver, FileSystem, ResolvedWork},
+    scan::FileSystem,
     service::{
         save_path_resolver::SavePathResolver,
         work_linker::{WorkLinkTask, WorkLinker},
@@ -17,28 +19,34 @@ use domain::{
     StrId,
 };
 
-pub struct DownloadsUseCase<U, R, FS, DR, WL>
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
+struct InstallCandidateRank {
+    kind_score: i32,
+    exact_name_score: i32,
+    helper_score: i32,
+    stem_len: Reverse<usize>,
+    path: Reverse<String>,
+}
+
+pub struct DownloadsUseCase<U, R, FS, WL>
 where
     U: RepositoryManager<R> + Send + Sync + 'static,
     R: RepositoriesExt + Send + Sync + 'static,
     FS: FileSystem,
-    DR: DuplicateResolver,
     WL: WorkLinker,
 {
     pub manager: Arc<U>,
     pub resolver: Arc<dyn SavePathResolver>,
     fs: Arc<FS>,
-    dedup: Arc<DR>,
     linker: Arc<WL>,
     _marker: std::marker::PhantomData<R>,
 }
 
-impl<U, R, FS, DR, WL> DownloadsUseCase<U, R, FS, DR, WL>
+impl<U, R, FS, WL> DownloadsUseCase<U, R, FS, WL>
 where
     U: RepositoryManager<R> + Send + Sync + 'static,
     R: RepositoriesExt + Send + Sync + 'static,
     FS: FileSystem + Send + Sync + 'static,
-    DR: DuplicateResolver + Send + Sync + 'static,
     WL: WorkLinker + Send + Sync + 'static,
 {
     /// DownloadsUseCase を生成する。
@@ -49,14 +57,12 @@ where
         manager: Arc<U>,
         resolver: Arc<dyn SavePathResolver>,
         fs: Arc<FS>,
-        dedup: Arc<DR>,
         linker: Arc<WL>,
     ) -> Self {
         Self {
             manager,
             resolver,
             fs,
-            dedup,
             linker,
             _marker: std::marker::PhantomData,
         }
@@ -259,51 +265,170 @@ where
             }
         };
 
-        // 変換: 列挙結果を ResolvedWork に詰める（タイトルはファイル名）
-        let mut resolved: Vec<ResolvedWork> = Vec::new();
+        // 変換: 列挙結果から、主となる実行ファイル/ショートカットを 1 本選ぶ
+        let mut best_task: Option<WorkLinkTask> = None;
+        let mut best_rank: Option<InstallCandidateRank> = None;
         for candidate in iter {
-            // MEMO: title, egs_id, distance は必要ない(dedupの除外ファイル名のロジックだけを使いたい)ため適当な値を入れる
-            resolved.push(ResolvedWork::new(
-                candidate,
-                "downloaded".to_string(),
-                1,
-                1.0,
-            ));
+            if !matches!(
+                &candidate.kind,
+                domain::scan::CandidateKind::Exe | domain::scan::CandidateKind::Shortcut
+            ) {
+                continue;
+            }
+
+            let task = WorkLinkTask {
+                work_id: work_id.clone(),
+                kind: candidate.kind.clone(),
+                src: candidate.path,
+            };
+            if Self::is_excluded_install_candidate(&task.src) {
+                continue;
+            }
+            let rank = Self::rank_install_candidate(install_dir, &task.kind, &task.src);
+            if best_rank.as_ref().map_or(true, |current| rank > *current) {
+                best_rank = Some(rank);
+                best_task = Some(task);
+            }
         }
 
         // 候補なしなら終了
-        if resolved.is_empty() {
+        let Some(task) = best_task else {
             log::warn!(
                 "no executable candidates found in {}",
                 install_dir.display()
             );
             return Ok(());
-        }
+        };
 
-        // 重複排除（除外ルールに基づき候補を選別）
-        let deduped = self.dedup.resolve(resolved);
-        // 全除外なら終了
-        if deduped.is_empty() {
-            log::warn!(
-                "deduplication removed all candidates for {}",
-                install_dir.display()
-            );
-            return Ok(());
-        }
-
-        // タスク化: WorkLinkTask に変換
-        let tasks: Vec<WorkLinkTask> = deduped
-            .into_iter()
-            .map(|item| WorkLinkTask {
-                work_id: work_id.clone(),
-                kind: item.candidate.kind.clone(),
-                src: item.candidate.path,
-            })
-            .collect();
+        self.record_install_metadata(work_id.clone(), &task.src).await;
 
         // 実行: リンク作成を委譲
-        self.linker.ensure_links(tasks).await?;
+        self.linker.ensure_links(vec![task]).await?;
         Ok(())
+    }
+
+    fn rank_install_candidate(
+        install_dir: &Path,
+        kind: &domain::scan::CandidateKind,
+        path: &Path,
+    ) -> InstallCandidateRank {
+        let kind_score = match kind {
+            domain::scan::CandidateKind::Exe => 2,
+            domain::scan::CandidateKind::Shortcut => 1,
+            _ => 0,
+        };
+
+        let path_string = path.to_string_lossy().to_string();
+        let file_name = path
+            .file_name()
+            .and_then(|v| v.to_str())
+            .unwrap_or_default()
+            .to_lowercase();
+        let stem = path
+            .file_stem()
+            .and_then(|v| v.to_str())
+            .unwrap_or_default()
+            .to_lowercase();
+        let parent = path
+            .parent()
+            .and_then(|v| v.file_name())
+            .and_then(|v| v.to_str())
+            .unwrap_or_default()
+            .to_lowercase();
+        let install_dir_name = install_dir
+            .file_name()
+            .and_then(|v| v.to_str())
+            .unwrap_or_default()
+            .to_lowercase();
+        let file_name_is_priority = INSTALL_PRIORITY_NAMES
+            .iter()
+            .any(|name| file_name == *name);
+        let file_name_is_helper = INSTALL_HELPER_NAMES
+            .iter()
+            .any(|name| file_name == *name);
+
+        // 主exeは「インストール先ディレクトリ名」またはその直下の親フォルダ名と
+        // 名前が近いことが多い。helper や補助ツールは名前がずれやすいので、
+        // ここではディレクトリ名/親フォルダ名と一致する候補を優先する。
+        // さらに、既知の主 exe 名は完全一致で強く優先し、既知の helper 名は
+        // 完全一致で強く後回しにする。
+        let exact_name_score = if file_name_is_priority {
+            2
+        } else if !install_dir_name.is_empty()
+            && (stem.contains(&install_dir_name) || install_dir_name.contains(&stem))
+        {
+            1
+        } else if !parent.is_empty() && (stem.contains(&parent) || parent.contains(&stem)) {
+            1
+        } else {
+            0
+        };
+
+        let helper_penalty = if file_name_is_helper {
+            3
+        } else {
+            0
+        };
+
+        InstallCandidateRank {
+            kind_score,
+            exact_name_score,
+            helper_score: -helper_penalty,
+            stem_len: Reverse(stem.len()),
+            path: Reverse(path_string),
+        }
+    }
+
+    fn is_excluded_install_candidate(path: &Path) -> bool {
+        path.ancestors()
+            .filter_map(|ancestor| ancestor.file_name())
+            .filter_map(|name| name.to_str())
+            .map(|name| name.to_lowercase())
+            .any(|name| INSTALL_EXCLUDE_DIR_NAMES.iter().any(|exclude| name == *exclude))
+    }
+
+    async fn record_install_metadata(&self, work_id: StrId<domain::works::Work>, original_path: &Path) {
+        if let Ok(meta) = std::fs::metadata(original_path) {
+            let created = meta.created().ok();
+            let modified = meta.modified().ok();
+            if let Some(best_st) = match (created, modified) {
+                (Some(c), Some(m)) => Some(if m > c { m } else { c }),
+                (Some(c), None) => Some(c),
+                (None, Some(m)) => Some(m),
+                _ => None,
+            } {
+                let best_dt_local = chrono::DateTime::<chrono::Utc>::from(best_st)
+                    .with_timezone(&chrono::Local);
+                let original_path_string = original_path.to_string_lossy().to_string();
+                let work_id_value = work_id.value.clone();
+                if let Err(e) = self
+                    .manager
+                    .run(|repos| {
+                        let original_path = original_path_string.clone();
+                        let work_id = work_id.clone();
+                        let best_dt_local = best_dt_local;
+                        Box::pin(async move {
+                            repos
+                                .work()
+                                .update_install_by_work_id(work_id, best_dt_local, original_path)
+                                .await
+                        })
+                    })
+                    .await
+                {
+                    log::warn!(
+                        "Failed to update install_at/original_path for work_id={}: {}",
+                        work_id_value,
+                        e
+                    );
+                }
+            }
+        } else {
+            log::warn!(
+                "Failed to get metadata for path: {}",
+                original_path.display()
+            );
+        }
     }
 }
 
@@ -311,10 +436,10 @@ where
 mod tests {
     use super::*;
     use domain::repository::mock::{TestRepositories, TestRepositoryManager};
-    use domain::scan::{CandidateKind, MockDuplicateResolver, MockFileSystem, WorkCandidate};
+    use domain::scan::{CandidateKind, MockFileSystem, WorkCandidate};
     use domain::service::save_path_resolver::SavePathResolver;
     use domain::service::work_linker::MockWorkLinker;
-    use std::path::PathBuf;
+    use std::path::{Path, PathBuf};
     use tempfile::TempDir;
 
     #[derive(Clone)]
@@ -335,48 +460,19 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn register_installed_work_単一exeでリンク作成() {
-        let temp = TempDir::new().unwrap();
-        let resolver_impl = Arc::new(TestResolver::new(temp.path().to_path_buf()));
-        let resolver: Arc<dyn SavePathResolver> = resolver_impl.clone();
-        let manager = Arc::new(TestRepositoryManager::new(TestRepositories::default()));
-
-        let mut fs = MockFileSystem::new();
-        fs.expect_walk_dir().returning(|roots, _| {
-            assert_eq!(roots.len(), 1);
-            let candidate = WorkCandidate::new(roots[0].join("game.exe"), CandidateKind::Exe);
-            Ok(Box::new(vec![candidate].into_iter()))
-        });
-        let fs = Arc::new(fs);
-
-        let mut dedup = MockDuplicateResolver::new();
-        dedup.expect_resolve().returning(|items| items);
-        let dedup = Arc::new(dedup);
-
-        let mut linker = MockWorkLinker::new();
-        linker.expect_ensure_links().times(1).returning(|tasks| {
-            assert_eq!(tasks.len(), 1);
-            assert!(tasks[0].src.ends_with("game.exe"));
-            Box::pin(async { Ok(()) })
-        });
-        let linker = Arc::new(linker);
-
-        let uc = DownloadsUseCase::new(manager, resolver, fs, dedup, linker);
-        let install_dir = temp.path().join("installed");
-        std::fs::create_dir_all(&install_dir).unwrap();
-
-        uc.register_installed_work(StrId::new("10".to_string()), &install_dir)
-            .await
-            .unwrap();
-    }
-
-    #[tokio::test]
     async fn handle_single_展開後にリンク登録される() {
         let temp = TempDir::new().unwrap();
         let resolver_impl = Arc::new(TestResolver::new(temp.path().to_path_buf()));
         let resolver: Arc<dyn SavePathResolver> = resolver_impl.clone();
 
         let repos = TestRepositories::default();
+        {
+            let mut work_repo = repos.work.lock().await;
+            work_repo.expect_update_install_by_work_id().returning(|_, _, original_path| {
+                assert!(original_path.ends_with("game.exe"));
+                Box::pin(async { Ok::<_, anyhow::Error>(()) })
+            });
+        }
         {
             let mut work_download_path = repos.work_download_path.lock().await;
             work_download_path
@@ -392,11 +488,6 @@ mod tests {
             Ok(Box::new(vec![candidate].into_iter()))
         });
         let fs = Arc::new(fs);
-
-        let mut dedup = MockDuplicateResolver::new();
-        dedup.expect_resolve().returning(|items| items);
-        let dedup = Arc::new(dedup);
-
         let mut linker = MockWorkLinker::new();
         linker.expect_ensure_links().times(1).returning(|tasks| {
             assert_eq!(tasks.len(), 1);
@@ -405,7 +496,7 @@ mod tests {
         });
         let linker = Arc::new(linker);
 
-        let uc = DownloadsUseCase::new(manager, resolver, fs, dedup, linker);
+        let uc = DownloadsUseCase::new(manager, resolver, fs, linker);
 
         let source_dir = TempDir::new().unwrap();
         let exe_path = source_dir.path().join("game.exe");
@@ -420,5 +511,161 @@ mod tests {
             .unwrap();
         assert!(result_path.starts_with(temp.path()));
         assert!(result_path.join("game.exe").exists());
+    }
+
+    #[tokio::test]
+    async fn register_installed_work_候補選定テーブルテスト() {
+        struct Case<'a> {
+            name: &'a str,
+            candidates: Vec<(&'a str, CandidateKind)>,
+            expected_file_name: Option<&'a str>,
+        }
+
+        let cases = vec![
+            Case {
+                name: "単一 exe はそのまま採用する",
+                candidates: vec![("game.exe", CandidateKind::Exe)],
+                expected_file_name: Some("game.exe"),
+            },
+            Case {
+                name: "helper より main exe を優先する",
+                candidates: vec![
+                    ("notification_helper.exe", CandidateKind::Exe),
+                    ("Game.exe", CandidateKind::Exe),
+                ],
+                expected_file_name: Some("Game.exe"),
+            },
+            Case {
+                name: "主 exe 名を完全一致で優先する",
+                candidates: vec![
+                    ("notification_helper.exe", CandidateKind::Exe),
+                    ("Game.exe", CandidateKind::Exe),
+                ],
+                expected_file_name: Some("Game.exe"),
+            },
+            Case {
+                name: "Start 系の候補群では Start.exe を採用する",
+                candidates: vec![
+                    ("Start.exe", CandidateKind::Exe),
+                    ("StartData/Config.exe", CandidateKind::Exe),
+                    ("StartData/StartMenu.exe", CandidateKind::Exe),
+                    ("StartData/TraceLog.exe", CandidateKind::Exe),
+                    ("StartData/GameData/SiglusEngine.exe", CandidateKind::Exe),
+                ],
+                expected_file_name: Some("Start.exe"),
+            },
+            Case {
+                name: "UnityCrashHandler64.exe は helper として後回しにする",
+                candidates: vec![
+                    ("CYANBRAIN.exe", CandidateKind::Exe),
+                    ("UnityCrashHandler64.exe", CandidateKind::Exe),
+                ],
+                expected_file_name: Some("CYANBRAIN.exe"),
+            },
+            Case {
+                name: "エンジン設定.exe は helper として後回しにする",
+                candidates: vec![
+                    ("lol.exe", CandidateKind::Exe),
+                    ("エンジン設定.exe", CandidateKind::Exe),
+                ],
+                expected_file_name: Some("lol.exe"),
+            },
+            Case {
+                name: "startup.exe は主 exe として優先する",
+                candidates: vec![
+                    ("startup.exe", CandidateKind::Exe),
+                    ("SupportTools.exe", CandidateKind::Exe),
+                    ("ハロー・レディ！/hellolady_srp.exe", CandidateKind::Exe),
+                    ("ハロー・レディ！/hellolady.exe", CandidateKind::Exe),
+                    ("ハロー・レディ！/ハロー・レディ！.exe", CandidateKind::Exe),
+                ],
+                expected_file_name: Some("startup.exe"),
+            },
+            Case {
+                name: "SETUP 配下の候補は除外する",
+                candidates: vec![
+                    ("Setup.exe", CandidateKind::Exe),
+                    ("SETUP/もも☆プラ.eXe", CandidateKind::Exe),
+                    ("Game.exe", CandidateKind::Exe),
+                ],
+                expected_file_name: Some("Game.exe"),
+            },
+            Case {
+                name: "setup.exe は主候補として優先する",
+                candidates: vec![
+                    ("setup.exe", CandidateKind::Exe),
+                    ("files/uninst.exe", CandidateKind::Exe),
+                    ("files/zombie.exe", CandidateKind::Exe),
+                ],
+                expected_file_name: Some("setup.exe"),
+            },
+            Case {
+                name: "SupportTools.exe は helper として後回しにする",
+                candidates: vec![
+                    ("realsister_.exe", CandidateKind::Exe),
+                    ("SupportTools.exe", CandidateKind::Exe),
+                ],
+                expected_file_name: Some("realsister_.exe"),
+            },
+        ];
+
+        for case in cases {
+            let case_name = case.name;
+            let candidates = case.candidates.clone();
+            let expected_file_name = case.expected_file_name;
+            let temp = TempDir::new().unwrap();
+            let resolver_impl = Arc::new(TestResolver::new(temp.path().to_path_buf()));
+            let resolver: Arc<dyn SavePathResolver> = resolver_impl.clone();
+            let repos = TestRepositories::default();
+
+            if let Some(expected_file_name) = expected_file_name {
+                let mut work_repo = repos.work.lock().await;
+                work_repo
+                    .expect_update_install_by_work_id()
+                    .returning(move |_, _, original_path| {
+                        let actual = Path::new(&original_path)
+                            .file_name()
+                            .and_then(|v| v.to_str())
+                            .unwrap_or_default();
+                        assert_eq!(actual, expected_file_name, "case: {}", case_name);
+                        Box::pin(async { Ok::<_, anyhow::Error>(()) })
+                    });
+            }
+            let manager = Arc::new(TestRepositoryManager::new(repos));
+
+            let mut fs = MockFileSystem::new();
+            fs.expect_walk_dir().returning(move |roots, _| {
+                assert_eq!(roots.len(), 1, "case: {}", case_name);
+                let items = candidates
+                    .iter()
+                    .map(|(rel, kind)| WorkCandidate::new(roots[0].join(rel), kind.clone()))
+                    .collect::<Vec<_>>();
+                Ok(Box::new(items.into_iter()))
+            });
+            let fs = Arc::new(fs);
+
+            let mut linker = MockWorkLinker::new();
+            if let Some(expected_file_name) = expected_file_name {
+                linker.expect_ensure_links().times(1).returning(move |tasks| {
+                    assert_eq!(tasks.len(), 1, "case: {}", case_name);
+                    let actual = tasks[0]
+                        .src
+                        .file_name()
+                        .and_then(|v| v.to_str())
+                        .unwrap_or_default();
+                    assert_eq!(actual, expected_file_name, "case: {}", case_name);
+                    Box::pin(async { Ok(()) })
+                });
+            }
+            let linker = Arc::new(linker);
+
+            let uc = DownloadsUseCase::new(manager, resolver, fs, linker);
+            let install_dir = temp.path().join("installed");
+            std::fs::create_dir_all(&install_dir).unwrap();
+
+            uc.register_installed_work(StrId::new("10".to_string()), &install_dir)
+                .await
+                .unwrap();
+        }
     }
 }

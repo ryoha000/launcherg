@@ -19,7 +19,6 @@ use domain::service::app_signal_router::{
 use domain::service::save_path_resolver::{DirsSavePathResolver, SavePathResolver};
 use infrastructure::{
     app_signal_router::interprocess::client::InterprocessAppSignalRouter,
-    heuristic_duplicate_resolver::HeuristicDuplicateResolver,
     image_queue_worker::ImageQueueWorker,
     local_file_system::LocalFileSystem,
     sqliterepository::{
@@ -53,7 +52,6 @@ struct AppCtx {
     >,
     resolver: Arc<dyn SavePathResolver>,
     fs: Arc<LocalFileSystem>,
-    dedup: Arc<HeuristicDuplicateResolver>,
     work_linker: Arc<WorkLinkerImpl<SqliteRepositoryManager, SqliteRepositories, Windows>>,
     app_signal_router: Arc<InterprocessAppSignalRouter>,
 }
@@ -151,7 +149,6 @@ async fn main() {
     let sync_usecase =
         NativeHostSyncUseCase::new(repo_manager.clone(), work_registration_service.clone());
     let fs = Arc::new(LocalFileSystem::default());
-    let dedup = Arc::new(HeuristicDuplicateResolver);
     let work_linker = Arc::new(WorkLinkerImpl::new(
         repo_manager.clone(),
         resolver.clone(),
@@ -162,7 +159,6 @@ async fn main() {
         sync_usecase,
         resolver,
         fs,
-        dedup,
         work_linker,
         app_signal_router: Arc::new(InterprocessAppSignalRouter::new()),
     };
@@ -314,13 +310,11 @@ async fn handle_downloads_completed(
         SqliteRepositoryManager,
         SqliteRepositories,
         LocalFileSystem,
-        HeuristicDuplicateResolver,
         WorkLinkerImpl<SqliteRepositoryManager, SqliteRepositories, Windows>,
     > = DownloadsUseCase::new(
         ctx.manager.clone(),
         ctx.resolver.clone(),
         ctx.fs.clone(),
-        ctx.dedup.clone(),
         ctx.work_linker.clone(),
     );
 
@@ -1420,7 +1414,6 @@ mod tests {
         let usecase =
             NativeHostSyncUseCase::new(repo_manager.clone(), work_registration_service.clone());
         let fs = Arc::new(LocalFileSystem::default());
-        let dedup = Arc::new(HeuristicDuplicateResolver);
         let work_linker = Arc::new(WorkLinkerImpl::new(
             repo_manager.clone(),
             resolver.clone(),
@@ -1431,7 +1424,6 @@ mod tests {
             sync_usecase: usecase,
             resolver,
             fs,
-            dedup,
             work_linker,
             app_signal_router: Arc::new(InterprocessAppSignalRouter::new()),
         };
@@ -1473,7 +1465,6 @@ mod tests {
         let usecase =
             NativeHostSyncUseCase::new(repo_manager.clone(), work_registration_service.clone());
         let fs = Arc::new(LocalFileSystem::default());
-        let dedup = Arc::new(HeuristicDuplicateResolver);
         let work_linker = Arc::new(WorkLinkerImpl::new(
             repo_manager.clone(),
             resolver.clone(),
@@ -1484,7 +1475,6 @@ mod tests {
             sync_usecase: usecase,
             resolver,
             fs,
-            dedup,
             work_linker,
             app_signal_router: Arc::new(InterprocessAppSignalRouter::new()),
         };
@@ -1526,7 +1516,6 @@ mod tests {
         let usecase =
             NativeHostSyncUseCase::new(repo_manager.clone(), work_registration_service.clone());
         let fs = Arc::new(LocalFileSystem::default());
-        let dedup = Arc::new(HeuristicDuplicateResolver);
         let work_linker = Arc::new(WorkLinkerImpl::new(
             repo_manager.clone(),
             resolver.clone(),
@@ -1537,7 +1526,6 @@ mod tests {
             sync_usecase: usecase,
             resolver,
             fs,
-            dedup,
             work_linker,
             app_signal_router: Arc::new(InterprocessAppSignalRouter::new()),
         };
