@@ -1,0 +1,133 @@
+# https://taskfile.dev
+
+version: '3'
+
+tasks:
+  init:
+    cmds:
+      - pwsh.exe -NoProfile -Command "go install github.com/go-task/task/v3/cmd/task@latest"
+      - pwsh.exe -NoProfile -Command "cargo install typeshare-cli"
+
+  # check
+  check:
+    description: 開発しているパッケージをすべてチェック
+    deps:
+      - check:browser-extension
+      - check:tauri
+      - check:native-messaging-host
+
+  # check:browser-extension
+  check:browser-extension:
+    description: ブラウザ拡張機能をすべてチェック
+    deps:
+      - check:browser-extension:background
+      - check:browser-extension:content-scripts
+      - check:browser-extension:shared
+  check:browser-extension:e2e:
+    dir: browser-extension
+    dotenv:
+      - .env.test
+    description: ブラウザ拡張機能のE2Eテストを実行
+    cmds:
+      - pwsh.exe -NoProfile -Command "pnpm run test:playwright"
+  check:browser-extension:e2e:dlsite:
+    dir: browser-extension
+    dotenv:
+      - .env.test
+    description: ブラウザ拡張機能のDLsite E2Eテストを実行
+    cmds:
+      - pwsh.exe -NoProfile -Command "pnpm run test:playwright -- tests/e2e/dlsite-login-sync.spec.ts"
+  check:browser-extension:background:
+    dir: browser-extension/background
+    description: ブラウザ拡張機能のバックグラウンドスクリプトをチェック
+    cmds:
+      - pwsh.exe -NoProfile -Command "pnpm run build"
+      - pwsh.exe -NoProfile -Command "pnpm run test"
+  check:browser-extension:content-scripts:
+    dir: browser-extension/content-scripts
+    description: ブラウザ拡張機能のコンテンツスクリプトをすべてチェック
+    deps:
+      - check:browser-extension:content-scripts:dmm
+      - check:browser-extension:content-scripts:dlsite
+  check:browser-extension:content-scripts:dmm:
+    dir: browser-extension/content-scripts/dmm
+    description: ブラウザ拡張機能のDMMコンテンツスクリプトをチェック
+    cmds:
+      - pwsh.exe -NoProfile -Command "pnpm run build"
+      - pwsh.exe -NoProfile -Command "pnpm run test"
+  check:browser-extension:content-scripts:dlsite:
+    dir: browser-extension/content-scripts/dlsite
+    description: ブラウザ拡張機能のDLsiteコンテンツスクリプトをチェック
+    cmds:
+      - pwsh.exe -NoProfile -Command "pnpm run build"
+      - pwsh.exe -NoProfile -Command "pnpm run test"
+  check:browser-extension:shared:
+    dir: browser-extension/shared
+    description: ブラウザ拡張機能の共有パッケージをチェック
+    cmds:
+      - pwsh.exe -NoProfile -Command "pnpm run build"
+      - pwsh.exe -NoProfile -Command "pnpm run test"
+
+  # check:tauri
+  check:tauri:
+    description: Tauri関係のパッケージをすべてチェック
+    deps:
+      - check:tauri:frontend
+      - check:tauri:rust
+  check:tauri:frontend:
+    description: Tauriのフロントエンドをチェック
+    cmds:
+      - pwsh.exe -NoProfile -Command "npm run format"
+      - pwsh.exe -NoProfile -Command "npm run lint"
+      - pwsh.exe -NoProfile -Command "npm run check"
+      - pwsh.exe -NoProfile -Command "npm run test"
+  check:tauri:rust:
+    description: TauriのRustコードをチェック
+    dir: src-tauri
+    cmds:
+      - pwsh.exe -NoProfile -Command "cargo check --workspace"
+      - pwsh.exe -NoProfile -Command "cargo test --workspace"
+
+  # bench
+  bench:tauri:domain:
+    description: domain クレートのベンチマークを実行
+    dir: src-tauri
+    cmds:
+      - pwsh.exe -NoProfile -Command "cargo bench -p domain"
+
+  # check:src-tauri:native-messaging-host
+  check:native-messaging-host:
+    dir: src-tauri/native-messaging-host
+    description: Native Messaging Hostをチェック
+    cmds:
+      - pwsh.exe -NoProfile -Command "cargo check --workspace"
+      - pwsh.exe -NoProfile -Command "cargo test --workspace"
+
+  # build
+  build:extension:
+    description: build extension
+    deps:
+      - build:extension:native-messaging-host
+      - build:extension:browser-extension
+  build:extension:native-messaging-host:
+    description: build src-tauri/native-messaging-host
+    cmds:
+      - pwsh.exe -NoProfile -Command "node scripts/build-native-host.js"
+  build:extension:browser-extension:
+    dir: browser-extension
+    description: build browser-extension
+    cmds:
+      - pwsh.exe -NoProfile -Command "pnpm run build"
+
+  # gen
+  gen:
+    description: gen
+    deps:
+      - gen:native-messaging
+      - gen:pubsub
+  gen:native-messaging:
+    cmds:
+      - pwsh.exe -NoProfile -Command "typeshare ./src-tauri/native-messaging-host/src/models --lang=typescript --output-file=./browser-extension/shared/src/typeshare/native-messaging.ts"
+  gen:pubsub:
+    cmds:
+      - pwsh.exe -NoProfile -Command "typeshare ./src-tauri/domain/src/pubsub/event.rs --lang=typescript --output-file=./src/lib/typeshare/pubsub.ts"

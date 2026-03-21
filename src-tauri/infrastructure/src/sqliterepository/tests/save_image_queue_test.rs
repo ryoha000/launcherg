@@ -1,0 +1,50 @@
+use super::TestDatabase;
+use domain::repository::{save_image_queue::ImageSaveQueueRepository, RepositoriesExt};
+use domain::save_image_queue::{ImagePreprocess, ImageSrcType};
+
+#[tokio::test]
+async fn save_image_queue_normal_flows() {
+    let test_db = TestDatabase::new().await.unwrap();
+    let repo = test_db.sqlite_repository();
+
+    // enqueue
+    let id = {
+        let mut r = repo.image_queue();
+        r.enqueue(
+            "http://img",
+            ImageSrcType::Url,
+            "dst",
+            ImagePreprocess::None,
+        )
+        .await
+        .unwrap()
+    };
+
+    // list (unfinished)
+    {
+        let mut r = repo.image_queue();
+        let rows = r.list(true, 10).await.unwrap();
+        assert_eq!(rows.len(), 1);
+        assert_eq!(rows[0].id.value, id.value);
+    }
+
+    // mark_failed
+    {
+        let mut r = repo.image_queue();
+        r.mark_failed(id.clone(), "err").await.unwrap();
+    }
+
+    // mark_finished
+    {
+        let mut r = repo.image_queue();
+        r.mark_finished(id).await.unwrap();
+        let rows = r.list(true, 10).await.unwrap();
+        assert_eq!(rows.len(), 0);
+        // finished 側に出る
+        let rows_finished = {
+            let mut r = repo.image_queue();
+            r.list(false, 10).await.unwrap()
+        };
+        assert_eq!(rows_finished.len(), 1);
+    }
+}

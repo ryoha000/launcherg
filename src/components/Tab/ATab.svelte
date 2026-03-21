@@ -2,7 +2,9 @@
   import type { Tab } from '@/store/tabs'
 
   import { goto } from '@mateothegreat/svelte5-router'
+  import { ROUTE_REGISTRY } from '@/router/const'
   import { deleteTab } from '@/store/tabs'
+  import { buildPath } from '@/store/tabs/schema'
 
   interface Props {
     tab: Tab
@@ -11,14 +13,10 @@
 
   const { tab, selected }: Props = $props()
 
-  const tabIcon
-    = $derived(tab.type === 'works'
-      ? 'i-material-symbols-computer-outline-rounded color-accent-accent'
-      : tab.type === 'memos'
-      ? 'i-material-symbols-drive-file-rename-outline color-accent-edit'
-      : tab.type === 'settings'
-      ? 'i-material-symbols-settings-outline-rounded color-text-disabled'
-      : '')
+  const tabIcon = $derived.by(() => {
+    const descriptor = ROUTE_REGISTRY.find(r => r.kind === tab.type)
+    return descriptor && 'icon' in descriptor && descriptor.icon
+  })
 
   const closeWheelClick = (e: MouseEvent) => {
     if (e.button === 1) {
@@ -32,15 +30,12 @@
   }
 
   const navigate = () => {
-    if (tab.type === 'settings') {
-      goto('/settings')
-    }
-    else if (tab.type.startsWith('debug-')) {
-      goto(`/debug/${tab.type.split('-')[1]}`)
-    }
-    else {
-      goto(`/${tab.type}/${tab.workId}`)
-    }
+    const d = ROUTE_REGISTRY.find(r => r.kind === tab.type)
+    if (tab.href)
+      return goto(tab.href)
+    if (!d)
+      return goto('/')
+    goto(buildPath(d, tab.workId))
   }
 </script>
 
@@ -51,23 +46,23 @@
   onmousedown={closeWheelClick}
 >
   <div
-    class="flex items-center gap-2 px-3 h-10 transition-all cursor-pointer border-(b-1px r-1px solid border-primary) group max-w-60 {selected
-      ? 'bg-bg-primary border-b-transparent'
+    class="group  h-10 max-w-60 flex cursor-pointer items-center gap-2 border-(b-1px r-1px border-primary solid) px-3 transition-all {selected
+      ? 'border-b-transparent bg-bg-primary'
       : 'bg-bg-disabled hover:bg-bg-primary'}"
   >
-    <div class='{tabIcon} w-5 h-5 flex-shrink-0'></div>
+    <div class='{tabIcon} h-5 w-5 flex-shrink-0'></div>
     <div
-      class="text-body2 whitespace-nowrap text-ellipsis overflow-hidden {selected
+      class="overflow-hidden text-ellipsis whitespace-nowrap text-body2 {selected
         ? 'text-text-primary'
         : 'text-text-tertiary'}"
     >
       {tab.title}
     </div>
     <div
-      class='rounded hover:bg-bg-secondary flex items-center justify-center transition-all'
+      class='flex items-center justify-center rounded transition-all hover:bg-bg-secondary'
     >
       <button
-        class="group-hover:opacity-100 opacity-0 transition-all w-5 h-5 i-iconoir-cancel {selected
+        class="i-iconoir-cancel  h-5 w-5 opacity-0 transition-all group-hover:opacity-100 {selected
           ? 'color-text-secondary'
           : 'color-text-tertiary'}"
         onclick={onClickCloseTabButton}

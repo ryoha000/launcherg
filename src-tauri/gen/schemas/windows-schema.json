@@ -2397,10 +2397,10 @@
           "markdownDescription": "Default core plugins set.\n#### This default permission set includes:\n\n- `core:path:default`\n- `core:event:default`\n- `core:window:default`\n- `core:webview:default`\n- `core:app:default`\n- `core:image:default`\n- `core:resources:default`\n- `core:menu:default`\n- `core:tray:default`"
         },
         {
-          "description": "Default permissions for the plugin.\n#### This default permission set includes:\n\n- `allow-version`\n- `allow-name`\n- `allow-tauri-version`\n- `allow-identifier`",
+          "description": "Default permissions for the plugin.\n#### This default permission set includes:\n\n- `allow-version`\n- `allow-name`\n- `allow-tauri-version`\n- `allow-identifier`\n- `allow-bundle-type`\n- `allow-register-listener`\n- `allow-remove-listener`",
           "type": "string",
           "const": "core:app:default",
-          "markdownDescription": "Default permissions for the plugin.\n#### This default permission set includes:\n\n- `allow-version`\n- `allow-name`\n- `allow-tauri-version`\n- `allow-identifier`"
+          "markdownDescription": "Default permissions for the plugin.\n#### This default permission set includes:\n\n- `allow-version`\n- `allow-name`\n- `allow-tauri-version`\n- `allow-identifier`\n- `allow-bundle-type`\n- `allow-register-listener`\n- `allow-remove-listener`"
         },
         {
           "description": "Enables the app_hide command without any pre-configured scope.",
@@ -2413,6 +2413,12 @@
           "type": "string",
           "const": "core:app:allow-app-show",
           "markdownDescription": "Enables the app_show command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the bundle_type command without any pre-configured scope.",
+          "type": "string",
+          "const": "core:app:allow-bundle-type",
+          "markdownDescription": "Enables the bundle_type command without any pre-configured scope."
         },
         {
           "description": "Enables the default_window_icon command without any pre-configured scope.",
@@ -2439,10 +2445,22 @@
           "markdownDescription": "Enables the name command without any pre-configured scope."
         },
         {
+          "description": "Enables the register_listener command without any pre-configured scope.",
+          "type": "string",
+          "const": "core:app:allow-register-listener",
+          "markdownDescription": "Enables the register_listener command without any pre-configured scope."
+        },
+        {
           "description": "Enables the remove_data_store command without any pre-configured scope.",
           "type": "string",
           "const": "core:app:allow-remove-data-store",
           "markdownDescription": "Enables the remove_data_store command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the remove_listener command without any pre-configured scope.",
+          "type": "string",
+          "const": "core:app:allow-remove-listener",
+          "markdownDescription": "Enables the remove_listener command without any pre-configured scope."
         },
         {
           "description": "Enables the set_app_theme command without any pre-configured scope.",
@@ -2481,6 +2499,12 @@
           "markdownDescription": "Denies the app_show command without any pre-configured scope."
         },
         {
+          "description": "Denies the bundle_type command without any pre-configured scope.",
+          "type": "string",
+          "const": "core:app:deny-bundle-type",
+          "markdownDescription": "Denies the bundle_type command without any pre-configured scope."
+        },
+        {
           "description": "Denies the default_window_icon command without any pre-configured scope.",
           "type": "string",
           "const": "core:app:deny-default-window-icon",
@@ -2505,10 +2529,22 @@
           "markdownDescription": "Denies the name command without any pre-configured scope."
         },
         {
+          "description": "Denies the register_listener command without any pre-configured scope.",
+          "type": "string",
+          "const": "core:app:deny-register-listener",
+          "markdownDescription": "Denies the register_listener command without any pre-configured scope."
+        },
+        {
           "description": "Denies the remove_data_store command without any pre-configured scope.",
           "type": "string",
           "const": "core:app:deny-remove-data-store",
           "markdownDescription": "Denies the remove_data_store command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the remove_listener command without any pre-configured scope.",
+          "type": "string",
+          "const": "core:app:deny-remove-listener",
+          "markdownDescription": "Denies the remove_listener command without any pre-configured scope."
         },
         {
           "description": "Denies the set_app_theme command without any pre-configured scope.",
@@ -3693,6 +3729,12 @@
           "markdownDescription": "Enables the set_focus command without any pre-configured scope."
         },
         {
+          "description": "Enables the set_focusable command without any pre-configured scope.",
+          "type": "string",
+          "const": "core:window:allow-set-focusable",
+          "markdownDescription": "Enables the set_focusable command without any pre-configured scope."
+        },
+        {
           "description": "Enables the set_fullscreen command without any pre-configured scope.",
           "type": "string",
           "const": "core:window:allow-set-fullscreen",
@@ -3763,6 +3805,12 @@
           "type": "string",
           "const": "core:window:allow-set-shadow",
           "markdownDescription": "Enables the set_shadow command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the set_simple_fullscreen command without any pre-configured scope.",
+          "type": "string",
+          "const": "core:window:allow-set-simple-fullscreen",
+          "markdownDescription": "Enables the set_simple_fullscreen command without any pre-configured scope."
         },
         {
           "description": "Enables the set_size command without any pre-configured scope.",
@@ -4137,6 +4185,12 @@
           "markdownDescription": "Denies the set_focus command without any pre-configured scope."
         },
         {
+          "description": "Denies the set_focusable command without any pre-configured scope.",
+          "type": "string",
+          "const": "core:window:deny-set-focusable",
+          "markdownDescription": "Denies the set_focusable command without any pre-configured scope."
+        },
+        {
           "description": "Denies the set_fullscreen command without any pre-configured scope.",
           "type": "string",
           "const": "core:window:deny-set-fullscreen",
@@ -4207,6 +4261,12 @@
           "type": "string",
           "const": "core:window:deny-set-shadow",
           "markdownDescription": "Denies the set_shadow command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the set_simple_fullscreen command without any pre-configured scope.",
+          "type": "string",
+          "const": "core:window:deny-set-simple-fullscreen",
+          "markdownDescription": "Denies the set_simple_fullscreen command without any pre-configured scope."
         },
         {
           "description": "Denies the set_size command without any pre-configured scope.",
@@ -4297,6 +4357,60 @@
           "type": "string",
           "const": "core:window:deny-unminimize",
           "markdownDescription": "Denies the unminimize command without any pre-configured scope."
+        },
+        {
+          "description": "Allows reading the opened deep link via the get_current command\n#### This default permission set includes:\n\n- `allow-get-current`",
+          "type": "string",
+          "const": "deep-link:default",
+          "markdownDescription": "Allows reading the opened deep link via the get_current command\n#### This default permission set includes:\n\n- `allow-get-current`"
+        },
+        {
+          "description": "Enables the get_current command without any pre-configured scope.",
+          "type": "string",
+          "const": "deep-link:allow-get-current",
+          "markdownDescription": "Enables the get_current command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the is_registered command without any pre-configured scope.",
+          "type": "string",
+          "const": "deep-link:allow-is-registered",
+          "markdownDescription": "Enables the is_registered command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the register command without any pre-configured scope.",
+          "type": "string",
+          "const": "deep-link:allow-register",
+          "markdownDescription": "Enables the register command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the unregister command without any pre-configured scope.",
+          "type": "string",
+          "const": "deep-link:allow-unregister",
+          "markdownDescription": "Enables the unregister command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the get_current command without any pre-configured scope.",
+          "type": "string",
+          "const": "deep-link:deny-get-current",
+          "markdownDescription": "Denies the get_current command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the is_registered command without any pre-configured scope.",
+          "type": "string",
+          "const": "deep-link:deny-is-registered",
+          "markdownDescription": "Denies the is_registered command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the register command without any pre-configured scope.",
+          "type": "string",
+          "const": "deep-link:deny-register",
+          "markdownDescription": "Denies the register command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the unregister command without any pre-configured scope.",
+          "type": "string",
+          "const": "deep-link:deny-unregister",
+          "markdownDescription": "Denies the unregister command without any pre-configured scope."
         },
         {
           "description": "This permission set configures the types of dialogs\navailable from the dialog plugin.\n\n#### Granted Permissions\n\nAll dialog types are enabled.\n\n\n\n#### This default permission set includes:\n\n- `allow-ask`\n- `allow-confirm`\n- `allow-message`\n- `allow-save`\n- `allow-open`",
@@ -6163,6 +6277,204 @@
           "type": "string",
           "const": "log:deny-log",
           "markdownDescription": "Denies the log command without any pre-configured scope."
+        },
+        {
+          "description": "This permission set configures which\nnotification features are by default exposed.\n\n#### Granted Permissions\n\nIt allows all notification related features.\n\n\n#### This default permission set includes:\n\n- `allow-is-permission-granted`\n- `allow-request-permission`\n- `allow-notify`\n- `allow-register-action-types`\n- `allow-register-listener`\n- `allow-cancel`\n- `allow-get-pending`\n- `allow-remove-active`\n- `allow-get-active`\n- `allow-check-permissions`\n- `allow-show`\n- `allow-batch`\n- `allow-list-channels`\n- `allow-delete-channel`\n- `allow-create-channel`\n- `allow-permission-state`",
+          "type": "string",
+          "const": "notification:default",
+          "markdownDescription": "This permission set configures which\nnotification features are by default exposed.\n\n#### Granted Permissions\n\nIt allows all notification related features.\n\n\n#### This default permission set includes:\n\n- `allow-is-permission-granted`\n- `allow-request-permission`\n- `allow-notify`\n- `allow-register-action-types`\n- `allow-register-listener`\n- `allow-cancel`\n- `allow-get-pending`\n- `allow-remove-active`\n- `allow-get-active`\n- `allow-check-permissions`\n- `allow-show`\n- `allow-batch`\n- `allow-list-channels`\n- `allow-delete-channel`\n- `allow-create-channel`\n- `allow-permission-state`"
+        },
+        {
+          "description": "Enables the batch command without any pre-configured scope.",
+          "type": "string",
+          "const": "notification:allow-batch",
+          "markdownDescription": "Enables the batch command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the cancel command without any pre-configured scope.",
+          "type": "string",
+          "const": "notification:allow-cancel",
+          "markdownDescription": "Enables the cancel command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the check_permissions command without any pre-configured scope.",
+          "type": "string",
+          "const": "notification:allow-check-permissions",
+          "markdownDescription": "Enables the check_permissions command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the create_channel command without any pre-configured scope.",
+          "type": "string",
+          "const": "notification:allow-create-channel",
+          "markdownDescription": "Enables the create_channel command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the delete_channel command without any pre-configured scope.",
+          "type": "string",
+          "const": "notification:allow-delete-channel",
+          "markdownDescription": "Enables the delete_channel command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the get_active command without any pre-configured scope.",
+          "type": "string",
+          "const": "notification:allow-get-active",
+          "markdownDescription": "Enables the get_active command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the get_pending command without any pre-configured scope.",
+          "type": "string",
+          "const": "notification:allow-get-pending",
+          "markdownDescription": "Enables the get_pending command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the is_permission_granted command without any pre-configured scope.",
+          "type": "string",
+          "const": "notification:allow-is-permission-granted",
+          "markdownDescription": "Enables the is_permission_granted command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the list_channels command without any pre-configured scope.",
+          "type": "string",
+          "const": "notification:allow-list-channels",
+          "markdownDescription": "Enables the list_channels command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the notify command without any pre-configured scope.",
+          "type": "string",
+          "const": "notification:allow-notify",
+          "markdownDescription": "Enables the notify command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the permission_state command without any pre-configured scope.",
+          "type": "string",
+          "const": "notification:allow-permission-state",
+          "markdownDescription": "Enables the permission_state command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the register_action_types command without any pre-configured scope.",
+          "type": "string",
+          "const": "notification:allow-register-action-types",
+          "markdownDescription": "Enables the register_action_types command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the register_listener command without any pre-configured scope.",
+          "type": "string",
+          "const": "notification:allow-register-listener",
+          "markdownDescription": "Enables the register_listener command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the remove_active command without any pre-configured scope.",
+          "type": "string",
+          "const": "notification:allow-remove-active",
+          "markdownDescription": "Enables the remove_active command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the request_permission command without any pre-configured scope.",
+          "type": "string",
+          "const": "notification:allow-request-permission",
+          "markdownDescription": "Enables the request_permission command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the show command without any pre-configured scope.",
+          "type": "string",
+          "const": "notification:allow-show",
+          "markdownDescription": "Enables the show command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the batch command without any pre-configured scope.",
+          "type": "string",
+          "const": "notification:deny-batch",
+          "markdownDescription": "Denies the batch command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the cancel command without any pre-configured scope.",
+          "type": "string",
+          "const": "notification:deny-cancel",
+          "markdownDescription": "Denies the cancel command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the check_permissions command without any pre-configured scope.",
+          "type": "string",
+          "const": "notification:deny-check-permissions",
+          "markdownDescription": "Denies the check_permissions command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the create_channel command without any pre-configured scope.",
+          "type": "string",
+          "const": "notification:deny-create-channel",
+          "markdownDescription": "Denies the create_channel command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the delete_channel command without any pre-configured scope.",
+          "type": "string",
+          "const": "notification:deny-delete-channel",
+          "markdownDescription": "Denies the delete_channel command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the get_active command without any pre-configured scope.",
+          "type": "string",
+          "const": "notification:deny-get-active",
+          "markdownDescription": "Denies the get_active command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the get_pending command without any pre-configured scope.",
+          "type": "string",
+          "const": "notification:deny-get-pending",
+          "markdownDescription": "Denies the get_pending command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the is_permission_granted command without any pre-configured scope.",
+          "type": "string",
+          "const": "notification:deny-is-permission-granted",
+          "markdownDescription": "Denies the is_permission_granted command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the list_channels command without any pre-configured scope.",
+          "type": "string",
+          "const": "notification:deny-list-channels",
+          "markdownDescription": "Denies the list_channels command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the notify command without any pre-configured scope.",
+          "type": "string",
+          "const": "notification:deny-notify",
+          "markdownDescription": "Denies the notify command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the permission_state command without any pre-configured scope.",
+          "type": "string",
+          "const": "notification:deny-permission-state",
+          "markdownDescription": "Denies the permission_state command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the register_action_types command without any pre-configured scope.",
+          "type": "string",
+          "const": "notification:deny-register-action-types",
+          "markdownDescription": "Denies the register_action_types command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the register_listener command without any pre-configured scope.",
+          "type": "string",
+          "const": "notification:deny-register-listener",
+          "markdownDescription": "Denies the register_listener command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the remove_active command without any pre-configured scope.",
+          "type": "string",
+          "const": "notification:deny-remove-active",
+          "markdownDescription": "Denies the remove_active command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the request_permission command without any pre-configured scope.",
+          "type": "string",
+          "const": "notification:deny-request-permission",
+          "markdownDescription": "Denies the request_permission command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the show command without any pre-configured scope.",
+          "type": "string",
+          "const": "notification:deny-show",
+          "markdownDescription": "Denies the show command without any pre-configured scope."
         },
         {
           "description": "This permission set configures which\nshell functionality is exposed by default.\n\n#### Granted Permissions\n\nIt allows to use the `open` functionality with a reasonable\nscope pre-configured. It will allow opening `http(s)://`,\n`tel:` and `mailto:` links.\n\n#### This default permission set includes:\n\n- `allow-open`",

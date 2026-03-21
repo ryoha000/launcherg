@@ -8,6 +8,9 @@
   "bundle": {
     "active": true,
     "targets": "all",
+    "resources": [
+      "icons/32x32.png"
+    ],
     "windows": {
       "wix": {
         "language": "ja-JP"
@@ -29,6 +32,13 @@
   "version": "0.3.3",
   "identifier": "ryoha.moe",
   "plugins": {
+    "deep-link": {
+      "desktop": {
+        "schemes": [
+          "launcherg"
+        ]
+      }
+    },
     "updater": {
       "endpoints": [
         "https://raw.githubusercontent.com/ryoha000/launcherg/main/.tauri-updater.json"

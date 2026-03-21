@@ -1,0 +1,4 @@
+[main]
+db_type = "Sqlite"
+db_path = "./migtest.db3"
+trust_cert = false

@@ -226,7 +226,7 @@ function createSkyWay() {
     room.onStreamPublished.add(e => onPublicate(e.publication))
   }
 
-  const connect = async (workId: number, seiyaUrl: string) => {
+  const connect = async (workId: string, seiyaUrl: string) => {
     if (!dataStream) {
       await setDataStream()
     }

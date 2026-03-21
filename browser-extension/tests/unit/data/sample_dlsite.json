@@ -1,0 +1,77 @@
+{
+  "works": [
+    {
+      "workno": "RJ01007737",
+      "rental_id": null,
+      "rental_time": null,
+      "rental_activate_date": null,
+      "rental_expired_date": null,
+      "purchase_type": 2,
+      "download_start_date": null,
+      "sales_date": "2024-03-30T15:00:00.000000Z",
+      "inservice": 1,
+      "touch_inservice": 0,
+      "name": {
+        "ja_JP": "クロア×スクランブル"
+      },
+      "name_phonetic": {
+        "ja_JP": "クロアスクランブル"
+      },
+      "maker": {
+        "id": "RG33385",
+        "name": {
+          "en_US": "ninjinpasta",
+          "ja_JP": "にんじんパスタ"
+        },
+        "name_phonetic": {
+          "ja_JP": "ニンジンパスタ"
+        }
+      },
+      "translator": null,
+      "author_name": null,
+      "work_type": "RPG",
+      "file_type": "EXE",
+      "age_category": "r18",
+      "dl_format": 0,
+      "site_id": "maniax",
+      "content_length": 1197104617,
+      "content_count": 1,
+      "tags": [
+        {
+          "name": "桜夢こめ",
+          "class": "illust_by",
+          "sub_class": null
+        }
+      ],
+      "touch_content_count": 0,
+      "regist_date": "2024-03-30T15:00:00.000000Z",
+      "upgrade_date": "2024-11-15T15:00:00.000000Z",
+      "touch_site_id": "maniax",
+      "os": [
+        "windows"
+      ],
+      "work_files": {
+        "main": "https://img.dlsite.jp/modpub/images2/work/doujin/RJ01008000/RJ01007737_img_main.jpg",
+        "sam": "https://img.dlsite.jp/modpub/images2/work/doujin/RJ01008000/RJ01007737_img_sam.jpg"
+      },
+      "is_playwork": false,
+      "content_size": 1197104617,
+      "downloadable": true,
+      "encodable": false,
+      "series": null,
+      "app_type": null,
+      "viewer_type": "play",
+      "genre_ids": [
+        71,
+        121,
+        129,
+        134,
+        149,
+        157,
+        182,
+        495
+      ]
+    }
+  ],
+  "series": []
+}

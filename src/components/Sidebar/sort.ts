@@ -1,7 +1,4 @@
-import type {
-  CollectionElement,
-  CollectionElementsWithLabel,
-} from '@/lib/types'
+import type { SidebarWorkItem, SidebarWorkItemsWithLabel } from '@/store/sidebarWorks'
 
 export type SortOrder
   = `${(typeof SORT_ORDER_TYPES)[keyof typeof SORT_ORDER_TYPES]}-${(typeof SORT_ORDER_BY)[keyof typeof SORT_ORDER_BY]}`
@@ -40,7 +37,7 @@ const sortByInstall = createSortByNullableDate('installAt')
 const sortByLastPlay = createSortByNullableDate('lastPlayAt')
 const sortByRegistered = createSortByNullableDate('registeredAt')
 
-export function sort(filteredElements: CollectionElement[], order: SortOrder): CollectionElementsWithLabel[] {
+export function sort(filteredElements: SidebarWorkItem[], order: SortOrder): SidebarWorkItemsWithLabel[] {
   const isGamename = order.includes(SORT_ORDER_TYPES.GAMENAME)
   const isSellyear = order.includes(SORT_ORDER_TYPES.SELLYEAR)
   const isBrandname = order.includes(SORT_ORDER_TYPES.BRANDNAME)
@@ -68,21 +65,16 @@ export function sort(filteredElements: CollectionElement[], order: SortOrder): C
   if (isRegistered) {
     return sortByRegistered(filteredElements, multiplyer)
   }
-  return [
-    {
-      label: 'すべて',
-      elements: filteredElements,
-    },
-  ]
+  return [{ label: 'すべて', elements: filteredElements }]
 }
 
-function sortByGamename(elements: CollectionElement[], multiplyer: number) {
+function sortByGamename(elements: SidebarWorkItem[], multiplyer: number) {
   return [
     {
       label: 'すべて',
       elements: [...elements].sort((a, b) =>
         createCompareNameAndRuby(multiplyer, {
-          name: 'gamename',
+          name: 'title',
           ruby: 'gamenameRuby',
         })(a, b),
       ),
@@ -90,16 +82,20 @@ function sortByGamename(elements: CollectionElement[], multiplyer: number) {
   ]
 }
 
-function createCompareNameAndRuby(multiplyer: number, prop:
-  | { name: 'gamename', ruby: 'gamenameRuby' }
-  | { name: 'brandname', ruby: 'brandnameRuby' }) {
-  return (a: CollectionElement, b: CollectionElement) => {
-    const aCode = a[prop.name].charCodeAt(0)
-    const bCode = b[prop.name].charCodeAt(0)
+type NameRubyKey
+  = | { name: 'title', ruby: 'gamenameRuby' }
+    | { name: 'brandname', ruby: 'brandnameRuby' }
+
+function createCompareNameAndRuby(multiplyer: number, prop: NameRubyKey) {
+  return (a: SidebarWorkItem, b: SidebarWorkItem) => {
+    const aName = a[prop.name] ?? ''
+    const bName = b[prop.name] ?? ''
+    const aCode = aName.charCodeAt(0)
+    const bCode = bName.charCodeAt(0)
 
     if (aCode < 128 && bCode < 128) {
       // ASCII characters
-      return a[prop.name].localeCompare(b[prop.name]) * multiplyer
+      return aName.localeCompare(bName) * multiplyer
     }
     else if (aCode < 128) {
       // a is ASCII, b is non-ASCII
@@ -111,15 +107,17 @@ function createCompareNameAndRuby(multiplyer: number, prop:
     }
     else {
       // both non-ASCII
-      return a[prop.ruby].localeCompare(b[prop.ruby], 'ja') * multiplyer
+      const aRuby = a[prop.ruby] ?? aName
+      const bRuby = b[prop.ruby] ?? bName
+      return aRuby.localeCompare(bRuby, 'ja') * multiplyer
     }
   }
 }
 
-function sortBySellyear(elements: CollectionElement[], multiplyer: number) {
+function sortBySellyear(elements: SidebarWorkItem[], multiplyer: number) {
   return elements
     .reduce((acc, cur) => {
-      const year = cur.sellday.split('-')[0]
+      const year = cur.sellday ? cur.sellday.split('-')[0] : NULL_DATE
       const index = acc.findIndex(v => v.label === year)
       if (index !== -1) {
         acc[index].elements.push(cur)
@@ -128,20 +126,26 @@ function sortBySellyear(elements: CollectionElement[], multiplyer: number) {
         acc.push({ label: year, elements: [cur] })
       }
       return acc
-    }, [] as CollectionElementsWithLabel[])
-    .sort((a, b) => createCompareDay(multiplyer)(a.label, b.label))
+    }, [] as SidebarWorkItemsWithLabel[])
+    .sort((a, b) =>
+      a.label === NULL_DATE
+        ? 1
+        : b.label === NULL_DATE
+          ? -1
+          : createCompareDay(multiplyer)(a.label, b.label),
+    )
     .map(v => ({
       ...v,
       elements: v.elements.sort((a, b) =>
-        createCompareDay(multiplyer)(a.sellday, b.sellday),
+        createCompareNullableDay(multiplyer)(a.sellday ?? null, b.sellday ?? null),
       ),
     }))
 }
 
-function sortByBrandname(elements: CollectionElement[], multiplyer: number) {
+function sortByBrandname(elements: SidebarWorkItem[], multiplyer: number) {
   return elements
     .reduce((acc, cur) => {
-      const brandname = cur.brandname
+      const brandname = cur.brandname ?? NULL_DATE
       const index = acc.findIndex(v => v.label === brandname)
       if (index !== -1) {
         acc[index].elements.push(cur)
@@ -150,17 +154,18 @@ function sortByBrandname(elements: CollectionElement[], multiplyer: number) {
         acc.push({ label: brandname, elements: [cur] })
       }
       return acc
-    }, [] as CollectionElementsWithLabel[])
+    }, [] as SidebarWorkItemsWithLabel[])
     .sort((a, b) =>
-      createCompareNameAndRuby(multiplyer, {
-        name: 'brandname',
-        ruby: 'brandnameRuby',
-      })(a.elements[0], b.elements[0]),
+      a.label === NULL_DATE
+        ? 1
+        : b.label === NULL_DATE
+          ? -1
+          : createCompareNameAndRuby(multiplyer, { name: 'brandname', ruby: 'brandnameRuby' })(a.elements[0], b.elements[0]),
     )
     .map(v => ({
       ...v,
       elements: v.elements.sort((a, b) =>
-        createCompareDay(1)(a.sellday, b.sellday),
+        createCompareNullableDay(1)(a.sellday ?? null, b.sellday ?? null),
       ),
     }))
 }
@@ -183,7 +188,7 @@ function createCompareNullableDay(multiplyer: number) {
 }
 
 function createSortByNullableDate(key: 'installAt' | 'lastPlayAt' | 'registeredAt') {
-  return (elements: CollectionElement[], multiplyer: number) =>
+  return (elements: SidebarWorkItem[], multiplyer: number) =>
     elements
       .reduce((acc, cur) => {
         const value = cur[key]
@@ -196,7 +201,7 @@ function createSortByNullableDate(key: 'installAt' | 'lastPlayAt' | 'registeredA
           acc.push({ label: year, elements: [cur] })
         }
         return acc
-      }, [] as CollectionElementsWithLabel[])
+      }, [] as SidebarWorkItemsWithLabel[])
       .sort((a, b) =>
         a.label === NULL_DATE
           ? 1
@@ -207,7 +212,7 @@ function createSortByNullableDate(key: 'installAt' | 'lastPlayAt' | 'registeredA
       .map(v => ({
         ...v,
         elements: v.elements.sort((a, b) =>
-          createCompareNullableDay(multiplyer)(a[key], b[key]),
+          createCompareNullableDay(multiplyer)(a[key] ?? null, b[key] ?? null),
         ),
       }))
 }

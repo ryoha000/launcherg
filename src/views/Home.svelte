@@ -6,26 +6,23 @@
   import VirtualScroller from '@/components/UI/VirtualScroller.svelte'
   import VirtualScrollerMasonry from '@/components/UI/VirtualScrollerMasonry.svelte'
   import {
-    commandGetCollectionElement,
-    commandUpdateAllGameCache,
-    commandUpdateCollectionElementThumbnails,
+    commandGetWorkDetailsByWorkId,
   } from '@/lib/command'
-  import { scrapeAllGameCacheOnes } from '@/lib/scrape/scrapeAllGame'
   import { showErrorToast, showInfoToast } from '@/lib/toast'
-  import { sidebarCollectionElements } from '@/store/sidebarCollectionElements'
+  import { sidebarWorks } from '@/store/sidebarWorks'
   import Icon from '/icon.png'
 
-  const memoRegex = /^smde_memo-(\d+)$/
+  const memoRegex = /^smde_memo-(.+)$/
   const memoPromises = Promise.all(
     Object.keys(localStorage)
-      .map(v => +(v.match(memoRegex)?.[1] ?? '0'))
+      .map(v => v.match(memoRegex)?.[1] ?? '')
       .filter(v => v)
-      .map(v => commandGetCollectionElement(v)),
+      .map(v => commandGetWorkDetailsByWorkId(v)),
   )
 
   const isOpenGettingStarted = true
 
-  const shown = sidebarCollectionElements.shown
+  const shown = sidebarWorks.shown
   const flattenShown = derived(shown, $shown =>
     $shown.flatMap(v => v.elements))
 
@@ -33,13 +30,14 @@
   const refetchThumbnail = async () => {
     try {
       disabledRefetchThumbnail = true
-      const ids = $flattenShown
-        .filter(v => !v.thumbnailWidth && !v.thumbnailHeight)
-        .map(v => v.id)
-      const caches = await scrapeAllGameCacheOnes(ids)
-      await commandUpdateAllGameCache(caches)
-      await commandUpdateCollectionElementThumbnails(ids)
-      await sidebarCollectionElements.refetch()
+      // TODO: workId から erogamescape_id を取得する必要がある
+      // 現在は workId が string になったため、一時的に無効化
+      // const ids = $flattenShown
+      //   .filter(v => !v.thumbnail?.width && !v.thumbnail?.height)
+      //   .map(v => v.id)
+      // const caches = await scrapeAllGameCacheOnes(ids)
+      // await commandUpdateAllGameCache(caches)
+      await sidebarWorks.refetch()
       showInfoToast('サムネイルの再取得が完了しました')
     }
     catch (e) {
@@ -54,25 +52,25 @@
 
 <VirtualScroller className='p-8'>
   {#snippet topElement()}
-    <div class='space-y-8 mb-2'>
-      <div class='flex items-center gap-2 w-full'>
+    <div class='mb-2 space-y-8'>
+      <div class='w-full flex items-center gap-2'>
         <img src={Icon} alt='launcherg icon' class='h-12' />
-        <div class='font-logo text-(8 text-primary)'>Launcherg</div>
+        <div class='text-(8 text-primary) font-logo'>Launcherg</div>
       </div>
-      {#if $sidebarCollectionElements.length === 0 && isOpenGettingStarted}
+      {#if $sidebarWorks.length === 0 && isOpenGettingStarted}
         <div
-          class='space-y-2 p-4 border-(border-primary solid ~) rounded max-w-120'
+          class='max-w-120 border border-(border-primary solid) rounded p-4 space-y-2'
         >
           <div class='flex items-center'>
-            <div class='text-(text-primary h3) font-medium'>Getting started</div>
+            <div class='text-(h3 text-primary) font-medium'>Getting started</div>
           </div>
-          <div class='text-(text-tertiary body)'>
+          <div class='text-(body text-tertiary)'>
             持っているゲームをこのランチャーに登録してみましょう。左のサイドバーにある「Add」ボタンから自動で追加できます。
           </div>
         </div>
       {/if}
       <div class='space-y-2'>
-        <div class='text-(text-primary h3) font-medium'>Help</div>
+        <div class='text-(h3 text-primary) font-medium'>Help</div>
         <LinkText
           href='https://youtu.be/GCTj6eRRgAM?si=WRFuBgNErwTJsNnk'
           text='1分でわかる Launcherg'
@@ -83,28 +81,28 @@
         />
       </div>
       <div class='space-y-2'>
-        <div class='text-(text-primary h3) font-medium'>Memo</div>
-        {#await memoPromises then elements}
-          {#if elements.length === 0 && $sidebarCollectionElements.length !== 0}
+        <div class='text-(h3 text-primary) font-medium'>Memo</div>
+        {#await memoPromises then details}
+          {#if details.length === 0 && $sidebarWorks.length !== 0}
             <div
-              class='space-y-2 p-4 border-(border-primary solid ~) rounded max-w-120'
+              class='max-w-120 border border-(border-primary solid) rounded p-4 space-y-2'
             >
               <div class='flex items-center'>
-                <div class='text-(text-primary h3) font-medium'>メモ機能</div>
+                <div class='text-(h3 text-primary) font-medium'>メモ機能</div>
               </div>
-              <div class='text-(text-tertiary body)'>
+              <div class='text-(body text-tertiary)'>
                 このアプリにはメモ機能があります。サイドバーからゲームを選択して「Memo」ボタンを押すことでそのゲームについてメモを取ることができます。
               </div>
             </div>
           {:else}
-            <div class='gap-1 flex-(~ col)'>
-              {#each elements as element (element.id)}
+            <div class='flex flex-(col) gap-1'>
+              {#each details.filter(Boolean) as d (d!.id)}
                 <a
                   use:route
-                  href='/memos/{element.id}?gamename={element.gamename}'
-                  class='text-(text-link body2) hover:underline-(1px text-link)'
+                  href='/memos/{d!.id}?gamename={d!.title}'
+                  class='text-(body2 text-link) hover:underline-(1px text-link)'
                 >
-                  メモ - {element.gamename}
+                  メモ - {d!.title}
                 </a>
               {/each}
             </div>
@@ -112,7 +110,7 @@
         {/await}
       </div>
       <div class='flex items-center gap-4'>
-        <h3 class='text-(text-primary h3) font-medium'>登録したゲーム</h3>
+        <h3 class='text-(h3 text-primary) font-medium'>登録したゲーム</h3>
         <Button
           leftIcon='i-material-symbols-refresh-rounded'
           text='サムネイルを再取得する'

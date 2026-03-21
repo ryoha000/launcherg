@@ -1,4 +1,5 @@
 <script lang='ts'>
+  import type { WorkDetailsVm, WorkPathInput } from '@/lib/command'
   import type { AllGameCacheOne } from '@/lib/types'
   import { goto } from '@mateothegreat/svelte5-router'
   import ImportManually from '@/components/Sidebar/ImportManually.svelte'
@@ -12,74 +13,45 @@
   import QrCode from '@/components/Work/QRCode.svelte'
   import SettingPopover from '@/components/Work/SettingPopover.svelte'
   import {
-    commandDeleteCollectionElement,
-    commandGetCollectionElement,
+    commandDeleteWork,
+    commandGetWorkPaths,
     commandOpenFolder,
-    commandPlayGame,
-    commandUpdateElementLike,
-    commandUpsertCollectionElement,
+    commandRegisterWorkFromPath,
+    commandUpdateWorkLike,
   } from '@/lib/command'
-  import { registerCollectionElementDetails } from '@/lib/registerCollectionElementDetails'
-  import { showErrorToast } from '@/lib/toast'
-  import { localStorageWritable } from '@/lib/utils'
-  import { sidebarCollectionElements } from '@/store/sidebarCollectionElements'
-  import { startProcessMap } from '@/store/startProcessMap'
+
+  import { registerErogamescapeInformations } from '@/lib/registerErogamescapeInformations'
+  import { sidebarWorks } from '@/store/sidebarWorks'
   import { deleteTab, selected, tabs } from '@/store/tabs'
 
   interface Props {
-    name: string
-    id: number
+    workDetail: WorkDetailsVm
+    id: string
     seiyaUrl: string
+    autoPlay?: boolean
   }
 
-  const { name, id, seiyaUrl }: Props = $props()
+  const { workDetail, id, seiyaUrl, autoPlay = false }: Props = $props()
 
-  const isAdminRecord = localStorageWritable<Record<number, boolean>>(
-    'play-admin-cache',
-    {},
-  )
-
-  const play = async (isAdmin: boolean | undefined) => {
-    if (isAdmin !== undefined) {
-      isAdminRecord.update((v) => {
-        v[id] = isAdmin
-        return v
-      })
-    }
-    let _isAdmin: boolean = isAdmin ?? false
-    if (isAdmin === undefined) {
-      const cache = $isAdminRecord[id]
-      if (cache) {
-        _isAdmin = cache
-      }
-    }
-    try {
-      const processId = await commandPlayGame(id, _isAdmin)
-      startProcessMap.update((v) => {
-        if (processId) {
-          v[id] = processId
-        }
-        return v
-      })
-    }
-    catch (e) {
-      showErrorToast(e as string)
-    }
-  }
-
-  let isLike = $state(false)
+  let isLike = $state(!!workDetail.likeAt)
 
   const toggleLike = async () => {
-    await commandUpdateElementLike(id, !isLike)
+    await commandUpdateWorkLike(workDetail.id, !isLike)
     isLike = !isLike
-    sidebarCollectionElements.updateLike(id, isLike)
+    sidebarWorks.updateLike(id, isLike)
   }
 
-  const elementPromise = $derived((async () => {
-    const element = await commandGetCollectionElement(id)
-    isLike = !!element.likeAt
-    return element
+  const lnksPromise = $derived((async () => {
+    const { lnks } = await commandGetWorkPaths(workDetail.id)
+    return lnks
   })())
+
+  const openGameFolder = (fallbackLnkPath?: string) => {
+    const path = workDetail.originalPath ?? fallbackLnkPath
+    if (path) {
+      void commandOpenFolder(path)
+    }
+  }
 
   let isOpenImportManually = $state(false)
   const onChangeGame = async (
@@ -87,14 +59,23 @@
     lnkPath: string | null,
     gameCache: AllGameCacheOne,
   ) => {
-    const isChangedGameId = id !== gameCache.id
-    if (isChangedGameId) {
-      await commandDeleteCollectionElement(id)
+    // 既存要素の EGS ID と新しい候補の EGS ID を比較して差し替え判定
+    const currentEgsId = workDetail.erogamescapeId
+    const isChangedGame = !currentEgsId || currentEgsId !== gameCache.id
+    if (isChangedGame) {
+      await commandDeleteWork(workDetail.id)
     }
-    await commandUpsertCollectionElement({ exePath, lnkPath, gameCache })
-    await registerCollectionElementDetails()
-    await sidebarCollectionElements.refetch()
-    if (isChangedGameId) {
+    let path: WorkPathInput
+    if (exePath) {
+      path = { type: 'exe', exePath }
+    }
+    else {
+      path = { type: 'lnk', lnkPath: lnkPath as string }
+    }
+    await commandRegisterWorkFromPath({ path, gameCache })
+    await registerErogamescapeInformations()
+    await sidebarWorks.refetch()
+    if (isChangedGame) {
       deleteTab($tabs[$selected].id)
     }
     isOpenImportManually = false
@@ -105,15 +86,15 @@
   let isOpenQrCode = $state(false)
 </script>
 
-{#await elementPromise then element}
-  <div class='flex items-center gap-4 flex-wrap w-full min-w-0'>
-    <PlayButton play={({ isAdmin }) => play(isAdmin)} />
+{#await lnksPromise then lnks}
+  <div class='min-w-0 w-full flex flex-wrap items-center gap-4'>
+    <PlayButton workDetail={workDetail} autoPlay={autoPlay} />
     <Button
       leftIcon='i-material-symbols-drive-file-rename-outline'
       text='Memo'
-      onclick={() => goto(`/memos/${id}?gamename=${name}`)}
+      onclick={() => goto(`/memos/${id}?gamename=${workDetail.title}`)}
     />
-    <div class='flex items-center gap-2 ml-auto'>
+    <div class='ml-auto flex items-center gap-2'>
       <ButtonCancel
         icon='i-material-symbols-qr-code'
         onclick={() => (isOpenQrCode = true)}
@@ -133,8 +114,7 @@
             onclose={() => close()}
             onselectChange={() => (isOpenImportManually = true)}
             onselectDelete={() => (isOpenDelete = true)}
-            onselectOpen={() =>
-              commandOpenFolder(element.exePath ?? element.lnkPath)}
+            onselectOpen={() => openGameFolder(lnks[0]?.lnkPath)}
             onselectOtherInfomation={() => (isOpenOtherInformation = true)}
           />
         {/snippet}
@@ -144,11 +124,11 @@
   <ImportManually
     bind:isOpen={isOpenImportManually}
     idInput={`${id}`}
-    path={element.exePath ?? element.lnkPath}
+    path={(lnks[0]?.lnkPath ?? '')}
     onconfirm={onChangeGame}
     oncancel={() => (isOpenImportManually = false)}
   />
-  <DeleteElement bind:isOpen={isOpenDelete} {element} />
-  <OtherInformation bind:isOpen={isOpenOtherInformation} {element} />
+  <DeleteElement bind:isOpen={isOpenDelete} {workDetail} />
+  <OtherInformation bind:isOpen={isOpenOtherInformation} {workDetail} />
   <QrCode bind:isOpen={isOpenQrCode} {id} {seiyaUrl} />
 {/await}

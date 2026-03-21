@@ -1,97 +1,362 @@
 use std::sync::Arc;
 
-use tauri::AppHandle;
-
 use crate::{
+    domain::service::save_path_resolver::DirsSavePathResolver,
+    domain::windows::WindowsExt,
+    domain::{pubsub::PubSubService, repository::RepositoriesExt},
     infrastructure::{
-        explorerimpl::explorer::{Explorers, ExplorersExt},
+        heuristic_duplicate_resolver::HeuristicDuplicateResolver,
+        heuristic_metadata_extractor::HeuristicMetadataExtractor,
+        image_queue_worker::handler::ImageQueuePubSubHandler,
+        image_queue_worker::ImageQueueRunnerImpl,
+        local_file_system::LocalFileSystem,
+        native_messaging::NativeMessagingHostClientFactoryImpl,
         pubsubimpl::pubsub::{PubSub, PubSubExt},
-        repositoryimpl::{
+        sqliterepository::{
             driver::Db,
-            repository::{Repositories, RepositoriesExt},
+            sqliterepository::{SqliteRepositories, SqliteRepositoryManager},
         },
-        windowsimpl::windows::{Windows, WindowsExt},
+        windowsimpl::windows::Windows,
+        work_linker::WorkLinkerImpl,
+        work_registration::WorkRegistrationServiceImpl,
     },
     usecase::{
-        all_game_cache::AllGameCacheUseCase, collection::CollectionUseCase,
-        explored_cache::ExploredCacheUseCase, file::FileUseCase,
-        process::ProcessUseCase,
+        all_game_cache::AllGameCacheUseCase, dmm_pack::DmmPackUseCase,
+        erogamescape::ErogamescapeUseCase, extension_manager::ExtensionManagerUseCase,
+        file::FileUseCase, host_log::HostLogUseCase, image_queue::ImageQueueUseCase,
+        process::ProcessUseCase, work::WorkUseCase,
+        work_link_pending_exe::WorkLinkPendingExeUseCase, work_omit::WorkOmitUseCase,
+        work_pipeline::WorkPipelineUseCase, work_thumbnail::WorkThumbnailUseCase,
     },
 };
+use domain::game_matcher::{GameMatcher, Matcher as GameMatcherImpl};
+use domain::repository::all_game_cache::AllGameCacheRepository as _;
+use domain::repository::manager::RepositoryManager as _;
+use tauri::AppHandle;
 
 pub struct Modules {
-    collection_use_case: CollectionUseCase<Repositories>,
-    explored_cache_use_case: ExploredCacheUseCase<Repositories>,
-    file_use_case: FileUseCase<Explorers>,
-    all_game_cache_use_case: AllGameCacheUseCase<Repositories>,
+    extension_manager_use_case:
+        ExtensionManagerUseCase<PubSub, NativeMessagingHostClientFactoryImpl>,
+    file_use_case: FileUseCase,
+    all_game_cache_use_case: AllGameCacheUseCase<SqliteRepositoryManager, SqliteRepositories>,
     process_use_case: ProcessUseCase<Windows>,
+    work_omit_use_case: WorkOmitUseCase<SqliteRepositoryManager, SqliteRepositories>,
+    host_log_use_case: HostLogUseCase<SqliteRepositoryManager, SqliteRepositories>,
+    dmm_pack_use_case: DmmPackUseCase<SqliteRepositoryManager, SqliteRepositories>,
+    work_use_case: WorkUseCase<
+        SqliteRepositoryManager,
+        SqliteRepositories,
+        Windows,
+        WorkRegistrationServiceImpl<SqliteRepositoryManager, SqliteRepositories, Windows>,
+    >,
+    work_pipeline_use_case: WorkPipelineUseCase<
+        SqliteRepositoryManager,
+        SqliteRepositories,
+        PubSub,
+        LocalFileSystem,
+        HeuristicMetadataExtractor,
+        HeuristicDuplicateResolver,
+        WorkLinkerImpl<SqliteRepositoryManager, SqliteRepositories, Windows>,
+        WorkRegistrationServiceImpl<SqliteRepositoryManager, SqliteRepositories, Windows>,
+    >,
+    image_queue_use_case: ImageQueueUseCase<SqliteRepositoryManager, SqliteRepositories>,
+    erogamescape_use_case: ErogamescapeUseCase<SqliteRepositoryManager, SqliteRepositories>,
+    work_link_pending_exe_use_case: WorkLinkPendingExeUseCase<
+        SqliteRepositoryManager,
+        SqliteRepositories,
+        WorkLinkerImpl<SqliteRepositoryManager, SqliteRepositories, Windows>,
+    >,
     pubsub: PubSub,
+    game_matcher: std::sync::Arc<dyn GameMatcher + Send + Sync>,
+    image_queue_runner:
+        std::sync::Arc<ImageQueueRunnerImpl<SqliteRepositoryManager, SqliteRepositories, Windows>>,
+    work_thumbnail_use_case: WorkThumbnailUseCase<SqliteRepositoryManager, SqliteRepositories>,
 }
 pub trait ModulesExt {
     type Repositories: RepositoriesExt;
-    type Explorers: ExplorersExt;
     type Windows: WindowsExt;
-    type PubSub: PubSubExt;
+    type PubSub: PubSubExt + PubSubService;
 
-    fn collection_use_case(&self) -> &CollectionUseCase<Self::Repositories>;
-    fn explored_cache_use_case(&self) -> &ExploredCacheUseCase<Self::Repositories>;
-    fn all_game_cache_use_case(&self) -> &AllGameCacheUseCase<Self::Repositories>;
-    fn file_use_case(&self) -> &FileUseCase<Self::Explorers>;
+    fn extension_manager_use_case(
+        &self,
+    ) -> &ExtensionManagerUseCase<Self::PubSub, NativeMessagingHostClientFactoryImpl>;
+    fn all_game_cache_use_case(
+        &self,
+    ) -> &AllGameCacheUseCase<SqliteRepositoryManager, SqliteRepositories>;
+    fn file_use_case(&self) -> &FileUseCase;
     fn process_use_case(&self) -> &ProcessUseCase<Self::Windows>;
+    fn work_omit_use_case(&self) -> &WorkOmitUseCase<SqliteRepositoryManager, SqliteRepositories>;
+    fn host_log_use_case(&self) -> &HostLogUseCase<SqliteRepositoryManager, SqliteRepositories>;
+    fn dmm_pack_use_case(&self) -> &DmmPackUseCase<SqliteRepositoryManager, SqliteRepositories>;
+    fn work_use_case(
+        &self,
+    ) -> &WorkUseCase<
+        SqliteRepositoryManager,
+        SqliteRepositories,
+        Windows,
+        WorkRegistrationServiceImpl<SqliteRepositoryManager, SqliteRepositories, Windows>,
+    >;
+    fn work_pipeline_use_case(
+        &self,
+    ) -> &WorkPipelineUseCase<
+        SqliteRepositoryManager,
+        SqliteRepositories,
+        Self::PubSub,
+        LocalFileSystem,
+        HeuristicMetadataExtractor,
+        HeuristicDuplicateResolver,
+        WorkLinkerImpl<SqliteRepositoryManager, SqliteRepositories, Windows>,
+        WorkRegistrationServiceImpl<SqliteRepositoryManager, SqliteRepositories, Windows>,
+    >;
     fn pubsub(&self) -> &Self::PubSub;
+    fn game_matcher(&self) -> &std::sync::Arc<dyn GameMatcher + Send + Sync>;
+    fn image_queue_runner(
+        &self,
+    ) -> &std::sync::Arc<ImageQueueRunnerImpl<SqliteRepositoryManager, SqliteRepositories, Windows>>;
+    fn image_queue_use_case(
+        &self,
+    ) -> &ImageQueueUseCase<SqliteRepositoryManager, SqliteRepositories>;
+    fn erogamescape_use_case(
+        &self,
+    ) -> &ErogamescapeUseCase<SqliteRepositoryManager, SqliteRepositories>;
+    fn work_link_pending_exe_use_case(
+        &self,
+    ) -> &WorkLinkPendingExeUseCase<
+        SqliteRepositoryManager,
+        SqliteRepositories,
+        WorkLinkerImpl<SqliteRepositoryManager, SqliteRepositories, Windows>,
+    >;
+    fn work_thumbnail_use_case(
+        &self,
+    ) -> &WorkThumbnailUseCase<SqliteRepositoryManager, SqliteRepositories>;
 }
 
 impl ModulesExt for Modules {
-    type Repositories = Repositories;
-    type Explorers = Explorers;
+    type Repositories = SqliteRepositories;
     type Windows = Windows;
     type PubSub = PubSub;
 
-    fn collection_use_case(&self) -> &CollectionUseCase<Self::Repositories> {
-        &self.collection_use_case
+    fn extension_manager_use_case(
+        &self,
+    ) -> &ExtensionManagerUseCase<Self::PubSub, NativeMessagingHostClientFactoryImpl> {
+        &self.extension_manager_use_case
     }
-    fn explored_cache_use_case(&self) -> &ExploredCacheUseCase<Self::Repositories> {
-        &self.explored_cache_use_case
-    }
-    fn all_game_cache_use_case(&self) -> &AllGameCacheUseCase<Self::Repositories> {
+    fn all_game_cache_use_case(
+        &self,
+    ) -> &AllGameCacheUseCase<SqliteRepositoryManager, SqliteRepositories> {
         &self.all_game_cache_use_case
     }
-    fn file_use_case(&self) -> &FileUseCase<Self::Explorers> {
+    fn file_use_case(&self) -> &FileUseCase {
         &self.file_use_case
     }
     fn process_use_case(&self) -> &ProcessUseCase<Self::Windows> {
         &self.process_use_case
     }
+    fn work_omit_use_case(&self) -> &WorkOmitUseCase<SqliteRepositoryManager, SqliteRepositories> {
+        &self.work_omit_use_case
+    }
+    fn host_log_use_case(&self) -> &HostLogUseCase<SqliteRepositoryManager, SqliteRepositories> {
+        &self.host_log_use_case
+    }
+    fn dmm_pack_use_case(&self) -> &DmmPackUseCase<SqliteRepositoryManager, SqliteRepositories> {
+        &self.dmm_pack_use_case
+    }
+    fn work_use_case(
+        &self,
+    ) -> &WorkUseCase<
+        SqliteRepositoryManager,
+        SqliteRepositories,
+        Windows,
+        WorkRegistrationServiceImpl<SqliteRepositoryManager, SqliteRepositories, Windows>,
+    > {
+        &self.work_use_case
+    }
+    fn work_pipeline_use_case(
+        &self,
+    ) -> &WorkPipelineUseCase<
+        SqliteRepositoryManager,
+        SqliteRepositories,
+        Self::PubSub,
+        LocalFileSystem,
+        HeuristicMetadataExtractor,
+        HeuristicDuplicateResolver,
+        WorkLinkerImpl<SqliteRepositoryManager, SqliteRepositories, Windows>,
+        WorkRegistrationServiceImpl<SqliteRepositoryManager, SqliteRepositories, Windows>,
+    > {
+        &self.work_pipeline_use_case
+    }
     fn pubsub(&self) -> &Self::PubSub {
         &self.pubsub
+    }
+    fn game_matcher(&self) -> &std::sync::Arc<dyn GameMatcher + Send + Sync> {
+        &self.game_matcher
+    }
+    fn image_queue_runner(
+        &self,
+    ) -> &std::sync::Arc<ImageQueueRunnerImpl<SqliteRepositoryManager, SqliteRepositories, Windows>>
+    {
+        &self.image_queue_runner
+    }
+    fn image_queue_use_case(
+        &self,
+    ) -> &ImageQueueUseCase<SqliteRepositoryManager, SqliteRepositories> {
+        &self.image_queue_use_case
+    }
+    fn erogamescape_use_case(
+        &self,
+    ) -> &ErogamescapeUseCase<SqliteRepositoryManager, SqliteRepositories> {
+        &self.erogamescape_use_case
+    }
+    fn work_link_pending_exe_use_case(
+        &self,
+    ) -> &WorkLinkPendingExeUseCase<
+        SqliteRepositoryManager,
+        SqliteRepositories,
+        WorkLinkerImpl<SqliteRepositoryManager, SqliteRepositories, Windows>,
+    > {
+        &self.work_link_pending_exe_use_case
+    }
+    fn work_thumbnail_use_case(
+        &self,
+    ) -> &WorkThumbnailUseCase<SqliteRepositoryManager, SqliteRepositories> {
+        &self.work_thumbnail_use_case
     }
 }
 
 impl Modules {
-    pub async fn new(handle: &AppHandle) -> Self {
-        let db = Db::new(handle).await;
-
-        let repositories = Arc::new(Repositories::new(db.clone()));
-        let explorers = Arc::new(Explorers::new());
-        let windows = Arc::new(Windows::new(Arc::new(handle.clone())));
+    pub async fn new(db: Db, handle: &AppHandle) -> Self {
+        let repo_manager = Arc::new(SqliteRepositoryManager::new(db.pool_arc()));
+        let windows = Arc::new(Windows::new());
         let pubsub = PubSub::new(Arc::new(handle.clone()));
+        let resolver = Arc::new(DirsSavePathResolver::default());
 
-        let collection_use_case = CollectionUseCase::new(repositories.clone());
-        let explored_cache_use_case = ExploredCacheUseCase::new(repositories.clone());
-        let all_game_cache_use_case: AllGameCacheUseCase<Repositories> =
-            AllGameCacheUseCase::new(repositories.clone());
+        let extension_manager_use_case = ExtensionManagerUseCase::new(
+            pubsub.clone(),
+            Arc::new(NativeMessagingHostClientFactoryImpl),
+        );
 
-        let file_use_case: FileUseCase<Explorers> = FileUseCase::new(explorers.clone());
+        let file_use_case: FileUseCase = FileUseCase::new(resolver.clone());
 
         let process_use_case: ProcessUseCase<Windows> = ProcessUseCase::new(windows.clone());
 
+        let work_omit_use_case: WorkOmitUseCase<SqliteRepositoryManager, SqliteRepositories> =
+            WorkOmitUseCase::new(repo_manager.clone());
+        let host_log_use_case: HostLogUseCase<SqliteRepositoryManager, SqliteRepositories> =
+            HostLogUseCase::new(repo_manager.clone());
+        let erogamescape_use_case: ErogamescapeUseCase<
+            SqliteRepositoryManager,
+            SqliteRepositories,
+        > = ErogamescapeUseCase::new(repo_manager.clone());
+        let dmm_pack_use_case: DmmPackUseCase<SqliteRepositoryManager, SqliteRepositories> =
+            DmmPackUseCase::new(repo_manager.clone());
+        let save_path_resolver: Arc<dyn domain::service::save_path_resolver::SavePathResolver> =
+            Arc::new(DirsSavePathResolver::default());
+        let work_registration_service: Arc<
+            WorkRegistrationServiceImpl<SqliteRepositoryManager, SqliteRepositories, Windows>,
+        > = Arc::new(WorkRegistrationServiceImpl::new(
+            repo_manager.clone(),
+            save_path_resolver.clone(),
+            windows.clone(),
+        ));
+        let work_use_case: WorkUseCase<
+            SqliteRepositoryManager,
+            SqliteRepositories,
+            Windows,
+            WorkRegistrationServiceImpl<SqliteRepositoryManager, SqliteRepositories, Windows>,
+        > = WorkUseCase::new(
+            repo_manager.clone(),
+            windows.clone(),
+            work_registration_service.clone(),
+        );
+        let work_link_pending_exe_use_case: WorkLinkPendingExeUseCase<
+            SqliteRepositoryManager,
+            SqliteRepositories,
+            WorkLinkerImpl<SqliteRepositoryManager, SqliteRepositories, Windows>,
+        > = WorkLinkPendingExeUseCase::new(
+            repo_manager.clone(),
+            std::sync::Arc::new(WorkLinkerImpl::new(
+                repo_manager.clone(),
+                save_path_resolver.clone(),
+                windows.clone(),
+            )),
+        );
+        let image_queue_use_case: ImageQueueUseCase<SqliteRepositoryManager, SqliteRepositories> =
+            ImageQueueUseCase::new(repo_manager.clone());
+
+        // GameMatcher 構築
+        let initial_cache = repo_manager
+            .run(|repos| Box::pin(async move { repos.all_game_cache().get_all().await }))
+            .await
+            .unwrap_or_else(|_| vec![]);
+        let game_matcher = std::sync::Arc::new(GameMatcherImpl::with_default_config(initial_cache));
+        // AllGameCacheUseCase を生成（matcher を注入）
+        let all_game_cache_use_case: AllGameCacheUseCase<
+            SqliteRepositoryManager,
+            SqliteRepositories,
+        > = AllGameCacheUseCase::with_matcher(repo_manager.clone(), game_matcher.clone());
+
+        // WorkPipelineUseCase 構築
+        let fs = std::sync::Arc::new(LocalFileSystem::default());
+        let extractor = std::sync::Arc::new(HeuristicMetadataExtractor::new(game_matcher.clone()));
+        let dedup = std::sync::Arc::new(HeuristicDuplicateResolver);
+        let work_pipeline_use_case: WorkPipelineUseCase<
+            SqliteRepositoryManager,
+            SqliteRepositories,
+            PubSub,
+            LocalFileSystem,
+            HeuristicMetadataExtractor,
+            HeuristicDuplicateResolver,
+            WorkLinkerImpl<SqliteRepositoryManager, SqliteRepositories, Windows>,
+            WorkRegistrationServiceImpl<SqliteRepositoryManager, SqliteRepositories, Windows>,
+        > = WorkPipelineUseCase::new(
+            repo_manager.clone(),
+            pubsub.clone(),
+            fs,
+            extractor,
+            dedup,
+            resolver.clone(),
+            std::sync::Arc::new(WorkLinkerImpl::new(
+                repo_manager.clone(),
+                resolver.clone(),
+                windows.clone(),
+            )),
+            work_registration_service.clone(),
+        );
+
+        // ImageQueue のイベントハンドラ: Tauri 側は PubSub を利用
+        let pubsub_handler = std::sync::Arc::new(ImageQueuePubSubHandler::new(pubsub.clone()));
+
+        let image_queue_runner: std::sync::Arc<
+            ImageQueueRunnerImpl<SqliteRepositoryManager, SqliteRepositories, Windows>,
+        > = std::sync::Arc::new(ImageQueueRunnerImpl::new_with_event_handler(
+            repo_manager.clone(),
+            resolver.clone(),
+            windows.clone(),
+            pubsub_handler,
+        ));
+
+        let work_thumbnail_use_case: WorkThumbnailUseCase<
+            SqliteRepositoryManager,
+            SqliteRepositories,
+        > = WorkThumbnailUseCase::new(repo_manager.clone(), resolver.clone());
+
         Self {
-            collection_use_case,
-            explored_cache_use_case,
+            extension_manager_use_case,
             all_game_cache_use_case,
             file_use_case,
             process_use_case,
+            work_omit_use_case,
+            host_log_use_case,
+            erogamescape_use_case,
+            dmm_pack_use_case,
+            work_use_case,
+            work_link_pending_exe_use_case,
+            work_pipeline_use_case,
             pubsub,
+            game_matcher,
+            image_queue_runner,
+            image_queue_use_case,
+            work_thumbnail_use_case,
         }
     }
 }

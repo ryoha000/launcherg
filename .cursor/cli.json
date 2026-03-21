@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [],
+    "deny": [
+      "Read(src-tauri/native-messaging-host/src/test_dlsite.json)",
+      "Write(src-tauri/native-messaging-host/src/test_dlsite.json)"
+    ]
+  }
+}

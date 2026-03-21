@@ -1,0 +1,9 @@
+{
+  "name": "moe.ryoha.launcherg.extension_host",
+  "description": "Launcherg Native Messaging Host for browser extension",
+  "path": "native-messaging-host.exe",
+  "type": "stdio",
+  "allowed_origins": [
+    "chrome-extension://EXTENSION_ID_PLACEHOLDER/"
+  ]
+}

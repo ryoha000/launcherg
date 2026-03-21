@@ -15,6 +15,7 @@
     disabled?: boolean
     wrappable?: boolean
     onclick?: (e: Event) => void
+    small?: boolean
   }
 
   const {
@@ -28,12 +29,13 @@
     disabled = false,
     wrappable = false,
     onclick,
+    small = false,
   }: Props = $props()
 
   const iconSizeClass = 'w-4 h-4'
 
   const iconVarinatClass = $derived.by(() => {
-    if (variant === 'success') {
+    if (variant === 'success' || variant === 'accent-fill') {
       return 'color-text-white'
     }
     return 'color-ui-tertiary'
@@ -42,7 +44,7 @@
 
 <ButtonBase
   appendClass={`${appendClass} ${
-    wrappable ? '' : 'h-8'
+    wrappable ? '' : (small ? 'h-7' : 'h-8')
   } px-3 gap-2 flex items-center`}
   {variant}
   {type}

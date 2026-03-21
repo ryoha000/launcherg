@@ -7,6 +7,11 @@ import transformerVariantGroup from '@unocss/transformer-variant-group'
 import { defineConfig } from '@unocss/vite'
 
 export default defineConfig({
+  content: {
+    pipeline: {
+      include: ['src/**/*.{svelte,ts}'],
+    },
+  },
   presets: [
     presetAttributify(),
     presetWind(),

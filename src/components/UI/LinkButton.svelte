@@ -12,12 +12,12 @@
 
 <button
   onclick={() => open(href)}
-  class='rounded flex h-8 items-center px-3 gap-2 bg-transparent transition-all hover:bg-bg-button-hover'
+  class='h-8 flex items-center gap-2 rounded bg-transparent px-3 transition-all hover:bg-bg-button-hover'
 >
   <div class='whitespace-nowrap text-(body2 text-link) font-medium'>{text}</div>
   {#if withIcon}
     <div
-      class='w-4 h-4 color-text-link i-material-symbols-open-in-new-rounded'
+      class='i-material-symbols-open-in-new-rounded h-4 w-4 color-text-link'
     ></div>
   {/if}
 </button>

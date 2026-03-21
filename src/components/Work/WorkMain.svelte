@@ -1,4 +1,5 @@
 <script lang='ts'>
+  import type { WorkDetailsVm } from '@/lib/command'
   import type { Work } from '@/lib/types'
   import LinkButton from '@/components/UI/LinkButton.svelte'
   import Table from '@/components/UI/Table.svelte'
@@ -7,37 +8,43 @@
   import { seiya } from '@/store/seiya'
 
   interface Props {
-    work: Work
+    workDetail: WorkDetailsVm
+    workInformation: Work | undefined
+    autoPlay?: boolean
   }
 
-  const { work }: Props = $props()
+  const { workDetail, workInformation, autoPlay = false }: Props = $props()
 
-  const seiyaUrlPromise = $derived(seiya.getUrl(work.name))
+  const seiyaUrlPromise = $derived(seiya.getUrl(workDetail.title))
   const summaryValue = $derived([
     {
       label: 'ブランド',
-      value: work.brandName,
+      value: workInformation?.brandName ?? '不明',
       component: LinkToSidebar,
     },
-    { label: '発売日', value: work.sellday },
-    { label: '平均プレイ時間', value: `${work.statistics.playTime}` },
-    { label: '中央値', value: `${work.statistics.median}` },
-    { label: 'データ数', value: `${work.statistics.count}` },
+    { label: '発売日', value: workInformation?.sellday ?? '不明' },
+    { label: '平均プレイ時間', value: `${workInformation?.statistics.playTime}` },
+    { label: '中央値', value: `${workInformation?.statistics.median}` },
+    { label: 'データ数', value: `${workInformation?.statistics.count}` },
   ])
 </script>
 
-<div class='space-y-4 max-w-full'>
-  <div class='text-(h1 text-primary) font-bold'>{work.name}</div>
+<div class='max-w-full space-y-4'>
+  <div class='text-(h1 text-primary) font-bold'>{workDetail.title}</div>
   {#await seiyaUrlPromise then seiyaUrl}
-    <Actions id={work.id} name={work.name} {seiyaUrl} />
+    <Actions {workDetail} id={workDetail.id} {seiyaUrl} autoPlay={autoPlay} />
   {/await}
   <div class='flex items-center'>
-    <LinkButton href={work.officialHomePage} text='Official' withIcon />
-    <LinkButton
-      href='https://erogamescape.dyndns.org/~ap2/ero/toukei_kaiseki/game.php?game={work.id}'
-      text='ErogameScape'
-      withIcon
-    />
+    <LinkButton href={workInformation?.officialHomePage ?? ''} text='Official' withIcon />
+    {#if workInformation?.erogamescapeId}
+      <LinkButton
+        href='https://erogamescape.dyndns.org/~ap2/ero/toukei_kaiseki/game.php?game={workInformation.erogamescapeId}'
+        text='ErogameScape'
+        withIcon
+      />
+    {:else}
+      <span class='text-gray-500'>EGS ID未連携</span>
+    {/if}
     {#await seiyaUrlPromise then url}
       <LinkButton href={url} text='誠也の部屋' withIcon />
     {/await}

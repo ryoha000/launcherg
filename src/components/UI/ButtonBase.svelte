@@ -55,6 +55,8 @@
         return disabled
           ? 'bg-bg-success-disabled border-(~ solid border-success-disabled) text-text-success-disabled'
           : 'bg-accent-success border-(~ solid accent-success) text-text-white hover:bg-bg-success-hover'
+      case 'accent-fill':
+        return 'bg-accent-accent border-(~ solid accent-accent) text-text-secondary hover:(border-accent-accent bg-accent-accent text-text-secondary)'
       default:
         throw new Error(`Unknown variant: ${variant satisfies never}`)
     }

@@ -1,4 +1,4 @@
-import type { CollectionElement } from '@/lib/types'
+import type { SidebarWorkItem } from '@/store/sidebarWorks'
 import { createLocalStorageWritable } from '@/lib/utils'
 
 export const ATTRIBUTES = {
@@ -68,11 +68,9 @@ export function searchAttributes() {
   }
 }
 
-export const FILTER_BY_ATTRIBUTE: {
-  [key in AttributeKey]: (src: CollectionElement[]) => CollectionElement[];
-} = {
-  nukige: src => src.filter(v => v.isNukige),
-  not_nukige: src => src.filter(v => !v.isNukige),
-  exist_path: src => src.filter(v => v.installAt),
+export const FILTER_BY_ATTRIBUTE: { [key in AttributeKey]: (src: SidebarWorkItem[]) => SidebarWorkItem[] } = {
+  nukige: src => src.filter(v => v.isNukige === true),
+  not_nukige: src => src.filter(v => v.isNukige === false),
+  exist_path: src => src.filter(v => v.hasPath),
   like: src => src.filter(v => v.likeAt),
 }

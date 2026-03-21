@@ -1,21 +1,35 @@
-// Tauri イベントの型定義
+import type {
+  PubSubEvent,
+} from '../typeshare/pubsub'
 
-export interface ProgressPayload {
-  message: string
+export type EventName = PubSubEvent['type']
+
+type ExtractPayload<T extends EventName> = Extract<PubSubEvent, { type: T }> extends {
+  payload: infer P
+}
+  ? P
+  : never
+
+export type EventPayloadMap = {
+  [K in EventName]: ExtractPayload<K>
 }
 
-export interface ProgressLivePayload {
-  max: number | null
-}
-
-// イベント名とペイロードの型マッピング
-export interface EventPayloadMap {
-  progress: ProgressPayload
-  progresslive: ProgressLivePayload
-}
-
-// イベント名の型
-export type EventName = keyof EventPayloadMap
-
-// 型安全なイベントハンドラー
 export type TypedEventHandler<T extends EventName> = (payload: EventPayloadMap[T]) => void
+
+export type {
+  AppSignalEventPayload,
+  AppSignalPayload,
+  AppSignalSourcePayload,
+  DedupResultPayload,
+  EnrichResultPayload,
+  ImageQueueItemErrorPayload,
+  ImageQueueItemPayload,
+  ImageQueueWorkerStatusPayload,
+  ProgressLivePayload,
+  ProgressPayload,
+  PubSubEvent,
+  ScanLogPayload,
+  ScanPhaseTimingPayload,
+  ScanProgressPayload,
+  ScanSummaryPayload,
+} from '../typeshare/pubsub'

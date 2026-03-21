@@ -1,1 +1,1 @@
-export type Variant = 'normal' | 'accent' | 'error' | 'success'
+export type Variant = 'normal' | 'accent' | 'accent-fill' | 'error' | 'success'

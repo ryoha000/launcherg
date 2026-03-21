@@ -7,7 +7,7 @@ import { listen } from '@tauri-apps/api/event'
  * シンプルで使いやすい単一のAPI
  */
 export function useEvent() {
-  const listeners = new Map<string, UnlistenFn>()
+  const listeners = new Map<EventName, UnlistenFn>()
 
   /**
    * イベントリスナーを開始
@@ -32,7 +32,7 @@ export function useEvent() {
   /**
    * 特定のイベントリスナーを停止
    */
-  const stopListen = (eventName: string) => {
+  const stopListen = (eventName: EventName) => {
     const unlistenFn = listeners.get(eventName)
     if (unlistenFn) {
       unlistenFn()
@@ -44,7 +44,7 @@ export function useEvent() {
    * すべてのイベントリスナーを停止
    */
   const stopAll = () => {
-    for (const [_eventName, unlistenFn] of listeners) {
+    for (const [, unlistenFn] of listeners) {
       unlistenFn()
     }
     listeners.clear()

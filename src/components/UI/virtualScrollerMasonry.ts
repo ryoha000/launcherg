@@ -1,8 +1,8 @@
 import type { Readable } from 'svelte/store'
-import type { CollectionElement } from '@/lib/types'
+import type { SidebarWorkItem } from '@/store/sidebarWorks'
 import { derived } from 'svelte/store'
 
-export function useVirtualScrollerMasonry(elements: Readable<CollectionElement[]>, setVirtualHeight: (v: number) => void, contentsWidth: Readable<number>, contentsScrollY: Readable<number>, containerHeight: Readable<number>) {
+export function useVirtualScrollerMasonry(elements: Readable<SidebarWorkItem[]>, setVirtualHeight: (v: number) => void, contentsWidth: Readable<number>, contentsScrollY: Readable<number>, containerHeight: Readable<number>) {
   const minItemWidth = 16 * 16
   const itemGap = 16
 
@@ -13,7 +13,7 @@ export function useVirtualScrollerMasonry(elements: Readable<CollectionElement[]
     left: number
     width: number
     height: number
-    element: CollectionElement
+    element: SidebarWorkItem
   }[]
 
   // virtual scroll するために表示されている layout とその上下${buffer}行分を保持する
@@ -21,7 +21,7 @@ export function useVirtualScrollerMasonry(elements: Readable<CollectionElement[]
 
   // 全ての要素が表示されたときの layout を計算する
   const calculateLayouts = (
-    elements: CollectionElement[],
+    elements: SidebarWorkItem[],
     containerWidth: number,
   ) => {
     if (!containerWidth) {
@@ -37,10 +37,10 @@ export function useVirtualScrollerMasonry(elements: Readable<CollectionElement[]
     const newLayouts: Layout[] = []
 
     for (const ele of elements) {
-      const itemHeight
-        = ele.thumbnailWidth && ele.thumbnailHeight
-          ? Math.floor((itemWidth / ele.thumbnailWidth) * ele.thumbnailHeight)
-          : placeholderHeight
+      const size = ele.thumbnail
+      const itemHeight = size && size.width && size.height
+        ? Math.floor(itemWidth * (size.height / size.width))
+        : placeholderHeight
 
       if (newLayouts.length < itemNumPerRow) {
         newLayouts.push([

@@ -1,0 +1,24 @@
+---
+globs: src/**/*.ts,src/**/*.svelte
+description: Router/Tab schema architecture rules for Svelte + svelte5-router
+---
+# Router/Tab アーキテクチャ ルール（Svelte + svelte5-router）
+
+- 単一ソース: ルート定義は `ROUTE_REGISTRY`（[src/router/const.ts](mdc:src/router/const.ts)）で一元管理。型は `Descriptor`（[src/router/registry.ts](mdc:src/router/registry.ts)）。`kind` は string とし、`Tab.type` は `kind` と一致させる。
+
+- pathTemplate 規約: 宣言は `/:param(regex)` 形式で記述（例: `/works/:id(\\d+)`）。ルータ登録時のみ `buildRoutes`（[src/router/registry.ts](mdc:src/router/registry.ts)）が `(?<param>regex)` に変換して渡す。named group を直書きしない。
+
+- 抽出/生成ヘルパ: 解析/生成は `schema.ts`（[src/store/tabs/schema.ts](mdc:src/store/tabs/schema.ts)）を必ず利用。
+  - `pathParamExtractor(name)` / `queryParamExtractor(name, editor?)`
+  - `queryParamExtractor` は extractor 側で `decodeURIComponent` 済み。editor は表示用の加工のみを行う（decode を重ねない）。
+  - ルートからタブ動作判定は `getTabActionFromLocation`、URL 生成は `buildPath` を使用。
+
+
+- UI の責務: `src/components/Tab` は `ROUTE_REGISTRY` と `buildPath` を経由して遷移し、`tab.type` のハードコード分岐を持たない。
+
+- ルート追加の指針:
+  - `ROUTE_REGISTRY` に `kind`/`pathTemplate`/`component`/`icon` を追加。
+  - keyed ルートのタイトルが必要なら `queryParamExtractor(name, editor)` を指定して表示名を生成。
+
+ 
+
