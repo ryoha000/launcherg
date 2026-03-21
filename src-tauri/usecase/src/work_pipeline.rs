@@ -99,8 +99,6 @@ where
         let link_tasks = self.prepare_link_tasks(&deduped).await?;
         self.linker.ensure_links(link_tasks).await?;
         self.update_explored_cache(explored).await?;
-
-        self.backfill_thumbnail_sizes().await?;
         Ok(deduped.into_iter().map(|r| r.title).collect())
     }
 

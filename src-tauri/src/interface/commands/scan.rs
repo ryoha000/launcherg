@@ -31,7 +31,14 @@ pub async fn scan_start(
     let runner = modules.image_queue_runner();
     ImageQueueDrainService::drain_until_empty(runner.as_ref()).await?;
 
-    // 3. RefetchWorks を通知
+    // 3. サムネイルサイズを画像生成後に再取得
+    modules
+        .work_thumbnail_use_case()
+        .backfill_thumbnail_sizes()
+        .await
+        .map_err(|e| CommandError::Anyhow(anyhow::anyhow!(e.to_string())))?;
+
+    // 4. RefetchWorks を通知
     let payload = AppSignalPayload {
         source: AppSignalSourcePayload::NativeMessagingHost,
         event: AppSignalEventPayload::RefetchWorks,
