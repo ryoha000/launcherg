@@ -17,6 +17,21 @@ pub struct ProgressLivePayload {
     pub max: Option<i32>,
 }
 
+#[typeshare]
+#[derive(new, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ScanCandidateDiscoveredPayload {
+    pub count: i32,
+    pub path: String,
+}
+
+#[typeshare]
+#[derive(new, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ScanExploreFinishedPayload {
+    pub total_candidates: i32,
+}
+
 // スキャンFSM用イベントPayload
 #[typeshare]
 #[derive(new, Clone, Serialize)]
@@ -89,6 +104,7 @@ pub struct ExtensionConnectionPayload {
 #[serde(rename_all = "camelCase")]
 pub struct ImageQueueWorkerStatusPayload {
     pub status: String, // "started" | "finished"
+    pub total_count: Option<i32>,
 }
 
 #[typeshare]
@@ -231,6 +247,10 @@ pub enum PubSubEvent {
     Progress(ProgressPayload),
     #[serde(rename = "progresslive")]
     ProgressLive(ProgressLivePayload),
+    #[serde(rename = "scanCandidateDiscovered")]
+    ScanCandidateDiscovered(ScanCandidateDiscoveredPayload),
+    #[serde(rename = "scanExploreFinished")]
+    ScanExploreFinished(ScanExploreFinishedPayload),
     #[serde(rename = "scanProgress")]
     ScanProgress(ScanProgressPayload),
     #[serde(rename = "scanLog")]
@@ -272,6 +292,8 @@ impl PubSubEvent {
         match self {
             PubSubEvent::Progress(..) => "progress",
             PubSubEvent::ProgressLive(..) => "progresslive",
+            PubSubEvent::ScanCandidateDiscovered(..) => "scanCandidateDiscovered",
+            PubSubEvent::ScanExploreFinished(..) => "scanExploreFinished",
             PubSubEvent::ScanProgress(..) => "scanProgress",
             PubSubEvent::ScanLog(..) => "scanLog",
             PubSubEvent::ScanSummary(..) => "scanSummary",

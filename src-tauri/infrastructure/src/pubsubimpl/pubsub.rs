@@ -38,6 +38,10 @@ impl PubSubService for PubSub {
         match event {
             PubSubEvent::Progress(payload) => self.emit("progress", payload),
             PubSubEvent::ProgressLive(payload) => self.emit("progresslive", payload),
+            PubSubEvent::ScanCandidateDiscovered(payload) => {
+                self.emit("scanCandidateDiscovered", payload)
+            }
+            PubSubEvent::ScanExploreFinished(payload) => self.emit("scanExploreFinished", payload),
             PubSubEvent::ScanProgress(payload) => self.emit("scanProgress", payload),
             PubSubEvent::ScanLog(payload) => self.emit("scanLog", payload),
             PubSubEvent::ScanSummary(payload) => self.emit("scanSummary", payload),

@@ -2,6 +2,7 @@
   import { onDestroy, onMount } from 'svelte'
   import { preventDefault } from 'svelte/legacy'
   import { fade } from 'svelte/transition'
+  import ScanProgressDialog from '@/components/Sidebar/ScanProgressDialog.svelte'
   import { useAutoImport } from '@/components/Sidebar/useAutoImport.svelte'
   import { useImportPaths } from '@/components/Sidebar/useImportPaths.svelte'
   import { useImportProgress } from '@/components/Sidebar/useImportProgress.svelte'
@@ -9,7 +10,6 @@
   import Checkbox from '@/components/UI/Checkbox.svelte'
   import InputPath from '@/components/UI/InputPath.svelte'
   import Modal from '@/components/UI/Modal.svelte'
-  import ModalBase from '@/components/UI/ModalBase.svelte'
 
   interface Props {
     isOpen: boolean
@@ -34,11 +34,11 @@
   } = useAutoImport()
 
   const {
-    processFileNums,
-    processedFileNums,
+    progress,
     startListening,
     stopListening,
-    resetProgress,
+    beginScan,
+    finishScan,
   } = useImportProgress()
 
   const closeDialog = () => {
@@ -55,10 +55,15 @@
   }
 
   const handleConfirm = async () => {
-    resetProgress()
-    const success = await executeImport(getPaths().map(v => v.path))
-    if (success) {
-      closeDialog()
+    beginScan()
+    try {
+      const success = await executeImport(getPaths().map(v => v.path))
+      if (success) {
+        closeDialog()
+      }
+    }
+    finally {
+      finishScan()
     }
   }
 
@@ -142,18 +147,6 @@
   </Modal>
 {:else if isLoading()}
   <div transition:fade={{ delay: 150 }}>
-    <ModalBase isOpen={true} panelClass='max-w-82'>
-      <div class='w-full flex flex-(col) items-center justify-center gap-5 p-12'>
-        <div
-          class='border-t-rounded h-20 w-20 animate-spin border-(12px #D9D9D9 t-#2D2D2D solid) rounded-full'
-        ></div>
-        <div class='text-(h3 text-primary) font-bold'>処理中</div>
-        {#if processFileNums()}
-          <div class='text-(body text-primary) font-medium'>
-            処理したファイル: {processedFileNums()}/{processFileNums()}
-          </div>
-        {/if}
-      </div>
-    </ModalBase>
+    <ScanProgressDialog isOpen={true} progress={progress()} />
   </div>
 {/if}

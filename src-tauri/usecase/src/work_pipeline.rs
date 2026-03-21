@@ -3,7 +3,10 @@ use std::sync::atomic::{AtomicI32, Ordering};
 use std::{marker::PhantomData, sync::Arc};
 
 use crate::work_thumbnail::WorkThumbnailUseCase;
-use domain::pubsub::{DedupResultPayload, EnrichResultPayload, PubSubEvent, PubSubService};
+use domain::pubsub::{
+    DedupResultPayload, EnrichResultPayload, PubSubEvent, PubSubService,
+    ScanCandidateDiscoveredPayload, ScanExploreFinishedPayload,
+};
 use domain::repository::{
     explored_cache::ExploredCacheRepository as _, manager::RepositoryManager, RepositoriesExt,
 };
@@ -26,7 +29,7 @@ pub struct WorkPipelineUseCase<M, R, P, FS, ME, DR, WL, RS>
 where
     M: RepositoryManager<R>,
     R: RepositoriesExt + Send + Sync + 'static,
-    P: PubSubService,
+    P: PubSubService + Clone + 'static,
     FS: FileSystem,
     ME: MetadataExtractor,
     DR: DuplicateResolver,
@@ -48,7 +51,7 @@ impl<M, R, P, FS, ME, DR, WL, RS> WorkPipelineUseCase<M, R, P, FS, ME, DR, WL, R
 where
     M: RepositoryManager<R>,
     R: RepositoriesExt + Send + Sync + 'static,
-    P: PubSubService,
+    P: PubSubService + Clone + 'static,
     FS: FileSystem,
     ME: MetadataExtractor + Send + Sync + 'static,
     DR: DuplicateResolver,
@@ -107,6 +110,7 @@ where
         roots: &[std::path::PathBuf],
         use_cache: bool,
     ) -> anyhow::Result<mpsc::Receiver<WorkCandidate>> {
+        let pubsub = self.pubsub.clone();
         let exclude = if use_cache {
             let cache = self
                 .manager
@@ -125,17 +129,37 @@ where
 
         let (tx, rx) = mpsc::channel::<WorkCandidate>(2048);
         tokio::spawn(async move {
+            let mut discovered_count: i32 = 0;
             for c in iter {
+                let path = c.path.to_string_lossy().to_string();
                 match tx.try_send(c) {
-                    Ok(_) => {}
+                    Ok(_) => {
+                        discovered_count += 1;
+                        let _ = pubsub.notify(PubSubEvent::ScanCandidateDiscovered(
+                            ScanCandidateDiscoveredPayload::new(
+                                discovered_count,
+                                path.clone(),
+                            ),
+                        ));
+                    }
                     Err(tokio::sync::mpsc::error::TrySendError::Full(c)) => {
                         if tx.send(c).await.is_err() {
                             break;
                         }
+                        discovered_count += 1;
+                        let _ = pubsub.notify(PubSubEvent::ScanCandidateDiscovered(
+                            ScanCandidateDiscoveredPayload::new(
+                                discovered_count,
+                                path.clone(),
+                            ),
+                        ));
                     }
                     Err(tokio::sync::mpsc::error::TrySendError::Closed(_)) => break,
                 }
             }
+            let _ = pubsub.notify(PubSubEvent::ScanExploreFinished(
+                ScanExploreFinishedPayload::new(discovered_count),
+            ));
         });
         Ok(rx)
     }

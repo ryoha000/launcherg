@@ -26,6 +26,7 @@ async fn save_image_queue_normal_flows() {
         let rows = r.list(true, 10).await.unwrap();
         assert_eq!(rows.len(), 1);
         assert_eq!(rows[0].id.value, id.value);
+        assert_eq!(r.count(true).await.unwrap(), 1);
     }
 
     // mark_failed
@@ -40,11 +41,14 @@ async fn save_image_queue_normal_flows() {
         r.mark_finished(id).await.unwrap();
         let rows = r.list(true, 10).await.unwrap();
         assert_eq!(rows.len(), 0);
+        assert_eq!(r.count(true).await.unwrap(), 0);
         // finished 側に出る
         let rows_finished = {
             let mut r = repo.image_queue();
             r.list(false, 10).await.unwrap()
         };
         assert_eq!(rows_finished.len(), 1);
+        let mut r = repo.image_queue();
+        assert_eq!(r.count(false).await.unwrap(), 1);
     }
 }

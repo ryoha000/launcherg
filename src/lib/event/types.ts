@@ -28,6 +28,8 @@ export type {
   ProgressLivePayload,
   ProgressPayload,
   PubSubEvent,
+  ScanCandidateDiscoveredPayload,
+  ScanExploreFinishedPayload,
   ScanLogPayload,
   ScanPhaseTimingPayload,
   ScanProgressPayload,

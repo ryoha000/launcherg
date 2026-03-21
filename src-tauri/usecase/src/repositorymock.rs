@@ -407,6 +407,9 @@ impl domain::repository::save_image_queue::ImageSaveQueueRepository for TestRepo
     ) -> anyhow::Result<Vec<domain::save_image_queue::ImageSaveQueueRow>> {
         self.image_queue.lock().await.list(unfinished, limit).await
     }
+    async fn count(&mut self, unfinished: bool) -> anyhow::Result<i64> {
+        self.image_queue.lock().await.count(unfinished).await
+    }
     async fn mark_finished(
         &mut self,
         id: domain::Id<domain::save_image_queue::ImageSaveQueueRow>,

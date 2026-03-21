@@ -4,6 +4,8 @@ export type {
   EventPayloadMap,
   ProgressLivePayload,
   ProgressPayload,
+  ScanCandidateDiscoveredPayload,
+  ScanExploreFinishedPayload,
   TypedEventHandler,
 } from './types'
 

@@ -76,7 +76,7 @@ pub struct Modules {
 pub trait ModulesExt {
     type Repositories: RepositoriesExt;
     type Windows: WindowsExt;
-    type PubSub: PubSubExt + PubSubService;
+    type PubSub: PubSubExt + PubSubService + Clone;
 
     fn extension_manager_use_case(
         &self,
@@ -338,7 +338,8 @@ impl Modules {
         );
 
         // ImageQueue のイベントハンドラ: Tauri 側は PubSub を利用
-        let pubsub_handler = std::sync::Arc::new(ImageQueuePubSubHandler::new(pubsub.clone()));
+        let pubsub_handler =
+            std::sync::Arc::new(ImageQueuePubSubHandler::new(repo_manager.clone(), pubsub.clone()));
 
         let image_queue_runner: std::sync::Arc<
             ImageQueueRunnerImpl<SqliteRepositoryManager, SqliteRepositories, Windows>,

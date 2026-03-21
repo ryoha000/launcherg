@@ -18,6 +18,7 @@ pub trait ImageSaveQueueRepository {
         unfinished: bool,
         limit: i64,
     ) -> anyhow::Result<Vec<ImageSaveQueueRow>>;
+    async fn count(&mut self, unfinished: bool) -> anyhow::Result<i64>;
     async fn mark_finished(&mut self, id: Id<ImageSaveQueueRow>) -> anyhow::Result<()>;
     async fn mark_failed(&mut self, id: Id<ImageSaveQueueRow>, error: &str) -> anyhow::Result<()>;
 }

@@ -1,6 +1,9 @@
 <script lang='ts'>
+  import type { ScanProgressState } from '@/components/Sidebar/useImportProgress.svelte'
   import { goto } from '@mateothegreat/svelte5-router'
+  import { onDestroy } from 'svelte'
   import { get } from 'svelte/store'
+  import ScanProgressDialog from '@/components/Sidebar/ScanProgressDialog.svelte'
   import Button from '@/components/UI/Button.svelte'
   import Input from '@/components/UI/Input.svelte'
   import InputPath from '@/components/UI/InputPath.svelte'
@@ -21,6 +24,198 @@
   let storageSettingsInitialized = $state(false)
   let storageMessage = $state('')
   let storageError = $state('')
+  let isOpenProgressPreview = $state(false)
+  let progressPreviewStartedAt = $state<number | null>(null)
+  let progressPreviewTimer: ReturnType<typeof setInterval> | null = null
+
+  const previewPaths = [
+    'D:\\Games\\DLsite\\2024\\VeryLongFolderName\\EpisodeOne\\installer\\setup.exe',
+    'D:\\Games\\DLsite\\2024\\VeryLongFolderName\\EpisodeOne\\media\\cg\\scene_001.png',
+    'D:\\Games\\DLsite\\2024\\VeryLongFolderName\\EpisodeTwo\\movie\\opening\\scene01\\thumbnail_preview.png',
+    'D:\\Games\\DLsite\\2024\\VeryLongFolderName\\EpisodeTwo\\media\\voice\\voice_0003.ogg',
+    'D:\\Games\\DLsite\\2024\\VeryLongFolderName\\EpisodeThree\\image\\banner\\banner_large_2x.png',
+  ]
+
+  const previewDurationMs = 14000
+
+  const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value))
+  const lerp = (from: number, to: number, ratio: number) => from + ((to - from) * ratio)
+
+  const createPreviewState = (elapsedMs: number): ScanProgressState => {
+    const clampedElapsed = clamp(elapsedMs, 0, previewDurationMs)
+    const phase1End = 3400
+    const phase2End = 7600
+    const phase3End = 10800
+    const phase4End = 12800
+
+    const pickPath = (index: number) => previewPaths[index % previewPaths.length]
+
+    if (clampedElapsed < phase1End) {
+      const ratio = clampedElapsed / phase1End
+      const discovered = Math.floor(lerp(0, 420, ratio))
+      const judged = Math.floor(lerp(0, 210, ratio))
+      const recognized = Math.floor(lerp(0, 52, ratio))
+      return {
+        startedAt: progressPreviewStartedAt,
+        elapsedSeconds: Math.floor(clampedElapsed / 1000),
+        explore: {
+          status: 'running',
+          discoveredCandidates: discovered,
+          currentPath: pickPath(Math.floor(clampedElapsed / 220)),
+          totalCandidates: null,
+        },
+        judge: {
+          status: 'running',
+          judgedCount: judged,
+          recognizedCount: recognized,
+          totalCandidates: null,
+        },
+        images: {
+          status: 'idle',
+          processedCount: 0,
+          totalCount: null,
+        },
+      }
+    }
+
+    if (clampedElapsed < phase2End) {
+      const ratio = (clampedElapsed - phase1End) / (phase2End - phase1End)
+      const discovered = Math.floor(lerp(420, 1284, ratio))
+      const judged = Math.floor(lerp(210, 913, ratio))
+      const recognized = Math.floor(lerp(52, 241, ratio))
+      return {
+        startedAt: progressPreviewStartedAt,
+        elapsedSeconds: Math.floor(clampedElapsed / 1000),
+        explore: {
+          status: 'running',
+          discoveredCandidates: discovered,
+          currentPath: pickPath(Math.floor(clampedElapsed / 180)),
+          totalCandidates: null,
+        },
+        judge: {
+          status: 'running',
+          judgedCount: judged,
+          recognizedCount: recognized,
+          totalCandidates: null,
+        },
+        images: {
+          status: 'idle',
+          processedCount: 0,
+          totalCount: null,
+        },
+      }
+    }
+
+    if (clampedElapsed < phase3End) {
+      const ratio = (clampedElapsed - phase2End) / (phase3End - phase2End)
+      const judged = Math.floor(lerp(913, 1284, ratio))
+      const recognized = Math.floor(lerp(241, 298, ratio))
+      return {
+        startedAt: progressPreviewStartedAt,
+        elapsedSeconds: Math.floor(clampedElapsed / 1000),
+        explore: {
+          status: 'done',
+          discoveredCandidates: 1284,
+          currentPath: pickPath(Math.floor(clampedElapsed / 220)),
+          totalCandidates: 1284,
+        },
+        judge: {
+          status: 'running',
+          judgedCount: judged,
+          recognizedCount: recognized,
+          totalCandidates: 1284,
+        },
+        images: {
+          status: 'idle',
+          processedCount: 0,
+          totalCount: null,
+        },
+      }
+    }
+
+    if (clampedElapsed < phase4End) {
+      const ratio = (clampedElapsed - phase3End) / (phase4End - phase3End)
+      const processed = Math.floor(lerp(0, 298, ratio))
+      return {
+        startedAt: progressPreviewStartedAt,
+        elapsedSeconds: Math.floor(clampedElapsed / 1000),
+        explore: {
+          status: 'done',
+          discoveredCandidates: 1284,
+          currentPath: pickPath(Math.floor(clampedElapsed / 250)),
+          totalCandidates: 1284,
+        },
+        judge: {
+          status: 'done',
+          judgedCount: 1284,
+          recognizedCount: 298,
+          totalCandidates: 1284,
+        },
+        images: {
+          status: 'running',
+          processedCount: processed,
+          totalCount: 298,
+        },
+      }
+    }
+
+    return {
+      startedAt: progressPreviewStartedAt,
+      elapsedSeconds: Math.floor(clampedElapsed / 1000),
+      explore: {
+        status: 'done',
+        discoveredCandidates: 1284,
+        currentPath: pickPath(Math.floor(clampedElapsed / 260)),
+        totalCandidates: 1284,
+      },
+      judge: {
+        status: 'done',
+        judgedCount: 1284,
+        recognizedCount: 298,
+        totalCandidates: 1284,
+      },
+      images: {
+        status: 'done',
+        processedCount: 298,
+        totalCount: 298,
+      },
+    }
+  }
+
+  let progressPreview = $state<ScanProgressState>(createPreviewState(0))
+
+  const stopProgressPreviewTimer = () => {
+    if (progressPreviewTimer !== null) {
+      clearInterval(progressPreviewTimer)
+      progressPreviewTimer = null
+    }
+  }
+
+  const advanceProgressPreview = () => {
+    if (progressPreviewStartedAt === null) {
+      return
+    }
+    progressPreview = createPreviewState(Date.now() - progressPreviewStartedAt)
+  }
+
+  const startProgressPreview = () => {
+    stopProgressPreviewTimer()
+    progressPreviewStartedAt = Date.now()
+    progressPreview = createPreviewState(0)
+    progressPreviewTimer = setInterval(advanceProgressPreview, 33)
+  }
+
+  const openProgressPreview = () => {
+    isOpenProgressPreview = true
+    startProgressPreview()
+  }
+
+  const closeProgressPreview = () => {
+    isOpenProgressPreview = false
+    stopProgressPreviewTimer()
+    progressPreviewStartedAt = null
+    progressPreview = createPreviewState(0)
+  }
 
   const storageSettingsQuery = useStorageSettingsQuery()
   const storageSettingsMutation = useStorageSettingsMutation()
@@ -90,6 +285,8 @@
   function navigateToImageQueue() {
     goto('/image-queue')
   }
+
+  onDestroy(stopProgressPreviewTimer)
 </script>
 
 <div class='mx-auto h-full max-w-2xl overflow-y-auto p-6'>
@@ -201,6 +398,11 @@
     <div>
       <h2 class='mb-3 text-(lg text-primary) font-semibold'>デバッグ</h2>
       <div class='space-y-3'>
+        <Button
+          variant='normal'
+          onclick={openProgressPreview}
+          text='進捗ダイアログをプレビュー'
+        />
         <Button variant='normal' onclick={navigateToProcTailDebug} text='ProcTailデバッグ画面' />
         <Button variant='normal' onclick={navigateToImageQueue} text='画像保存キュー' />
       </div>
@@ -213,3 +415,10 @@
     </div>
   </div>
 </div>
+
+<ScanProgressDialog
+  isOpen={isOpenProgressPreview}
+  progress={progressPreview}
+  panelClass='max-w-120'
+  onclose={closeProgressPreview}
+/>

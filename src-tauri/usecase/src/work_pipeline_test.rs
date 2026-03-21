@@ -142,6 +142,61 @@ mod tests {
         )));
     }
 
+    #[tokio::test]
+    async fn open_candidate_stream_探索候補と完了イベントを通知する() {
+        let pubsub = MockPubSub::default();
+        let mut fs = MockFileSystem::new();
+        fs.expect_walk_dir().returning(|_, _| {
+            Ok(Box::new(vec![
+                WorkCandidate::new(PathBuf::from("a.exe"), CandidateKind::Exe),
+                WorkCandidate::new(PathBuf::from("b.exe"), CandidateKind::Exe),
+            ]
+            .into_iter()))
+        });
+        let fs = Arc::new(fs);
+        let extractor = Arc::new(MockMetadataExtractor::new());
+        let mut d = MockDuplicateResolver::new();
+        d.expect_resolve().returning(|items| items);
+        let dedup = Arc::new(d);
+        let manager = Arc::new(TestRepositoryManager::new(TestRepositories::default()));
+        let linker = default_linker();
+        let registrar = default_registrar();
+        let uc: WorkPipelineUseCase<_, _, _, _, _, _, _, _> = WorkPipelineUseCase::new(
+            manager,
+            pubsub.clone(),
+            fs,
+            extractor,
+            dedup,
+            Arc::new(domain::service::save_path_resolver::DirsSavePathResolver::default()),
+            linker,
+            registrar,
+        );
+
+        let mut rx = uc.open_candidate_stream(&[], false).await.unwrap();
+        let mut received = Vec::new();
+        while let Some(candidate) = rx.recv().await {
+            received.push(candidate);
+        }
+        assert_eq!(received.len(), 2);
+
+        let events = pubsub.events.lock().unwrap();
+        assert!(events.iter().any(|event| matches!(
+            event,
+            PubSubEvent::ScanCandidateDiscovered(payload)
+                if payload.count == 1 && payload.path == "a.exe"
+        )));
+        assert!(events.iter().any(|event| matches!(
+            event,
+            PubSubEvent::ScanCandidateDiscovered(payload)
+                if payload.count == 2 && payload.path == "b.exe"
+        )));
+        assert!(events.iter().any(|event| matches!(
+            event,
+            PubSubEvent::ScanExploreFinished(payload)
+                if payload.total_candidates == 2
+        )));
+    }
+
     // dedup は重複数のみ通知
 
     // open_candidate_stream

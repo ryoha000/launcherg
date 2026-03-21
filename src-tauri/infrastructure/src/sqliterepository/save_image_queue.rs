@@ -79,6 +79,25 @@ impl ImageSaveQueueRepository for RepositoryImpl<domain::save_image_queue::Image
         Ok(mapped)
     }
 
+    async fn count(&mut self, unfinished: bool) -> anyhow::Result<i64> {
+        let condition = if unfinished {
+            "finished_at IS NULL"
+        } else {
+            "finished_at IS NOT NULL"
+        };
+        let query = format!("SELECT COUNT(*) FROM save_image_queue WHERE {}", condition);
+        let (count,): (i64,) = self
+            .executor
+            .with_conn(|conn| {
+                Box::pin(async move {
+                    let row: (i64,) = sqlx::query_as(&query).fetch_one(conn).await?;
+                    Ok::<(i64,), anyhow::Error>(row)
+                })
+            })
+            .await?;
+        Ok(count)
+    }
+
     async fn mark_finished(&mut self, id: Id<ImageSaveQueueRow>) -> anyhow::Result<()> {
         self.executor.with_conn(|conn| {
             Box::pin(async move {

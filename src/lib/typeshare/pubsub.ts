@@ -59,6 +59,7 @@ export interface ImageQueueItemPayload {
 
 export interface ImageQueueWorkerStatusPayload {
 	status: string;
+	totalCount?: number;
 }
 
 export interface ProgressLivePayload {
@@ -67,6 +68,15 @@ export interface ProgressLivePayload {
 
 export interface ProgressPayload {
 	message: string;
+}
+
+export interface ScanCandidateDiscoveredPayload {
+	count: number;
+	path: string;
+}
+
+export interface ScanExploreFinishedPayload {
+	totalCandidates: number;
 }
 
 export interface ScanLogPayload {
@@ -99,6 +109,8 @@ export interface ScanSummaryPayload {
 export type PubSubEvent = 
 	| { type: "progress", payload: ProgressPayload }
 	| { type: "progresslive", payload: ProgressLivePayload }
+	| { type: "scanCandidateDiscovered", payload: ScanCandidateDiscoveredPayload }
+	| { type: "scanExploreFinished", payload: ScanExploreFinishedPayload }
 	| { type: "scanProgress", payload: ScanProgressPayload }
 	| { type: "scanLog", payload: ScanLogPayload }
 	| { type: "scanSummary", payload: ScanSummaryPayload }

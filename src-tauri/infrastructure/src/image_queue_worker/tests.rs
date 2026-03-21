@@ -815,6 +815,12 @@ async fn drain_until_empty_イベントハンドラ_pubsub通知が発火する(
             *n += 1;
             std::pin::Pin::from(Box::new(async move { Ok(ret) }))
         });
+        iq.expect_count()
+            .times(1)
+            .returning(|unfinished| {
+                assert!(unfinished);
+                std::pin::Pin::from(Box::new(async { Ok(1) }))
+            });
         iq.expect_mark_finished()
             .times(1)
             .returning(|_| std::pin::Pin::from(Box::new(async { Ok(()) })));
@@ -827,7 +833,10 @@ async fn drain_until_empty_イベントハンドラ_pubsub通知が発火する(
     let windows = std::sync::Arc::new(TestWindows::new(mock));
 
     let pubsub = MockPubSub::default();
-    let handler = std::sync::Arc::new(ImageQueuePubSubHandler::new(pubsub.clone()));
+    let handler = std::sync::Arc::new(ImageQueuePubSubHandler::new(
+        manager.clone(),
+        pubsub.clone(),
+    ));
     let worker = crate::image_queue_worker::ImageQueueWorker::new_with_event_handler(
         manager, resolver, windows, handler,
     );
