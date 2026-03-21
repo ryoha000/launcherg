@@ -2,11 +2,10 @@ use super::super::TestDatabase;
 use chrono::{DateTime, Local, NaiveDateTime};
 use domain::erogamescape::NewErogamescapeInformation;
 use domain::repository::{
-    dmm_work_pack::DmmPackRepository,
     erogamescape::ErogamescapeRepository,
     work_download_path::WorkDownloadPathRepository,
     work_like::WorkLikeRepository,
-    work_omit::WorkOmitRepository,
+    work_parent_packs::WorkParentPacksRepository,
     works::{DlsiteWorkRepository, DmmWorkRepository, WorkRepository},
     RepositoriesExt,
 };
@@ -88,6 +87,16 @@ async fn work_find_details_by_work_id_正常系_各_join反映() {
         .await
         .unwrap();
 
+    let parent_key = domain::work_parent_pack::ParentPackKey {
+        store_id: "PARENT-SID-001".into(),
+        category: "pack".into(),
+        subcategory: "bundle".into(),
+    };
+    {
+        let mut r = repo.work_parent_packs();
+        r.add(work_id.clone(), parent_key.clone()).await.unwrap();
+    }
+
     // Dlsite work を追加
     let _dlsite_id = repo
         .dlsite_work()
@@ -141,18 +150,6 @@ async fn work_find_details_by_work_id_正常系_各_join反映() {
         r.update_last_play_at_by_work_id(work_id.clone(), play_at_dt)
             .await
             .unwrap();
-    }
-
-    // work_omits を追加
-    {
-        let mut r = repo.work_omit();
-        r.add(work_id.clone()).await.unwrap();
-    }
-
-    // dmm_work_packs を追加
-    {
-        let mut r = repo.dmm_pack();
-        r.add(work_id.clone()).await.unwrap();
     }
 
     // work_download_paths を追加
@@ -224,11 +221,8 @@ async fn work_find_details_by_work_id_正常系_各_join反映() {
     let play_dt = d.last_play_at.unwrap();
     assert_eq!(play_dt.naive_utc(), play_at);
 
-    // Omit
-    assert!(d.is_omitted);
-
-    // DMM Pack
-    assert!(d.is_dmm_pack);
+    // Parent pack
+    assert_eq!(dmm.parent_pack, Some(parent_key));
 
     // Download Path
     let path = d
@@ -621,8 +615,6 @@ async fn list_all_details_dmm_only() {
     assert_eq!(dmm.category, "software");
     assert_eq!(dmm.subcategory, "game");
     assert!(item.dlsite.is_none());
-    assert!(!item.is_omitted);
-    assert!(!item.is_dmm_pack);
 }
 
 #[tokio::test]
@@ -669,8 +661,6 @@ async fn list_all_details_dlsite_only() {
 
     // DMM は存在しない
     assert!(item.dmm.is_none());
-    assert!(!item.is_omitted);
-    assert!(!item.is_dmm_pack);
 }
 
 #[tokio::test]
@@ -755,18 +745,6 @@ async fn list_all_details_全要素_集約マージ() {
             .unwrap();
     }
 
-    // work_omits を追加
-    {
-        let mut r = repo.work_omit();
-        r.add(work_id.clone()).await.unwrap();
-    }
-
-    // dmm_work_packs を追加
-    {
-        let mut r = repo.dmm_pack();
-        r.add(work_id.clone()).await.unwrap();
-    }
-
     // work_download_paths を追加（複数パスを追加して、最新のものが取得されることを確認）
     {
         let mut r = repo.work_download_path();
@@ -834,12 +812,6 @@ async fn list_all_details_全要素_集約マージ() {
 
     // Play
     assert!(item.last_play_at.is_some());
-
-    // Omit
-    assert!(item.is_omitted);
-
-    // DMM Pack
-    assert!(item.is_dmm_pack);
 
     // Download Path（最新のものが取得される）
     let path = item

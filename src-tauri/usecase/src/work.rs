@@ -114,18 +114,18 @@ where
         Ok(pid)
     }
 
-    pub async fn get_parent_dmm_pack_work_id(
+    pub async fn get_parent_dmm_pack_key(
         &self,
         work_id: String,
-    ) -> anyhow::Result<Option<String>> {
+    ) -> anyhow::Result<Option<domain::work_parent_pack::ParentPackKey>> {
         let wid = domain::StrId::new(work_id);
         let parent = self
             .manager
             .run(|repos| {
-                Box::pin(async move { repos.work_parent_packs().find_parent_id(wid).await })
+                Box::pin(async move { repos.work_parent_packs().find_parent_key(wid).await })
             })
             .await?;
-        Ok(parent.map(|p| p.value))
+        Ok(parent)
     }
 
     pub async fn get_dmm_work_by_work_id(
@@ -190,7 +190,7 @@ where
                 egs_info: None,
                 icon,
                 thumbnail,
-                parent_pack_work_id: None,
+                parent_pack_dmm_key: None,
             },
         };
 

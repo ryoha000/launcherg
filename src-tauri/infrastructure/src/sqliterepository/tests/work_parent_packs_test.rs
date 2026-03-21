@@ -9,19 +9,22 @@ async fn work_parent_packs_normal_flows() {
     let test_db = TestDatabase::new().await.unwrap();
     let repo = test_db.sqlite_repository();
 
-    // prepare works
-    let (wid, pid) = {
+    let wid = {
         let mut r = repo.work();
         let w = r.upsert(&NewWork { title: "W".into() }).await.unwrap();
-        let p = r.upsert(&NewWork { title: "P".into() }).await.unwrap();
-        (w, p)
+        w
+    };
+    let parent_key = domain::work_parent_pack::ParentPackKey {
+        store_id: "store".into(),
+        category: "cat".into(),
+        subcategory: "sub".into(),
     };
 
     // add
     {
         let mut r = repo.work_parent_packs();
-        r.add(wid.clone(), pid.clone()).await.unwrap();
-        assert!(r.exists(wid, pid).await.unwrap());
+        r.add(wid.clone(), parent_key.clone()).await.unwrap();
+        assert!(r.exists(wid, parent_key).await.unwrap());
     }
 }
 
@@ -30,29 +33,33 @@ async fn work_parent_packs_duplicate_add_is_noop() {
     let test_db = TestDatabase::new().await.unwrap();
     let repo = test_db.sqlite_repository();
 
-    let (wid, pid) = {
+    let wid = {
         let mut r = repo.work();
         let w = r.upsert(&NewWork { title: "W".into() }).await.unwrap();
-        let p = r.upsert(&NewWork { title: "P".into() }).await.unwrap();
-        (w, p)
+        w
+    };
+    let parent_key = domain::work_parent_pack::ParentPackKey {
+        store_id: "store".into(),
+        category: "cat".into(),
+        subcategory: "sub".into(),
     };
 
     {
         let mut r = repo.work_parent_packs();
-        r.add(wid.clone(), pid.clone()).await.unwrap();
-        r.add(wid.clone(), pid.clone()).await.unwrap();
-        assert!(r.exists(wid.clone(), pid.clone()).await.unwrap());
-        assert_eq!(r.find_parent_id(wid).await.unwrap().unwrap().value, pid.value);
+        r.add(wid.clone(), parent_key.clone()).await.unwrap();
+        r.add(wid.clone(), parent_key.clone()).await.unwrap();
+        assert!(r.exists(wid.clone(), parent_key.clone()).await.unwrap());
+        assert_eq!(r.find_parent_key(wid).await.unwrap().unwrap(), parent_key);
     }
 }
 
 #[tokio::test]
-async fn work_parent_packs_find_parent_id_should_return_parent() {
+async fn work_parent_packs_find_parent_key_should_return_parent() {
     let test_db = TestDatabase::new().await.unwrap();
     let repo = test_db.sqlite_repository();
 
-    // prepare works
-    let (child, parent) = {
+    // prepare work
+    let child = {
         let mut r = repo.work();
         let c = r
             .upsert(&NewWork {
@@ -60,22 +67,21 @@ async fn work_parent_packs_find_parent_id_should_return_parent() {
             })
             .await
             .unwrap();
-        let p = r
-            .upsert(&NewWork {
-                title: "Parent".into(),
-            })
-            .await
-            .unwrap();
-        (c, p)
+        c
+    };
+    let parent_key = domain::work_parent_pack::ParentPackKey {
+        store_id: "store".into(),
+        category: "cat".into(),
+        subcategory: "sub".into(),
     };
 
     // link and verify
     {
         let mut r = repo.work_parent_packs();
-        r.add(child.clone(), parent.clone()).await.unwrap();
-        let found = r.find_parent_id(child.clone()).await.unwrap();
+        r.add(child.clone(), parent_key.clone()).await.unwrap();
+        let found = r.find_parent_key(child.clone()).await.unwrap();
         assert!(found.is_some());
-        assert_eq!(found.unwrap().value, parent.value);
+        assert_eq!(found.unwrap(), parent_key);
     }
 
     // no link case
@@ -88,7 +94,7 @@ async fn work_parent_packs_find_parent_id_should_return_parent() {
             })
             .await
             .unwrap();
-        let none = r.find_parent_id(orphan).await.unwrap();
+        let none = r.find_parent_key(orphan).await.unwrap();
         assert!(none.is_none());
     }
 }

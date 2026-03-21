@@ -1,4 +1,9 @@
-use crate::{erogamescape::NewErogamescapeInformation, works::Work, StrId};
+use crate::{
+    erogamescape::NewErogamescapeInformation,
+    work_parent_pack::ParentPackKey,
+    works::Work,
+    StrId,
+};
 
 /// Work の一意キーを表す enum
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
@@ -61,7 +66,7 @@ pub struct WorkInsert {
     pub egs_info: Option<NewErogamescapeInformation>,
     pub icon: Option<ImageApply>,
     pub thumbnail: Option<ImageApply>,
-    pub parent_pack_work_id: Option<StrId<Work>>,
+    pub parent_pack_dmm_key: Option<ParentPackKey>,
 }
 
 /// Work 登録リクエスト

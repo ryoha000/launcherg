@@ -7,8 +7,6 @@ pub struct TestRepositories {
     pub all_game_cache: Arc<Mutex<crate::repository::all_game_cache::MockAllGameCacheRepository>>,
     pub image_queue: Arc<Mutex<crate::repository::save_image_queue::MockImageSaveQueueRepository>>,
     pub host_log: Arc<Mutex<crate::repository::native_host_log::MockNativeHostLogRepository>>,
-    pub work_omit: Arc<Mutex<crate::repository::work_omit::MockWorkOmitRepository>>,
-    pub dmm_pack: Arc<Mutex<crate::repository::dmm_work_pack::MockDmmPackRepository>>,
     pub dmm_work: Arc<Mutex<crate::repository::works::MockDmmWorkRepository>>,
     pub dlsite_work: Arc<Mutex<crate::repository::works::MockDlsiteWorkRepository>>,
     pub work: Arc<Mutex<crate::repository::works::MockWorkRepository>>,
@@ -30,8 +28,6 @@ impl Default for TestRepositories {
             all_game_cache: Arc::new(Mutex::new(Default::default())),
             image_queue: Arc::new(Mutex::new(Default::default())),
             host_log: Arc::new(Mutex::new(Default::default())),
-            work_omit: Arc::new(Mutex::new(Default::default())),
-            dmm_pack: Arc::new(Mutex::new(Default::default())),
             dmm_work: Arc::new(Mutex::new(Default::default())),
             dlsite_work: Arc::new(Mutex::new(Default::default())),
             work: Arc::new(Mutex::new(Default::default())),
@@ -53,9 +49,7 @@ impl crate::repository::RepositoriesExt for TestRepositories {
     type ExploredCacheRepo = TestRepositories;
     type ImageQueueRepo = TestRepositories;
     type HostLogRepo = TestRepositories;
-    type WorkOmitRepo = TestRepositories;
     type WorkParentPacksRepo = TestRepositories;
-    type DmmPackRepo = TestRepositories;
     type ErogamescapeRepo = TestRepositories;
     type WorkDownloadPathRepo = TestRepositories;
     type WorkLnkRepo = TestRepositories;
@@ -82,13 +76,7 @@ impl crate::repository::RepositoriesExt for TestRepositories {
     fn host_log(&self) -> Self::HostLogRepo {
         self.clone()
     }
-    fn work_omit(&self) -> Self::WorkOmitRepo {
-        self.clone()
-    }
     fn work_parent_packs(&self) -> Self::WorkParentPacksRepo {
-        self.clone()
-    }
-    fn dmm_pack(&self) -> Self::DmmPackRepo {
         self.clone()
     }
     fn erogamescape(&self) -> Self::ErogamescapeRepo {
@@ -293,21 +281,6 @@ impl crate::repository::works::DlsiteWorkRepository for TestRepositories {
     }
 }
 
-impl crate::repository::dmm_work_pack::DmmPackRepository for TestRepositories {
-    async fn add(&mut self, work_id: crate::StrId<crate::works::Work>) -> anyhow::Result<()> {
-        self.dmm_pack.lock().await.add(work_id).await
-    }
-    async fn remove(&mut self, work_id: crate::StrId<crate::works::Work>) -> anyhow::Result<()> {
-        self.dmm_pack.lock().await.remove(work_id).await
-    }
-    async fn list(&mut self) -> anyhow::Result<Vec<crate::dmm_work_pack::DmmWorkPack>> {
-        self.dmm_pack.lock().await.list().await
-    }
-    async fn exists(&mut self, work_id: crate::StrId<crate::works::Work>) -> anyhow::Result<bool> {
-        self.dmm_pack.lock().await.exists(work_id).await
-    }
-}
-
 impl crate::repository::all_game_cache::AllGameCacheRepository for TestRepositories {
     async fn get_by_ids(
         &mut self,
@@ -418,52 +391,37 @@ impl crate::repository::native_host_log::NativeHostLogRepository for TestReposit
     }
 }
 
-impl crate::repository::work_omit::WorkOmitRepository for TestRepositories {
-    async fn add(&mut self, work_id: crate::StrId<crate::works::Work>) -> anyhow::Result<()> {
-        self.work_omit.lock().await.add(work_id).await
-    }
-    async fn remove(&mut self, work_id: crate::StrId<crate::works::Work>) -> anyhow::Result<()> {
-        self.work_omit.lock().await.remove(work_id).await
-    }
-    async fn list(&mut self) -> anyhow::Result<Vec<crate::work_omit::WorkOmit>> {
-        self.work_omit.lock().await.list().await
-    }
-    async fn exists(&mut self, work_id: crate::StrId<crate::works::Work>) -> anyhow::Result<bool> {
-        self.work_omit.lock().await.exists(work_id).await
-    }
-}
-
 impl crate::repository::work_parent_packs::WorkParentPacksRepository for TestRepositories {
     async fn add(
         &mut self,
         work_id: crate::StrId<crate::works::Work>,
-        parent_pack_work_id: crate::StrId<crate::works::Work>,
+        parent_pack: crate::work_parent_pack::ParentPackKey,
     ) -> anyhow::Result<()> {
         self.work_parent_packs
             .lock()
             .await
-            .add(work_id, parent_pack_work_id)
+            .add(work_id, parent_pack)
             .await
     }
     async fn exists(
         &mut self,
         work_id: crate::StrId<crate::works::Work>,
-        parent_pack_work_id: crate::StrId<crate::works::Work>,
+        parent_pack: crate::work_parent_pack::ParentPackKey,
     ) -> anyhow::Result<bool> {
         self.work_parent_packs
             .lock()
             .await
-            .exists(work_id, parent_pack_work_id)
+            .exists(work_id, parent_pack)
             .await
     }
-    async fn find_parent_id(
+    async fn find_parent_key(
         &mut self,
         work_id: crate::StrId<crate::works::Work>,
-    ) -> anyhow::Result<Option<crate::StrId<crate::works::Work>>> {
+    ) -> anyhow::Result<Option<crate::work_parent_pack::ParentPackKey>> {
         self.work_parent_packs
             .lock()
             .await
-            .find_parent_id(work_id)
+            .find_parent_key(work_id)
             .await
     }
 }

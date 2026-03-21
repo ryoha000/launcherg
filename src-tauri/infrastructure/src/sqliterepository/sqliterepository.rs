@@ -50,9 +50,7 @@ pub struct SqliteRepositories {
     explored_cache: RepositoryImpl<domain::explored_cache::ExploredCache>,
     image_queue: RepositoryImpl<domain::save_image_queue::ImageSaveQueueRow>,
     host_log: RepositoryImpl<domain::native_host_log::NativeHostLogRow>,
-    work_omit: RepositoryImpl<domain::work_omit::WorkOmit>,
     work_parent_packs: RepositoryImpl<domain::work_parent_pack::WorkParentPack>,
-    dmm_pack: RepositoryImpl<domain::dmm_work_pack::DmmWorkPack>,
     work_download_path: RepositoryImpl<domain::work_download_path::WorkDownloadPath>,
     work_lnk: RepositoryImpl<domain::repository::work_lnk::WorkLnk>,
     work_like: RepositoryImpl<domain::works::WorkLike>,
@@ -68,9 +66,7 @@ impl RepositoriesExt for SqliteRepositories {
     type ExploredCacheRepo = RepositoryImpl<domain::explored_cache::ExploredCache>;
     type ImageQueueRepo = RepositoryImpl<domain::save_image_queue::ImageSaveQueueRow>;
     type HostLogRepo = RepositoryImpl<domain::native_host_log::NativeHostLogRow>;
-    type WorkOmitRepo = RepositoryImpl<domain::work_omit::WorkOmit>;
     type WorkParentPacksRepo = RepositoryImpl<domain::work_parent_pack::WorkParentPack>;
-    type DmmPackRepo = RepositoryImpl<domain::dmm_work_pack::DmmWorkPack>;
     type ErogamescapeRepo = RepositoryImpl<domain::erogamescape::ErogamescapeInformation>;
     type WorkDownloadPathRepo = RepositoryImpl<domain::work_download_path::WorkDownloadPath>;
     type WorkLnkRepo = RepositoryImpl<domain::repository::work_lnk::WorkLnk>;
@@ -98,14 +94,8 @@ impl RepositoriesExt for SqliteRepositories {
     fn host_log(&self) -> Self::HostLogRepo {
         self.host_log.clone()
     }
-    fn work_omit(&self) -> Self::WorkOmitRepo {
-        self.work_omit.clone()
-    }
     fn work_parent_packs(&self) -> Self::WorkParentPacksRepo {
         self.work_parent_packs.clone()
-    }
-    fn dmm_pack(&self) -> Self::DmmPackRepo {
-        self.dmm_pack.clone()
     }
     fn erogamescape(&self) -> Self::ErogamescapeRepo {
         self.erogamescape.clone()
@@ -148,9 +138,7 @@ impl SqliteRepositories {
             explored_cache: RepositoryImpl::new(executor.clone()),
             image_queue: RepositoryImpl::new(executor.clone()),
             host_log: RepositoryImpl::new(executor.clone()),
-            work_omit: RepositoryImpl::new(executor.clone()),
             work_parent_packs: RepositoryImpl::new(executor.clone()),
-            dmm_pack: RepositoryImpl::new(executor.clone()),
             work_download_path: RepositoryImpl::new(executor.clone()),
             work_lnk: RepositoryImpl::new(executor.clone()),
             work_like: RepositoryImpl::new(executor.clone()),

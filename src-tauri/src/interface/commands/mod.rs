@@ -1,5 +1,4 @@
 pub mod all_game_cache;
-pub mod dmm_pack;
 pub mod erogamescape;
 pub mod extension;
 pub mod image_queue;
@@ -12,5 +11,4 @@ pub mod process_proctail;
 pub mod scan;
 pub mod utils;
 pub mod work_details;
-pub mod work_omit;
 pub mod works;

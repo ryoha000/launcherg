@@ -1,5 +1,4 @@
 use super::*;
-use domain::repository::work_omit::WorkOmitRepository;
 use domain::service::work_registration::{
     ImageApply, ImageSource, ImageStrategy, UniqueWorkKey, WorkInsert,
 };
@@ -33,61 +32,9 @@ where
             }
         }
 
-        // 除外対象 Work ID を事前に取得（別トランザクション）
-        let omitted_work_ids: HashSet<domain::StrId<domain::works::Work>> = self
-            .manager
-            .run(|repos| {
-                Box::pin(async move {
-                    let mut repo = repos.work_omit();
-                    let list = repo.list().await?;
-                    Ok(list.into_iter().map(|o| o.work_id).collect())
-                })
-            })
-            .await?;
-
-        // 既存 Work ID を取得（ストアキーごと）
-        let mut work_id_by_key: std::collections::HashMap<
-            DlsiteKey,
-            Option<domain::StrId<domain::works::Work>>,
-        > = std::collections::HashMap::new();
-        for game in unique_games.iter() {
-            let key = DlsiteKey {
-                store_id: game.store_id.clone(),
-                category: game.category.clone(),
-            };
-            let work_id = self
-                .manager
-                .run(|repos| {
-                    let key = key.clone();
-                    Box::pin(async move {
-                        let mut repo = repos.dlsite_work();
-                        Ok(repo
-                            .find_by_store_key(&key.store_id, &key.category)
-                            .await?
-                            .map(|w| w.work_id))
-                    })
-                })
-                .await?;
-            work_id_by_key.insert(key, work_id);
-        }
-
-        // omit 対象をフィルタ
         let mut requests: Vec<domain::service::work_registration::WorkRegistrationRequest> =
             Vec::new();
         for game in unique_games.into_iter() {
-            let key = DlsiteKey {
-                store_id: game.store_id.clone(),
-                category: game.category.clone(),
-            };
-            let work_id = work_id_by_key.get(&key).cloned().flatten();
-
-            // 除外対象ならスキップ
-            if let Some(ref wid) = work_id {
-                if omitted_work_ids.contains(wid) {
-                    continue;
-                }
-            }
-
             // keys の構築（EGS があれば優先）
             let mut keys = Vec::new();
             keys.push(UniqueWorkKey::Dlsite {
@@ -141,7 +88,7 @@ where
                         egs_info,
                         icon,
                         thumbnail,
-                        parent_pack_work_id: None,
+                        parent_pack_dmm_key: None,
                     },
                 },
             );

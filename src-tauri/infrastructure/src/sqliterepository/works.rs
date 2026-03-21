@@ -74,9 +74,9 @@ impl WorkRepository for RepositoryImpl<Work> {
                         dw.store_id as dmm_store_id,
                         dw.category as dmm_category,
                         dw.subcategory as dmm_subcategory,
-                        pdw.store_id as parent_dmm_store_id,
-                        pdw.category as parent_dmm_category,
-                        pdw.subcategory as parent_dmm_subcategory,
+                        wpp.parent_pack_store_id as parent_dmm_store_id,
+                        wpp.parent_pack_category as parent_dmm_category,
+                        wpp.parent_pack_subcategory as parent_dmm_subcategory,
                         NULL as ce_id,
                         wem.id as egs_id,
                         wem.erogamescape_id as egs_erogamescape_id,
@@ -94,8 +94,6 @@ impl WorkRepository for RepositoryImpl<Work> {
                         wi.install_at as install_install_at,
                         wi.original_path as install_original_path,
                         wp.last_play_at as play_last_play_at,
-                        oo.id as omit_id,
-                        pp.id as dmm_pack_id,
                         lw.id   as dlsite_id,
                         lw.store_id as dlsite_store_id,
                         lw.category as dlsite_category,
@@ -112,10 +110,7 @@ impl WorkRepository for RepositoryImpl<Work> {
                     LEFT JOIN work_thumbnails AS wt ON wt.work_id = w.id
                     LEFT JOIN work_installs AS wi ON wi.work_id = w.id
                     LEFT JOIN work_plays AS wp ON wp.work_id = w.id
-                    LEFT JOIN work_omits oo ON oo.work_id = w.id
                     LEFT JOIN work_parent_packs wpp ON wpp.work_id = w.id
-                    LEFT JOIN dmm_work_packs pp ON pp.work_id = w.id
-                    LEFT JOIN dmm_works pdw ON pdw.work_id = wpp.parent_pack_work_id
                     LEFT JOIN dlsite_works lw ON lw.work_id = w.id
                     LEFT JOIN work_likes wl ON wl.work_id = w.id
                     ORDER BY w.id ASC
@@ -139,8 +134,6 @@ impl WorkRepository for RepositoryImpl<Work> {
                     if entry.dlsite.is_none() {
                         entry.dlsite = details.dlsite;
                     }
-                    entry.is_omitted |= details.is_omitted;
-                    entry.is_dmm_pack |= details.is_dmm_pack;
                     if entry.latest_download_path.is_none() {
                         entry.latest_download_path = details.latest_download_path;
                     }
@@ -171,9 +164,9 @@ impl WorkRepository for RepositoryImpl<Work> {
                         dw.store_id as dmm_store_id,
                         dw.category as dmm_category,
                         dw.subcategory as dmm_subcategory,
-                        pdw.store_id as parent_dmm_store_id,
-                        pdw.category as parent_dmm_category,
-                        pdw.subcategory as parent_dmm_subcategory,
+                        wpp.parent_pack_store_id as parent_dmm_store_id,
+                        wpp.parent_pack_category as parent_dmm_category,
+                        wpp.parent_pack_subcategory as parent_dmm_subcategory,
                         NULL as ce_id,
                         wem.id as egs_id,
                         wem.erogamescape_id as egs_erogamescape_id,
@@ -191,8 +184,6 @@ impl WorkRepository for RepositoryImpl<Work> {
                         wi.install_at as install_install_at,
                         wi.original_path as install_original_path,
                         wp.last_play_at as play_last_play_at,
-                        oo.id as omit_id,
-                        pp.id as dmm_pack_id,
                         lw.id   as dlsite_id,
                         lw.store_id as dlsite_store_id,
                         lw.category as dlsite_category,
@@ -207,10 +198,7 @@ impl WorkRepository for RepositoryImpl<Work> {
                     LEFT JOIN work_erogamescape_map wem ON wem.work_id = w.id
                     LEFT JOIN erogamescape_information ei ON ei.id = wem.erogamescape_id
                     LEFT JOIN work_thumbnails AS wt ON wt.work_id = w.id
-                    LEFT JOIN work_omits oo ON oo.work_id = w.id
                     LEFT JOIN work_parent_packs wpp ON wpp.work_id = w.id
-                    LEFT JOIN dmm_work_packs pp ON pp.work_id = w.id
-                    LEFT JOIN dmm_works pdw ON pdw.work_id = wpp.parent_pack_work_id
                     LEFT JOIN dlsite_works lw ON lw.work_id = w.id
                     LEFT JOIN work_installs AS wi ON wi.work_id = w.id
                     LEFT JOIN work_plays AS wp ON wp.work_id = w.id
@@ -241,8 +229,6 @@ impl WorkRepository for RepositoryImpl<Work> {
                     if entry.erogamescape_information.is_none() {
                         entry.erogamescape_information = details.erogamescape_information;
                     }
-                    entry.is_omitted |= details.is_omitted;
-                    entry.is_dmm_pack |= details.is_dmm_pack;
                     if entry.latest_download_path.is_none() {
                         entry.latest_download_path = details.latest_download_path;
                     }

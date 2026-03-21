@@ -67,8 +67,6 @@ pub struct WorkDetails {
     pub erogamescape_id: Option<i32>,
     #[new(default)]
     pub erogamescape_information: Option<ErogamescapeInformation>,
-    pub is_omitted: bool,
-    pub is_dmm_pack: bool,
     pub latest_download_path: Option<WorkDownloadPath>,
     pub like: Option<WorkLike>,
     #[new(default)]
