@@ -4,7 +4,7 @@
 pub const NOT_GAME_EQUALLY_WORD: [&str; 1] = ["bgi"];
 
 /// ゲーム以外を表す語句（部分一致）
-pub const NOT_GAME_TERMS: [&str; 17] = [
+pub const NOT_GAME_TERMS: [&str; 19] = [
     "マニュアル",
     "詳細設定",
     "はじめに",
@@ -22,6 +22,8 @@ pub const NOT_GAME_TERMS: [&str; 17] = [
     "ライセンス",
     "公式サイト",
     "ホームページ",
+    "opensavefolder",
+    "resetconfig",
 ];
 
 /// ファイル名から除去する語句
