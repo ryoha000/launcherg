@@ -49,6 +49,7 @@ mod tests {
                     Ok(vec![WorkRegistrationResult {
                         resolved_keys,
                         work_id: domain::StrId::new("work-1".into()),
+                        is_new_work: true,
                     }])
                 })
             });
@@ -79,7 +80,8 @@ mod tests {
             .await
             .unwrap();
 
-        assert_eq!(result, 1);
+        assert_eq!(result.success_count, 1);
+        assert_eq!(result.new_count, 1);
     }
 
     #[tokio::test]
@@ -100,6 +102,7 @@ mod tests {
                     Ok(vec![WorkRegistrationResult {
                         resolved_keys,
                         work_id: domain::StrId::new("work-1".into()),
+                        is_new_work: true,
                     }])
                 })
             });
@@ -116,6 +119,92 @@ mod tests {
             .await
             .unwrap();
 
-        assert_eq!(result, 1);
+        assert_eq!(result.success_count, 1);
+        assert_eq!(result.new_count, 1);
+    }
+
+    #[tokio::test]
+    async fn sync_dmm_games_既存作品の再同期はnew_countが0になる() {
+        let repos = TestRepositories::default();
+        let manager = Arc::new(TestRepositoryManager::new(repos));
+
+        let mut mock_registrar = MockWorkRegistrationService::new();
+        mock_registrar
+            .expect_register()
+            .times(1)
+            .returning(|requests: Vec<WorkRegistrationRequest>| {
+                assert_eq!(requests.len(), 1);
+                let resolved_keys = requests[0].keys.clone();
+                Box::pin(async move {
+                    Ok(vec![WorkRegistrationResult {
+                        resolved_keys,
+                        work_id: domain::StrId::new("work-existing".into()),
+                        is_new_work: false,
+                    }])
+                })
+            });
+
+        let usecase = create_usecase(manager, Arc::new(mock_registrar));
+        let result = usecase
+            .sync_dmm_games(vec![DmmSyncGameParam {
+                store_id: "sid".into(),
+                category: "game".into(),
+                subcategory: "pc".into(),
+                gamename: "Game".into(),
+                egs: None,
+                image_url: String::new(),
+                parent_pack: None,
+            }])
+            .await
+            .unwrap();
+
+        assert_eq!(result.success_count, 1);
+        assert_eq!(result.new_count, 0);
+    }
+
+    #[tokio::test]
+    async fn sync_dlsite_games_重複入力を含んでもnew_countは過大計上しない() {
+        let repos = TestRepositories::default();
+        let manager = Arc::new(TestRepositoryManager::new(repos));
+
+        let mut mock_registrar = MockWorkRegistrationService::new();
+        mock_registrar
+            .expect_register()
+            .times(1)
+            .returning(|requests: Vec<WorkRegistrationRequest>| {
+                assert_eq!(requests.len(), 1);
+                let resolved_keys = requests[0].keys.clone();
+                Box::pin(async move {
+                    Ok(vec![WorkRegistrationResult {
+                        resolved_keys,
+                        work_id: domain::StrId::new("work-1".into()),
+                        is_new_work: true,
+                    }])
+                })
+            });
+
+        let usecase = create_usecase(manager, Arc::new(mock_registrar));
+        let result = usecase
+            .sync_dlsite_games(vec![
+                DlsiteSyncGameParam {
+                    store_id: "rj".into(),
+                    category: "game".into(),
+                    gamename: "Dlsite Game".into(),
+                    egs: None,
+                    image_url: String::new(),
+                },
+                DlsiteSyncGameParam {
+                    store_id: "rj".into(),
+                    category: "game".into(),
+                    gamename: "Dlsite Game".into(),
+                    egs: None,
+                    image_url: String::new(),
+                },
+            ])
+            .await
+            .unwrap();
+
+        assert_eq!(result.success_count, 1);
+        assert_eq!(result.new_count, 1);
     }
 }

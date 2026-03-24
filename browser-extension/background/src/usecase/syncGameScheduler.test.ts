@@ -39,7 +39,7 @@ describe('ゲーム同期スケジューラ（syncGameScheduler）', () => {
       success: true,
       error: '',
       request_id: 'res-1',
-      response: { case: 'SyncGamesResult', value: { success_count: 1, error_count: 0, errors: [], synced_games: [] } },
+      response: { case: 'SyncGamesResult', value: { success_count: 1, new_count: 1, error_count: 0, errors: [], synced_games: [] } },
     } satisfies NativeResponseTs))
 
     const context = buildTestContext({
@@ -92,7 +92,7 @@ describe('ゲーム同期スケジューラ（syncGameScheduler）', () => {
       success: true,
       error: '',
       request_id: 'res-2',
-      response: { case: 'SyncGamesResult', value: { success_count: 1, error_count: 0, errors: [], synced_games: [] } },
+      response: { case: 'SyncGamesResult', value: { success_count: 1, new_count: 1, error_count: 0, errors: [], synced_games: [] } },
     } satisfies NativeResponseTs))
 
     const context = buildTestContext({
@@ -109,5 +109,63 @@ describe('ゲーム同期スケジューラ（syncGameScheduler）', () => {
     expect(resolveForDmmBulk).toHaveBeenCalledTimes(1)
     expect(resolveForDlsiteBulk).toHaveBeenCalledTimes(1)
     expect(sendJson).toHaveBeenCalledTimes(2)
+  })
+
+  it('new_count が 0 の場合は通知しない', async () => {
+    const notificationsCreate = vi.fn(async () => {})
+    const sendJson = vi.fn(async (_message: any) => ({
+      success: true,
+      error: '',
+      request_id: 'res-3',
+      response: { case: 'SyncGamesResult', value: { success_count: 1, new_count: 0, error_count: 0, errors: [], synced_games: [] } },
+    } satisfies NativeResponseTs))
+
+    const context = buildTestContext({
+      syncPool: {
+        add: () => {},
+        sync: async (callback) => {
+          await callback([{ type: 'dmm', games: [{ id: 'D1', category: 'mono', subcategory: 'pcgame' }] }] as any)
+        },
+      },
+      nativeMessenger: { sendJson },
+      browser: {
+        ...buildTestContext().browser,
+        notifications: { create: notificationsCreate },
+      },
+    })
+
+    await syncGame(context)
+
+    expect(sendJson).toHaveBeenCalledTimes(1)
+    expect(notificationsCreate).not.toHaveBeenCalled()
+  })
+
+  it('new_count が 1 以上の場合だけ通知する', async () => {
+    const notificationsCreate = vi.fn(async () => {})
+    const sendJson = vi.fn(async (_message: any) => ({
+      success: true,
+      error: '',
+      request_id: 'res-4',
+      response: { case: 'SyncGamesResult', value: { success_count: 2, new_count: 2, error_count: 0, errors: [], synced_games: [] } },
+    } satisfies NativeResponseTs))
+
+    const context = buildTestContext({
+      syncPool: {
+        add: () => {},
+        sync: async (callback) => {
+          await callback([{ type: 'dlsite', games: [{ id: 'RJ1', category: 'maniax' }] }] as any)
+        },
+      },
+      nativeMessenger: { sendJson },
+      browser: {
+        ...buildTestContext().browser,
+        notifications: { create: notificationsCreate },
+      },
+    })
+
+    await syncGame(context)
+
+    expect(sendJson).toHaveBeenCalledTimes(1)
+    expect(notificationsCreate).toHaveBeenCalledTimes(1)
   })
 })

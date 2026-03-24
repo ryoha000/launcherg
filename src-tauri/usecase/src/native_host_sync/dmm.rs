@@ -32,7 +32,10 @@ where
     /// - 親 pack は作品として登録せず、子作品の登録時に親 pack の DMM キーをそのまま保存する
     /// - `egs: Some` の場合、EGS に紐づく要素を用意・更新した上で DMM マッピングを upsert
     /// - `egs: None` の場合、空要素を採番し DMM マッピングのみ upsert
-    pub async fn sync_dmm_games(&self, games: Vec<DmmSyncGameParam>) -> anyhow::Result<u32> {
+    pub async fn sync_dmm_games(
+        &self,
+        games: Vec<DmmSyncGameParam>,
+    ) -> anyhow::Result<SyncGamesSummary> {
         log::info!("sync_dmm_games start: {}", games.len());
 
         let mut seen = HashSet::<DmmKey>::new();
@@ -115,6 +118,9 @@ where
         } else {
             self.registrar.register(requests).await?
         };
-        Ok(results.len() as u32)
+        Ok(SyncGamesSummary {
+            success_count: results.len() as u32,
+            new_count: results.iter().filter(|result| result.is_new_work).count() as u32,
+        })
     }
 }

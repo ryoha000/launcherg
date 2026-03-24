@@ -393,6 +393,7 @@ mod tests {
                             domain::service::work_registration::UniqueWorkKey::ErogamescapeId(10),
                         ],
                         work_id: domain::StrId::new("100".to_string()),
+                        is_new_work: true,
                     },
                 ])
             })

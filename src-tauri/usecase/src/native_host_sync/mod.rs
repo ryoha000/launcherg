@@ -12,6 +12,12 @@ mod dlsite;
 mod dmm;
 pub mod downloads;
 
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct SyncGamesSummary {
+    pub success_count: u32,
+    pub new_count: u32,
+}
+
 /// 拡張から渡された image_url/thumbnail_url を保存に適したサムネイルURLへ正規化する
 /// - DLsite: /resize/images2/.../_img_main_300x300.jpg → /modpub/images2/.../_img_main.jpg
 /// - DMM:    ...ps.jpg → ...pl.jpg

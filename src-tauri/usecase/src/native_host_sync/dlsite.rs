@@ -18,7 +18,10 @@ where
     R: RepositoriesExt + Send + Sync + 'static,
     RS: domain::service::work_registration::WorkRegistrationService + Send + Sync + 'static,
 {
-    pub async fn sync_dlsite_games(&self, games: Vec<DlsiteSyncGameParam>) -> anyhow::Result<u32> {
+    pub async fn sync_dlsite_games(
+        &self,
+        games: Vec<DlsiteSyncGameParam>,
+    ) -> anyhow::Result<SyncGamesSummary> {
         // key でユニーク化
         let mut seen: HashSet<DlsiteKey> = HashSet::new();
         let mut unique_games: Vec<DlsiteSyncGameParam> = Vec::with_capacity(games.len());
@@ -96,6 +99,9 @@ where
 
         // WorkRegistrationService で一括登録
         let results = self.registrar.register(requests).await?;
-        Ok(results.len() as u32)
+        Ok(SyncGamesSummary {
+            success_count: results.len() as u32,
+            new_count: results.iter().filter(|result| result.is_new_work).count() as u32,
+        })
     }
 }

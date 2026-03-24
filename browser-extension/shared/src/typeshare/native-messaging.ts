@@ -16,12 +16,6 @@ export interface EgsInfoTs {
 	is_nukige: boolean;
 }
 
-export interface DmmPackKeyTs {
-	store_id: string;
-	category: string;
-	subcategory: string;
-}
-
 export interface DlsiteGameTs {
 	id: string;
 	category: string;
@@ -33,6 +27,12 @@ export interface DlsiteGameTs {
 export interface DlsiteSyncGamesRequestTs {
 	games: DlsiteGameTs[];
 	extension_id: string;
+}
+
+export interface DmmPackKeyTs {
+	store_id: string;
+	category: string;
+	subcategory: string;
 }
 
 export interface DmmGameTs {
@@ -125,6 +125,7 @@ export interface NativeResponseTs {
 
 export interface SyncBatchResultTs {
 	success_count: number;
+	new_count: number;
 	error_count: number;
 	errors: string[];
 	synced_games: string[];
@@ -143,3 +144,4 @@ export interface SyncStatusTs {
 	connection_status: string;
 	error_message: string;
 }
+

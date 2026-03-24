@@ -60,6 +60,7 @@ pub struct DlsiteSyncGamesRequestTs {
 #[derive(serde::Serialize, serde::Deserialize, Clone, Debug)]
 pub struct SyncBatchResultTs {
     pub success_count: u32,
+    pub new_count: u32,
     pub error_count: u32,
     pub errors: Vec<String>,
     pub synced_games: Vec<String>,

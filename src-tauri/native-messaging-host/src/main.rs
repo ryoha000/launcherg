@@ -618,6 +618,7 @@ async fn handle_sync_dmm_games(
             request_id,
             NativeResponseCase::SyncGamesResult(SyncBatchResultTs {
                 success_count: 0,
+                new_count: 0,
                 error_count: 0,
                 errors: vec![],
                 synced_games: vec![],
@@ -625,9 +626,10 @@ async fn handle_sync_dmm_games(
         );
     }
     match ctx.sync_usecase.sync_dmm_games(params).await {
-        Ok(success_count) => {
+        Ok(summary) => {
             let result = SyncBatchResultTs {
-                success_count,
+                success_count: summary.success_count,
+                new_count: summary.new_count,
                 error_count: 0,
                 errors: vec![],
                 synced_games: input_ids.clone(),
@@ -657,6 +659,7 @@ async fn handle_sync_dmm_games(
             let err_msg = anyhow_chain_to_string(&e);
             let result = SyncBatchResultTs {
                 success_count: 0,
+                new_count: 0,
                 error_count: input_ids.len() as u32,
                 errors: vec![err_msg.clone()],
                 synced_games: input_ids,
@@ -691,6 +694,7 @@ async fn handle_sync_dlsite_games(
             request_id,
             NativeResponseCase::SyncGamesResult(SyncBatchResultTs {
                 success_count: 0,
+                new_count: 0,
                 error_count: 0,
                 errors: vec![],
                 synced_games: vec![],
@@ -698,9 +702,10 @@ async fn handle_sync_dlsite_games(
         );
     }
     match ctx.sync_usecase.sync_dlsite_games(params).await {
-        Ok(success_count) => {
+        Ok(summary) => {
             let result = SyncBatchResultTs {
-                success_count,
+                success_count: summary.success_count,
+                new_count: summary.new_count,
                 error_count: 0,
                 errors: vec![],
                 synced_games: input_ids.clone(),
@@ -730,6 +735,7 @@ async fn handle_sync_dlsite_games(
             let err_msg = anyhow_chain_to_string(&e);
             let result = SyncBatchResultTs {
                 success_count: 0,
+                new_count: 0,
                 error_count: input_ids.len() as u32,
                 errors: vec![err_msg.clone()],
                 synced_games: input_ids,
@@ -1064,9 +1070,10 @@ mod tests {
         println!("start sync");
         let synced = usecase.sync_dmm_games(params).await.unwrap();
         let elapsed = start.elapsed();
-        println!("synced: {}", synced);
+        println!("synced: {:?}", synced);
         println!("elapsed: {:?}", elapsed);
-        assert_eq!(synced, 1000, "同期件数が一致すること");
+        assert_eq!(synced.success_count, 1000, "同期件数が一致すること");
+        assert_eq!(synced.new_count, 1000, "新規追加件数が一致すること");
         assert!(
             elapsed.as_secs_f64() < 20.0,
             "1000件同期が20秒未満で終わること。実測: {:?}",
@@ -1500,6 +1507,7 @@ mod tests {
         assert!(resp.success);
         if let Some(NativeResponseCase::SyncGamesResult(r)) = resp.response {
             assert_eq!(r.success_count, 0);
+            assert_eq!(r.new_count, 0);
             assert!(r.synced_games.is_empty());
         } else {
             panic!("unexpected");
@@ -1553,6 +1561,7 @@ mod tests {
         assert!(resp.success);
         if let Some(NativeResponseCase::SyncGamesResult(r)) = resp.response {
             assert_eq!(r.success_count, 0);
+            assert_eq!(r.new_count, 0);
             assert!(r.synced_games.is_empty());
         } else {
             panic!("unexpected");
@@ -1615,6 +1624,7 @@ mod tests {
         assert!(resp.success);
         if let Some(NativeResponseCase::SyncGamesResult(r)) = resp.response {
             assert_eq!(r.success_count, 1);
+            assert_eq!(r.new_count, 1);
             assert_eq!(r.synced_games, vec!["SID100".to_string()]);
         } else {
             panic!("unexpected");

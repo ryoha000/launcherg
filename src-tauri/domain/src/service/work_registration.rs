@@ -81,6 +81,7 @@ pub struct WorkRegistrationRequest {
 pub struct WorkRegistrationResult {
     pub resolved_keys: Vec<UniqueWorkKey>,
     pub work_id: StrId<Work>,
+    pub is_new_work: bool,
 }
 
 /// Work 登録サービス（単一API・バッチ対応）

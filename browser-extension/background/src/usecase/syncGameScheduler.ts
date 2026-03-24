@@ -73,7 +73,7 @@ export function syncGame(context: HandlerContext): Promise<void> {
       },
     })
     const res = await sendNative(msg)
-    const count = res && res.success && res.response?.case === 'SyncGamesResult' ? (res.response.value?.success_count ?? 0) : 0
+    const count = res && res.success && res.response?.case === 'SyncGamesResult' ? (res.response.value?.new_count ?? 0) : 0
     await notifyIfNew(count)
   }
 
@@ -98,7 +98,7 @@ export function syncGame(context: HandlerContext): Promise<void> {
       },
     })
     const res = await sendNative(msg)
-    const count = res && res.success && res.response?.case === 'SyncGamesResult' ? (res.response.value?.success_count ?? 0) : 0
+    const count = res && res.success && res.response?.case === 'SyncGamesResult' ? (res.response.value?.new_count ?? 0) : 0
     await notifyIfNew(count)
   }
 

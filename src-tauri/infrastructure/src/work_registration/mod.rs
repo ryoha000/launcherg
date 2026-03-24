@@ -446,6 +446,7 @@ where
                         results.push(WorkRegistrationResult {
                             resolved_keys,
                             work_id: work_id.clone(),
+                            is_new_work,
                         });
                     }
 
