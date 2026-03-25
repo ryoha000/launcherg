@@ -32,6 +32,7 @@ import {
 
 import {
   deleteStoredDeviceSecret,
+  getAllStoredDeviceIds,
   getStoredDeviceSecret,
   setStoredDeviceSecret,
 } from '@ui/lib/deviceSecretStore'
@@ -56,9 +57,24 @@ export function App() {
   const [isRestoring, setIsRestoring] = useState(Boolean(deviceId))
   const [error, setError] = useState('')
   const [works, setWorks] = useState<DeviceWorksListOutput | null>(null)
+  const [historyDevices, setHistoryDevices] = useState<string[]>([])
 
   useEffect(() => {
     let cancelled = false
+
+    if (!deviceId) {
+      void getAllStoredDeviceIds()
+        .then((ids) => {
+          if (!cancelled) {
+            setHistoryDevices(ids)
+          }
+        })
+        .catch((err) => {
+          if (!cancelled) {
+            setError(err instanceof Error ? err.message : String(err))
+          }
+        })
+    }
 
     const restoreSession = async () => {
       if (!deviceId) {
@@ -194,11 +210,31 @@ export function App() {
             </CardHeader>
             <CardContent className="flex flex-col gap-4">
               {!deviceId && (
-                <Alert variant="destructive">
-                  <TriangleAlert />
-                  <AlertTitle>deviceId が見つかりません</AlertTitle>
-                  <AlertDescription>URL に deviceId が含まれていないため、共有先を特定できません。</AlertDescription>
-                </Alert>
+                <div className="flex flex-col gap-4">
+                  <Alert variant="destructive">
+                    <TriangleAlert />
+                    <AlertTitle>deviceId が見つかりません</AlertTitle>
+                    <AlertDescription>URL に deviceId が含まれていないため、共有先を特定できません。</AlertDescription>
+                  </Alert>
+
+                  {historyDevices.length > 0 && (
+                    <div className="flex flex-col gap-3">
+                      <div className="text-sm font-medium text-foreground">接続履歴</div>
+                      <div className="grid gap-2">
+                        {historyDevices.map((id) => (
+                          <a
+                            key={id}
+                            href={`/${id}`}
+                            className="flex items-center gap-2 rounded-xl border bg-muted/40 p-3 transition-colors hover:bg-muted/80"
+                          >
+                            <HardDriveDownload className="h-5 w-5 text-muted-foreground" />
+                            <span className="font-mono text-sm">{id}</span>
+                          </a>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
               )}
 
               {error && (

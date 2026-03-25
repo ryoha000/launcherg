@@ -77,3 +77,8 @@ export async function setStoredDeviceSecret(deviceId: string, deviceSecret: stri
 export async function deleteStoredDeviceSecret(deviceId: string): Promise<void> {
   await withStore('readwrite', store => store.delete(deviceId))
 }
+
+export async function getAllStoredDeviceIds(): Promise<string[]> {
+  const records = await withStore<StoredDeviceSecret[]>('readonly', (store) => store.getAll())
+  return records.map((record) => record.deviceId)
+}
