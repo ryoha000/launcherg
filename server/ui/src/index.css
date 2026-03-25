@@ -1,178 +1,108 @@
+@import 'tailwindcss';
+@import 'tw-animate-css';
+@import 'shadcn/tailwind.css';
+@import '@fontsource-variable/geist';
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --font-heading: var(--font-sans);
+  --font-sans: 'Geist Variable', sans-serif;
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --color-foreground: var(--foreground);
+  --color-background: var(--background);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+}
+
 :root {
   color-scheme: light;
-  font-family: "BIZ UDPGothic", "Hiragino Sans", sans-serif;
-  background:
-    radial-gradient(circle at top left, rgba(230, 242, 255, 0.95), transparent 36%),
-    linear-gradient(180deg, #f6f3eb 0%, #ece5d8 100%);
-  color: #1f2a37;
+  --background: oklch(0.98 0.012 90);
+  --foreground: oklch(0.24 0.018 255);
+  --card: oklch(0.995 0.006 90);
+  --card-foreground: oklch(0.24 0.018 255);
+  --popover: oklch(1 0.004 90);
+  --popover-foreground: oklch(0.24 0.018 255);
+  --primary: oklch(0.43 0.09 236);
+  --primary-foreground: oklch(0.98 0.004 90);
+  --secondary: oklch(0.93 0.018 88);
+  --secondary-foreground: oklch(0.3 0.02 255);
+  --muted: oklch(0.95 0.008 85);
+  --muted-foreground: oklch(0.5 0.018 250);
+  --accent: oklch(0.91 0.03 80);
+  --accent-foreground: oklch(0.26 0.02 255);
+  --destructive: oklch(0.58 0.22 27);
+  --border: oklch(0.88 0.01 82);
+  --input: oklch(0.9 0.01 82);
+  --ring: oklch(0.66 0.07 236);
+  --chart-1: oklch(0.78 0.06 220);
+  --chart-2: oklch(0.7 0.08 190);
+  --chart-3: oklch(0.68 0.09 120);
+  --chart-4: oklch(0.75 0.07 60);
+  --chart-5: oklch(0.66 0.06 20);
+  --radius: 1rem;
+  --sidebar: oklch(0.985 0.004 90);
+  --sidebar-foreground: oklch(0.24 0.018 255);
+  --sidebar-primary: oklch(0.43 0.09 236);
+  --sidebar-primary-foreground: oklch(0.98 0.004 90);
+  --sidebar-accent: oklch(0.93 0.018 88);
+  --sidebar-accent-foreground: oklch(0.3 0.02 255);
+  --sidebar-border: oklch(0.88 0.01 82);
+  --sidebar-ring: oklch(0.66 0.07 236);
 }
 
-* {
-  box-sizing: border-box;
-}
-
-body {
-  margin: 0;
-  min-height: 100vh;
-}
-
-button,
-input {
-  font: inherit;
-}
-
-.page {
-  min-height: 100vh;
-  padding: 24px 16px;
-}
-
-.panel {
-  max-width: 720px;
-  margin: 0 auto;
-  padding: 20px;
-  border: 1px solid rgba(73, 88, 103, 0.14);
-  border-radius: 24px;
-  background: rgba(255, 253, 248, 0.92);
-  backdrop-filter: blur(10px);
-  box-shadow: 0 20px 50px rgba(84, 69, 47, 0.14);
-}
-
-.panel-header h1 {
-  margin: 8px 0 12px;
-  font-size: clamp(1.8rem, 6vw, 2.6rem);
-}
-
-.eyebrow {
-  margin: 0;
-  color: #7c6142;
-  font-size: 0.78rem;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
-.description {
-  margin: 0;
-  color: #51606f;
-  line-height: 1.6;
-}
-
-.auth-form,
-.works {
-  margin-top: 20px;
-}
-
-.field {
-  display: grid;
-  gap: 8px;
-  margin-bottom: 14px;
-}
-
-.field span {
-  font-size: 0.9rem;
-  color: #51606f;
-}
-
-.field input {
-  width: 100%;
-  padding: 12px 14px;
-  border: 1px solid #d5cab8;
-  border-radius: 14px;
-  background: #fffdfa;
-}
-
-.auth-form button {
-  width: 100%;
-  padding: 12px 14px;
-  border: none;
-  border-radius: 999px;
-  background: linear-gradient(135deg, #9a5e34 0%, #c98e49 100%);
-  color: #fff;
-}
-
-.auth-form button:disabled {
-  opacity: 0.6;
-}
-
-.summary {
-  display: flex;
-  justify-content: space-between;
-  gap: 12px;
-  flex-wrap: wrap;
-  margin-bottom: 16px;
-  color: #51606f;
-}
-
-.work-list {
-  display: grid;
-  gap: 12px;
-}
-
-.work-card {
-  display: grid;
-  grid-template-columns: 96px 1fr;
-  gap: 12px;
-  padding: 12px;
-  border-radius: 18px;
-  background: #fff;
-  border: 1px solid rgba(73, 88, 103, 0.08);
-}
-
-.thumbnail {
-  width: 96px;
-  height: 96px;
-  object-fit: cover;
-  border-radius: 14px;
-  background: #ebe2d5;
-}
-
-.thumbnail.placeholder {
-  display: grid;
-  place-items: center;
-  color: #7b7b7b;
-  font-size: 0.75rem;
-}
-
-.work-body h2 {
-  margin: 0 0 8px;
-  font-size: 1rem;
-}
-
-.work-body p {
-  margin: 0;
-  color: #6a7684;
-  font-size: 0.85rem;
-  word-break: break-all;
-}
-
-.empty-state,
-.error {
-  margin-top: 16px;
-  padding: 14px;
-  border-radius: 14px;
-}
-
-.empty-state {
-  background: rgba(255, 248, 236, 0.9);
-  color: #785a31;
-}
-
-.error {
-  background: rgba(211, 70, 70, 0.1);
-  color: #a63333;
-}
-
-@media (max-width: 560px) {
-  .panel {
-    padding: 18px;
-    border-radius: 20px;
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
   }
 
-  .work-card {
-    grid-template-columns: 80px 1fr;
+  html {
+    @apply font-sans antialiased;
   }
 
-  .thumbnail {
-    width: 80px;
-    height: 80px;
+  body {
+    @apply bg-background text-foreground;
+    background-image:
+      radial-gradient(circle at top left, color-mix(in oklab, var(--color-primary) 14%, transparent), transparent 34%),
+      radial-gradient(circle at bottom right, color-mix(in oklab, var(--color-accent) 55%, transparent), transparent 28%),
+      linear-gradient(180deg, color-mix(in oklab, var(--color-background) 96%, white) 0%, color-mix(in oklab, var(--color-muted) 55%, white) 100%);
+    min-height: 100vh;
+  }
+
+  #root {
+    min-height: 100vh;
   }
 }

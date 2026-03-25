@@ -9,7 +9,7 @@ function encodeRfc3986(value: string): string {
   return encodeURIComponent(value).replace(/[!'()*]/g, char => `%${char.charCodeAt(0).toString(16).toUpperCase()}`)
 }
 
-function encodeObjectKey(key: string): string {
+export function encodeObjectKey(key: string): string {
   return key
     .split('/')
     .map(segment => encodeRfc3986(segment))
@@ -78,8 +78,21 @@ export async function createR2PresignedPutUrl(
   const accountId = requireEnvVar('R2_ACCOUNT_ID', env.R2_ACCOUNT_ID)
   const accessKeyId = requireEnvVar('R2_ACCESS_KEY_ID', env.R2_ACCESS_KEY_ID)
   const secretAccessKey = requireEnvVar('R2_SECRET_ACCESS_KEY', env.R2_SECRET_ACCESS_KEY)
-  const host = `${bucketName}.${accountId}.r2.cloudflarestorage.com`
-  const canonicalUri = `/${encodeObjectKey(objectKey)}`
+  let host: string
+  let canonicalUri: string
+  let baseUrl: string
+
+  const customEndpoint = env.R2_CUSTOM_ENDPOINT
+  if (customEndpoint) {
+    const url = new URL(customEndpoint)
+    host = url.host
+    canonicalUri = `/${bucketName}/${encodeObjectKey(objectKey)}`
+    baseUrl = `${customEndpoint.replace(/\/$/, '')}${canonicalUri}`
+  } else {
+    host = `${bucketName}.${accountId}.r2.cloudflarestorage.com`
+    canonicalUri = `/${encodeObjectKey(objectKey)}`
+    baseUrl = `https://${host}${canonicalUri}`
+  }
   const signedHeaders = 'content-type;host'
   const credentialScope = `${dateStamp}/${SIGV4_REGION}/${SIGV4_SERVICE}/aws4_request`
   const queryParams = {
@@ -110,6 +123,6 @@ export async function createR2PresignedPutUrl(
   const signatureBytes = await hmacSha256(signingKey, stringToSign)
   const signature = Array.from(new Uint8Array(signatureBytes), byte => byte.toString(16).padStart(2, '0')).join('')
 
-  return `https://${host}${canonicalUri}?${canonicalQueryString}&X-Amz-Signature=${signature}`
+  return `${baseUrl}?${canonicalQueryString}&X-Amz-Signature=${signature}`
 }
 import type { Env } from '@server/env'

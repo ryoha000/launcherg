@@ -4,7 +4,9 @@
     "jsx": "react-jsx",
     "types": [
       "vite/client",
-      "node"
+      "node",
+      "react",
+      "react-dom"
     ],
     "baseUrl": ".",
     "paths": {

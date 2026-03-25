@@ -121,6 +121,29 @@ npm run dev:ui
 この場合、`/api` は Workers へ自動では流れません。  
 API 動作込みで確認したいときは `npm run dev` を使ってください。
 
+### R2（画像同期）のローカル検証 (MinIO)
+
+ローカル環境ではクライアント（Tauri）から直接R2へアップロードする処理をエミュレートできないため、Docker ComposeでS3互換のMinIOを立ち上げて検証します。
+
+1. **MinIOの起動**
+   `server` ディレクトリで以下のコマンドを実行します。
+   ```powershell
+   docker compose up -d
+   ```
+   > ※起動時に初期化コンテナが `launcherg-images` バケットを自動作成します。
+
+2. **環境変数の設定**
+   `server/.dev.vars` に以下を追記します。
+   ```env
+   R2_CUSTOM_ENDPOINT="http://localhost:9000"
+   R2_ACCESS_KEY_ID="minioadmin"
+   R2_SECRET_ACCESS_KEY="minioadmin"
+   ```
+
+3. **サーバーの起動**
+   以上の状態で `npm run dev` でサーバーを起動すると、画像アップロード・取得がローカルのMinIOへ向くようになります。
+   > [補足] アップロードされた画像は [http://localhost:9001](http://localhost:9001) (User: `minioadmin`, Pass: `minioadmin`) でMinIOコンソールからも確認できます。
+
 ## チェック
 
 ```powershell

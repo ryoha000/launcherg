@@ -16,7 +16,7 @@ import {
   upsertDeviceSnapshots,
 } from '@server/lib/db'
 import { notFound, unauthorized } from '@server/lib/errors'
-import { createR2PresignedPutUrl } from '@server/lib/r2'
+import { createR2PresignedPutUrl, encodeObjectKey } from '@server/lib/r2'
 import {
   deviceRegisterInputSchema,
   deviceSessionInputSchema,
@@ -240,6 +240,19 @@ async function handleImageRequest(request: Request, env: Env, url: URL): Promise
   const imageKey = decodeURIComponent(parts.slice(5).join('/'))
 
   await requireSession(request, env.SESSION_SECRET, deviceId)
+
+  if (env.R2_CUSTOM_ENDPOINT) {
+    const bucketName = env.R2_BUCKET_NAME
+    const minioUrl = `${env.R2_CUSTOM_ENDPOINT.replace(/\/$/, '')}/${bucketName}/${encodeObjectKey(imageKey)}`
+    const upstreamResponse = await fetch(minioUrl)
+    
+    if (!upstreamResponse.ok) {
+        return new Response('Not found', { status: 404 })
+    }
+    const headers = new Headers(upstreamResponse.headers)
+    headers.set('Cache-Control', 'private, max-age=300')
+    return new Response(upstreamResponse.body, { headers })
+  }
 
   const object = await env.IMAGES.get(imageKey)
   if (!object) {

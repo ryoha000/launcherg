@@ -9,6 +9,7 @@ export interface Env {
   R2_SECRET_ACCESS_KEY: string
   R2_BUCKET_NAME: string
   R2_PRESIGN_TTL_SECONDS?: string
+  R2_CUSTOM_ENDPOINT?: string
 }
 
 declare global {
