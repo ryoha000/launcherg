@@ -2,11 +2,11 @@ import type { DlsiteGame as ExtDlsiteGame, DmmGame as ExtDmmGame, EgsInfo as Ext
 import type { NativeResponseTs } from '@launcherg/shared/typeshare/native-messaging'
 import type { HandlerContext } from '../shared/types'
 
-const SYNC_GAME_ALARM = 'sync_game'
+export type SyncGameRequest
+  = | { type: 'dmm', games: ExtDmmGame[] }
+    | { type: 'dlsite', games: ExtDlsiteGame[] }
 
-export { SYNC_GAME_ALARM }
-
-export function syncGame(context: HandlerContext): Promise<void> {
+export function syncGame(context: HandlerContext, request: SyncGameRequest): Promise<void> {
   const toTypeshareEgsInfo = (egs: ExtEgsInfo | null) => {
     if (!egs)
       return undefined
@@ -46,7 +46,6 @@ export function syncGame(context: HandlerContext): Promise<void> {
   const processDmmBatch = async (games: ExtDmmGame[]) => {
     if (games.length === 0)
       return
-    // EGS resolve (保持)
     const resolved = await context.egsResolver.resolveForDmmBulk(
       games.map(g => ({ storeId: g.id, category: g.category, subcategory: g.subcategory })),
     )
@@ -102,14 +101,12 @@ export function syncGame(context: HandlerContext): Promise<void> {
     await notifyIfNew(count)
   }
 
-  return context.syncPool.sync(async (items) => {
-    const dmmGames = items
-      .filter((it): it is { type: 'dmm', games: ExtDmmGame[] } => it.type === 'dmm')
-      .flatMap(it => it.games)
-    const dlsiteGames = items
-      .filter((it): it is { type: 'dlsite', games: ExtDlsiteGame[] } => it.type === 'dlsite')
-      .flatMap(it => it.games)
-    await processDmmBatch(dmmGames)
-    await processDlsiteBatch(dlsiteGames)
+  return context.syncCoordinator.runExclusive(async () => {
+    if (request.type === 'dmm') {
+      await processDmmBatch(request.games)
+      return
+    }
+
+    await processDlsiteBatch(request.games)
   })
 }

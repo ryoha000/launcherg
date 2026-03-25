@@ -1,4 +1,4 @@
-import type { DlsiteGame, DmmGame, EgsInfo } from '@launcherg/shared'
+import type { EgsInfo } from '@launcherg/shared'
 import type { NativeMessageTs, NativeResponseTs } from '@launcherg/shared/typeshare/native-messaging'
 
 export interface NativeMessenger {
@@ -44,9 +44,8 @@ export interface Browser {
   }
 }
 
-export interface SyncPool<T> {
-  add: (items: T) => void
-  sync: (callback: (items: T[]) => Promise<void>) => Promise<void>
+export interface SyncCoordinator {
+  runExclusive: <T>(callback: () => Promise<T>) => Promise<T>
 }
 
 export interface HandlerContext {
@@ -56,7 +55,7 @@ export interface HandlerContext {
   egsResolver: EgsResolver
   idGenerator: IdGenerator
   browser: Browser
-  syncPool: SyncPool<{ type: 'dmm', games: DmmGame[] } | { type: 'dlsite', games: DlsiteGame[] }>
+  syncCoordinator: SyncCoordinator
 }
 
 export {}

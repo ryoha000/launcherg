@@ -1,12 +1,13 @@
 import type { DmmSyncGamesRequest, ExtensionResponse } from '@launcherg/shared'
 import type { HandlerContext } from '../shared/types'
+import { syncGame } from './syncGameScheduler'
 
 export async function handleSyncDmmGames(
   context: HandlerContext,
   requestId: string,
   syncGamesRequest: DmmSyncGamesRequest,
 ): Promise<ExtensionResponse> {
-  context.syncPool.add({ type: 'dmm', games: syncGamesRequest.games })
+  await syncGame(context, { type: 'dmm', games: syncGamesRequest.games })
 
   return {
     requestId,
@@ -14,7 +15,7 @@ export async function handleSyncDmmGames(
     error: '',
     response: {
       case: 'syncGamesResult',
-      value: { message: 'プールに追加しました' },
+      value: { message: '同期を実行しました' },
     },
   }
 }

@@ -1,12 +1,13 @@
 import type { DlsiteSyncGamesRequest, ExtensionResponse } from '@launcherg/shared'
 import type { HandlerContext } from '../shared/types'
+import { syncGame } from './syncGameScheduler'
 
 export async function handleSyncDlsiteGames(
   context: HandlerContext,
   requestId: string,
   syncGamesRequest: DlsiteSyncGamesRequest,
 ): Promise<ExtensionResponse> {
-  context.syncPool.add({ type: 'dlsite', games: syncGamesRequest.games })
+  await syncGame(context, { type: 'dlsite', games: syncGamesRequest.games })
 
   return {
     requestId,
@@ -14,7 +15,7 @@ export async function handleSyncDlsiteGames(
     error: '',
     response: {
       case: 'syncGamesResult',
-      value: { message: 'プールに追加しました' },
+      value: { message: '同期を実行しました' },
     },
   }
 }

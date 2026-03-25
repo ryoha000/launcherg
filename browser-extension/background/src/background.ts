@@ -3,11 +3,10 @@ import { logger } from '@launcherg/shared'
 import { createBrowser } from './adapter/browser'
 import { createEgsResolver } from './adapter/egs/resolver'
 import { createNativeMessenger } from './adapter/native/send'
-import { createSyncPool } from './adapter/pool'
 import { createMessageDispatcher } from './inbound/dispatcher'
 import { setupDownloadsHandler } from './usecase/downloads'
 import { performPeriodicSync } from './usecase/periodic'
-import { SYNC_GAME_ALARM, syncGame } from './usecase/syncGameScheduler'
+import type { SyncCoordinator } from './shared/types'
 
 const log = logger('background')
 
@@ -15,6 +14,18 @@ const nativeHostName = 'moe.ryoha.launcherg.extension_host'
 
 function generateRequestId(): string {
   return Date.now().toString(36) + Math.random().toString(36).substr(2)
+}
+
+function createSyncCoordinator(): SyncCoordinator {
+  let tail = Promise.resolve<void>(undefined)
+
+  return {
+    async runExclusive<T>(callback: () => Promise<T>): Promise<T> {
+      const current = tail.catch(() => undefined).then(callback)
+      tail = current.then(() => undefined, () => undefined)
+      return await current
+    },
+  }
 }
 
 const nativeMessenger = createNativeMessenger(nativeHostName)
@@ -28,7 +39,7 @@ const context: HandlerContext = {
   egsResolver,
   idGenerator: { generate: generateRequestId },
   browser,
-  syncPool: createSyncPool(),
+  syncCoordinator: createSyncCoordinator(),
 }
 
 const handle = createMessageDispatcher(context)
@@ -92,17 +103,9 @@ chrome.alarms.create('periodic_sync', {
   periodInMinutes: 30,
 })
 
-chrome.alarms.create(SYNC_GAME_ALARM, {
-  periodInMinutes: 1,
-})
-
 chrome.alarms.onAlarm.addListener((alarm) => {
   if (alarm.name === 'periodic_sync') {
     void performPeriodicSync(browser)
-    return
-  }
-  if (alarm.name === SYNC_GAME_ALARM) {
-    void syncGame(context)
   }
 })
 
