@@ -2,7 +2,6 @@ import type { Descriptor } from './registry'
 import { keyedTab, pathParamExtractor, queryParamExtractor, singletonTab } from '@/store/tabs/schema'
 import ExtensionLog from '@/views/Debug/ExtensionLog.svelte'
 import ExtensionManager from '@/views/Debug/ExtensionManager.svelte'
-import ProcTail from '@/views/Debug/ProcTail.svelte'
 import Home from '@/views/Home.svelte'
 import ImageQueue from '@/views/ImageQueue.svelte'
 import Memo from '@/views/Memo.svelte'
@@ -54,15 +53,6 @@ export const ROUTE_REGISTRY = [
     component: StoreMapped,
     icon: 'i-material-symbols-checklist color-text-disabled',
     tab: singletonTab('ダウンロード購入作品の管理'),
-  },
-
-  // Debug
-  {
-    kind: 'debug-proctail',
-    pathTemplate: '/debug/proctail',
-    component: ProcTail,
-    icon: 'i-material-symbols-bug-report-outline-rounded color-text-tertiary',
-    tab: singletonTab('proctail デバッグ'),
   },
   {
     kind: 'debug-extensionmanager',

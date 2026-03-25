@@ -270,10 +270,6 @@
     }
   }
 
-  function navigateToProcTailDebug() {
-    goto('/debug/proctail')
-  }
-
   function navigateToExtensionManager() {
     goto('/debug/extensionmanager')
   }
@@ -403,7 +399,6 @@
           onclick={openProgressPreview}
           text='進捗ダイアログをプレビュー'
         />
-        <Button variant='normal' onclick={navigateToProcTailDebug} text='ProcTailデバッグ画面' />
         <Button variant='normal' onclick={navigateToImageQueue} text='画像保存キュー' />
       </div>
     </div>

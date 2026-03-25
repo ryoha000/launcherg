@@ -156,10 +156,7 @@ mod tests {
     use super::*;
     use domain::repository::mock::{TestRepositories, TestRepositoryManager};
     use domain::service::save_path_resolver::SavePathResolver;
-    use domain::windows::{
-        process::MockProcessWindows, proctail::MockProcTail,
-        proctail_manager::MockProcTailManagerTrait, shell_link::MockShellLink, WindowsExt,
-    };
+    use domain::windows::{process::MockProcessWindows, shell_link::MockShellLink, WindowsExt};
     use tempfile::TempDir;
 
     #[derive(Clone)]
@@ -181,8 +178,6 @@ mod tests {
 
     struct TestWindows {
         process: MockProcessWindows,
-        proctail: MockProcTail,
-        proctail_manager: MockProcTailManagerTrait,
         shell_link: MockShellLink,
     }
 
@@ -190,8 +185,6 @@ mod tests {
         fn new(shell_link: MockShellLink) -> Self {
             Self {
                 process: MockProcessWindows::new(),
-                proctail: MockProcTail::new(),
-                proctail_manager: MockProcTailManagerTrait::new(),
                 shell_link,
             }
         }
@@ -199,18 +192,10 @@ mod tests {
 
     impl WindowsExt for TestWindows {
         type ProcessWindows = MockProcessWindows;
-        type ProcTail = MockProcTail;
-        type ProcTailManager = MockProcTailManagerTrait;
         type ShellLink = MockShellLink;
 
         fn process(&self) -> &Self::ProcessWindows {
             &self.process
-        }
-        fn proctail(&self) -> &Self::ProcTail {
-            &self.proctail
-        }
-        fn proctail_manager(&self) -> &Self::ProcTailManager {
-            &self.proctail_manager
         }
         fn shell_link(&self) -> &Self::ShellLink {
             &self.shell_link

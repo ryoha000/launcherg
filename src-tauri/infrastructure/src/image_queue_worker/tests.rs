@@ -15,10 +15,7 @@ use domain::pubsub::{PubSubEvent, PubSubService};
 use domain::save_image_queue::ImageSrcType;
 use domain::service::save_path_resolver::{DirsSavePathResolver, SavePathResolver};
 use domain::windows::shell_link::MockShellLink;
-use domain::windows::{
-    process::MockProcessWindows, proctail::MockProcTail,
-    proctail_manager::MockProcTailManagerTrait, WindowsExt,
-};
+use domain::windows::{process::MockProcessWindows, WindowsExt};
 
 use super::{resolver, types::SourceDecision};
 
@@ -41,8 +38,6 @@ impl SavePathResolver for TestResolver {
 
 struct TestWindows {
     process: MockProcessWindows,
-    proctail: MockProcTail,
-    proctail_manager: MockProcTailManagerTrait,
     shell_link: MockShellLink,
 }
 
@@ -50,8 +45,6 @@ impl TestWindows {
     fn new(shell_link: MockShellLink) -> Self {
         Self {
             process: MockProcessWindows::new(),
-            proctail: MockProcTail::new(),
-            proctail_manager: MockProcTailManagerTrait::new(),
             shell_link,
         }
     }
@@ -59,18 +52,10 @@ impl TestWindows {
 
 impl WindowsExt for TestWindows {
     type ProcessWindows = MockProcessWindows;
-    type ProcTail = MockProcTail;
-    type ProcTailManager = MockProcTailManagerTrait;
     type ShellLink = MockShellLink;
 
     fn process(&self) -> &Self::ProcessWindows {
         &self.process
-    }
-    fn proctail(&self) -> &Self::ProcTail {
-        &self.proctail
-    }
-    fn proctail_manager(&self) -> &Self::ProcTailManager {
-        &self.proctail_manager
     }
     fn shell_link(&self) -> &Self::ShellLink {
         &self.shell_link
