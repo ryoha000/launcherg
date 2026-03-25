@@ -6,8 +6,6 @@ pub mod images;
 pub mod matcher;
 pub mod notification;
 pub mod native_host_logs;
-pub mod process_manager;
-pub mod process_proctail;
 pub mod scan;
 pub mod storage_paths;
 pub mod utils;
