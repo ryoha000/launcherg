@@ -1,0 +1,4 @@
+interface:
+  display_name: "Cloudflare Free Tier Guard"
+  short_description: "Review Cloudflare work with free-tier-safe defaults."
+  default_prompt: "Use $cloudflare-free-tier-guard to design or review a Cloudflare change with free-tier-safe defaults."
