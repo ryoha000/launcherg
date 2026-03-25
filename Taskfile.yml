@@ -13,8 +13,15 @@ tasks:
     description: 開発しているパッケージをすべてチェック
     deps:
       - check:browser-extension
+      - check:server
       - check:tauri
       - check:native-messaging-host
+
+  check:server:
+    dir: server
+    description: Remote Share server をチェック
+    cmds:
+      - pwsh.exe -NoProfile -Command "npm run check"
 
   # check:browser-extension
   check:browser-extension:

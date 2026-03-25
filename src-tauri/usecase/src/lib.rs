@@ -16,6 +16,7 @@ mod native_host_sync_test;
 #[cfg(test)]
 mod native_messaging_mock;
 pub mod process;
+pub mod remote_share;
 #[cfg(test)]
 mod repositorymock;
 #[cfg(test)]

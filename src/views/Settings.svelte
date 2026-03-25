@@ -7,7 +7,16 @@
   import Button from '@/components/UI/Button.svelte'
   import Input from '@/components/UI/Input.svelte'
   import InputPath from '@/components/UI/InputPath.svelte'
+  import QrCodeCanvas from '@/components/UI/QRCodeCanvas.svelte'
+  import {
+    useRegisterRemoteShareDeviceMutation,
+    useRemoteShareSettingsMutation,
+    useRemoteShareSettingsQuery,
+    useRemoteShareUrlMutation,
+    useSyncRemoteShareWorksMutation,
+  } from '@/lib/data/queries/remoteShareSettings'
   import { useStorageSettingsMutation, useStorageSettingsQuery } from '@/lib/data/queries/storagePaths'
+  import { showErrorToast, showInfoToast } from '@/lib/toast'
 
   let settings = $state({
     theme: 'dark',
@@ -21,9 +30,19 @@
     imageStorageDir: '',
     downloadedGameStorageDir: '',
   })
+  let remoteShareSettings = $state({
+    deviceSecret: '',
+    deviceId: '',
+    serverBaseUrl: '',
+    lastRemoteSyncAt: '',
+  })
   let storageSettingsInitialized = $state(false)
+  let remoteShareSettingsInitialized = $state(false)
   let storageMessage = $state('')
   let storageError = $state('')
+  let remoteShareMessage = $state('')
+  let remoteShareError = $state('')
+  let shareUrl = $state('')
   let isOpenProgressPreview = $state(false)
   let progressPreviewStartedAt = $state<number | null>(null)
   let progressPreviewTimer: ReturnType<typeof setInterval> | null = null
@@ -219,6 +238,11 @@
 
   const storageSettingsQuery = useStorageSettingsQuery()
   const storageSettingsMutation = useStorageSettingsMutation()
+  const remoteShareSettingsQuery = useRemoteShareSettingsQuery()
+  const remoteShareSettingsMutation = useRemoteShareSettingsMutation()
+  const registerRemoteShareDeviceMutation = useRegisterRemoteShareDeviceMutation()
+  const syncRemoteShareWorksMutation = useSyncRemoteShareWorksMutation()
+  const remoteShareUrlMutation = useRemoteShareUrlMutation()
 
   $effect(() => {
     const data = $storageSettingsQuery.data
@@ -232,23 +256,63 @@
     storageSettingsInitialized = true
   })
 
+  $effect(() => {
+    const data = $remoteShareSettingsQuery.data
+    if (!data || remoteShareSettingsInitialized) {
+      return
+    }
+    remoteShareSettings = {
+      deviceSecret: data.deviceSecret ?? '',
+      deviceId: data.deviceId ?? '',
+      serverBaseUrl: data.serverBaseUrl ?? '',
+      lastRemoteSyncAt: data.lastRemoteSyncAt ?? '',
+    }
+    remoteShareSettingsInitialized = true
+
+    if (data.deviceId && data.serverBaseUrl) {
+      void refreshShareUrl()
+    }
+  })
+
   function saveSettings() {
     storageError = ''
     storageMessage = ''
+    remoteShareError = ''
+    remoteShareMessage = ''
     void (async () => {
       try {
-        const saved = await get(storageSettingsMutation).mutateAsync({
+        const savedStorage = await get(storageSettingsMutation).mutateAsync({
           imageStorageDir: storageSettings.imageStorageDir.trim() || null,
           downloadedGameStorageDir: storageSettings.downloadedGameStorageDir.trim() || null,
         })
         storageSettings = {
-          imageStorageDir: saved.imageStorageDir ?? '',
-          downloadedGameStorageDir: saved.downloadedGameStorageDir ?? '',
+          imageStorageDir: savedStorage.imageStorageDir ?? '',
+          downloadedGameStorageDir: savedStorage.downloadedGameStorageDir ?? '',
+        }
+        const savedRemoteShare = await get(remoteShareSettingsMutation).mutateAsync({
+          deviceSecret: remoteShareSettings.deviceSecret.trim() || null,
+          deviceId: remoteShareSettings.deviceId.trim() || null,
+          serverBaseUrl: remoteShareSettings.serverBaseUrl.trim() || null,
+          lastRemoteSyncAt: remoteShareSettings.lastRemoteSyncAt.trim() || null,
+        })
+        remoteShareSettings = {
+          deviceSecret: savedRemoteShare.deviceSecret ?? '',
+          deviceId: savedRemoteShare.deviceId ?? '',
+          serverBaseUrl: savedRemoteShare.serverBaseUrl ?? '',
+          lastRemoteSyncAt: savedRemoteShare.lastRemoteSyncAt ?? '',
+        }
+        if (remoteShareSettings.deviceId && remoteShareSettings.serverBaseUrl) {
+          await refreshShareUrl()
+        }
+        else {
+          shareUrl = ''
         }
         storageMessage = '保存しました'
       }
       catch (err) {
-        storageError = err instanceof Error ? err.message : String(err)
+        const message = err instanceof Error ? err.message : String(err)
+        storageError = message
+        remoteShareError = message
       }
     })()
   }
@@ -268,6 +332,84 @@
       imageStorageDir: data?.imageStorageDir ?? '',
       downloadedGameStorageDir: data?.downloadedGameStorageDir ?? '',
     }
+    const remote = $remoteShareSettingsQuery.data
+    remoteShareSettings = {
+      deviceSecret: remote?.deviceSecret ?? '',
+      deviceId: remote?.deviceId ?? '',
+      serverBaseUrl: remote?.serverBaseUrl ?? '',
+      lastRemoteSyncAt: remote?.lastRemoteSyncAt ?? '',
+    }
+    shareUrl = ''
+  }
+
+  async function refreshShareUrl() {
+    shareUrl = await get(remoteShareUrlMutation).mutateAsync()
+  }
+
+  function registerRemoteShareDevice() {
+    remoteShareError = ''
+    remoteShareMessage = ''
+    void (async () => {
+      try {
+        const saved = await get(registerRemoteShareDeviceMutation).mutateAsync({
+          deviceSecret: remoteShareSettings.deviceSecret.trim() || null,
+          deviceId: remoteShareSettings.deviceId.trim() || null,
+          serverBaseUrl: remoteShareSettings.serverBaseUrl.trim() || null,
+          lastRemoteSyncAt: remoteShareSettings.lastRemoteSyncAt.trim() || null,
+        })
+        remoteShareSettings = {
+          deviceSecret: saved.deviceSecret ?? '',
+          deviceId: saved.deviceId ?? '',
+          serverBaseUrl: saved.serverBaseUrl ?? '',
+          lastRemoteSyncAt: saved.lastRemoteSyncAt ?? '',
+        }
+        await refreshShareUrl()
+        remoteShareMessage = 'deviceId を登録しました'
+        showInfoToast('deviceId を登録しました')
+      }
+      catch (err) {
+        remoteShareError = err instanceof Error ? err.message : String(err)
+        showErrorToast(remoteShareError)
+      }
+    })()
+  }
+
+  function syncRemoteShareWorks() {
+    remoteShareError = ''
+    remoteShareMessage = ''
+    void (async () => {
+      try {
+        const saved = await get(syncRemoteShareWorksMutation).mutateAsync()
+        remoteShareSettings = {
+          deviceSecret: saved.deviceSecret ?? '',
+          deviceId: saved.deviceId ?? '',
+          serverBaseUrl: saved.serverBaseUrl ?? '',
+          lastRemoteSyncAt: saved.lastRemoteSyncAt ?? '',
+        }
+        await refreshShareUrl()
+        remoteShareMessage = '作品を同期しました'
+        showInfoToast('作品を同期しました')
+      }
+      catch (err) {
+        remoteShareError = err instanceof Error ? err.message : String(err)
+        showErrorToast(remoteShareError)
+      }
+    })()
+  }
+
+  async function copyShareUrl() {
+    if (!shareUrl) {
+      try {
+        await refreshShareUrl()
+      }
+      catch (err) {
+        remoteShareError = err instanceof Error ? err.message : String(err)
+        showErrorToast(remoteShareError)
+        return
+      }
+    }
+    await navigator.clipboard.writeText(shareUrl)
+    showInfoToast('共有 URL をコピーしました')
   }
 
   function navigateToExtensionManager() {
@@ -366,6 +508,69 @@
         {/if}
         {#if storageError}
           <p class='text-text-error text-(sm)'>{storageError}</p>
+        {/if}
+      </div>
+    </div>
+
+    <div>
+      <h2 class='mb-3 text-(lg text-primary) font-semibold'>Remote Share</h2>
+      <div class='space-y-4'>
+        <div class='grid gap-3 md:grid-cols-2'>
+          <Input
+            bind:value={remoteShareSettings.serverBaseUrl}
+            label='Server Base URL'
+            placeholder='https://example.workers.dev'
+          />
+          <Input
+            bind:value={remoteShareSettings.deviceSecret}
+            label='deviceSecret'
+            placeholder='共有用 secret'
+          />
+        </div>
+        <div class='grid gap-3 md:grid-cols-2'>
+          <Input bind:value={remoteShareSettings.deviceId} label='deviceId' readonly />
+          <Input
+            bind:value={remoteShareSettings.lastRemoteSyncAt}
+            label='最終同期'
+            readonly
+          />
+        </div>
+        {#if shareUrl}
+          <div class='grid gap-4 border border-(border-primary) rounded bg-(bg-secondary) p-4 lg:grid-cols-[1fr_220px]'>
+            <div class='space-y-3'>
+              <Input bind:value={shareUrl} label='共有 URL' readonly />
+              <div class='flex flex-wrap gap-3'>
+                <Button
+                  variant='normal'
+                  onclick={copyShareUrl}
+                  text='共有 URL をコピー'
+                  leftIcon='i-material-symbols-content-copy-outline-rounded'
+                />
+              </div>
+            </div>
+            <div class='mx-auto max-w-55 w-full overflow-hidden rounded bg-white p-3'>
+              <QrCodeCanvas value={shareUrl} />
+            </div>
+          </div>
+        {/if}
+        <div class='flex flex-wrap gap-3'>
+          <Button
+            onclick={registerRemoteShareDevice}
+            text='device を登録'
+            leftIcon='i-material-symbols-key-outline-rounded'
+          />
+          <Button
+            variant='normal'
+            onclick={syncRemoteShareWorks}
+            text='作品を同期'
+            leftIcon='i-material-symbols-sync-rounded'
+          />
+        </div>
+        {#if remoteShareMessage}
+          <p class='text-text-success text-(sm)'>{remoteShareMessage}</p>
+        {/if}
+        {#if remoteShareError}
+          <p class='text-text-error text-(sm)'>{remoteShareError}</p>
         {/if}
       </div>
     </div>

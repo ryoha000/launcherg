@@ -272,12 +272,39 @@ export interface StoragePathSettingsVm {
   downloadedGameStorageDir: string | null
 }
 
+export interface RemoteShareSettingsVm {
+  deviceSecret: string | null
+  deviceId: string | null
+  serverBaseUrl: string | null
+  lastRemoteSyncAt: string | null
+}
+
 export async function commandGetStorageSettings() {
   return await invoke<StoragePathSettingsVm>('get_storage_settings')
 }
 
 export async function commandSetStorageSettings(settings: StoragePathSettingsVm) {
   return await invoke<StoragePathSettingsVm>('set_storage_settings', { settings })
+}
+
+export async function commandGetRemoteShareSettings() {
+  return await invoke<RemoteShareSettingsVm>('get_remote_share_settings')
+}
+
+export async function commandSetRemoteShareSettings(settings: RemoteShareSettingsVm) {
+  return await invoke<RemoteShareSettingsVm>('set_remote_share_settings', { settings })
+}
+
+export async function commandRegisterRemoteShareDevice(settings: RemoteShareSettingsVm) {
+  return await invoke<RemoteShareSettingsVm>('register_remote_share_device', { settings })
+}
+
+export async function commandSyncRemoteShareWorks() {
+  return await invoke<RemoteShareSettingsVm>('sync_remote_share_works')
+}
+
+export async function commandGetRemoteShareUrl() {
+  return await invoke<string>('get_remote_share_url')
 }
 
 // Process pending exe links (work_link_pending_exe)

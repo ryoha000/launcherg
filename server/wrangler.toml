@@ -1,0 +1,24 @@
+name = "launcherg"
+main = "src/index.ts"
+compatibility_date = "2026-03-25"
+
+[assets]
+directory = "./ui/dist"
+binding = "ASSETS"
+not_found_handling = "single-page-application"
+run_worker_first = [ "/api/*" ]
+
+[[d1_databases]]
+binding = "DB"
+database_name = "launcherg"
+database_id = "737c0ff0-09fe-4746-8a3b-f15b51b375ec"
+
+[[r2_buckets]]
+binding = "IMAGES"
+bucket_name = "launcherg-images"
+
+[vars]
+SESSION_TTL_SECONDS = "3600"
+R2_BUCKET_NAME = "launcherg-images"
+R2_ACCOUNT_ID = "5e86674ad3645c049a5deef5d70a227a"
+R2_PRESIGN_TTL_SECONDS = "900"

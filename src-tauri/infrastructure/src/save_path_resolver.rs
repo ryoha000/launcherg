@@ -23,6 +23,10 @@ impl From<StoragePathSettings> for AppStorageSettings {
         Self {
             image_storage_dir: value.image_storage_dir,
             downloaded_game_storage_dir: value.downloaded_game_storage_dir,
+            remote_share_device_secret: None,
+            remote_share_device_id: None,
+            remote_share_server_base_url: None,
+            remote_share_last_synced_at: None,
         }
     }
 }

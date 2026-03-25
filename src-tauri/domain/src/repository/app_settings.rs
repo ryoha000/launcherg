@@ -5,6 +5,10 @@ use serde::{Deserialize, Serialize};
 pub struct AppStorageSettings {
     pub image_storage_dir: Option<String>,
     pub downloaded_game_storage_dir: Option<String>,
+    pub remote_share_device_secret: Option<String>,
+    pub remote_share_device_id: Option<String>,
+    pub remote_share_server_base_url: Option<String>,
+    pub remote_share_last_synced_at: Option<String>,
 }
 
 #[trait_variant::make(Send)]

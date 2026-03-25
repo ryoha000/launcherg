@@ -6,6 +6,7 @@ pub mod images;
 pub mod matcher;
 pub mod notification;
 pub mod native_host_logs;
+pub mod remote_share;
 pub mod scan;
 pub mod storage_paths;
 pub mod utils;

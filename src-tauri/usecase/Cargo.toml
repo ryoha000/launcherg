@@ -30,6 +30,8 @@ zip = { workspace = true }
 winreg = { workspace = true }
 mockall = { workspace = true }
 regex = { workspace = true }
+reqwest = { workspace = true }
+url = { workspace = true }
 
 [dev-dependencies]
 mockall = { workspace = true }

@@ -28,4 +28,4 @@
   })
 </script>
 
-<canvas bind:this={canvas}></canvas>
+<canvas bind:this={canvas} class='h-auto max-w-full'></canvas>
