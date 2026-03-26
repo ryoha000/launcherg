@@ -21,6 +21,12 @@ pub struct RemoteShareWorkInput {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub erogamescape_id: Option<i32>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    pub official_url: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub erogamescape_url: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub seiya_url: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub thumbnail: Option<RemoteShareThumbnailInput>,
 }
 
@@ -254,6 +260,9 @@ mod tests {
             work_id: "work-1".to_string(),
             title: "Title".to_string(),
             erogamescape_id: Some(123),
+            official_url: None,
+            erogamescape_url: None,
+            seiya_url: None,
             thumbnail: None,
         };
 

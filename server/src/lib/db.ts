@@ -16,6 +16,9 @@ export interface DeviceSnapshotRow {
   thumbnailWidth: number | null
   thumbnailHeight: number | null
   erogamescapeId: number | null
+  officialUrl: string | null
+  erogamescapeUrl: string | null
+  seiyaUrl: string | null
 }
 
 export interface RemoteShareImageRow {
@@ -122,14 +125,20 @@ export async function upsertDeviceSnapshots(
           work_id,
           erogamescape_id,
           title,
+          official_url,
+          erogamescape_url,
+          seiya_url,
           image_key,
           thumbnail_width,
           thumbnail_height,
           updated_at
-        ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)
+        ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11)
         ON CONFLICT(device_id, work_id) DO UPDATE SET
           erogamescape_id = excluded.erogamescape_id,
           title = excluded.title,
+          official_url = excluded.official_url,
+          erogamescape_url = excluded.erogamescape_url,
+          seiya_url = excluded.seiya_url,
           image_key = excluded.image_key,
           thumbnail_width = excluded.thumbnail_width,
           thumbnail_height = excluded.thumbnail_height,
@@ -140,6 +149,9 @@ export async function upsertDeviceSnapshots(
         work.workId,
         work.erogamescapeId ?? null,
         work.title,
+        work.officialUrl ?? null,
+        work.erogamescapeUrl ?? null,
+        work.seiyaUrl ?? null,
         imageKey,
         work.thumbnail?.width ?? null,
         work.thumbnail?.height ?? null,
@@ -174,7 +186,10 @@ export async function listDeviceSnapshots(
          image_key,
          thumbnail_width,
          thumbnail_height,
-         erogamescape_id
+         erogamescape_id,
+         official_url,
+         erogamescape_url,
+         seiya_url
        FROM device_work_snapshots
        WHERE device_id = ?1
        ORDER BY title COLLATE NOCASE ASC`,
@@ -187,6 +202,9 @@ export async function listDeviceSnapshots(
       thumbnail_width: number | null
       thumbnail_height: number | null
       erogamescape_id: number | null
+      official_url: string | null
+      erogamescape_url: string | null
+      seiya_url: string | null
     }>()
 
   return result.results.map(row => ({
@@ -196,6 +214,9 @@ export async function listDeviceSnapshots(
     thumbnailWidth: row.thumbnail_width,
     thumbnailHeight: row.thumbnail_height,
     erogamescapeId: row.erogamescape_id,
+    officialUrl: row.official_url,
+    erogamescapeUrl: row.erogamescape_url,
+    seiyaUrl: row.seiya_url,
   }))
 }
 
@@ -211,6 +232,9 @@ export function toPublicWorkItem(
       : undefined,
     width: row.thumbnailWidth ?? undefined,
     height: row.thumbnailHeight ?? undefined,
+    officialUrl: row.officialUrl ?? undefined,
+    erogamescapeUrl: row.erogamescapeUrl ?? undefined,
+    seiyaUrl: row.seiyaUrl ?? undefined,
   }
 }
 

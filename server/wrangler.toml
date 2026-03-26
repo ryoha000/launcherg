@@ -17,6 +17,14 @@ database_id = "737c0ff0-09fe-4746-8a3b-f15b51b375ec"
 binding = "IMAGES"
 bucket_name = "launcherg-images"
 
+[[durable_objects.bindings]]
+name = "REMOTE_LAUNCH_BROKER"
+class_name = "RemoteLaunchBroker"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["RemoteLaunchBroker"]
+
 [vars]
 SESSION_TTL_SECONDS = "3600"
 R2_BUCKET_NAME = "launcherg-images"

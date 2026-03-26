@@ -44,6 +44,16 @@ export const listWorksContract = base
   }))
   .output(deviceWorksListOutputSchema)
 
+export const launchWorkContract = base
+  .route({
+    method: 'POST',
+    path: '/device/{deviceId}/works/{workId}/launch',
+  })
+  .input(z.object({
+    deviceId: deviceIdSchema,
+    workId: z.string().trim().min(1),
+  }))
+
 export const prepareSyncWorksContract = base
   .route({
     method: 'POST',
@@ -70,6 +80,7 @@ export const appRouter = {
     session: createSessionContract,
     works: {
       list: listWorksContract,
+      launch: launchWorkContract,
       sync: {
         prepare: prepareSyncWorksContract,
         commit: commitSyncWorksContract,

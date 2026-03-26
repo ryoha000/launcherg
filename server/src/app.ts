@@ -15,7 +15,7 @@ import {
   toPublicWorkItem,
   upsertDeviceSnapshots,
 } from '@server/lib/db'
-import { notFound, unauthorized } from '@server/lib/errors'
+import { badRequest, notFound, unauthorized } from '@server/lib/errors'
 import { createR2PresignedPutUrl, encodeObjectKey } from '@server/lib/r2'
 import {
   deviceRegisterInputSchema,
@@ -45,6 +45,16 @@ export async function handleRequest(request: Request, env: Env): Promise<Respons
   const worksListMatch = url.pathname.match(/^\/api\/device\/([^/]+)\/works$/)
   if (worksListMatch && request.method === 'GET') {
     return handleListWorks(request, env, worksListMatch[1])
+  }
+
+  const worksLaunchMatch = url.pathname.match(/^\/api\/device\/([^/]+)\/works\/([^/]+)\/launch$/)
+  if (worksLaunchMatch && request.method === 'POST') {
+    return handleLaunchWork(request, env, worksLaunchMatch[1], worksLaunchMatch[2])
+  }
+
+  const launchBrokerMatch = url.pathname.match(/^\/api\/device\/([^/]+)\/launch-broker$/)
+  if (launchBrokerMatch && request.method === 'GET') {
+    return handleLaunchBrokerConnect(request, env, launchBrokerMatch[1], url)
   }
 
   const worksSyncPrepareMatch = url.pathname.match(/^\/api\/device\/([^/]+)\/works\/sync\/prepare$/)
@@ -210,6 +220,9 @@ async function handleCommitSyncWorks(
     const nextImageKey = imageKeys.get(dedupeKey) ?? null
     const nextTitle = work.title
     const nextEroId = work.erogamescapeId ?? null
+    const nextOfficialUrl = work.officialUrl ?? null
+    const nextErogamescapeUrl = work.erogamescapeUrl ?? null
+    const nextSeiyaUrl = work.seiyaUrl ?? null
     const nextWidth = work.thumbnail?.width ?? null
     const nextHeight = work.thumbnail?.height ?? null
 
@@ -220,6 +233,9 @@ async function handleCommitSyncWorks(
     
     return existing.title !== nextTitle ||
       existing.erogamescapeId !== nextEroId ||
+      existing.officialUrl !== nextOfficialUrl ||
+      existing.erogamescapeUrl !== nextErogamescapeUrl ||
+      existing.seiyaUrl !== nextSeiyaUrl ||
       existing.imageKey !== nextImageKey ||
       existing.thumbnailWidth !== nextWidth ||
       existing.thumbnailHeight !== nextHeight
@@ -266,4 +282,58 @@ async function handleImageRequest(request: Request, env: Env, url: URL): Promise
   return new Response(object.body, {
     headers,
   })
+}
+
+async function handleLaunchBrokerConnect(
+  request: Request,
+  env: Env,
+  deviceId: string,
+  url: URL,
+): Promise<Response> {
+  const brokerId = env.REMOTE_LAUNCH_BROKER.idFromName(deviceId)
+  const stub = env.REMOTE_LAUNCH_BROKER.get(brokerId)
+  const proxyUrl = new URL(request.url)
+  proxyUrl.pathname = `/connect`
+  proxyUrl.searchParams.set('deviceId', deviceId)
+  proxyUrl.searchParams.set('deviceSecret', url.searchParams.get('deviceSecret') ?? '')
+
+  return stub.fetch(new Request(proxyUrl, request))
+}
+
+async function handleLaunchWork(
+  request: Request,
+  env: Env,
+  deviceId: string,
+  workId: string,
+): Promise<Response> {
+  const device = await findDeviceById(env.DB, deviceId)
+  if (!device) {
+    notFound('device not found')
+  }
+
+  await requireSession(request, env.SESSION_SECRET, deviceId)
+
+  const brokerId = env.REMOTE_LAUNCH_BROKER.idFromName(deviceId)
+  const stub = env.REMOTE_LAUNCH_BROKER.get(brokerId)
+  const response = await stub.fetch('https://remote-launch-broker/request-launch', {
+    method: 'POST',
+    body: JSON.stringify({ workId }),
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  })
+
+  if (response.status === 400) {
+    badRequest(await response.text())
+  }
+
+  if (response.status === 409) {
+    return new Response(await response.text(), { status: 409 })
+  }
+
+  if (response.status !== 202) {
+    return new Response(await response.text(), { status: 502 })
+  }
+
+  return new Response(null, { status: 202 })
 }

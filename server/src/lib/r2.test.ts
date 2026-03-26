@@ -7,6 +7,7 @@ function createEnv(overrides: Partial<Env> = {}): Env {
   return {
     DB: {} as D1Database,
     IMAGES: {} as R2Bucket,
+    REMOTE_LAUNCH_BROKER: {} as DurableObjectNamespace,
     ASSETS: {} as Fetcher,
     SESSION_SECRET: 'session-secret',
     R2_ACCOUNT_ID: 'account-id',

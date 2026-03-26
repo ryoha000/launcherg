@@ -1,6 +1,7 @@
 export interface Env {
   DB: D1Database
   IMAGES: R2Bucket
+  REMOTE_LAUNCH_BROKER: DurableObjectNamespace
   ASSETS: Fetcher
   SESSION_SECRET: string
   SESSION_TTL_SECONDS?: string

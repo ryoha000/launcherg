@@ -438,6 +438,85 @@
     width: 5.5rem;
     border-radius: 1rem;
   }
+
+  .remote-work-detail {
+    display: grid;
+    gap: 1.5rem;
+  }
+
+  .remote-work-detail__header {
+    display: flex;
+    justify-content: flex-start;
+  }
+
+  .remote-work-detail__content {
+    display: grid;
+    gap: 1.25rem;
+  }
+
+  .remote-work-detail__visual {
+    position: relative;
+    overflow: hidden;
+    border-radius: 2rem;
+    border: 1px solid color-mix(in srgb, var(--border) 76%, transparent);
+    background: #e9dfcf;
+    min-height: 18rem;
+    box-shadow: 0 28px 72px -56px rgba(16, 33, 55, 0.32);
+  }
+
+  .remote-work-detail__image {
+    position: absolute;
+    inset: 0;
+    display: block;
+    height: 100%;
+    width: 100%;
+    object-fit: cover;
+  }
+
+  .remote-work-detail__image--placeholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--color-muted-foreground);
+  }
+
+  .remote-work-detail__body {
+    display: grid;
+    gap: 1.5rem;
+    border: 1px solid color-mix(in srgb, var(--border) 72%, transparent);
+    border-radius: 1.75rem;
+    background: rgba(255, 255, 255, 0.76);
+    padding: 1.5rem;
+    box-shadow: 0 24px 60px -52px rgba(16, 33, 55, 0.28);
+  }
+
+  .remote-work-detail__links {
+    display: grid;
+    gap: 0.75rem;
+  }
+
+  .remote-work-detail__link {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    border: 1px solid color-mix(in srgb, var(--border) 74%, transparent);
+    border-radius: 9999px;
+    background: rgba(255, 255, 255, 0.8);
+    padding: 0.9rem 1.1rem;
+    color: var(--color-foreground);
+    transition: transform 180ms ease-out, background-color 180ms ease-out;
+  }
+
+  .remote-work-detail__link:hover {
+    transform: translateX(4px);
+    background: rgba(255, 255, 255, 0.98);
+  }
+
+  .remote-work-detail__actions {
+    display: flex;
+    justify-content: flex-start;
+  }
 }
 
 @media (min-width: 640px) {
@@ -475,5 +554,10 @@
 
   .remote-masonry {
     columns: 5;
+  }
+
+  .remote-work-detail__content {
+    grid-template-columns: minmax(0, 1.15fr) minmax(20rem, 0.85fr);
+    align-items: start;
   }
 }

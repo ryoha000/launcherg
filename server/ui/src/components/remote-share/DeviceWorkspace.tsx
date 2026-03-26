@@ -10,12 +10,13 @@ import {
   formatCount,
   formatExactDateTime,
   formatRelativeTime,
-  formatShortDeviceId,
+  getSelectedWorkId,
   type ViewMode,
 } from '@ui/lib/remoteShare'
 import { RefreshCw, ShieldCheck, TriangleAlert } from 'lucide-react'
 
 import { SectionLabel } from './Shared'
+import { WorkDetailPanel } from './WorkDetailPanel'
 import { ViewModeToggle, WorksPresentation } from './WorkViews'
 
 export function DeviceWorkspace({
@@ -42,6 +43,10 @@ export function DeviceWorkspace({
   visibleWorks: DeviceWorksListOutput | null
 }) {
   const workCount = visibleWorks ? formatCount(visibleWorks.works.length) : '0'
+  const selectedWorkId = getSelectedWorkId()
+  const selectedWork = selectedWorkId && visibleWorks
+    ? visibleWorks.works.find(work => work.workId === selectedWorkId) ?? null
+    : null
 
   return (
     <main className="remote-library">
@@ -143,49 +148,57 @@ export function DeviceWorkspace({
 
           {visibleWorks && (
             <section className="space-y-8">
-              <div className="remote-library__toolbar">
-                <div>
-                  <p className="text-[0.72rem] tracking-[0.28em] text-muted-foreground uppercase">Library</p>
-                  <h1 className="mt-3 text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
-                    同期された作品
-                  </h1>
-                </div>
-
-                <div className="flex flex-wrap items-center gap-3">
-                  <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-                    <div className="remote-library__stat">
-                      <p className="remote-library__stat-label">Works</p>
-                      <p className="remote-library__stat-value">{workCount}</p>
-                    </div>
-                    <div className="remote-library__stat">
-                      <p className="remote-library__stat-label">Sync</p>
-                      <p className="remote-library__stat-value text-sm sm:text-base">
-                        {formatRelativeTime(visibleWorks.lastSyncedAt)}
-                      </p>
-                    </div>
-                    <div className="remote-library__stat">
-                      <p className="remote-library__stat-label">Updated</p>
-                      <p className="remote-library__stat-value text-sm sm:text-base">
-                        {formatExactDateTime(visibleWorks.lastSyncedAt)}
-                      </p>
-                    </div>
-                  </div>
-
-                  <ViewModeToggle viewMode={viewMode} onChange={setViewMode} />
-                </div>
-              </div>
-
-              {visibleWorks.works.length === 0
+              {selectedWorkId
                 ? (
-                  <div className="remote-gate">
-                    <p className="text-lg font-semibold text-foreground">共有されている作品はまだありません</p>
-                    <p className="mt-3 text-sm leading-7 text-muted-foreground">
-                      次回同期が完了すると、ここにインストール済みタイトルが表示されます。
-                    </p>
-                  </div>
+                  <WorkDetailPanel deviceId={deviceId} lastSyncedAt={visibleWorks.lastSyncedAt} work={selectedWork} />
                 )
                 : (
-                  <WorksPresentation viewMode={viewMode} works={visibleWorks.works} />
+                  <>
+                    <div className="remote-library__toolbar">
+                      <div>
+                        <p className="text-[0.72rem] tracking-[0.28em] text-muted-foreground uppercase">Library</p>
+                        <h1 className="mt-3 text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
+                          同期された作品
+                        </h1>
+                      </div>
+
+                      <div className="flex flex-wrap items-center gap-3">
+                        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                          <div className="remote-library__stat">
+                            <p className="remote-library__stat-label">Works</p>
+                            <p className="remote-library__stat-value">{workCount}</p>
+                          </div>
+                          <div className="remote-library__stat">
+                            <p className="remote-library__stat-label">Sync</p>
+                            <p className="remote-library__stat-value text-sm sm:text-base">
+                              {formatRelativeTime(visibleWorks.lastSyncedAt)}
+                            </p>
+                          </div>
+                          <div className="remote-library__stat">
+                            <p className="remote-library__stat-label">Updated</p>
+                            <p className="remote-library__stat-value text-sm sm:text-base">
+                              {formatExactDateTime(visibleWorks.lastSyncedAt)}
+                            </p>
+                          </div>
+                        </div>
+
+                        <ViewModeToggle viewMode={viewMode} onChange={setViewMode} />
+                      </div>
+                    </div>
+
+                    {visibleWorks.works.length === 0
+                      ? (
+                        <div className="remote-gate">
+                          <p className="text-lg font-semibold text-foreground">共有されている作品はまだありません</p>
+                          <p className="mt-3 text-sm leading-7 text-muted-foreground">
+                            次回同期が完了すると、ここにインストール済みタイトルが表示されます。
+                          </p>
+                        </div>
+                      )
+                      : (
+                        <WorksPresentation deviceId={deviceId} viewMode={viewMode} works={visibleWorks.works} />
+                      )}
+                  </>
                 )}
             </section>
           )}

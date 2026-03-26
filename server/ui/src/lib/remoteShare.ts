@@ -18,6 +18,23 @@ export function getDeviceId(): string {
   return pathParts[0] ?? ''
 }
 
+export function getSelectedWorkId(): string | null {
+  const pathParts = window.location.pathname.split('/').filter(Boolean)
+  if (pathParts.length >= 3 && pathParts[1] === 'works') {
+    return decodeURIComponent(pathParts[2] ?? '')
+  }
+
+  return null
+}
+
+export function getWorkDetailPath(deviceId: string, workId: string): string {
+  return `/${encodeURIComponent(deviceId)}/works/${encodeURIComponent(workId)}`
+}
+
+export function getLibraryPath(deviceId: string): string {
+  return `/${encodeURIComponent(deviceId)}`
+}
+
 export function dedupeBy<T>(items: T[], getKey: (item: T) => string): T[] {
   const seen = new Set<string>()
 

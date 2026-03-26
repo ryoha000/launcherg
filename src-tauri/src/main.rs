@@ -2,6 +2,7 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 mod interface;
+mod remote_launch;
 pub mod domain {
     pub use ::domain::*;
 }
@@ -78,6 +79,7 @@ fn main() {
             let db = block_on(Db::new(&app.handle()));
             let modules = Arc::new(block_on(Modules::new(db, &app.handle())));
             app.manage(modules.clone());
+            crate::remote_launch::spawn_remote_launch_client(modules.clone());
 
             if let Err(err) =
                 infrastructure::app_signal_router::interprocess::listener::spawn_listener(Arc::new(

@@ -12,19 +12,24 @@ describe('toPublicWorkItem', () => {
       toPublicWorkItem('device-id', {
         workId: 'work-1',
         title: 'Title',
-        imageKey: 'device-id/work-1/thumbnail',
-        thumbnailWidth: 400,
-        thumbnailHeight: 225,
-        erogamescapeId: 123,
-      }),
-    ).toEqual({
-      workId: 'work-1',
-      title: 'Title',
-      imageUrl: '/api/device/device-id/images/device-id%2Fwork-1%2Fthumbnail',
-      width: 400,
-      height: 225,
-    })
+      imageKey: 'device-id/work-1/thumbnail',
+      thumbnailWidth: 400,
+      thumbnailHeight: 225,
+      erogamescapeId: 123,
+      officialUrl: 'https://example.com/official',
+      erogamescapeUrl: 'https://example.com/egs',
+      seiyaUrl: null,
+    }),
+  ).toEqual({
+    workId: 'work-1',
+    title: 'Title',
+    imageUrl: '/api/device/device-id/images/device-id%2Fwork-1%2Fthumbnail',
+    width: 400,
+    height: 225,
+    officialUrl: 'https://example.com/official',
+    erogamescapeUrl: 'https://example.com/egs',
   })
+})
 })
 
 describe('remoteShare helpers', () => {

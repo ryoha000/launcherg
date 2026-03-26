@@ -1,6 +1,7 @@
 import type { DeviceWorksListItem } from '@server/shared/schema'
 
 import { Button } from '@ui/components/ui/button'
+import { getWorkDetailPath } from '@ui/lib/remoteShare'
 import { cn } from '@ui/lib/utils'
 import { ImageIcon, LayoutGrid, Rows3 } from 'lucide-react'
 
@@ -43,29 +44,35 @@ function WorkImage({
 }
 
 function WorkMasonryCard({
+  deviceId,
   work,
 }: {
+  deviceId: string
   work: DeviceWorksListItem
 }) {
   return (
-    <article className="remote-masonry-card group">
-      <WorkImage work={work} />
-    </article>
+    <a className="remote-masonry-card group block" href={getWorkDetailPath(deviceId, work.workId)}>
+      <article>
+        <WorkImage work={work} />
+      </article>
+    </a>
   )
 }
 
 function WorkListRow({
+  deviceId,
   work,
 }: {
+  deviceId: string
   work: DeviceWorksListItem
 }) {
   return (
-    <article className="remote-list-row">
+    <a className="remote-list-row" href={getWorkDetailPath(deviceId, work.workId)}>
       <WorkImage work={work} className="remote-list-row__image-frame" />
       <div className="min-w-0">
         <h2 className="truncate text-base font-semibold text-foreground sm:text-lg">{work.title}</h2>
       </div>
-    </article>
+    </a>
   )
 }
 
@@ -103,9 +110,11 @@ export function ViewModeToggle({
 }
 
 export function WorksPresentation({
+  deviceId,
   viewMode,
   works,
 }: {
+  deviceId: string
   viewMode: ViewMode
   works: DeviceWorksListItem[]
 }) {
@@ -113,7 +122,7 @@ export function WorksPresentation({
     return (
       <div className="space-y-3">
         {works.map(work => (
-          <WorkListRow key={work.workId} work={work} />
+          <WorkListRow key={work.workId} deviceId={deviceId} work={work} />
         ))}
       </div>
     )
@@ -122,7 +131,7 @@ export function WorksPresentation({
   return (
     <div className="remote-masonry">
       {works.map(work => (
-        <WorkMasonryCard key={work.workId} work={work} />
+        <WorkMasonryCard key={work.workId} deviceId={deviceId} work={work} />
       ))}
     </div>
   )

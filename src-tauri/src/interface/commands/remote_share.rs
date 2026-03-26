@@ -198,6 +198,8 @@ struct RemoteShareWorkCandidate {
 }
 
 fn to_remote_share_work(work: WorkDetailsVm) -> anyhow::Result<RemoteShareWorkCandidate> {
+    let official_url = build_official_url(&work);
+    let erogamescape_url = build_erogamescape_url(work.erogamescape_id);
     let thumbnail = match work.thumbnail {
         Some(thumbnail) => {
             let thumbnail_path = thumbnail.path.clone();
@@ -228,6 +230,9 @@ fn to_remote_share_work(work: WorkDetailsVm) -> anyhow::Result<RemoteShareWorkCa
             work_id: work.id,
             title: work.title,
             erogamescape_id: work.erogamescape_id,
+            official_url,
+            erogamescape_url,
+            seiya_url: None,
             thumbnail,
         },
         thumbnail_path,
@@ -244,4 +249,26 @@ fn infer_content_type(path: &str) -> &str {
     } else {
         "image/png"
     }
+}
+
+fn build_official_url(work: &WorkDetailsVm) -> Option<String> {
+    if let Some(dlsite) = &work.dlsite {
+        return Some(format!(
+            "https://www.dlsite.com/{}/work/=/product_id/{}.html",
+            dlsite.category, dlsite.store_id
+        ));
+    }
+
+    work.dmm.as_ref().map(|dmm| {
+        format!("https://dlsoft.dmm.co.jp/detail/{}/", dmm.store_id)
+    })
+}
+
+fn build_erogamescape_url(erogamescape_id: Option<i32>) -> Option<String> {
+    erogamescape_id.map(|id| {
+        format!(
+            "https://erogamescape.dyndns.org/~ap2/ero/toukei_kaiseki/game.php?game={}",
+            id
+        )
+    })
 }

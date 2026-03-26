@@ -37,4 +37,9 @@ export const api = {
       headers: {},
     })
   },
+  async launchWork(deviceId: string, workId: string): Promise<void> {
+    await apiFetch(`/api/device/${encodeURIComponent(deviceId)}/works/${encodeURIComponent(workId)}/launch`, {
+      method: 'POST',
+    })
+  },
 }

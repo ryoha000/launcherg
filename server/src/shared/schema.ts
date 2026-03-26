@@ -19,6 +19,9 @@ export const remoteShareWorkInputSchema = z.object({
   workId: z.string().trim().min(1),
   title: z.string().trim().min(1),
   erogamescapeId: z.number().int().positive().nullable().optional(),
+  officialUrl: z.string().trim().url().nullable().optional(),
+  erogamescapeUrl: z.string().trim().url().nullable().optional(),
+  seiyaUrl: z.string().trim().url().nullable().optional(),
   thumbnail: z.object({
     contentType: z.string().trim().min(1),
     width: z.number().int().positive().nullable().optional(),
@@ -50,6 +53,9 @@ export const deviceWorksListItemSchema = z.object({
   imageUrl: z.string().optional(),
   width: z.number().int().positive().optional(),
   height: z.number().int().positive().optional(),
+  officialUrl: z.string().url().nullable().optional(),
+  erogamescapeUrl: z.string().url().nullable().optional(),
+  seiyaUrl: z.string().url().nullable().optional(),
 })
 
 export const remoteShareUploadTargetSchema = z.object({
