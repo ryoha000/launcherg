@@ -5,6 +5,7 @@ const STORE_NAME = 'device-secrets'
 type StoredDeviceSecret = {
   deviceId: string
   deviceSecret: string
+  lastUsedAt?: string
 }
 
 let dbPromise: Promise<IDBDatabase> | null = null
@@ -71,7 +72,11 @@ export async function getStoredDeviceSecret(deviceId: string): Promise<string | 
 }
 
 export async function setStoredDeviceSecret(deviceId: string, deviceSecret: string): Promise<void> {
-  await withStore('readwrite', store => store.put({ deviceId, deviceSecret }))
+  await withStore('readwrite', store => store.put({
+    deviceId,
+    deviceSecret,
+    lastUsedAt: new Date().toISOString(),
+  }))
 }
 
 export async function deleteStoredDeviceSecret(deviceId: string): Promise<void> {
@@ -81,4 +86,16 @@ export async function deleteStoredDeviceSecret(deviceId: string): Promise<void> 
 export async function getAllStoredDeviceIds(): Promise<string[]> {
   const records = await withStore<StoredDeviceSecret[]>('readonly', (store) => store.getAll())
   return records.map((record) => record.deviceId)
+}
+
+export async function getAllStoredDeviceSecrets(): Promise<StoredDeviceSecret[]> {
+  return await withStore<StoredDeviceSecret[]>('readonly', store => store.getAll())
+}
+
+export async function getAllStoredDeviceHistories(): Promise<Array<Pick<StoredDeviceSecret, 'deviceId' | 'lastUsedAt'>>> {
+  const records = await getAllStoredDeviceSecrets()
+  return records.map(({ deviceId, lastUsedAt }) => ({
+    deviceId,
+    lastUsedAt,
+  }))
 }

@@ -82,6 +82,10 @@
   --sidebar-accent-foreground: oklch(0.3 0.02 255);
   --sidebar-border: oklch(0.88 0.01 82);
   --sidebar-ring: oklch(0.66 0.07 236);
+  --page-ink: #0f2137;
+  --page-ink-soft: #153356;
+  --page-cream: #f4efe4;
+  --page-cream-deep: #ece3d1;
 }
 
 @layer base {
@@ -95,14 +99,381 @@
 
   body {
     @apply bg-background text-foreground;
-    background-image:
-      radial-gradient(circle at top left, color-mix(in oklab, var(--color-primary) 14%, transparent), transparent 34%),
-      radial-gradient(circle at bottom right, color-mix(in oklab, var(--color-accent) 55%, transparent), transparent 28%),
-      linear-gradient(180deg, color-mix(in oklab, var(--color-background) 96%, white) 0%, color-mix(in oklab, var(--color-muted) 55%, white) 100%);
     min-height: 100vh;
   }
 
   #root {
     min-height: 100vh;
+  }
+}
+
+@layer components {
+  .remote-shell {
+    width: min(100%, 76rem);
+    margin-inline: auto;
+    padding-inline: 1.25rem;
+  }
+
+  .remote-hero {
+    position: relative;
+    overflow: clip;
+    background:
+      linear-gradient(180deg, rgba(10, 25, 44, 0.18) 0%, rgba(10, 25, 44, 0) 100%),
+      linear-gradient(135deg, var(--page-ink-soft) 0%, var(--page-ink) 52%, #08131f 100%);
+    color: white;
+  }
+
+  .remote-hero__backdrop {
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(circle at 16% 18%, rgba(255, 255, 255, 0.14), transparent 0 24rem),
+      radial-gradient(circle at 84% 22%, rgba(113, 164, 255, 0.2), transparent 0 18rem),
+      linear-gradient(180deg, transparent 72%, rgba(244, 239, 228, 0.92) 100%);
+    pointer-events: none;
+  }
+
+  .remote-hero__glow {
+    position: absolute;
+    border-radius: 9999px;
+    filter: blur(72px);
+    opacity: 0.55;
+    pointer-events: none;
+  }
+
+  .remote-hero__glow--left {
+    top: 4rem;
+    left: -5rem;
+    height: 16rem;
+    width: 16rem;
+    background: rgba(255, 255, 255, 0.08);
+  }
+
+  .remote-hero__glow--right {
+    right: -6rem;
+    top: 7rem;
+    height: 18rem;
+    width: 18rem;
+    background: rgba(104, 146, 221, 0.18);
+  }
+
+  .remote-hero__content {
+    position: relative;
+    display: grid;
+    min-height: min(52rem, 100svh);
+    align-content: center;
+    gap: 2.5rem;
+    padding-block: 2rem 5.5rem;
+  }
+
+  .remote-hero__brand {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
+
+  .remote-brand-mark {
+    height: 4.75rem;
+    width: 4.75rem;
+    border-radius: 1.5rem;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    background: rgba(255, 255, 255, 0.08);
+    object-fit: cover;
+    padding: 0.75rem;
+    box-shadow: 0 24px 50px -32px rgba(0, 0, 0, 0.55);
+    backdrop-filter: blur(16px);
+  }
+
+  .remote-brand-name {
+    font-size: clamp(2.75rem, 7vw, 5.75rem);
+    font-weight: 650;
+    line-height: 0.92;
+    letter-spacing: -0.08em;
+  }
+
+  .remote-brand-subtitle {
+    margin-top: 0.5rem;
+    font-size: 0.82rem;
+    font-weight: 500;
+    letter-spacing: 0.34em;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.52);
+  }
+
+  .remote-hero__copy {
+    width: min(100%, 58rem);
+  }
+
+  .remote-kicker {
+    font-size: 0.75rem;
+    font-weight: 500;
+    letter-spacing: 0.28em;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.54);
+  }
+
+  .remote-display {
+    margin-top: 1rem;
+    max-width: 12ch;
+    font-size: clamp(2.6rem, 8vw, 6rem);
+    font-weight: 650;
+    line-height: 0.96;
+    letter-spacing: -0.075em;
+    text-wrap: balance;
+  }
+
+  .remote-lead {
+    margin-top: 1.5rem;
+    max-width: 42rem;
+    font-size: clamp(1rem, 1.35vw, 1.18rem);
+    line-height: 1.9;
+    color: rgba(255, 255, 255, 0.72);
+    text-wrap: pretty;
+  }
+
+  .remote-hero__meta {
+    margin-top: 2rem;
+    display: grid;
+    gap: 1rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.12);
+    padding-top: 1.5rem;
+  }
+
+  .remote-surface {
+    position: relative;
+    background:
+      linear-gradient(180deg, var(--page-cream) 0%, var(--page-cream) 100%);
+    padding-block: 1.5rem 5rem;
+  }
+
+  .remote-section {
+    border-top: 1px solid color-mix(in srgb, var(--border) 72%, transparent);
+    padding-top: 2.5rem;
+  }
+
+  .remote-section + .remote-section {
+    margin-top: 4rem;
+  }
+
+  .remote-section__intro {
+    display: grid;
+    gap: 1rem 2rem;
+    align-items: end;
+  }
+
+  .remote-section__summary {
+    display: grid;
+    gap: 1rem;
+  }
+
+  .remote-panel {
+    margin-top: 2rem;
+    border-top: 1px solid color-mix(in srgb, var(--border) 72%, transparent);
+    padding-top: 1.75rem;
+  }
+
+  .remote-section--works {
+    padding-bottom: 1rem;
+  }
+
+  .remote-library {
+    min-height: 100vh;
+    background:
+      radial-gradient(circle at top left, rgba(15, 33, 55, 0.05), transparent 22rem),
+      linear-gradient(180deg, #f7f3ea 0%, #f2ebde 100%);
+  }
+
+  .remote-library__header {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    border-bottom: 1px solid color-mix(in srgb, var(--border) 72%, transparent);
+    background: rgba(247, 243, 234, 0.84);
+    backdrop-filter: blur(16px);
+  }
+
+  .remote-library__header-inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding-block: 0.95rem;
+  }
+
+  .remote-library__mark {
+    height: 2.75rem;
+    width: 2.75rem;
+    border-radius: 0.95rem;
+    border: 1px solid rgba(15, 33, 55, 0.08);
+    background: rgba(255, 255, 255, 0.7);
+    object-fit: cover;
+    padding: 0.45rem;
+  }
+
+  .remote-library__body {
+    padding-block: 2rem 4rem;
+  }
+
+  .remote-library__toolbar {
+    display: grid;
+    gap: 1.5rem;
+    align-items: start;
+  }
+
+  .remote-library__stat {
+    min-width: 0;
+    border-left: 1px solid color-mix(in srgb, var(--border) 74%, transparent);
+    padding-left: 0.75rem;
+  }
+
+  .remote-library__stat:first-child {
+    border-left: 0;
+    padding-left: 0;
+  }
+
+  .remote-library__stat-label {
+    font-size: 0.68rem;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--color-muted-foreground);
+  }
+
+  .remote-library__stat-value {
+    margin-top: 0.45rem;
+    font-size: 1.05rem;
+    font-weight: 600;
+    line-height: 1.4;
+    color: var(--color-foreground);
+  }
+
+  .remote-gate {
+    border: 1px solid color-mix(in srgb, var(--border) 72%, transparent);
+    border-radius: 1.75rem;
+    background: rgba(255, 255, 255, 0.72);
+    padding: 1.5rem;
+    box-shadow: 0 24px 60px -48px rgba(16, 33, 55, 0.28);
+  }
+
+  .remote-gate__intro {
+    max-width: 42rem;
+  }
+
+  .remote-masonry {
+    --masonry-gap: 0.25rem;
+    columns: 3;
+    column-gap: var(--masonry-gap);
+    max-width: calc(5 * 13rem + 4 * var(--masonry-gap));
+  }
+
+  .remote-masonry-card {
+    break-inside: avoid;
+    margin-bottom: var(--masonry-gap);
+    overflow: hidden;
+    border: 1px solid color-mix(in srgb, var(--border) 78%, transparent);
+    border-radius: 1.4rem;
+    background: rgba(255, 255, 255, 0.9);
+    box-shadow: 0 24px 60px -48px rgba(16, 33, 55, 0.28);
+    transition: transform 300ms ease-out;
+  }
+
+  .remote-masonry-card:hover {
+    transform: translateY(-4px);
+  }
+
+  .remote-work-image-frame {
+    position: relative;
+    width: 100%;
+    overflow: hidden;
+    background: #e9dfcf;
+  }
+
+  .remote-work-image {
+    position: absolute;
+    inset: 0;
+    display: block;
+    height: 100%;
+    width: 100%;
+    object-fit: cover;
+    background: #e9dfcf;
+  }
+
+  .remote-work-image--placeholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--color-muted-foreground);
+  }
+
+  .remote-list-row {
+    display: grid;
+    grid-template-columns: 5.5rem minmax(0, 1fr);
+    gap: 1rem;
+    align-items: center;
+    border: 1px solid color-mix(in srgb, var(--border) 78%, transparent);
+    border-radius: 1.4rem;
+    background: rgba(255, 255, 255, 0.86);
+    padding: 0.9rem;
+    box-shadow: 0 20px 50px -48px rgba(16, 33, 55, 0.24);
+    transition: transform 220ms ease-out, background-color 220ms ease-out;
+  }
+
+  .remote-list-row:hover {
+    transform: translateX(4px);
+    background: rgba(255, 255, 255, 0.96);
+  }
+
+  .remote-list-row__image {
+    border-radius: 1rem;
+  }
+
+  .remote-list-row__image--placeholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--color-muted-foreground);
+  }
+
+  .remote-list-row__image-frame {
+    height: 5.5rem;
+    width: 5.5rem;
+    border-radius: 1rem;
+  }
+}
+
+@media (min-width: 640px) {
+  .remote-shell {
+    padding-inline: 2rem;
+  }
+
+  .remote-hero__meta {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .remote-masonry {
+    --masonry-gap: 1rem;
+    columns: 4;
+  }
+}
+
+@media (min-width: 1024px) {
+  .remote-shell {
+    padding-inline: 3rem;
+  }
+
+  .remote-hero__content {
+    min-height: 44rem;
+    padding-block: 2.5rem 6rem;
+  }
+
+  .remote-section__intro {
+    grid-template-columns: minmax(0, 1.2fr) minmax(18rem, 0.8fr);
+  }
+
+  .remote-library__toolbar {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .remote-masonry {
+    columns: 5;
   }
 }
