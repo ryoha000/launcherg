@@ -1,3 +1,12 @@
+import { eq, inArray, sql } from 'drizzle-orm'
+
+import { createDbClient } from '@server/db/client'
+import {
+  deviceWorkSnapshots,
+  devices,
+  remoteShareImages,
+} from '@server/db/schema'
+
 import type {
   DeviceWorksListItem,
   RemoteShareWorkInput,
@@ -30,28 +39,25 @@ export async function findDeviceBySecretHash(
   db: D1Database,
   secretHash: string,
 ): Promise<DeviceRecord | null> {
-  const row = await db
-    .prepare(
-      `SELECT device_id, secret_hash, last_synced_at
-       FROM devices
-       WHERE secret_hash = ?1
-       LIMIT 1`,
-    )
-    .bind(secretHash)
-    .first<{
-      device_id: string
-      secret_hash: string
-      last_synced_at: string | null
-    }>()
+  const database = createDbClient(db)
+  const row = await database
+    .select({
+      deviceId: devices.deviceId,
+      secretHash: devices.secretHash,
+      lastSyncedAt: devices.lastSyncedAt,
+    })
+    .from(devices)
+    .where(eq(devices.secretHash, secretHash))
+    .get()
 
   if (!row) {
     return null
   }
 
   return {
-    deviceId: row.device_id,
-    secretHash: row.secret_hash,
-    lastSyncedAt: row.last_synced_at,
+    deviceId: row.deviceId,
+    secretHash: row.secretHash,
+    lastSyncedAt: row.lastSyncedAt,
   }
 }
 
@@ -59,28 +65,25 @@ export async function findDeviceById(
   db: D1Database,
   deviceId: string,
 ): Promise<DeviceRecord | null> {
-  const row = await db
-    .prepare(
-      `SELECT device_id, secret_hash, last_synced_at
-       FROM devices
-       WHERE device_id = ?1
-       LIMIT 1`,
-    )
-    .bind(deviceId)
-    .first<{
-      device_id: string
-      secret_hash: string
-      last_synced_at: string | null
-    }>()
+  const database = createDbClient(db)
+  const row = await database
+    .select({
+      deviceId: devices.deviceId,
+      secretHash: devices.secretHash,
+      lastSyncedAt: devices.lastSyncedAt,
+    })
+    .from(devices)
+    .where(eq(devices.deviceId, deviceId))
+    .get()
 
   if (!row) {
     return null
   }
 
   return {
-    deviceId: row.device_id,
-    secretHash: row.secret_hash,
-    lastSyncedAt: row.last_synced_at,
+    deviceId: row.deviceId,
+    secretHash: row.secretHash,
+    lastSyncedAt: row.lastSyncedAt,
   }
 }
 
@@ -89,23 +92,19 @@ export async function insertDevice(
   deviceId: string,
   secretHash: string,
 ): Promise<void> {
-  await db
-    .prepare(
-      `INSERT INTO devices (device_id, secret_hash)
-       VALUES (?1, ?2)`,
-    )
-    .bind(deviceId, secretHash)
-    .run()
+  const database = createDbClient(db)
+  await database.insert(devices).values({
+    deviceId,
+    secretHash,
+  }).run()
 }
 
 export async function clearDeviceSnapshots(
   db: D1Database,
   deviceId: string,
 ): Promise<void> {
-  await db
-    .prepare('DELETE FROM device_work_snapshots WHERE device_id = ?1')
-    .bind(deviceId)
-    .run()
+  const database = createDbClient(db)
+  await database.delete(deviceWorkSnapshots).where(eq(deviceWorkSnapshots.deviceId, deviceId)).run()
 }
 
 export async function upsertDeviceSnapshots(
@@ -115,62 +114,53 @@ export async function upsertDeviceSnapshots(
   imageKeys: Map<string, string>,
   syncedAt: string,
 ): Promise<void> {
+  const database = createDbClient(db)
   const statements = works.map((work) => {
     const dedupeKey = remoteShareDedupeKeyForWork(work)
     const imageKey = imageKeys.get(dedupeKey) ?? null
-    return db
-      .prepare(
-        `INSERT INTO device_work_snapshots (
-          device_id,
-          work_id,
-          erogamescape_id,
-          title,
-          official_url,
-          erogamescape_url,
-          seiya_url,
-          image_key,
-          thumbnail_width,
-          thumbnail_height,
-          updated_at
-        ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11)
-        ON CONFLICT(device_id, work_id) DO UPDATE SET
-          erogamescape_id = excluded.erogamescape_id,
-          title = excluded.title,
-          official_url = excluded.official_url,
-          erogamescape_url = excluded.erogamescape_url,
-          seiya_url = excluded.seiya_url,
-          image_key = excluded.image_key,
-          thumbnail_width = excluded.thumbnail_width,
-          thumbnail_height = excluded.thumbnail_height,
-          updated_at = excluded.updated_at`,
-      )
-      .bind(
+
+    return database
+      .insert(deviceWorkSnapshots)
+      .values({
         deviceId,
-        work.workId,
-        work.erogamescapeId ?? null,
-        work.title,
-        work.officialUrl ?? null,
-        work.erogamescapeUrl ?? null,
-        work.seiyaUrl ?? null,
+        workId: work.workId,
+        erogamescapeId: work.erogamescapeId ?? null,
+        title: work.title,
+        officialUrl: work.officialUrl ?? null,
+        erogamescapeUrl: work.erogamescapeUrl ?? null,
+        seiyaUrl: work.seiyaUrl ?? null,
         imageKey,
-        work.thumbnail?.width ?? null,
-        work.thumbnail?.height ?? null,
-        syncedAt,
-      )
+        thumbnailWidth: work.thumbnail?.width ?? null,
+        thumbnailHeight: work.thumbnail?.height ?? null,
+        updatedAt: syncedAt,
+      })
+      .onConflictDoUpdate({
+        target: [deviceWorkSnapshots.deviceId, deviceWorkSnapshots.workId],
+        set: {
+          erogamescapeId: work.erogamescapeId ?? null,
+          title: work.title,
+          officialUrl: work.officialUrl ?? null,
+          erogamescapeUrl: work.erogamescapeUrl ?? null,
+          seiyaUrl: work.seiyaUrl ?? null,
+          imageKey,
+          thumbnailWidth: work.thumbnail?.width ?? null,
+          thumbnailHeight: work.thumbnail?.height ?? null,
+          updatedAt: syncedAt,
+        },
+      })
   })
 
   if (statements.length > 0) {
-    await db.batch(statements)
+    await database.batch(statements as [typeof statements[number], ...typeof statements[number][]])
   }
 
-  await db
-    .prepare(
-      `UPDATE devices
-       SET last_synced_at = ?2,
-           updated_at = ?2
-       WHERE device_id = ?1`,
-    )
-    .bind(deviceId, syncedAt)
+  await database
+    .update(devices)
+    .set({
+      lastSyncedAt: syncedAt,
+      updatedAt: syncedAt,
+    })
+    .where(eq(devices.deviceId, deviceId))
     .run()
 }
 
@@ -178,45 +168,34 @@ export async function listDeviceSnapshots(
   db: D1Database,
   deviceId: string,
 ): Promise<DeviceSnapshotRow[]> {
-  const result = await db
-    .prepare(
-      `SELECT
-         work_id,
-         title,
-         image_key,
-         thumbnail_width,
-         thumbnail_height,
-         erogamescape_id,
-         official_url,
-         erogamescape_url,
-         seiya_url
-       FROM device_work_snapshots
-       WHERE device_id = ?1
-       ORDER BY title COLLATE NOCASE ASC`,
-    )
-    .bind(deviceId)
-    .all<{
-      work_id: string
-      title: string
-      image_key: string | null
-      thumbnail_width: number | null
-      thumbnail_height: number | null
-      erogamescape_id: number | null
-      official_url: string | null
-      erogamescape_url: string | null
-      seiya_url: string | null
-    }>()
+  const database = createDbClient(db)
+  const rows = await database
+    .select({
+      workId: deviceWorkSnapshots.workId,
+      title: deviceWorkSnapshots.title,
+      imageKey: deviceWorkSnapshots.imageKey,
+      thumbnailWidth: deviceWorkSnapshots.thumbnailWidth,
+      thumbnailHeight: deviceWorkSnapshots.thumbnailHeight,
+      erogamescapeId: deviceWorkSnapshots.erogamescapeId,
+      officialUrl: deviceWorkSnapshots.officialUrl,
+      erogamescapeUrl: deviceWorkSnapshots.erogamescapeUrl,
+      seiyaUrl: deviceWorkSnapshots.seiyaUrl,
+    })
+    .from(deviceWorkSnapshots)
+    .where(eq(deviceWorkSnapshots.deviceId, deviceId))
+    .orderBy(sql`${deviceWorkSnapshots.title} COLLATE NOCASE`)
+    .all()
 
-  return result.results.map(row => ({
-    workId: row.work_id,
+  return rows.map(row => ({
+    workId: row.workId,
     title: row.title,
-    imageKey: row.image_key,
-    thumbnailWidth: row.thumbnail_width,
-    thumbnailHeight: row.thumbnail_height,
-    erogamescapeId: row.erogamescape_id,
-    officialUrl: row.official_url,
-    erogamescapeUrl: row.erogamescape_url,
-    seiyaUrl: row.seiya_url,
+    imageKey: row.imageKey,
+    thumbnailWidth: row.thumbnailWidth,
+    thumbnailHeight: row.thumbnailHeight,
+    erogamescapeId: row.erogamescapeId,
+    officialUrl: row.officialUrl,
+    erogamescapeUrl: row.erogamescapeUrl,
+    seiyaUrl: row.seiyaUrl,
   }))
 }
 
@@ -242,26 +221,23 @@ export async function findRemoteShareImageByDedupeKey(
   db: D1Database,
   dedupeKey: string,
 ): Promise<RemoteShareImageRow | null> {
-  const row = await db
-    .prepare(
-      `SELECT dedupe_key, image_key
-       FROM remote_share_images
-       WHERE dedupe_key = ?1
-       LIMIT 1`,
-    )
-    .bind(dedupeKey)
-    .first<{
-      dedupe_key: string
-      image_key: string
-    }>()
+  const database = createDbClient(db)
+  const row = await database
+    .select({
+      dedupeKey: remoteShareImages.dedupeKey,
+      imageKey: remoteShareImages.imageKey,
+    })
+    .from(remoteShareImages)
+    .where(eq(remoteShareImages.dedupeKey, dedupeKey))
+    .get()
 
   if (!row) {
     return null
   }
 
   return {
-    dedupeKey: row.dedupe_key,
-    imageKey: row.image_key,
+    dedupeKey: row.dedupeKey,
+    imageKey: row.imageKey,
   }
 }
 
@@ -269,6 +245,7 @@ export async function listRemoteShareImagesByDedupeKeys(
   db: D1Database,
   dedupeKeys: string[],
 ): Promise<Map<string, string>> {
+  const database = createDbClient(db)
   const results = new Map<string, string>()
   const uniqueKeys = Array.from(new Set(dedupeKeys))
 
@@ -278,21 +255,17 @@ export async function listRemoteShareImagesByDedupeKeys(
       continue
     }
 
-    const placeholders = chunk.map((_, itemIndex) => `?${itemIndex + 1}`).join(', ')
-    const rows = await db
-      .prepare(
-        `SELECT dedupe_key, image_key
-         FROM remote_share_images
-         WHERE dedupe_key IN (${placeholders})`,
-      )
-      .bind(...chunk)
-      .all<{
-        dedupe_key: string
-        image_key: string
-      }>()
+    const rows = await database
+      .select({
+        dedupeKey: remoteShareImages.dedupeKey,
+        imageKey: remoteShareImages.imageKey,
+      })
+      .from(remoteShareImages)
+      .where(inArray(remoteShareImages.dedupeKey, chunk))
+      .all()
 
-    for (const row of rows.results) {
-      results.set(row.dedupe_key, row.image_key)
+    for (const row of rows) {
+      results.set(row.dedupeKey, row.imageKey)
     }
   }
 
@@ -304,12 +277,14 @@ export async function insertRemoteShareImage(
   dedupeKey: string,
   imageKey: string,
 ): Promise<void> {
-  await db
-    .prepare(
-      `INSERT OR IGNORE INTO remote_share_images (dedupe_key, image_key)
-       VALUES (?1, ?2)`,
-    )
-    .bind(dedupeKey, imageKey)
+  const database = createDbClient(db)
+  await database
+    .insert(remoteShareImages)
+    .values({
+      dedupeKey,
+      imageKey,
+    })
+    .onConflictDoNothing()
     .run()
 }
 

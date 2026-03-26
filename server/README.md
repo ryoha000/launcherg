@@ -9,6 +9,8 @@ Cloudflare Workers 上で動く Remote Share 用の API / WebUI です。
   - Workers 本体
   - oRPC contract / schema
   - D1 / R2 / Cookie セッション処理
+- `src/db/`
+  - Drizzle schema と D1 client
 - `ui/`
   - Vite + React SPA
 - `migrations/`
@@ -68,16 +70,27 @@ npx wrangler secret put SESSION_SECRET
 ローカル開発用:
 
 ```powershell
-npx wrangler d1 execute launcherg --local --file=.\migrations\0001_initial.sql
+npm run db:apply:local
 ```
 
 リモート環境用:
 
 ```powershell
-npx wrangler d1 execute launcherg --remote --file=.\migrations\0001_initial.sql
+npm run db:apply:remote
 ```
 
 `launcherg` は [wrangler.toml](/F:/workspace/launcherg/server/wrangler.toml) の `database_name` と合わせてください。
+
+## Drizzle 導入後の DB 変更手順
+
+`server` では migration の適用責務は Wrangler の D1 に残し、schema 定義と SQL 生成だけを Drizzle で行います。
+
+1. [src/db/schema.ts](/F:/workspace/launcherg/server/src/db/schema.ts) を編集する
+2. `npm run db:generate` を実行して migration SQL を生成する
+3. 生成された SQL を確認する
+4. `npm run db:apply:local` または `npm run db:apply:remote` を実行する
+
+既存の `migrations/*.sql` は正本として残し、過去 migration は編集しません。
 
 ## 開発
 
@@ -144,6 +157,18 @@ API 動作込みで確認したいときは `npm run dev` を使ってくださ�
    以上の状態で `npm run dev` でサーバーを起動すると、画像アップロード・取得がローカルのMinIOへ向くようになります。
    > [補足] アップロードされた画像は [http://localhost:9001](http://localhost:9001) (User: `minioadmin`, Pass: `minioadmin`) でMinIOコンソールからも確認できます。
 
+### Drizzle の補助コマンド
+
+```powershell
+cd F:\workspace\launcherg\server
+npm run db:generate
+npm run db:apply:local
+npm run db:apply:remote
+npm run db:studio
+```
+
+`db:studio` や `drizzle-kit introspect` を使う場合は、`drizzle.config.ts` が参照する Cloudflare の認証情報を環境変数で渡してください。
+
 ## チェック
 
 ```powershell
@@ -169,8 +194,7 @@ task check:server
 ### 1. 本番用 D1 に schema を入れる
 
 ```powershell
-cd F:\workspace\launcherg\server
-npx wrangler d1 execute launcherg --remote --file=.\migrations\0001_initial.sql
+npm run db:apply:remote
 ```
 
 ### 2. secret を設定

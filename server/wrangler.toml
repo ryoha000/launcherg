@@ -11,7 +11,7 @@ run_worker_first = [ "/api/*" ]
 [[d1_databases]]
 binding = "DB"
 database_name = "launcherg"
-database_id = "737c0ff0-09fe-4746-8a3b-f15b51b375ec"
+database_id = "21443454-3e4c-447d-80b7-b071eda5648d"
 
 [[r2_buckets]]
 binding = "IMAGES"
