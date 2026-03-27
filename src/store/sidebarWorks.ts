@@ -6,6 +6,8 @@ export interface SidebarWorkItem {
   title: string
   icon?: { path: string }
   thumbnail?: { path: string, width?: number, height?: number }
+  dmm?: { id: number, storeId: string, category: string, subcategory?: string | null, parentPack?: { storeId: string, category: string, subcategory: string } | null }
+  dlsite?: { id: number, storeId: string, category: string }
   likeAt?: string | null
   installAt?: string | null
   lastPlayAt?: string | null
@@ -35,6 +37,8 @@ function createSidebarWorks() {
         title: v.title,
         icon: v.icon ?? undefined,
         thumbnail: v.thumbnail ?? undefined,
+        dmm: v.dmm ?? undefined,
+        dlsite: v.dlsite ?? undefined,
         likeAt: v.likeAt ?? null,
         installAt: v.installAt ?? null,
         lastPlayAt: v.lastPlayAt ?? null,

@@ -2,6 +2,9 @@ import type { SidebarWorkItem } from '@/store/sidebarWorks'
 import { createLocalStorageWritable } from '@/lib/utils'
 
 export const ATTRIBUTES = {
+  DMM: 'dmm',
+  DLSITE: 'dlsite',
+  INSTALL: 'install',
   NUKIGE: 'nukige',
   NOT_NUKIGE: 'not_nukige',
   LIKE: 'like',
@@ -9,6 +12,9 @@ export const ATTRIBUTES = {
 } as const
 
 export const ATTRIBUTE_LABELS: { [key in AttributeKey]: string } = {
+  dmm: 'DMM',
+  dlsite: 'DLsite',
+  install: 'インストール済み',
   nukige: '抜きゲー',
   not_nukige: '非抜きゲー',
   like: 'お気に入り',
@@ -23,11 +29,33 @@ const INITIAL_ATTRIBUTES = Object.values(ATTRIBUTES).map(v => ({
 
 export interface Attribute { key: AttributeKey, enabled: boolean }
 
+export function mergeMissingAttributes(attrs: Attribute[]) {
+  const seen = new Set<AttributeKey>()
+  const normalized = attrs.filter((attr) => {
+    if (seen.has(attr.key)) {
+      return false
+    }
+    seen.add(attr.key)
+    return true
+  })
+
+  for (const attr of INITIAL_ATTRIBUTES) {
+    if (!seen.has(attr.key)) {
+      normalized.push(attr)
+      seen.add(attr.key)
+    }
+  }
+
+  return normalized
+}
+
 export function searchAttributes() {
   const [attributes, _] = createLocalStorageWritable<Attribute[]>(
     'search-attributes',
     INITIAL_ATTRIBUTES,
   )
+
+  attributes.update(mergeMissingAttributes)
 
   const toggleEnable = (key: AttributeKey) => {
     attributes.update((attrs) => {
@@ -69,6 +97,9 @@ export function searchAttributes() {
 }
 
 export const FILTER_BY_ATTRIBUTE: { [key in AttributeKey]: (src: SidebarWorkItem[]) => SidebarWorkItem[] } = {
+  dmm: src => src.filter(v => v.dmm),
+  dlsite: src => src.filter(v => v.dlsite),
+  install: src => src.filter(v => v.installAt),
   nukige: src => src.filter(v => v.isNukige === true),
   not_nukige: src => src.filter(v => v.isNukige === false),
   exist_path: src => src.filter(v => v.hasPath),
