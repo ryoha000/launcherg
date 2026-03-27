@@ -5,10 +5,11 @@ export default defineConfig({
   resolve: {
     alias: {
       '@server': fileURLToPath(new URL('./src', import.meta.url)),
+      '@ui': fileURLToPath(new URL('./ui/src', import.meta.url)),
     },
   },
   test: {
     environment: 'node',
-    include: ['src/**/*.test.ts'],
+    include: ['src/**/*.test.ts', 'ui/src/**/*.test.tsx', 'ui/src/**/*.test.ts'],
   },
 })

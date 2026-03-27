@@ -2,10 +2,11 @@ use domain::windows::shell_link::{CreateShortcutRequest, ShellLink};
 use windows::{
     core::{ComInterface, PCWSTR},
     Win32::{
+        Foundation::CloseHandle,
         Storage::FileSystem::WIN32_FIND_DATAW,
         System::Com::{CoCreateInstance, CoInitialize, CoUninitialize, CLSCTX_INPROC_SERVER},
         System::Com::{IPersistFile, STGM_READ},
-        System::Threading::{GetExitCodeProcess, WaitForSingleObject, INFINITE},
+        System::Threading::GetProcessId,
         UI::Shell::{
             IShellLinkW, ShellExecuteExW, ShellLink as ShellLinkCom, SEE_MASK_NOCLOSEPROCESS,
             SHELLEXECUTEINFOW,
@@ -151,12 +152,14 @@ impl ShellLink for ShellLinkImpl {
                 CoUninitialize();
                 return Ok(None);
             }
-            let _ = WaitForSingleObject(h_process, INFINITE);
-            let mut exit_code: u32 = 0;
-            GetExitCodeProcess(h_process, &mut exit_code as *mut u32)
-                .map_err(|_| anyhow::anyhow!("GetExitCodeProcess failed"))?;
+            let process_id = GetProcessId(h_process);
+            let _ = CloseHandle(h_process);
             CoUninitialize();
-            Ok(Some(exit_code))
+            if process_id == 0 {
+                Ok(None)
+            } else {
+                Ok(Some(process_id))
+            }
         }
     }
 }

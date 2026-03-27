@@ -1,6 +1,7 @@
 import type {
   DeviceSessionInput,
   DeviceWorksListOutput,
+  LaunchWorkResponse,
 } from '@server/shared/schema'
 
 async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
@@ -37,8 +38,8 @@ export const api = {
       headers: {},
     })
   },
-  async launchWork(deviceId: string, workId: string): Promise<void> {
-    await apiFetch(`/api/device/${encodeURIComponent(deviceId)}/works/${encodeURIComponent(workId)}/launch`, {
+  async launchWork(deviceId: string, workId: string): Promise<LaunchWorkResponse> {
+    return await apiFetch(`/api/device/${encodeURIComponent(deviceId)}/works/${encodeURIComponent(workId)}/launch`, {
       method: 'POST',
     })
   },

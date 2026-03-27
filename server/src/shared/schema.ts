@@ -94,6 +94,43 @@ export const deviceWorksSyncCommitOutputSchema = z.object({
   lastSyncedAt: z.string(),
 })
 
+export const launchReasonCodeSchema = z.enum([
+  'launched',
+  'desktop_not_connected',
+  'timeout',
+  'work_not_found',
+  'shortcut_not_found',
+  'target_not_installed',
+  'launch_failed',
+  'unknown',
+])
+
+export const launchWorkResponseSchema = z.object({
+  ok: z.boolean(),
+  reasonCode: launchReasonCodeSchema,
+  message: z.string(),
+  detail: z.string().nullable(),
+})
+
+export const launchWorkRequestSchema = z.object({
+  workId: z.string().trim().min(1),
+})
+
+export const launchWorkTransportRequestSchema = z.object({
+  type: z.literal('launch-work'),
+  requestId: z.string().trim().min(1),
+  workId: z.string().trim().min(1),
+})
+
+export const launchWorkTransportAckSchema = z.object({
+  type: z.literal('launch-ack'),
+  requestId: z.string().trim().min(1),
+  ok: z.boolean(),
+  reasonCode: launchReasonCodeSchema,
+  message: z.string(),
+  detail: z.string().nullable(),
+})
+
 export type DeviceRegisterInput = z.infer<typeof deviceRegisterInputSchema>
 export type DeviceRegisterOutput = z.infer<typeof deviceRegisterOutputSchema>
 export type DeviceSessionInput = z.infer<typeof deviceSessionInputSchema>
@@ -106,3 +143,8 @@ export type DeviceWorksListOutput = z.infer<typeof deviceWorksListOutputSchema>
 export type RemoteShareWorkInput = z.infer<typeof remoteShareWorkInputSchema>
 export type RemoteShareUploadTarget = z.infer<typeof remoteShareUploadTargetSchema>
 export type RemoteShareUploadedImage = z.infer<typeof remoteShareUploadedImageSchema>
+export type LaunchReasonCode = z.infer<typeof launchReasonCodeSchema>
+export type LaunchWorkResponse = z.infer<typeof launchWorkResponseSchema>
+export type LaunchWorkRequest = z.infer<typeof launchWorkRequestSchema>
+export type LaunchWorkTransportRequest = z.infer<typeof launchWorkTransportRequestSchema>
+export type LaunchWorkTransportAck = z.infer<typeof launchWorkTransportAckSchema>

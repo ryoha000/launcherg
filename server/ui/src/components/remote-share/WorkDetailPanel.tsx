@@ -1,4 +1,4 @@
-import type { DeviceWorksListItem } from '@server/shared/schema'
+import type { DeviceWorksListItem, LaunchWorkResponse } from '@server/shared/schema'
 
 import { api } from '@ui/api'
 import { Alert, AlertDescription, AlertTitle } from '@ui/components/ui/alert'
@@ -47,6 +47,33 @@ function WorkDetailLink({
   )
 }
 
+export function LaunchResultAlert({
+  result,
+}: {
+  result: LaunchWorkResponse | null
+}) {
+  if (!result) {
+    return null
+  }
+
+  if (result.ok) {
+    return (
+      <Alert className="border-primary/20 bg-primary/6">
+        <AlertTitle>起動しました</AlertTitle>
+        <AlertDescription>{result.message}</AlertDescription>
+      </Alert>
+    )
+  }
+
+  return (
+    <Alert variant="destructive" className="border-destructive/30 bg-destructive/6 text-foreground">
+      <TriangleAlert />
+      <AlertTitle>起動できませんでした</AlertTitle>
+      <AlertDescription>{result.message}</AlertDescription>
+    </Alert>
+  )
+}
+
 export function WorkDetailPanel({
   deviceId,
   lastSyncedAt,
@@ -56,8 +83,8 @@ export function WorkDetailPanel({
   lastSyncedAt: string | null
   work: DeviceWorksListItem | null
 }) {
-  const [launchState, setLaunchState] = useState<'idle' | 'loading' | 'success' | 'error'>('idle')
-  const [launchMessage, setLaunchMessage] = useState('')
+  const [launchResult, setLaunchResult] = useState<LaunchWorkResponse | null>(null)
+  const [isLaunching, setIsLaunching] = useState(false)
 
   if (!work) {
     return (
@@ -78,23 +105,23 @@ export function WorkDetailPanel({
   }
 
   const launch = async () => {
-    setLaunchState('loading')
-    setLaunchMessage('')
+    setIsLaunching(true)
+    setLaunchResult(null)
 
     try {
-      await api.launchWork(deviceId, work.workId)
-      setLaunchState('success')
-      setLaunchMessage('起動要求を送信しました。Launcherg デスクトップで処理されます。')
+      const result = await api.launchWork(deviceId, work.workId)
+      setLaunchResult(result)
     }
     catch (cause) {
-      const rawMessage = cause instanceof Error ? cause.message : String(cause)
-      setLaunchState('error')
-      if (/Desktop is not connected/i.test(rawMessage)) {
-        setLaunchMessage('デスクトップアプリが Remote Launch に接続していません。Launcherg を起動した状態で再試行してください。')
-        return
-      }
-
-      setLaunchMessage('起動要求を送信できませんでした。しばらくしてから再試行してください。')
+      setLaunchResult({
+        ok: false,
+        reasonCode: 'unknown',
+        message: 'ゲームを起動できませんでした。しばらくしてから再試行してください。',
+        detail: cause instanceof Error ? cause.message : String(cause),
+      })
+    }
+    finally {
+      setIsLaunching(false)
     }
   }
 
@@ -133,30 +160,17 @@ export function WorkDetailPanel({
           <div className="remote-work-detail__actions">
             <Button
               className="h-12 rounded-full px-6"
-              disabled={launchState === 'loading'}
+              disabled={isLaunching}
               onClick={() => void launch()}
               size="lg"
               type="button"
             >
-              <Rocket className={cn(launchState === 'loading' && 'animate-pulse')} />
-              {launchState === 'loading' ? '送信中...' : '起動する'}
+              <Rocket className={cn(isLaunching && 'animate-pulse')} />
+              {isLaunching ? '送信中...' : '起動する'}
             </Button>
           </div>
 
-          {launchState === 'success' && launchMessage && (
-            <Alert className="border-primary/20 bg-primary/6">
-              <AlertTitle>Launch queued</AlertTitle>
-              <AlertDescription>{launchMessage}</AlertDescription>
-            </Alert>
-          )}
-
-          {launchState === 'error' && launchMessage && (
-            <Alert variant="destructive" className="border-destructive/30 bg-destructive/6 text-foreground">
-              <TriangleAlert />
-              <AlertTitle>起動できませんでした</AlertTitle>
-              <AlertDescription>{launchMessage}</AlertDescription>
-            </Alert>
-          )}
+          <LaunchResultAlert result={launchResult} />
         </section>
       </div>
     </section>

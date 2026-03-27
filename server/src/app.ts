@@ -15,8 +15,9 @@ import {
   toPublicWorkItem,
   upsertDeviceSnapshots,
 } from '@server/lib/db'
-import { badRequest, notFound, unauthorized } from '@server/lib/errors'
+import { notFound, unauthorized } from '@server/lib/errors'
 import { createR2PresignedPutUrl, encodeObjectKey } from '@server/lib/r2'
+import { requestLaunch } from '@server/remoteLaunchBroker'
 import {
   deviceRegisterInputSchema,
   deviceSessionInputSchema,
@@ -315,25 +316,6 @@ async function handleLaunchWork(
 
   const brokerId = env.REMOTE_LAUNCH_BROKER.idFromName(deviceId)
   const stub = env.REMOTE_LAUNCH_BROKER.get(brokerId)
-  const response = await stub.fetch('https://remote-launch-broker/request-launch', {
-    method: 'POST',
-    body: JSON.stringify({ workId }),
-    headers: {
-      'Content-Type': 'application/json',
-    },
-  })
-
-  if (response.status === 400) {
-    badRequest(await response.text())
-  }
-
-  if (response.status === 409) {
-    return new Response(await response.text(), { status: 409 })
-  }
-
-  if (response.status !== 202) {
-    return new Response(await response.text(), { status: 502 })
-  }
-
-  return new Response(null, { status: 202 })
+  const response = await requestLaunch(stub, workId)
+  return Response.json(response)
 }

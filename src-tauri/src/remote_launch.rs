@@ -6,27 +6,30 @@ use tokio::time::{sleep, Duration};
 use tokio_tungstenite::{connect_async, tungstenite::Message};
 
 use crate::interface::module::{Modules, ModulesExt};
+use usecase::work::RemoteLaunchReasonCode;
 
 const REMOTE_LAUNCH_RETRY_SECONDS: u64 = 5;
 
 #[derive(Debug, Deserialize)]
-#[serde(tag = "type")]
+#[serde(tag = "type", rename_all = "camelCase")]
 enum BrokerMessage {
     #[serde(rename = "launch-work")]
     LaunchWork {
-        #[serde(rename = "workId")]
+        request_id: String,
         work_id: String,
     },
 }
 
 #[derive(Debug, Serialize)]
-#[serde(tag = "type")]
-enum BrokerAckMessage<'a> {
+#[serde(tag = "type", rename_all = "camelCase")]
+enum BrokerAckMessage {
     #[serde(rename = "launch-ack")]
     LaunchAck {
-        #[serde(rename = "workId")]
-        work_id: &'a str,
-        status: &'a str,
+        request_id: String,
+        ok: bool,
+        reason_code: RemoteLaunchReasonCode,
+        message: String,
+        detail: Option<String>,
     },
 }
 
@@ -88,19 +91,17 @@ async fn handle_broker_message(
     >,
 ) {
     match payload {
-        BrokerMessage::LaunchWork { work_id } => {
-            let status = match launch_first_work_link(modules, &work_id).await {
-                Ok(true) => "queued",
-                Ok(false) => "not-found",
-                Err(err) => {
-                    log::warn!("failed to launch work {work_id}: {err}");
-                    "error"
-                }
-            };
-
+        BrokerMessage::LaunchWork {
+            request_id,
+            work_id,
+        } => {
+            let ack = modules.work_use_case().launch_remote_work(work_id).await;
             let ack = BrokerAckMessage::LaunchAck {
-                work_id: &work_id,
-                status,
+                request_id,
+                ok: ack.ok,
+                reason_code: ack.reason_code,
+                message: ack.message,
+                detail: ack.detail,
             };
 
             if let Ok(text) = serde_json::to_string(&ack) {
@@ -108,20 +109,6 @@ async fn handle_broker_message(
             }
         }
     }
-}
-
-async fn launch_first_work_link(modules: &Arc<Modules>, work_id: &str) -> anyhow::Result<bool> {
-    let links = modules.work_use_case().list_work_lnks(work_id.to_string()).await?;
-    let Some((first_lnk_id, _)) = links.first() else {
-        return Ok(false);
-    };
-
-    let _ = modules
-        .work_use_case()
-        .launch_work(false, *first_lnk_id)
-        .await?;
-
-    Ok(true)
 }
 
 fn build_remote_launch_ws_url(

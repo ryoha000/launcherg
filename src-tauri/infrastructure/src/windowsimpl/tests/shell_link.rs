@@ -80,15 +80,14 @@ fn ショートカットの作成と実行ができる() {
         exe.display()
     );
 
-    // .lnk を実行して終了コード 0 を確認（ドメイン経由のメソッドを使用）
-    let code = shell_link
+    // .lnk を実行してプロセス ID が返ることを確認（終了待ちはしない）
+    let process_id = shell_link
         .execute_lnk(&link_path.display().to_string(), false)
         .expect(".lnk 実行に失敗");
-    assert_eq!(
-        code,
-        Some(0),
-        ".lnk 実行の終了コードが 0 ではありません: {:?}",
-        code
+    assert!(
+        process_id.is_some(),
+        ".lnk 実行でプロセス ID が返りませんでした: {:?}",
+        process_id
     );
 }
 

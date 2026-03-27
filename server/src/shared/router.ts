@@ -10,6 +10,7 @@ import {
   deviceWorksSyncCommitOutputSchema,
   deviceWorksSyncPrepareInputSchema,
   deviceWorksSyncPrepareOutputSchema,
+  launchWorkResponseSchema,
 } from '@server/shared/schema'
 
 import { z } from 'zod'
@@ -53,6 +54,7 @@ export const launchWorkContract = base
     deviceId: deviceIdSchema,
     workId: z.string().trim().min(1),
   }))
+  .output(launchWorkResponseSchema)
 
 export const prepareSyncWorksContract = base
   .route({
