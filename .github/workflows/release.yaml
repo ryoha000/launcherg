@@ -37,12 +37,15 @@ jobs:
       - uses: Swatinem/rust-cache@v2
         with:
           workspaces: src-tauri -> target
+          cache-on-failure: true
       - name: Install locked dependencies
         run: |
           npm ci
           pnpm --dir browser-extension install --frozen-lockfile
       - name: Validate release version
         run: node scripts/check-release-version.mjs
+      - name: Validate frontend production assets
+        run: npm run build
       - name: Build bundled integration resources
         run: |
           task build:extension
