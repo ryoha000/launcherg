@@ -37,16 +37,11 @@ export interface DlsiteRuntime {
 export function createDlsiteRuntime(deps: DlsiteRuntimeDeps): DlsiteRuntime {
   const payloadCache = createUrlBoundPayloadCache<DlsiteWorksHookMessageData>(deps.initialUrl)
   let lastSyncedKey: string | null = null
-  let isSyncing = false
+  let syncTail: Promise<DlsiteSyncResult | undefined> = Promise.resolve(undefined)
 
-  async function syncLatest(): Promise<DlsiteSyncResult> {
-    const latestPayload = payloadCache.get()
+  async function syncPayload(latestPayload: DlsiteWorksHookMessageData | null): Promise<DlsiteSyncResult> {
     if (!latestPayload) {
       return { success: false, message: MISSING_PAYLOAD_MESSAGE, error: MISSING_PAYLOAD_MESSAGE }
-    }
-
-    if (isSyncing) {
-      return { success: false, message: 'DLsite: 同期を実行中です', error: '同期を実行中です' }
     }
 
     const payloadKey = buildDlsitePayloadKey(latestPayload)
@@ -54,7 +49,6 @@ export function createDlsiteRuntime(deps: DlsiteRuntimeDeps): DlsiteRuntime {
       return { success: true, message: 'DLsite: 最新のAPIレスポンスは同期済みです' }
     }
 
-    isSyncing = true
     try {
       const extractedGames = extractDlsiteGamesFromApiResponse(latestPayload.payload)
       if (extractedGames.length === 0) {
@@ -72,9 +66,14 @@ export function createDlsiteRuntime(deps: DlsiteRuntimeDeps): DlsiteRuntime {
       deps.showErrorNotification('DLsite: 作品情報の同期に失敗しました')
       return { success: false, message: `DLsite: ${errorMessage}`, error: errorMessage }
     }
-    finally {
-      isSyncing = false
-    }
+  }
+
+  function syncLatest(): Promise<DlsiteSyncResult> {
+    // Capture each response before queueing; later pages must not overwrite it.
+    const payload = payloadCache.get()
+    const current = syncTail.catch(() => undefined).then(() => syncPayload(payload))
+    syncTail = current
+    return current
   }
 
   function handleHookMessage(event: MessageEvent<unknown>): void {

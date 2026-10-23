@@ -7,6 +7,7 @@ import type { BrowserContext } from '@playwright/test'
  * persistentContext を使ってブラウザを起動し直す。
  */
 import path from 'node:path'
+import process from 'node:process'
 import { fileURLToPath } from 'node:url'
 import { test as base, chromium } from '@playwright/test'
 
@@ -25,7 +26,8 @@ export const test = base.extend<object, WorkerFixtures>({
     // eslint-disable-next-line no-empty-pattern
     async ({}, use) => {
       const context = await chromium.launchPersistentContext('', {
-        headless: false,
+        headless: process.env.LAUNCHERG_E2E_HEADLESS !== 'false',
+        channel: 'chromium',
         args: [
           `--disable-extensions-except=${extensionPath}`,
           `--load-extension=${extensionPath}`,

@@ -1,103 +1,91 @@
-name: Release Workflow
+name: Release candidate
 
 on:
+  pull_request:
   push:
-    tags:
-      - '*.*.*'
+    branches: ['release/**']
+    tags: ['*.*.*']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
 
 jobs:
-  release:
+  build:
     runs-on: windows-latest
-
+    timeout-minutes: 60
+    env:
+      TAURI_SIGNING_PRIVATE_KEY: ${{ github.event_name != 'pull_request' && (secrets.TAURI_SIGNING_PRIVATE_KEY || secrets.TAURI_PRIVATE_KEY) || '' }}
+      TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ github.event_name != 'pull_request' && (secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD || secrets.TAURI_KEY_PASSWORD) || '' }}
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v2
-
-      - name: Extract tag name
-        id: variables
-        run: echo "version=${GITHUB_REF##*/}" >> $GITHUB_OUTPUT
-        shell: bash
-
-      - name: Update package.version in tauri.conf.json
-        run: |
-          $json = Get-Content -Path "src-tauri\tauri.conf.json" -Raw | ConvertFrom-Json
-          $json.package.version = "${{ steps.variables.outputs.version }}"
-          $json | ConvertTo-Json -Depth 100 | Set-Content -Path "src-tauri\tauri.conf.json"
-
-      - uses: actions/cache@v3
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
-          path: |
-            ~/.cargo/bin/
-            ~/.cargo/registry/index/
-            ~/.cargo/registry/cache/
-            ~/.cargo/git/db/
-            target/
-          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-
-      - uses: actions/setup-node@v3
-
-      - name: Install dependencies and build
-        env:
-          TAURI_KEY_PASSWORD: ${{ secrets.TAURI_KEY_PASSWORD }}
-          TAURI_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY }}
-        run: |
-          npm i
-          npm run tauri build
-
-      - uses: ncipollo/release-action@v1
+          node-version: 22
+          cache: npm
+      - uses: pnpm/action-setup@v4
         with:
-          artifacts: .\src-tauri\target\release\bundle\msi\Launcherg_${{ steps.variables.outputs.version }}_x64_ja-JP.msi.zip
-          token: ${{ secrets.GITHUB_TOKEN }}
-          prerelease: true
-
-      - name: Update .tauri-updater.json
+          version: 8.15.9
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: arduino/setup-task@v2
+        with:
+          version: 3.48.0
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri -> target
+      - name: Install locked dependencies
         run: |
-          $env:TEMP_SIGNATURE = Get-Content -Path ".\src-tauri\target\release\bundle\msi\Launcherg_${{ steps.variables.outputs.version }}_x64_ja-JP.msi.zip.sig"
-          $data = @{
-            version   = "${{ steps.variables.outputs.version }}"
-            notes     = "See the assets to download this version and install."
-            pub_date  = (Get-Date -Format s) + "Z"
-            signature = $env:TEMP_SIGNATURE
-            url       = "https://github.com/ryoha000/launcherg/releases/download/${{ steps.variables.outputs.version }}/Launcherg_${{ steps.variables.outputs.version }}_x64_ja-JP.msi.zip"
+          npm ci
+          pnpm --dir browser-extension install --frozen-lockfile
+      - name: Validate release version
+        run: node scripts/check-release-version.mjs
+      - name: Build bundled integration resources
+        run: |
+          task build:extension
+          node scripts/stage-release-resources.mjs
+      - name: Check all application packages
+        run: task check
+      - name: Build Windows installer
+        run: task build:release
+      - name: Exercise the real native host with isolated data
+        run: node scripts/native-host-smoke.mjs
+      - name: Collect signed updater and extension
+        shell: pwsh
+        run: |
+          if ($env:GITHUB_EVENT_NAME -eq 'pull_request') {
+            node scripts/collect-release-artifacts.mjs
+          } else {
+            node scripts/collect-release-artifacts.mjs --require-signature
           }
-          $data | ConvertTo-Json | Set-Content -Path ".tauri-updater.json"
-      - name: format files
-        run: npx -y prettier .\src-tauri\tauri.conf.json .\.tauri-updater.json --write
-
-      - name: Archive production artifacts
-        uses: actions/upload-artifact@v3
+          $releaseVersion = (Get-Content src-tauri/tauri.conf.json -Raw | ConvertFrom-Json).version
+          Compress-Archive -Path browser-extension/dist/* -DestinationPath "release-artifacts/launcherg-extension-$releaseVersion.zip" -Force
+          Copy-Item docs/releases/0.4.0.md release-artifacts/RELEASE-NOTES.md
+      - uses: actions/upload-artifact@v4
         with:
-          name: changed-files
-          path: |
-            src-tauri/tauri.conf.json
-            .tauri-updater.json
+          name: launcherg-windows-${{ github.sha }}
+          path: release-artifacts/
+          if-no-files-found: error
+          retention-days: 14
 
-  push-changed-files:
+  draft-prerelease:
+    if: startsWith(github.ref, 'refs/tags/')
+    needs: build
     runs-on: ubuntu-latest
-    needs: release
+    permissions:
+      contents: write
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v2
+      - uses: actions/download-artifact@v4
         with:
-          ref: main
-
-      - name: Download artifacts
-        uses: actions/download-artifact@v3
-        with:
-          name: changed-files
-          path: changed-files
-
-      - name: Move files to correct locations
+          name: launcherg-windows-${{ github.sha }}
+          path: release-artifacts
+      - name: Create draft prerelease
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RELEASE_TAG: ${{ github.ref_name }}
         run: |
-          mv changed-files/src-tauri/tauri.conf.json src-tauri/tauri.conf.json
-          mv changed-files/.tauri-updater.json .tauri-updater.json
-
-      - name: Push updated files to main
-        run: |
-          git config --local user.email "action@github.com"
-          git config --local user.name "GitHub Action"
-          git add src-tauri/tauri.conf.json
-          git add .tauri-updater.json
-          git commit -m "Update for release ${{ steps.variables.outputs.version }}"
-          git push origin main
-        shell: bash
+          gh release create "$RELEASE_TAG" release-artifacts/* --verify-tag --draft --prerelease --title "Launcherg $RELEASE_TAG" --notes-file release-artifacts/RELEASE-NOTES.md

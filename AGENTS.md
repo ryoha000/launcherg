@@ -4,7 +4,7 @@
 
 ## 参照すべきルールファイルとタイミング
 - **プロジェクト全体のワークフローや `task` コマンドの選択が必要なとき**: 作業前に `.cursor/rules/00-project-workflow.mdc` を確認する。
-- **Cloudflare Workers / D1 / R2 / Wrangler まわり、または `server/` 配下の設計・実装・レビューをするとき**: 作業前にプロジェクトローカル skill [`$cloudflare-free-tier-guard`](F:\workspace\launcherg\.codex\skills\cloudflare-free-tier-guard\SKILL.md) を参照し、無料枠を前提にした設計制約と既存の `server/` 構成を確認する。
+- **Cloudflare Workers / D1 / R2 / Wrangler まわりの設計・実装・レビューをするとき**: 作業前にプロジェクトローカル skill [`$cloudflare-free-tier-guard`](F:\workspace\launcherg\.codex\skills\cloudflare-free-tier-guard\SKILL.md) を参照し、無料枠を前提にした設計制約を確認する。
 - **Tauri や Native Messaging Host の Rust コードを編集するとき**: `src-tauri/` 配下を触る前に `.cursor/rules/10-rust-workflow.mdc` を読む。
 - **ブラウザ拡張（background / content-scripts / shared）の TypeScript を変更するとき**: `browser-extension/` を編集する前に `.cursor/rules/20-extension-workflow.mdc` を確認する。
 - **Tauri フロントエンド（Svelte/TypeScript）に手を入れるとき**: `src/` を編集する前に `.cursor/rules/30-tauri-frontend-workflow.mdc` を参照する。

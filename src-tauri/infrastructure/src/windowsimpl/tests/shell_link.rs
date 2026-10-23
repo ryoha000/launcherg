@@ -4,15 +4,7 @@ use crate::windowsimpl::shell_link::ShellLinkImpl;
 use domain::windows::shell_link::{CreateShortcutRequest, ShellLink};
 
 fn resolve_hello_world_exe() -> PathBuf {
-    // canonicalize() は \\?\ プレフィックスを付ける可能性があるため避ける
-    let manifest_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-    let p = manifest_dir.join("..").join("bin").join("hello_world.exe");
-    assert!(
-        p.exists(),
-        "hello_world.exe が見つかりません: {}",
-        p.display()
-    );
-    p
+    crate::test_support::icon_source_exe()
 }
 
 fn normalize_lower(p: &Path) -> String {
@@ -35,7 +27,8 @@ fn ショートカットの作成と実行ができる() {
     );
 
     // バイナリと同じディレクトリに配置
-    let bin_dir = exe.parent().expect("親ディレクトリが取得できません");
+    let fixture_dir = tempfile::tempdir().unwrap();
+    let bin_dir = fixture_dir.path();
     let link_path = bin_dir.join("hello_world_test.lnk");
 
     // 事前掃除
@@ -50,7 +43,7 @@ fn ショートカットの作成と実行ができる() {
             target_path: exe_str.to_string(),
             dest_lnk_path: link_path.display().to_string(),
             working_dir: None,
-            arguments: None,
+            arguments: Some("/c exit 0".to_string()),
             icon_path: None,
         }])
         .expect("lnk 作成に失敗しました");
@@ -101,7 +94,8 @@ fn アイコンとワーキングディレクトリを設定して作成でき�
         exe.display()
     );
 
-    let bin_dir = exe.parent().expect("親ディレクトリが取得できません");
+    let fixture_dir = tempfile::tempdir().unwrap();
+    let bin_dir = fixture_dir.path();
     let link_path = bin_dir.join("hello_world_icon_wd_test.lnk");
     let icon_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
         .join("..")
@@ -125,7 +119,7 @@ fn アイコンとワーキングディレクトリを設定して作成でき�
             target_path: exe_str.to_string(),
             dest_lnk_path: link_path.display().to_string(),
             working_dir: Some(bin_dir.display().to_string()),
-            arguments: None,
+            arguments: Some("/c exit 0".to_string()),
             icon_path: Some(icon_path.display().to_string()),
         }])
         .expect("lnk 作成に失敗しました");

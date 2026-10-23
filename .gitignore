@@ -37,3 +37,9 @@ native-messaging-manifest-installed.json
 .serena/cache/**
 
 target/**
+/src-tauri/resources/integrations/
+/release-artifacts/
+
+# Local data from the retired server
+/server/.dev.vars
+/server/.wrangler/

@@ -31,9 +31,7 @@
 
 <div class='max-w-full space-y-4'>
   <div class='text-(h1 text-primary) font-bold'>{workDetail.title}</div>
-  {#await seiyaUrlPromise then seiyaUrl}
-    <Actions {workDetail} id={workDetail.id} {seiyaUrl} autoPlay={autoPlay} />
-  {/await}
+  <Actions {workDetail} id={workDetail.id} autoPlay={autoPlay} />
   <div class='flex items-center'>
     <LinkButton href={workInformation?.officialHomePage ?? ''} text='Official' withIcon />
     {#if workInformation?.erogamescapeId}

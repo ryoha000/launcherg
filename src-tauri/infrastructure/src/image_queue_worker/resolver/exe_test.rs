@@ -18,26 +18,8 @@ fn exe_存在しない場合は_skip() {
 
 #[test]
 fn exe_sidecar成功時_pngの一時パスが返る_クリーンアップ() {
-    // Arrange: 配置先は current_exe と同ディレクトリ
-    let sidecar_dst = {
-        let exe_dir = std::env::current_exe()
-            .ok()
-            .and_then(|p| p.parent().map(|p| p.to_path_buf()))
-            .expect("resolve current exe dir");
-        let dst = exe_dir.join("extract-icon.exe");
-        const BYTES: &[u8] =
-            include_bytes!("../../../../bin/extract-icon-x86_64-pc-windows-msvc.exe");
-        fs::write(&dst, BYTES).expect("write sidecar");
-        dst
-    };
-
-    // 実行対象のexe（リポジトリのアセット）
-    let manifest_dir = std::env::var("CARGO_MANIFEST_DIR").unwrap();
-    let exe = std::path::Path::new(&manifest_dir)
-        .join("src")
-        .join("image_queue_worker")
-        .join("assets")
-        .join("dohnadohna.exe");
+    crate::test_support::ensure_extract_icon_sidecar();
+    let exe = crate::test_support::icon_source_exe();
 
     let resolver = DirsSavePathResolver::default();
 
@@ -52,5 +34,4 @@ fn exe_sidecar成功時_pngの一時パスが返る_クリーンアップ() {
         }
         _ => panic!("expected Use(local)"),
     }
-    let _ = fs::remove_file(&sidecar_dst);
 }

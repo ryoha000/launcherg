@@ -168,6 +168,12 @@ pub struct DirsSavePathResolver;
 
 impl SavePathResolver for DirsSavePathResolver {
     fn root_dir(&self) -> String {
+        if let Some(path) = std::env::var_os("LAUNCHERG_DATA_DIR").map(PathBuf::from) {
+            if path.is_absolute() {
+                std::fs::create_dir_all(&path).ok();
+                return path.to_string_lossy().into_owned();
+            }
+        }
         let base = dirs::config_dir().unwrap_or(std::env::current_dir().unwrap());
         let path = base.join("ryoha.moe").join("launcherg");
         std::fs::create_dir_all(&path).ok();

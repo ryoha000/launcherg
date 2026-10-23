@@ -1,5 +1,4 @@
 use std::collections::HashMap;
-use std::fs;
 use std::path::Path;
 
 use tempfile::TempDir;
@@ -486,31 +485,35 @@ async fn resolve_local_src_pathに実際のファイルを渡してアイコン�
     // Arrange
     use crate::windowsimpl::windows::Windows as RealWindows;
 
-    // extract-icon.exe のセットアップ
-    let extract_icon_exe = {
-        let exe_dir = std::env::current_exe()
-            .ok()
-            .and_then(|p| p.parent().map(|p| p.to_path_buf()))
-            .ok_or_else(|| anyhow::anyhow!("failed to resolve current exe directory"))
-            .unwrap();
-        let dst = exe_dir.join("extract-icon.exe");
-        const BYTES: &[u8] = include_bytes!("../../../bin/extract-icon-x86_64-pc-windows-msvc.exe");
-        if !dst.exists() {
-            let _ = fs::write(&dst, BYTES);
-        }
-        dst
-    };
-
-    let manifest_dir = std::env::var("CARGO_MANIFEST_DIR").unwrap();
-    let assets_dir = std::path::Path::new(&manifest_dir)
-        .join("src")
-        .join("image_queue_worker")
-        .join("assets");
-
-    let lnk = assets_dir.join("ISLAND.lnk");
-    let url = assets_dir.join("ATRI -My Dear Moments-.url");
-    let exe = assets_dir.join("dohnadohna.exe");
-
+    use domain::windows::shell_link::{CreateShortcutRequest, ShellLink};
+    crate::test_support::ensure_extract_icon_sidecar();
+    let fixture = tempfile::tempdir().unwrap();
+    let exe = crate::test_support::icon_source_exe();
+    let icon = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("../icons/icon.ico")
+        .canonicalize()
+        .unwrap();
+    let lnk = fixture.path().join("game.lnk");
+    let url = fixture.path().join("game.url");
+    let windows = RealWindows::new();
+    windows
+        .shell_link()
+        .create_bulk(vec![CreateShortcutRequest {
+            target_path: exe.to_string_lossy().into(),
+            dest_lnk_path: lnk.to_string_lossy().into(),
+            working_dir: None,
+            arguments: None,
+            icon_path: Some(icon.to_string_lossy().into()),
+        }])
+        .unwrap();
+    std::fs::write(
+        &url,
+        format!(
+            "[InternetShortcut]\nURL=https://example.test/\nIconFile={}\nIconIndex=0\n",
+            icon.display()
+        ),
+    )
+    .unwrap();
     #[derive(Clone)]
     struct Case {
         name: &'static str,
@@ -557,9 +560,6 @@ async fn resolve_local_src_pathに実際のファイルを渡してアイコン�
             }
         }
     }
-
-    // cleanup
-    let _ = std::fs::remove_file(&extract_icon_exe);
 }
 
 #[tokio::test]
@@ -800,12 +800,10 @@ async fn drain_until_empty_イベントハンドラ_pubsub通知が発火する(
             *n += 1;
             std::pin::Pin::from(Box::new(async move { Ok(ret) }))
         });
-        iq.expect_count()
-            .times(1)
-            .returning(|unfinished| {
-                assert!(unfinished);
-                std::pin::Pin::from(Box::new(async { Ok(1) }))
-            });
+        iq.expect_count().times(1).returning(|unfinished| {
+            assert!(unfinished);
+            std::pin::Pin::from(Box::new(async { Ok(1) }))
+        });
         iq.expect_mark_finished()
             .times(1)
             .returning(|_| std::pin::Pin::from(Box::new(async { Ok(()) })));

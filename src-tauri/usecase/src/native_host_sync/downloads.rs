@@ -4,7 +4,9 @@ use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
 use domain::{
-    game_matcher::config::{INSTALL_EXCLUDE_DIR_NAMES, INSTALL_HELPER_NAMES, INSTALL_PRIORITY_NAMES},
+    game_matcher::config::{
+        INSTALL_EXCLUDE_DIR_NAMES, INSTALL_HELPER_NAMES, INSTALL_PRIORITY_NAMES,
+    },
     repository::{
         manager::RepositoryManager,
         work_download_path::WorkDownloadPathRepository,
@@ -146,10 +148,35 @@ where
         self.resolver.downloaded_games_dir()
     }
 
+    /// Retrying an acknowledged request never installs it twice. Original archives are retained.
+    pub async fn handle_completed(
+        &self,
+        request_id: &str,
+        items: &[String],
+        work_id: StrId<domain::works::Work>,
+    ) -> anyhow::Result<PathBuf> {
+        let mut job = super::download_job::DownloadJob::open(
+            Path::new(&self.resolver.root_dir()),
+            request_id,
+            &work_id.value,
+            items,
+        )?;
+        if let Some(path) = job.completed_path() {
+            return Ok(path);
+        }
+        let result = if items.len() == 1 {
+            self.handle_single(&items[0], work_id).await
+        } else {
+            self.handle_split(items, work_id).await
+        };
+        job.record(&result)?;
+        result
+    }
+
     /// 単一ファイル（例: `.zip`）またはディレクトリを取り込み、
     /// 必要に応じて展開または移動して保存先を記録する。
     ///
-    /// - `.zip` の場合: 同名フォルダを作成して展開（Windows では PowerShell の Expand-Archive を使用）
+    /// - `.zip` の場合: UTF-8 / Windows日本語のファイル名を保持して展開
     /// - ディレクトリの場合: ルート直下に移動
     /// - それ以外のファイルはエラー
     pub async fn handle_single(
@@ -169,19 +196,10 @@ where
             .make_unique_work_subdir(&dst_root, work_id.clone())
             .await?;
         if lower.ends_with(".zip") {
-            std::fs::create_dir_all(&dst_dir).ok();
-            std::process::Command::new("powershell")
-                .args([
-                    "-Command",
-                    &format!(
-                        "Expand-Archive -Force -Path \"{}\" -DestinationPath \"{}\"",
-                        src.display(),
-                        dst_dir.display()
-                    ),
-                ])
-                .status()?;
+            std::fs::create_dir_all(&dst_dir)?;
+            extract_game_zip(src, &dst_dir)?;
         } else if src.is_dir() {
-            std::fs::create_dir_all(&dst_root).ok();
+            std::fs::create_dir_all(&dst_root)?;
             std::fs::rename(src, &dst_dir)?;
         } else {
             anyhow::bail!("unsupported file: {}", name);
@@ -201,17 +219,29 @@ where
         work_id: StrId<domain::works::Work>,
     ) -> anyhow::Result<PathBuf> {
         let dst_root = PathBuf::from(self.downloaded_games_dir());
-        std::fs::create_dir_all(&dst_root).ok();
+        std::fs::create_dir_all(&dst_root)?;
         // 保存先は `${work_id}_yyyymmddhhmmss`（存在時は `_2` 以降）
         let dst_dir = self
             .make_unique_work_subdir(&dst_root, work_id.clone())
             .await?;
-        std::fs::create_dir_all(&dst_dir).ok();
+        std::fs::create_dir_all(&dst_dir)?;
         if let Some(exe) = items.iter().find(|p| p.to_lowercase().ends_with(".exe")) {
-            std::process::Command::new(exe)
-                .args([&format!("-d{}", dst_dir.display()), "-s"]) // -d に空白不可
-                .current_dir(Path::new(exe).parent().unwrap_or(Path::new(".")))
-                .status()?;
+            let mut command = std::process::Command::new(exe);
+            command
+                .args([&format!("-d{}", dst_dir.display()), "-s"])
+                .current_dir(Path::new(exe).parent().unwrap_or(Path::new(".")));
+            #[cfg(windows)]
+            {
+                use std::os::windows::process::CommandExt;
+                command.creation_flags(0x08000000);
+            }
+            let output = command.output()?;
+            anyhow::ensure!(
+                output.status.success(),
+                "アーカイブの展開に失敗しました ({}): {}",
+                output.status,
+                String::from_utf8_lossy(&output.stderr)
+            );
             self.save_download_path(work_id.clone(), &dst_dir.to_string_lossy())
                 .await?;
             self.register_installed_work(work_id, &dst_dir).await?;
@@ -261,7 +291,7 @@ where
                     install_dir.display(),
                     e
                 );
-                return Ok(());
+                return Err(e.into());
             }
         };
 
@@ -297,10 +327,14 @@ where
                 "no executable candidates found in {}",
                 install_dir.display()
             );
-            return Ok(());
+            anyhow::bail!(
+                "展開先に起動可能なゲームが見つかりません: {}",
+                install_dir.display()
+            );
         };
 
-        self.record_install_metadata(work_id.clone(), &task.src).await;
+        self.record_install_metadata(work_id.clone(), &task.src)
+            .await?;
 
         // 実行: リンク作成を委譲
         self.linker.ensure_links(vec![task]).await?;
@@ -340,12 +374,8 @@ where
             .and_then(|v| v.to_str())
             .unwrap_or_default()
             .to_lowercase();
-        let file_name_is_priority = INSTALL_PRIORITY_NAMES
-            .iter()
-            .any(|name| file_name == *name);
-        let file_name_is_helper = INSTALL_HELPER_NAMES
-            .iter()
-            .any(|name| file_name == *name);
+        let file_name_is_priority = INSTALL_PRIORITY_NAMES.iter().any(|name| file_name == *name);
+        let file_name_is_helper = INSTALL_HELPER_NAMES.iter().any(|name| file_name == *name);
 
         // 主exeは「インストール先ディレクトリ名」またはその直下の親フォルダ名と
         // 名前が近いことが多い。helper や補助ツールは名前がずれやすいので、
@@ -364,11 +394,7 @@ where
             0
         };
 
-        let helper_penalty = if file_name_is_helper {
-            3
-        } else {
-            0
-        };
+        let helper_penalty = if file_name_is_helper { 3 } else { 0 };
 
         InstallCandidateRank {
             kind_score,
@@ -384,52 +410,70 @@ where
             .filter_map(|ancestor| ancestor.file_name())
             .filter_map(|name| name.to_str())
             .map(|name| name.to_lowercase())
-            .any(|name| INSTALL_EXCLUDE_DIR_NAMES.iter().any(|exclude| name == *exclude))
+            .any(|name| {
+                INSTALL_EXCLUDE_DIR_NAMES
+                    .iter()
+                    .any(|exclude| name == *exclude)
+            })
     }
 
-    async fn record_install_metadata(&self, work_id: StrId<domain::works::Work>, original_path: &Path) {
-        if let Ok(meta) = std::fs::metadata(original_path) {
-            let created = meta.created().ok();
-            let modified = meta.modified().ok();
-            if let Some(best_st) = match (created, modified) {
-                (Some(c), Some(m)) => Some(if m > c { m } else { c }),
-                (Some(c), None) => Some(c),
-                (None, Some(m)) => Some(m),
-                _ => None,
-            } {
-                let best_dt_local = chrono::DateTime::<chrono::Utc>::from(best_st)
-                    .with_timezone(&chrono::Local);
-                let original_path_string = original_path.to_string_lossy().to_string();
-                let work_id_value = work_id.value.clone();
-                if let Err(e) = self
-                    .manager
-                    .run(|repos| {
-                        let original_path = original_path_string.clone();
-                        let work_id = work_id.clone();
-                        let best_dt_local = best_dt_local;
-                        Box::pin(async move {
-                            repos
-                                .work()
-                                .update_install_by_work_id(work_id, best_dt_local, original_path)
-                                .await
-                        })
-                    })
-                    .await
-                {
-                    log::warn!(
-                        "Failed to update install_at/original_path for work_id={}: {}",
-                        work_id_value,
-                        e
-                    );
-                }
+    async fn record_install_metadata(
+        &self,
+        work_id: StrId<domain::works::Work>,
+        original_path: &Path,
+    ) -> anyhow::Result<()> {
+        let meta = std::fs::metadata(original_path)?;
+        let timestamp = meta.modified().or_else(|_| meta.created())?;
+        let installed_at =
+            chrono::DateTime::<chrono::Utc>::from(timestamp).with_timezone(&chrono::Local);
+        let original_path = original_path.to_string_lossy().to_string();
+        self.manager
+            .run(|repos| {
+                let original_path = original_path.clone();
+                let work_id = work_id.clone();
+                Box::pin(async move {
+                    repos
+                        .work()
+                        .update_install_by_work_id(work_id, installed_at, original_path)
+                        .await
+                })
+            })
+            .await
+    }
+}
+
+fn extract_game_zip(source: &Path, destination: &Path) -> anyhow::Result<()> {
+    let mut archive = zip::ZipArchive::new(std::fs::File::open(source)?)?;
+    for index in 0..archive.len() {
+        let mut entry = archive.by_index(index)?;
+        // Legacy Japanese Windows archives often omit UTF-8 and use CP932.
+        let name = match std::str::from_utf8(entry.name_raw()) {
+            Ok(name) => name.to_owned(),
+            Err(_) => {
+                let (name, _, invalid) = encoding_rs::SHIFT_JIS.decode(entry.name_raw());
+                anyhow::ensure!(!invalid, "ZIP内のファイル名を読み取れません");
+                name.into_owned()
             }
+        };
+        let name = name.replace('\\', "/");
+        let relative = Path::new(&name);
+        anyhow::ensure!(
+            !name.contains([':', '\0'])
+                && relative.components().all(|part| matches!(part, std::path::Component::Normal(_) | std::path::Component::CurDir)),
+            "ZIP内に不正なパスがあります: {name}"
+        );
+        let target = destination.join(relative);
+        if name.ends_with('/') {
+            std::fs::create_dir_all(target)?;
         } else {
-            log::warn!(
-                "Failed to get metadata for path: {}",
-                original_path.display()
-            );
+            if let Some(parent) = target.parent() {
+                std::fs::create_dir_all(parent)?;
+            }
+            let mut file = std::fs::File::create(target)?;
+            std::io::copy(&mut entry, &mut file)?;
         }
     }
+    Ok(())
 }
 
 #[cfg(test)]
@@ -468,10 +512,12 @@ mod tests {
         let repos = TestRepositories::default();
         {
             let mut work_repo = repos.work.lock().await;
-            work_repo.expect_update_install_by_work_id().returning(|_, _, original_path| {
-                assert!(original_path.ends_with("game.exe"));
-                Box::pin(async { Ok::<_, anyhow::Error>(()) })
-            });
+            work_repo
+                .expect_update_install_by_work_id()
+                .returning(|_, _, original_path| {
+                    assert!(original_path.ends_with("game.exe"));
+                    Box::pin(async { Ok::<_, anyhow::Error>(()) })
+                });
         }
         {
             let mut work_download_path = repos.work_download_path.lock().await;
@@ -620,16 +666,16 @@ mod tests {
 
             if let Some(expected_file_name) = expected_file_name {
                 let mut work_repo = repos.work.lock().await;
-                work_repo
-                    .expect_update_install_by_work_id()
-                    .returning(move |_, _, original_path| {
+                work_repo.expect_update_install_by_work_id().returning(
+                    move |_, _, original_path| {
                         let actual = Path::new(&original_path)
                             .file_name()
                             .and_then(|v| v.to_str())
                             .unwrap_or_default();
                         assert_eq!(actual, expected_file_name, "case: {}", case_name);
                         Box::pin(async { Ok::<_, anyhow::Error>(()) })
-                    });
+                    },
+                );
             }
             let manager = Arc::new(TestRepositoryManager::new(repos));
 
@@ -646,16 +692,19 @@ mod tests {
 
             let mut linker = MockWorkLinker::new();
             if let Some(expected_file_name) = expected_file_name {
-                linker.expect_ensure_links().times(1).returning(move |tasks| {
-                    assert_eq!(tasks.len(), 1, "case: {}", case_name);
-                    let actual = tasks[0]
-                        .src
-                        .file_name()
-                        .and_then(|v| v.to_str())
-                        .unwrap_or_default();
-                    assert_eq!(actual, expected_file_name, "case: {}", case_name);
-                    Box::pin(async { Ok(()) })
-                });
+                linker
+                    .expect_ensure_links()
+                    .times(1)
+                    .returning(move |tasks| {
+                        assert_eq!(tasks.len(), 1, "case: {}", case_name);
+                        let actual = tasks[0]
+                            .src
+                            .file_name()
+                            .and_then(|v| v.to_str())
+                            .unwrap_or_default();
+                        assert_eq!(actual, expected_file_name, "case: {}", case_name);
+                        Box::pin(async { Ok(()) })
+                    });
             }
             let linker = Arc::new(linker);
 
@@ -663,9 +712,20 @@ mod tests {
             let install_dir = temp.path().join("installed");
             std::fs::create_dir_all(&install_dir).unwrap();
 
-            uc.register_installed_work(StrId::new("10".to_string()), &install_dir)
-                .await
-                .unwrap();
+            for (relative, _) in &case.candidates {
+                let path = install_dir.join(relative);
+                std::fs::create_dir_all(path.parent().unwrap()).unwrap();
+                std::fs::write(path, b"test").unwrap();
+            }
+            let result = uc
+                .register_installed_work(StrId::new("10".to_string()), &install_dir)
+                .await;
+            assert_eq!(
+                result.is_ok(),
+                expected_file_name.is_some(),
+                "case: {}",
+                case_name
+            );
         }
     }
 }

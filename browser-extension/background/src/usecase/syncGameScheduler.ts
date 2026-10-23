@@ -1,5 +1,4 @@
 import type { DlsiteGame as ExtDlsiteGame, DmmGame as ExtDmmGame, EgsInfo as ExtEgsInfo } from '@launcherg/shared'
-import type { NativeResponseTs } from '@launcherg/shared/typeshare/native-messaging'
 import type { HandlerContext } from '../shared/types'
 
 export type SyncGameRequest
@@ -27,8 +26,14 @@ export function syncGame(context: HandlerContext, request: SyncGameRequest): Pro
   })
 
   const sendNative = async (payload: { request_id: string, message: any }) => {
-    const res = await context.nativeMessenger.sendJson?.(payload)
-    return res as NativeResponseTs | null
+    const res = await context.nativeMessenger.sendJson(payload)
+    if (!res?.success)
+      throw new Error(res?.error || 'Launchergから同期結果を受信できませんでした')
+    if (res.response?.case !== 'SyncGamesResult')
+      throw new Error('Launchergから予期しない同期結果を受信しました')
+    if (res.response.value.error_count > 0)
+      throw new Error(res.response.value.errors.join('\n') || `${res.response.value.error_count}件の同期に失敗しました`)
+    return res
   }
 
   const notifyIfNew = async (count: number) => {

@@ -2,7 +2,6 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 mod interface;
-mod remote_launch;
 pub mod domain {
     pub use ::domain::*;
 }
@@ -79,7 +78,6 @@ fn main() {
             let db = block_on(Db::new(&app.handle()));
             let modules = Arc::new(block_on(Modules::new(db, &app.handle())));
             app.manage(modules.clone());
-            crate::remote_launch::spawn_remote_launch_client(modules.clone());
 
             if let Err(err) =
                 infrastructure::app_signal_router::interprocess::listener::spawn_listener(Arc::new(
@@ -125,11 +123,6 @@ fn main() {
             commands::images::save_screenshot_by_pid,
             commands::storage_paths::get_storage_settings,
             commands::storage_paths::set_storage_settings,
-            commands::remote_share::get_remote_share_settings,
-            commands::remote_share::set_remote_share_settings,
-            commands::remote_share::register_remote_share_device,
-            commands::remote_share::sync_remote_share_works,
-            commands::remote_share::get_remote_share_url,
             commands::utils::open_url,
             commands::matcher::get_game_candidates_by_name,
             commands::notification::show_os_notification,

@@ -55,9 +55,21 @@ export async function setupSendNativeMessageSpy(sw: Worker): Promise<void> {
       ;(globalThis as any).__nativeMessageCalls.push({ target, message })
       // Native host がいない環境でも callback を呼ぶ（ダミー成功レスポンス）
       if (callback) {
-        callback({ success: true, __mocked: true })
+        callback({ success: true, error: '', request_id: (message as any).request_id, response: { case: 'SyncGamesResult', value: { new_count: 0, success_count: 1, error_count: 0, errors: [], synced_games: [] } } })
       }
       // 元の実装は呼ばない（Tauriホスト不要）
+    }
+    chromeRuntime.connectNative = (target: string) => {
+      let onMessage: (response: unknown) => void = () => {}
+      return {
+        onMessage: { addListener: (callback: (response: unknown) => void) => { onMessage = callback } },
+        onDisconnect: { addListener: () => {} },
+        disconnect: () => {},
+        postMessage: (message: unknown) => {
+          ;(globalThis as any).__nativeMessageCalls.push({ target, message })
+          queueMicrotask(() => onMessage({ success: true, error: '', request_id: (message as any).request_id }))
+        },
+      }
     }
   })
 }
@@ -198,6 +210,8 @@ export async function emitDownloadComplete(
         id: downloadId,
         url: item.url,
         filename: item.filename,
+        state: 'complete',
+        startTime: new Date().toISOString(),
       },
     }
 

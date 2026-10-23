@@ -87,4 +87,32 @@ describe('dmm runtime', () => {
       error: 'DMM: APIレスポンス未取得。ページを再読み込みしてください',
     })
   })
+  it('同期中に届いた別ページのレスポンスも順番に同期する', async () => {
+    let release!: () => void
+    const first = new Promise<void>((resolve) => {
+      release = resolve
+    })
+    const sync = vi.fn().mockImplementationOnce(() => first).mockResolvedValue(undefined)
+    const runtime = createDmmRuntime({
+      initialUrl: 'https://dlsoft.dmm.co.jp/mylibrary/',
+      processPacks: async () => [],
+      syncDmmGames: sync,
+      showErrorNotification: vi.fn(),
+    })
+    const payload = (id: string): DmmLibraryHookMessageData => ({
+      source: 'launcherg',
+      type: 'launcherg:dmm-library-response',
+      pageUrl: 'https://dlsoft.dmm.co.jp/mylibrary/',
+      requestUrl: `https://example.test/?page=${id}`,
+      payload: { error: null, body: { library: [{ contentId: id, productId: id, libraryProductType: 'single', floor: 'Apcgame', title: id, packageImageUrl: '' }] } },
+    })
+    runtime.handleHookMessage(createHookEvent(payload('RJ1')))
+    await vi.waitFor(() => expect(sync).toHaveBeenCalledTimes(1))
+    runtime.handleHookMessage(createHookEvent(payload('RJ2')))
+    runtime.handleHookMessage(createHookEvent(payload('RJ3')))
+    release()
+    await runtime.syncLatest()
+    expect(sync).toHaveBeenCalledTimes(3)
+    expect(sync.mock.calls.map(call => call[0][0].storeId)).toEqual(['RJ1', 'RJ2', 'RJ3'])
+  })
 })

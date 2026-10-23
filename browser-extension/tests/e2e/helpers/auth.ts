@@ -8,7 +8,7 @@ const DLSITE_LOGIN_URL = 'https://login.dlsite.com/login'
 const DLSITE_LIBRARY_URL = 'https://play.dlsite.com/home/library'
 const STEP_TIMEOUT_MS = 1_000
 const STEP_INTERVAL_MS = 300
-const NAVIGATION_TIMEOUT_MS = 5_000
+const NAVIGATION_TIMEOUT_MS = 30_000
 
 async function waitBetweenSteps(page: Page): Promise<void> {
   await page.waitForTimeout(STEP_INTERVAL_MS)

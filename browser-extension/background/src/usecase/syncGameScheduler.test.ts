@@ -1,5 +1,5 @@
-import type { SyncCoordinator } from '../shared/types'
 import type { NativeResponseTs } from '@launcherg/shared/typeshare/native-messaging'
+import type { SyncCoordinator } from '../shared/types'
 import { describe, expect, it, vi } from 'vitest'
 import { buildTestContext } from '../../test/helpers/context'
 import { syncGame } from './syncGameScheduler'
@@ -42,7 +42,25 @@ async function waitForAssertion(assertion: () => void, attempts = 20): Promise<v
 }
 
 describe('ゲーム同期ユースケース（syncGameScheduler）', () => {
-  it('DMM 要求をバルク解決して Native へ送信する', async () => {
+  it('失敗・無応答・部分失敗を成功として返さない', async () => {
+    const results: (NativeResponseTs | null)[] = [
+      null,
+      { success: false, error: 'database failed', request_id: 'test' },
+      { success: true, error: '', request_id: 'test', response: { case: 'SyncGamesResult', value: {
+        success_count: 0,
+        new_count: 0,
+        error_count: 1,
+        errors: ['work failed'],
+        synced_games: [],
+      } } },
+    ]
+    for (const result of results) {
+      const context = buildTestContext({ nativeMessenger: { sendJson: async () => result } })
+      await expect(syncGame(context, { type: 'dlsite', games: [{ id: 'RJ1', category: 'game', title: 'test', imageUrl: '' }] })).rejects.toThrow()
+      await expect(syncGame(context, { type: 'dmm', games: [{ id: 'D1', category: 'digital', subcategory: 'pcgame', title: 'test', imageUrl: '' }] })).rejects.toThrow()
+    }
+  })
+  it('dMM 要求をバルク解決して Native へ送信する', async () => {
     const resolveForDmmBulk = vi.fn(async (arr: Array<{ storeId: string, category: string, subcategory: string }>) => arr.map((_v, i) => ({
       erogamescapeId: 100 + i,
       gamename: `DMM-${i}`,
@@ -81,7 +99,7 @@ describe('ゲーム同期ユースケース（syncGameScheduler）', () => {
     expect(sendJson).toHaveBeenCalledTimes(1)
   })
 
-  it('DLsite 要求を1件でもバルク解決して Native へ送信する', async () => {
+  it('dLsite 要求を1件でもバルク解決して Native へ送信する', async () => {
     const resolveForDlsiteBulk = vi.fn(async () => ([{
       erogamescapeId: 2,
       gamename: 'g2',

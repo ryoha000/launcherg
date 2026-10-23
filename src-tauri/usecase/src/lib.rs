@@ -1,6 +1,6 @@
 pub mod all_game_cache;
-pub mod app_settings;
 mod all_game_cache_test;
+pub mod app_settings;
 pub mod erogamescape;
 pub mod error;
 pub mod extension_installer;
@@ -16,14 +16,11 @@ mod native_host_sync_test;
 #[cfg(test)]
 mod native_messaging_mock;
 pub mod process;
-pub mod remote_share;
 #[cfg(test)]
 mod repositorymock;
 #[cfg(test)]
 mod windowsmock;
 pub mod work;
-#[cfg(test)]
-mod work_test;
 pub mod work_link_pending_exe;
 pub mod work_pipeline;
 #[cfg(test)]

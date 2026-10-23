@@ -8,6 +8,8 @@ pub mod native_messaging;
 pub mod pubsubimpl;
 pub mod save_path_resolver;
 pub mod sqliterepository;
+#[cfg(test)]
+mod test_support;
 pub mod thumbnail;
 pub mod windowsimpl;
 pub mod work_linker;

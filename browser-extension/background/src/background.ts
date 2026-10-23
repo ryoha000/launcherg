@@ -1,12 +1,11 @@
-import type { Browser, HandlerContext } from './shared/types'
-import { logger } from '@launcherg/shared'
+import type { Browser, HandlerContext, SyncCoordinator } from './shared/types'
+import { discardFailedDownloadIntent, logger, registerDownloadIntent } from '@launcherg/shared'
 import { createBrowser } from './adapter/browser'
 import { createEgsResolver } from './adapter/egs/resolver'
 import { createNativeMessenger } from './adapter/native/send'
 import { createMessageDispatcher } from './inbound/dispatcher'
-import { setupDownloadsHandler } from './usecase/downloads'
+import { setupDownloadsHandler, startIntentDownloads } from './usecase/downloads'
 import { performPeriodicSync } from './usecase/periodic'
-import type { SyncCoordinator } from './shared/types'
 
 const log = logger('background')
 
@@ -43,8 +42,30 @@ const context: HandlerContext = {
 }
 
 const handle = createMessageDispatcher(context)
+const retryDownloads = setupDownloadsHandler(context)
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if (message?.type === 'discard_failed_download') {
+    void discardFailedDownloadIntent(message.storeId).then(
+      () => sendResponse({ success: true }),
+      error => sendResponse({ success: false, error: String(error) }),
+    )
+    return true
+  }
+  if (message?.type === 'register_download_intent') {
+    void registerDownloadIntent(message.storeId, message.entry).then(
+      () => sendResponse({ success: true }),
+      error => sendResponse({ success: false, error: String(error) }),
+    )
+    return true
+  }
+  if (message?.type === 'retry_downloads') {
+    void retryDownloads(true).then(
+      () => sendResponse({ success: true }),
+      error => sendResponse({ success: false, error: String(error) }),
+    )
+    return true
+  }
   // Lightweight control message from content scripts
   if (message && typeof message === 'object' && (message as any).type === 'close_current_tab') {
     const tabId = sender?.tab?.id
@@ -66,27 +87,10 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       ? (message as any).payload.urls.filter((value: unknown): value is string => typeof value === 'string' && value.length > 0)
       : []
 
-    void (async () => {
-      const failedUrls: string[] = []
-      let startedCount = 0
-
-      for (const url of urls) {
-        try {
-          await chrome.downloads.download({ url, saveAs: false })
-          startedCount += 1
-        }
-        catch {
-          failedUrls.push(url)
-        }
-      }
-
-      sendResponse({
-        success: failedUrls.length === 0,
-        startedCount,
-        failedUrls,
-        error: failedUrls.length > 0 ? '一部のDMMダウンロード開始に失敗しました' : undefined,
-      })
-    })()
+    void startIntentDownloads(message.payload.storeId, urls).then(
+      startedCount => sendResponse({ success: true, startedCount, failedUrls: [] }),
+      error => sendResponse({ success: false, error: String(error) }),
+    )
 
     return true
   }
@@ -112,7 +116,6 @@ chrome.alarms.onAlarm.addListener((alarm) => {
 log.info('Service worker initialized')
 
 // downloads 完了検知のセットアップ
-setupDownloadsHandler(context)
 
 chrome.runtime.onInstalled.addListener((details) => {
   log.info('Extension installed:', details.reason)

@@ -7,7 +7,7 @@ function isObjectRecord(value: unknown): value is object {
   return typeof value === 'object' && value !== null
 }
 
-function createOnceSettled<T, E>(resolve: (value: T) => void, reject: (reason: E) => void) {
+function createOnceSettled<T, E>(resolve: (value: T) => void, reject: (reason: E) => void, cleanup: () => void) {
   let settled = false
   let timer: ReturnType<typeof setTimeout> | null = null
 
@@ -17,6 +17,7 @@ function createOnceSettled<T, E>(resolve: (value: T) => void, reject: (reason: E
     settled = true
     if (timer)
       clearTimeout(timer)
+    cleanup()
     fn(arg)
   }
 
@@ -35,8 +36,11 @@ export function createNativeMessenger(nativeHostName: string) {
 
   const sendJson = async <TRes = unknown>(message: NativeMessageTs): Promise<TRes | null> => {
     return new Promise((_resolve, _reject) => {
-      const { resolveOnce: resolve, rejectOnce: reject, startTimer } = createOnceSettled(_resolve, _reject)
-      startTimer(TIMEOUT_MS, () => new Error('Native messaging timeout'))
+      let port: chrome.runtime.Port | undefined
+      const { resolveOnce: resolve, rejectOnce: reject, startTimer } = createOnceSettled(_resolve, _reject, () => {
+        port?.disconnect()
+      })
+      startTimer(message.message.case === 'DownloadsCompleted' ? 20 * 60_000 : TIMEOUT_MS, () => new Error('Native messaging timeout'))
 
       if (!isObjectRecord(message))
         return reject(new Error('Encoded JSON message is not an object'))
@@ -45,6 +49,19 @@ export function createNativeMessenger(nativeHostName: string) {
       log.debug('Sending native message(JSON)', { type: message.message.case, requestId, message })
 
       const startTime = Date.now()
+      // A native port keeps the MV3 worker alive during large archive extraction.
+      if (message.message.case === 'DownloadsCompleted') {
+        try {
+          port = chrome.runtime.connectNative(nativeHostName)
+          port.onMessage.addListener(response => resolve(response as TRes))
+          port.onDisconnect.addListener(() => {
+            reject(new Error(chrome.runtime.lastError?.message || 'Native Messaging Hostとの接続が切れました'))
+          })
+          port.postMessage(message)
+        }
+        catch (error) { reject(error) }
+        return
+      }
       chrome.runtime.sendNativeMessage(
         nativeHostName,
         message,

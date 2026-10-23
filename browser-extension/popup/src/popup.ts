@@ -3,7 +3,7 @@
 // Extension Internal protobuf types
 import type { DebugNativeMessageRequest, ExtensionRequest, GetStatusRequest, StatusData } from '@launcherg/shared'
 
-import { logger } from '@launcherg/shared'
+import { logger, readAllDownloadIntents } from '@launcherg/shared'
 
 interface ExtensionConfig {
   auto_sync: boolean
@@ -40,6 +40,40 @@ export class PopupController {
     this.updateStatus()
     this.setupNavigation()
     this.setupDebugSection()
+    void this.updateDownloads()
+    chrome.storage.onChanged.addListener(() => {
+      void this.updateDownloads()
+    })
+  }
+
+  private async updateDownloads(): Promise<void> {
+    const status = document.getElementById('download-status')
+    if (!status)
+      return
+    try {
+      const entries = Object.entries(await readAllDownloadIntents())
+      status.replaceChildren()
+      if (!entries.length)
+        status.textContent = '未完了のダウンロードはありません'
+      for (const [storeId, entry] of entries) {
+        const row = document.createElement('div')
+        row.textContent = `${entry.game.storeId}: ${entry.completed}/${entry.expected} ${entry.lastError ?? '処理中'}`
+        if (entry.lastError) {
+          const button = document.createElement('button')
+          button.className = 'secondary-button'
+          button.textContent = '失敗した処理を解除'
+          button.addEventListener('click', async () => {
+            const response = await chrome.runtime.sendMessage({ type: 'discard_failed_download', storeId })
+            if (!response?.success)
+              this.addLog('error', response?.error || '解除できませんでした')
+            await this.updateDownloads()
+          })
+          row.append(button)
+        }
+        status.append(row)
+      }
+    }
+    catch { status.textContent = 'ダウンロード状況を取得できませんでした' }
   }
 
   private initializeElements(): void {
@@ -91,6 +125,18 @@ export class PopupController {
   }
 
   private setupEventListeners(): void {
+    document.getElementById('retry-downloads-btn')?.addEventListener('click', async () => {
+      const button = document.getElementById('retry-downloads-btn') as HTMLButtonElement
+      button.disabled = true
+      try {
+        const response = await chrome.runtime.sendMessage({ type: 'retry_downloads' })
+        if (!response?.success)
+          throw new Error(response?.error || '再試行を開始できませんでした')
+        await this.updateDownloads()
+      }
+      catch (error) { this.addLog('error', String(error)) }
+      finally { button.disabled = false }
+    })
     // 手動同期ボタン
     const syncBtn = document.getElementById(
       'manual-sync-btn',
@@ -768,7 +814,7 @@ export class PopupController {
 
   private openHelpPage(): void {
     chrome.tabs.create({
-      url: 'https://github.com/your-repo/launcherg-extension/wiki',
+      url: 'https://github.com/ryoha000/launcherg/blob/main/docs/releases/0.4.0.md',
     })
   }
 

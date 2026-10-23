@@ -30,8 +30,9 @@ zip = { workspace = true }
 winreg = { workspace = true }
 mockall = { workspace = true }
 regex = { workspace = true }
-reqwest = { workspace = true }
-url = { workspace = true }
+sha2 = "0.10"
+fs2 = "0.4"
+encoding_rs = "0.8"
 
 [dev-dependencies]
 mockall = { workspace = true }

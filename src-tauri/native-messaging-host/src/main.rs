@@ -4,7 +4,7 @@ use chrono::Utc;
 use serde_json;
 use std::fs;
 use std::io::ErrorKind;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use std::sync::Arc;
 use thiserror::Error;
 use tokio::io::{self as tokio_io, AsyncReadExt, AsyncWriteExt};
@@ -388,91 +388,30 @@ async fn handle_downloads_completed(
         }
     };
 
-    // items == 1
-    if request.items.len() == 1 {
-        let item = &request.items[0];
-        if let Err(e) = usecase.handle_single(&item.filename, work_id.clone()).await {
-            let msg = e.to_string();
-            if let Err(dispatch_err) =
-                dispatch_show_error_message(&ctx.app_signal_router, msg.clone()).await
-            {
-                log_app_signal_dispatch_failure(
-                    &ctx,
-                    format!("dispatch_show_error_message request_id={}", request_id),
-                    dispatch_err,
-                )
-                .await;
-            }
-            return err(request_id, msg);
-        }
-        cleanup_download_paths([item.filename.as_str()]);
-        if let Err(err) = dispatch_refetch_work(&ctx.app_signal_router, work_id.value.clone()).await
+    let paths = request
+        .items
+        .iter()
+        .map(|item| item.filename.clone())
+        .collect::<Vec<_>>();
+    if let Err(error) = usecase
+        .handle_completed(request_id, &paths, work_id.clone())
+        .await
+    {
+        let message = format!("{error:#}");
+        if let Err(error) =
+            dispatch_show_error_message(&ctx.app_signal_router, message.clone()).await
         {
-            log_app_signal_dispatch_failure(
-                &ctx,
-                format!("dispatch_refetch_work work_id={}", work_id.value),
-                err,
-            )
-            .await;
+            log_app_signal_dispatch_failure(ctx, "download error notification", error).await;
         }
-        return ok(
-            request_id,
-            NativeResponseCase::HealthCheckResult(HealthCheckResultTs {
-                message: "OK".into(),
-                version: env!("CARGO_PKG_VERSION").into(),
-            }),
-        );
+        return err(request_id, message);
     }
-
-    // items >= 2 (split)
-    if request.items.len() >= 2 {
-        let paths: Vec<String> = request.items.iter().map(|i| i.filename.clone()).collect();
-        if let Err(e) = usecase.handle_split(&paths, work_id.clone()).await {
-            let msg = e.to_string();
-            if let Err(dispatch_err) =
-                dispatch_show_error_message(&ctx.app_signal_router, msg.clone()).await
-            {
-                log_app_signal_dispatch_failure(
-                    &ctx,
-                    format!("dispatch_show_error_message request_id={}", request_id),
-                    dispatch_err,
-                )
-                .await;
-            }
-            return err(request_id, msg);
-        }
-        cleanup_download_paths(paths.iter().map(|p| p.as_str()));
-        if let Err(err) = dispatch_refetch_work(&ctx.app_signal_router, work_id.value.clone()).await
-        {
-            log_app_signal_dispatch_failure(
-                &ctx,
-                format!("dispatch_refetch_work work_id={}", work_id.value),
-                err,
-            )
-            .await;
-        }
-        return ok(
-            request_id,
-            NativeResponseCase::HealthCheckResult(HealthCheckResultTs {
-                message: "OK".into(),
-                version: env!("CARGO_PKG_VERSION").into(),
-            }),
-        );
+    if let Err(error) = dispatch_refetch_work(&ctx.app_signal_router, work_id.value).await {
+        log_app_signal_dispatch_failure(ctx, "download completion notification", error).await;
     }
-
-    if let Err(err) = dispatch_refetch_work(&ctx.app_signal_router, work_id.value.clone()).await {
-        log_app_signal_dispatch_failure(
-            &ctx,
-            format!("dispatch_refetch_work work_id={}", work_id.value),
-            err,
-        )
-        .await;
-    }
-
     ok(
         request_id,
         NativeResponseCase::HealthCheckResult(HealthCheckResultTs {
-            message: "NOOP".into(),
+            message: "OK".into(),
             version: env!("CARGO_PKG_VERSION").into(),
         }),
     )
@@ -567,44 +506,6 @@ async fn finalize_sync_and_notify(ctx: &AppCtx) -> anyhow::Result<()> {
         log_app_signal_dispatch_failure(ctx, "dispatch_refetch_works", err).await;
     }
     Ok(())
-}
-
-fn cleanup_download_paths<I>(paths: I)
-where
-    I: IntoIterator,
-    I::Item: AsRef<str>,
-{
-    for item in paths {
-        let path_str = item.as_ref();
-        let path = Path::new(path_str);
-        match fs::metadata(path) {
-            Ok(metadata) => {
-                let remove_result = if metadata.is_dir() {
-                    fs::remove_dir_all(path)
-                } else {
-                    fs::remove_file(path)
-                };
-                if let Err(e) = remove_result {
-                    if e.kind() != ErrorKind::NotFound {
-                        log::warn!(
-                            "failed to remove downloaded item: {} ({})",
-                            path.display(),
-                            e
-                        );
-                    }
-                }
-            }
-            Err(e) => {
-                if e.kind() != ErrorKind::NotFound {
-                    log::warn!(
-                        "failed to inspect downloaded item: {} ({})",
-                        path.display(),
-                        e
-                    );
-                }
-            }
-        }
-    }
 }
 
 async fn handle_sync_dmm_games(
@@ -860,10 +761,12 @@ fn to_dmm_params(request: &DmmSyncGamesRequestTs) -> (Vec<String>, Vec<DmmSyncGa
             gamename: g.title.clone(),
             image_url: g.image_url.clone(),
             egs: g.egs_info.as_ref().map(map_egs_ts),
-            parent_pack: g.parent_pack.as_ref().map(|parent| usecase::native_host_sync::DmmPackKey {
-                store_id: parent.store_id.clone(),
-                category: parent.category.clone(),
-                subcategory: parent.subcategory.clone(),
+            parent_pack: g.parent_pack.as_ref().map(|parent| {
+                usecase::native_host_sync::DmmPackKey {
+                    store_id: parent.store_id.clone(),
+                    category: parent.category.clone(),
+                    subcategory: parent.subcategory.clone(),
+                }
             }),
         })
         .collect();
@@ -1630,5 +1533,4 @@ mod tests {
             panic!("unexpected");
         }
     }
-
 }

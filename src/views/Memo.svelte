@@ -8,8 +8,6 @@
     commandUploadImage,
   } from '@/lib/command'
   import { showErrorToast } from '@/lib/toast'
-  import { memo } from '@/store/memo'
-  import { skyWay } from '@/store/skyway'
   import { startProcessMap } from '@/store/startProcessMap'
 
   const { route }: { route?: { result: { path: { params: { id?: string } } } } } = $props()
@@ -125,36 +123,9 @@
     const ele = document.querySelector('.EasyMDEContainer')
     ele?.addEventListener('paste', onPaste)
 
-    const syncTimer = setInterval(() => {
-      const current = easyMDE.value()
-      if ($memo.find(v => v.workId === id)?.value !== current) {
-        memo.update(memos =>
-          memos.reduce(
-            (acc, cur) => {
-              if (cur.workId !== id)
-                acc.push(cur)
-              return acc
-            },
-            [
-              { workId: id, value: current, lastModified: 'local' },
-            ] as typeof $memo,
-          ),
-        )
-        skyWay.syncMemo(id, current)
-      }
-    }, 1000)
-
-    const unsubscribe = memo.subscribe((memos) => {
-      const memo = memos.find(v => v.workId === id)
-      if (memo?.lastModified === 'remote' && easyMDE.value() !== memo.value) {
-        easyMDE.value(memo.value)
-      }
-    })
     return {
       destroy: () => {
         ele?.removeEventListener('paste', onPaste)
-        unsubscribe()
-        clearInterval(syncTimer)
       },
     }
   }

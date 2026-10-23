@@ -13,10 +13,9 @@ Favor architectures that keep Workers thin, avoid unnecessary paid products, and
 ## Quick Start
 
 1. Read [references/free-tier-checklist.md](./references/free-tier-checklist.md).
-2. If working in this repository's `server/` directory, read [references/launcherg-server-stack.md](./references/launcherg-server-stack.md).
-3. Identify which Cloudflare primitives are involved: Workers, D1, R2, KV, Assets, Queues, Durable Objects, Cron, or custom domains.
-4. State the expected hot path in one sentence: request source, Worker logic, storage access, response path.
-5. Prefer the cheapest primitive that satisfies the requirement, then explain why.
+2. Identify which Cloudflare primitives are involved: Workers, D1, R2, KV, Assets, Queues, Durable Objects, Cron, or custom domains.
+3. State the expected hot path in one sentence: request source, Worker logic, storage access, response path.
+4. Prefer the cheapest primitive that satisfies the requirement, then explain why.
 
 ## Workflow
 
@@ -68,4 +67,3 @@ When this skill is used, include a short cost note in the answer:
 ## References
 
 - [references/free-tier-checklist.md](./references/free-tier-checklist.md)
-- [references/launcherg-server-stack.md](./references/launcherg-server-stack.md)

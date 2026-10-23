@@ -65,26 +65,20 @@ export function findZipDownloadButton(root: Document | HTMLElement = document): 
 }
 
 async function saveDownloadIntent(storeId: string): Promise<void> {
-  try {
-    await setDownloadIntent(storeId, {
-      store: 'DLsite',
-      game: { storeId },
-      expected: 1,
-      completed: 0,
-      startedAt: Date.now(),
-    })
-  }
-  catch (e) {
-    log.debug('Failed to save download intent', e)
-  }
+  await setDownloadIntent(storeId, {
+    store: 'DLsite',
+    game: { storeId },
+    expected: 1,
+    completed: 0,
+    startedAt: Date.now(),
+  })
 }
 
 export async function clickZipDownloadOnDetail(storeId: string): Promise<void> {
   await waitForPageLoad(1000)
   const button = findZipDownloadButton(document)
   if (!button) {
-    showInPageNotification('DLsite: ZIPボタンが見つかりませんでした', 'error')
-    return
+    throw new Error('DLsite: ZIPボタンが見つかりませんでした')
   }
   try {
     button.scrollIntoView({ block: 'center' })
@@ -116,8 +110,9 @@ export async function initLaunchergDownloadOnceForUrl(url: string, mark: (url: s
 
   try {
     await clickZipDownloadOnDetail(storeId)
-  }
-  finally {
     closeCurrentTab()
+  }
+  catch (error) {
+    showInPageNotification(error instanceof Error ? error.message : String(error), 'error')
   }
 }

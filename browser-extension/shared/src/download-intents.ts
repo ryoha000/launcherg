@@ -22,8 +22,14 @@ export interface DlsiteIntentGame {
   category?: string
 }
 
-export type DownloadIntentEntry
-  = | {
+export type DownloadIntentEntry = {
+  attempts?: number
+  lastError?: string
+  nextRetryAt?: number
+  downloadIds?: number[]
+  pendingUrls?: string[]
+} & (
+  | {
     store: 'DMM'
     game: DmmIntentGame
     parentPack?: DmmIntentParentPack
@@ -41,56 +47,82 @@ export type DownloadIntentEntry
     items?: DownloadCompletedTs[]
   }
 
+)
+
 export type DownloadIntentMap = Record<string, DownloadIntentEntry>
 
-export async function readAllDownloadIntents(): Promise<DownloadIntentMap> {
-  try {
-    return await new Promise<DownloadIntentMap>((resolve) => {
-      chrome.storage.local.get([STORAGE_KEY], res => resolve((res?.[STORAGE_KEY] as DownloadIntentMap) ?? {}))
-    })
-  }
-  catch {
-    return {}
-  }
+// Mutations are serialized in the background worker, including registration from tabs.
+let mutationTail: Promise<unknown> = Promise.resolve()
+function mutate<T>(fn: (map: DownloadIntentMap) => Promise<T>): Promise<T> {
+  const current = mutationTail.catch(() => undefined).then(async () => fn(await readAllDownloadIntents()))
+  mutationTail = current
+  return current
 }
 
-export async function writeAllDownloadIntents(map: DownloadIntentMap): Promise<void> {
-  await chrome.storage.local.set({ [STORAGE_KEY]: map })
+export async function readAllDownloadIntents(): Promise<DownloadIntentMap> {
+  const result = await chrome.storage.local.get([STORAGE_KEY])
+  return (result[STORAGE_KEY] as DownloadIntentMap | undefined) ?? {}
 }
 
 export async function getDownloadIntent(storeId: string): Promise<DownloadIntentEntry | null> {
-  const map = await readAllDownloadIntents()
-  return map[storeId] ?? null
+  return (await readAllDownloadIntents())[storeId] ?? null
 }
 
 export async function setDownloadIntent(storeId: string, entry: DownloadIntentEntry): Promise<void> {
-  const map = await readAllDownloadIntents()
-  map[storeId] = entry
-  await writeAllDownloadIntents(map)
+  const response = await chrome.runtime.sendMessage({ type: 'register_download_intent', storeId, entry })
+  if (!response?.success)
+    throw new Error(response?.error || 'ダウンロード情報を保存できませんでした')
+}
+
+export async function registerDownloadIntent(storeId: string, entry: DownloadIntentEntry): Promise<void> {
+  if (!storeId || entry.game?.storeId !== storeId || !Number.isInteger(entry.expected) || entry.expected < 1
+    || !['DMM', 'DLsite'].includes(entry.store) || !Number.isFinite(entry.startedAt)) {
+    throw new Error('ダウンロード情報が正しくありません')
+  }
+  await mutate(async (map) => {
+    if (map[storeId])
+      throw new Error('この作品には未完了のダウンロードがあります。拡張機能から再試行してください')
+    map[storeId] = { ...entry, completed: 0, items: [], attempts: 0 }
+    await chrome.storage.local.set({ [STORAGE_KEY]: map })
+  })
+}
+
+export async function updateDownloadIntent(storeId: string, patch: Partial<DownloadIntentEntry>): Promise<void> {
+  await mutate(async (map) => {
+    if (map[storeId]) {
+      map[storeId] = { ...map[storeId], ...patch } as DownloadIntentEntry
+      await chrome.storage.local.set({ [STORAGE_KEY]: map })
+    }
+  })
 }
 
 export async function removeDownloadIntent(storeId: string): Promise<void> {
-  const map = await readAllDownloadIntents()
-  if (storeId in map)
+  await mutate(async (map) => {
     delete map[storeId]
-  await writeAllDownloadIntents(map)
+    await chrome.storage.local.set({ [STORAGE_KEY]: map })
+  })
 }
 
-export async function clearDownloadIntents(): Promise<void> {
-  await writeAllDownloadIntents({})
+export async function discardFailedDownloadIntent(storeId: string): Promise<void> {
+  await mutate(async (map) => {
+    if (!map[storeId]?.lastError)
+      throw new Error('失敗した処理だけ解除できます')
+    delete map[storeId]
+    await chrome.storage.local.set({ [STORAGE_KEY]: map })
+  })
 }
 
 export async function incrementCompletedAndPushItem(storeId: string, item: DownloadCompletedTs): Promise<DownloadIntentEntry | null> {
-  const current = await getDownloadIntent(storeId)
-  if (!current)
-    return null
-  const next: DownloadIntentEntry = {
-    ...current,
-    completed: (current.completed ?? 0) + 1,
-    items: [...(current.items ?? []), item],
-  }
-  await setDownloadIntent(storeId, next)
-  return next
+  return mutate(async (map) => {
+    const current = map[storeId]
+    if (!current)
+      return null
+    const items = [...(current.items ?? []).filter(existing => existing.id !== item.id), item]
+    const next: DownloadIntentEntry = { ...current, completed: items.length, items }
+    map[storeId] = next
+    await chrome.storage.local.set({ [STORAGE_KEY]: map })
+    return next
+  })
 }
 
 export function toDownloadIntentTs(entry: DownloadIntentEntry): DownloadIntentTs | undefined {
@@ -112,7 +144,7 @@ export function toDownloadIntentTs(entry: DownloadIntentEntry): DownloadIntentTs
       case: 'Dlsite',
       value: {
         game_store_id: String(entry.game.storeId ?? ''),
-        game_category: String((entry as any).game?.category ?? ''),
+        game_category: String(entry.game.category ?? ''),
       },
     }
   }

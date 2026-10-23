@@ -39,16 +39,11 @@ export interface DmmRuntime {
 export function createDmmRuntime(deps: DmmRuntimeDeps): DmmRuntime {
   const payloadCache = createUrlBoundPayloadCache<DmmLibraryHookMessageData>(deps.initialUrl)
   let lastSyncedKey: string | null = null
-  let isSyncing = false
+  let syncTail: Promise<DmmSyncResult | undefined> = Promise.resolve(undefined)
 
-  async function syncLatest(): Promise<DmmSyncResult> {
-    const latestPayload = payloadCache.get()
+  async function syncPayload(latestPayload: DmmLibraryHookMessageData | null): Promise<DmmSyncResult> {
     if (!latestPayload) {
       return { success: false, message: MISSING_PAYLOAD_MESSAGE, error: MISSING_PAYLOAD_MESSAGE }
-    }
-
-    if (isSyncing) {
-      return { success: false, message: 'DMM: 同期を実行中です', error: '同期を実行中です' }
     }
 
     const payloadKey = buildDmmPayloadKey(latestPayload)
@@ -57,7 +52,6 @@ export function createDmmRuntime(deps: DmmRuntimeDeps): DmmRuntime {
     }
 
     log.info('syncLatest start', { requestUrl: latestPayload.requestUrl })
-    isSyncing = true
     try {
       const extractedGames = extractDmmGamesFromApiResponse(latestPayload.payload)
       log.debug('extracted games', { count: extractedGames.length })
@@ -82,9 +76,14 @@ export function createDmmRuntime(deps: DmmRuntimeDeps): DmmRuntime {
       deps.showErrorNotification('DMM: ゲーム情報の同期に失敗しました')
       return { success: false, message: `DMM: ${errorMessage}`, error: errorMessage }
     }
-    finally {
-      isSyncing = false
-    }
+  }
+
+  function syncLatest(): Promise<DmmSyncResult> {
+    // Capture each response before queueing; later pages must not overwrite it.
+    const payload = payloadCache.get()
+    const current = syncTail.catch(() => undefined).then(() => syncPayload(payload))
+    syncTail = current
+    return current
   }
 
   function handleHookMessage(event: MessageEvent<unknown>): void {

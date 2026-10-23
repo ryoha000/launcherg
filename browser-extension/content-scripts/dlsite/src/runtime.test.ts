@@ -84,4 +84,32 @@ describe('dlsite runtime', () => {
       error: 'DLsite: APIレスポンス未取得。ページを再読み込みしてください',
     })
   })
+  it('同期中に届いた別ページのレスポンスも順番に同期する', async () => {
+    let release!: () => void
+    const first = new Promise<void>((resolve) => {
+      release = resolve
+    })
+    const sync = vi.fn().mockImplementationOnce(() => first).mockResolvedValue(undefined)
+    const runtime = createDlsiteRuntime({
+      initialUrl: 'https://play.dlsite.com/library',
+      processGames: games => games,
+      syncDlsiteGames: sync,
+      showErrorNotification: vi.fn(),
+    })
+    const payload = (id: string): DlsiteWorksHookMessageData => ({
+      source: 'launcherg',
+      type: 'launcherg:dlsite-works-response',
+      pageUrl: 'https://play.dlsite.com/library',
+      requestUrl: `https://example.test/?page=${id}`,
+      payload: { works: [{ workno: id, site_id: 'maniax', file_type: 'EXE', name: { ja_JP: id }, work_files: { main: 'https://example.test/image.jpg' } }] },
+    })
+    runtime.handleHookMessage(createHookEvent(payload('RJ1')))
+    await vi.waitFor(() => expect(sync).toHaveBeenCalledTimes(1))
+    runtime.handleHookMessage(createHookEvent(payload('RJ2')))
+    runtime.handleHookMessage(createHookEvent(payload('RJ3')))
+    release()
+    await runtime.syncLatest()
+    expect(sync).toHaveBeenCalledTimes(3)
+    expect(sync.mock.calls.map(call => call[0][0].storeId)).toEqual(['RJ1', 'RJ2', 'RJ3'])
+  })
 })

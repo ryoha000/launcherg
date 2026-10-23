@@ -10,7 +10,6 @@
   import DeleteElement from '@/components/Work/DeleteElement.svelte'
   import OtherInformation from '@/components/Work/OtherInformation.svelte'
   import PlayButton from '@/components/Work/PlayButton.svelte'
-  import QrCode from '@/components/Work/QRCode.svelte'
   import SettingPopover from '@/components/Work/SettingPopover.svelte'
   import {
     commandDeleteWork,
@@ -27,11 +26,10 @@
   interface Props {
     workDetail: WorkDetailsVm
     id: string
-    seiyaUrl: string
     autoPlay?: boolean
   }
 
-  const { workDetail, id, seiyaUrl, autoPlay = false }: Props = $props()
+  const { workDetail, id, autoPlay = false }: Props = $props()
 
   let isLike = $state(!!workDetail.likeAt)
 
@@ -83,7 +81,6 @@
 
   let isOpenDelete = $state(false)
   let isOpenOtherInformation = $state(false)
-  let isOpenQrCode = $state(false)
 </script>
 
 {#await lnksPromise then lnks}
@@ -95,10 +92,6 @@
       onclick={() => goto(`/memos/${id}?gamename=${workDetail.title}`)}
     />
     <div class='ml-auto flex items-center gap-2'>
-      <ButtonCancel
-        icon='i-material-symbols-qr-code'
-        onclick={() => (isOpenQrCode = true)}
-      />
       <ButtonCancel
         icon={isLike
           ? 'i-material-symbols-favorite-rounded'
@@ -130,5 +123,4 @@
   />
   <DeleteElement bind:isOpen={isOpenDelete} {workDetail} />
   <OtherInformation bind:isOpen={isOpenOtherInformation} {workDetail} />
-  <QrCode bind:isOpen={isOpenQrCode} {id} {seiyaUrl} />
 {/await}

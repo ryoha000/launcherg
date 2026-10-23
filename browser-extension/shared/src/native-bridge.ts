@@ -7,6 +7,8 @@ export async function sendExtensionRequestRaw<T extends ExtensionRequest>(reques
       if (chrome.runtime.lastError)
         return reject(new Error(chrome.runtime.lastError.message))
       try {
+        if (!response?.success)
+          throw new Error(response?.error || '拡張機能から正常な応答を受信できませんでした')
         resolve(response as ExtensionResponse)
       }
       catch (e) {
@@ -23,6 +25,8 @@ export async function sendExtensionRequest(request: ExtensionRequest): Promise<E
       const lastError = chrome.runtime?.lastError
       if (lastError)
         return reject(new Error(lastError.message))
+      if (!response?.success)
+        return reject(new Error(response?.error || '拡張機能から正常な応答を受信できませんでした'))
       resolve(response as ExtensionResponse)
     })
   })

@@ -13,15 +13,7 @@ tasks:
     description: 開発しているパッケージをすべてチェック
     deps:
       - check:browser-extension
-      - check:server
       - check:tauri
-      - check:native-messaging-host
-
-  check:server:
-    dir: server
-    description: Remote Share server をチェック
-    cmds:
-      - pwsh.exe -NoProfile -Command "npm run check"
 
   # check:browser-extension
   check:browser-extension:
@@ -36,7 +28,7 @@ tasks:
       - .env.test
     description: ブラウザ拡張機能のE2Eテストを実行
     cmds:
-      - pwsh.exe -NoProfile -Command "pnpm run test:playwright"
+      - pwsh.exe -NoProfile -Command "pnpm run test:playwright {{.CLI_ARGS}}"
   check:browser-extension:e2e:dlsite:
     dir: browser-extension
     dotenv:
@@ -107,10 +99,26 @@ tasks:
     dir: src-tauri/native-messaging-host
     description: Native Messaging Hostをチェック
     cmds:
-      - pwsh.exe -NoProfile -Command "cargo check --workspace"
-      - pwsh.exe -NoProfile -Command "cargo test --workspace"
+      - pwsh.exe -NoProfile -Command "cargo check -p native-messaging-host"
+      - pwsh.exe -NoProfile -Command "cargo test -p native-messaging-host"
 
   # build
+  prepare:release:
+    description: 配布用の拡張・Native Host・フロントエンドを生成
+    cmds:
+      - task: build:extension
+      - node scripts/stage-release-resources.mjs
+      - npm run build
+  build:release:
+    description: Windows MSI配布物を生成
+    cmds:
+      - node scripts/check-release-version.mjs
+      - node scripts/build-release.mjs
+      - node scripts/collect-release-artifacts.mjs
+  format:rust:
+    dir: src-tauri
+    cmds:
+      - cargo fmt --all
   build:extension:
     description: build extension
     deps:

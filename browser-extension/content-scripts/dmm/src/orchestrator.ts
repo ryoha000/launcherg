@@ -94,6 +94,7 @@ export async function processPacks(packGames: DmmApiExtractedGame[]): Promise<Dm
     }
     catch (error) {
       log.error('pack detail fetch failed', { storeId: sid, error })
+      throw error
     }
     // 連続アクセスを軽減
     await new Promise(r => setTimeout(r, 500))

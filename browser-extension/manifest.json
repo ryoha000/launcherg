@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Launcherg DL Store Sync",
-  "version": "1.0.0",
+  "version": "0.4.0",
   "description": "Automatically sync your purchased games from DMM and DLsite to Launcherg",
   "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAzSNyryKW6+57VgyUWZ8RcWJucGglE5pKxhVJI1nPPj8AVPxt5cwQJ3BLIJX97t6fM5Vb2lr/i7PrH+KGEUEVMKzvNZt4gRtJozO/ZEXP9U79IdUIAcV+7bihPso8KP1RqNje661+Xm5FAui+CL1TrqjKrfP5UFit3T5I/gI2rBFB/DDfZ0RZ++BSLyFqJMZHCB+Nh03w3r1At6H3l95PBofF57TCcbdJw1igxZ1xj/xrwc3G+CboO/1JPrCrHUj0PfwxlE2RU6RAMEqpzfAtvR3jBA9MymgjN/NpDNUKwIQhIqfY/7HmSBouj4Zwzmqd295KRQ7bHmI+H6uO5kMlvQIDAQAB",
   "permissions": [

@@ -30,6 +30,10 @@ pub struct TestDatabase {
 
 impl TestDatabase {
     pub async fn new() -> anyhow::Result<Self> {
+        Self::new_with_target(refinery::Target::Latest).await
+    }
+
+    async fn new_with_target(target: refinery::Target) -> anyhow::Result<Self> {
         let temp_file = NamedTempFile::new()?;
         let db_path = temp_file.path().to_str().unwrap();
 
@@ -45,6 +49,7 @@ impl TestDatabase {
 
         let mut conf = Config::new(ConfigDbType::Sqlite).set_db_path(db_path);
         embedded::migrations::runner()
+            .set_target(target)
             .set_abort_divergent(false)
             .run(&mut conf)?;
 

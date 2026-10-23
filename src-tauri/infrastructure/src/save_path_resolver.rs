@@ -23,10 +23,6 @@ impl From<StoragePathSettings> for AppStorageSettings {
         Self {
             image_storage_dir: value.image_storage_dir,
             downloaded_game_storage_dir: value.downloaded_game_storage_dir,
-            remote_share_device_secret: None,
-            remote_share_device_id: None,
-            remote_share_server_base_url: None,
-            remote_share_last_synced_at: None,
         }
     }
 }
@@ -44,10 +40,7 @@ impl StoragePathSettingsStore {
     }
 
     pub fn get(&self) -> StoragePathSettings {
-        self.inner
-            .read()
-            .map(|v| v.clone())
-            .unwrap_or_default()
+        self.inner.read().map(|v| v.clone()).unwrap_or_default()
     }
 
     pub fn set(&self, settings: StoragePathSettings) {
@@ -126,10 +119,14 @@ mod tests {
         }));
         let resolver = DbSavePathResolver::new(temp.path().to_string_lossy().to_string(), settings);
 
-        assert!(resolver.icon_png_path("1").starts_with(&image_root.to_string_lossy().to_string()));
-        assert!(resolver.thumbnail_png_path("1").starts_with(&image_root.to_string_lossy().to_string()));
-        assert!(
-            resolver.downloaded_games_dir().starts_with(&download_root.to_string_lossy().to_string())
-        );
+        assert!(resolver
+            .icon_png_path("1")
+            .starts_with(&image_root.to_string_lossy().to_string()));
+        assert!(resolver
+            .thumbnail_png_path("1")
+            .starts_with(&image_root.to_string_lossy().to_string()));
+        assert!(resolver
+            .downloaded_games_dir()
+            .starts_with(&download_root.to_string_lossy().to_string()));
     }
 }

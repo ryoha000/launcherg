@@ -14,8 +14,4 @@ export const queryKeys = {
   storagePaths: {
     all: () => ['storagePaths'] as const,
   },
-  remoteShare: {
-    settings: () => ['remoteShare', 'settings'] as const,
-    url: () => ['remoteShare', 'url'] as const,
-  },
 }

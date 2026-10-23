@@ -10,6 +10,7 @@ use std::sync::Arc;
 
 mod dlsite;
 mod dmm;
+mod download_job;
 pub mod downloads;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
