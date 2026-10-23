@@ -9,10 +9,13 @@ importers:
         version: 1.47.0
       '@bufbuild/protoc-gen-es':
         specifier: ^2.0.0
-        version: 2.0.0(@bufbuild/protobuf@2.0.0)
+        version: 2.0.0
       '@playwright/test':
         specifier: ^1.54.2
         version: 1.54.2
+      '@types/chrome':
+        specifier: ^0.0.268
+        version: 0.0.268
       '@types/node':
         specifier: ^20.11.5
         version: 20.11.5
@@ -40,9 +43,6 @@ importers:
 
   background:
     dependencies:
-      '@bufbuild/protobuf':
-        specifier: ^2.0.0
-        version: 2.0.0
       '@launcherg/shared':
         specifier: workspace:*
         version: link:../shared
@@ -65,9 +65,6 @@ importers:
 
   content-scripts/dlsite:
     dependencies:
-      '@bufbuild/protobuf':
-        specifier: ^2.0.0
-        version: 2.0.0
       '@launcherg/shared':
         specifier: workspace:*
         version: link:../../shared
@@ -105,9 +102,6 @@ importers:
 
   content-scripts/dmm:
     dependencies:
-      '@bufbuild/protobuf':
-        specifier: ^2.0.0
-        version: 2.0.0
       '@launcherg/shared':
         specifier: workspace:*
         version: link:../../shared
@@ -139,15 +133,6 @@ importers:
 
   popup:
     dependencies:
-      '@bufbuild/buf':
-        specifier: ^1.47.0
-        version: 1.47.0
-      '@bufbuild/protobuf':
-        specifier: ^2.0.0
-        version: 2.0.0
-      '@bufbuild/protoc-gen-es':
-        specifier: ^2.0.0
-        version: 2.0.0(@bufbuild/protobuf@2.0.0)
       '@launcherg/shared':
         specifier: workspace:*
         version: link:../shared
@@ -179,9 +164,6 @@ importers:
 
   shared:
     dependencies:
-      '@bufbuild/protobuf':
-        specifier: ^2.0.0
-        version: 2.0.0
       uuid:
         specifier: ^9.0.1
         version: 9.0.1
@@ -262,6 +244,7 @@ packages:
     cpu: [arm64]
     os: [darwin]
     requiresBuild: true
+    dev: true
     optional: true
 
   /@bufbuild/buf-darwin-x64@1.47.0:
@@ -270,6 +253,7 @@ packages:
     cpu: [x64]
     os: [darwin]
     requiresBuild: true
+    dev: true
     optional: true
 
   /@bufbuild/buf-linux-aarch64@1.47.0:
@@ -278,6 +262,7 @@ packages:
     cpu: [arm64]
     os: [linux]
     requiresBuild: true
+    dev: true
     optional: true
 
   /@bufbuild/buf-linux-armv7@1.47.0:
@@ -286,6 +271,7 @@ packages:
     cpu: [arm]
     os: [linux]
     requiresBuild: true
+    dev: true
     optional: true
 
   /@bufbuild/buf-linux-x64@1.47.0:
@@ -294,6 +280,7 @@ packages:
     cpu: [x64]
     os: [linux]
     requiresBuild: true
+    dev: true
     optional: true
 
   /@bufbuild/buf-win32-arm64@1.47.0:
@@ -302,6 +289,7 @@ packages:
     cpu: [arm64]
     os: [win32]
     requiresBuild: true
+    dev: true
     optional: true
 
   /@bufbuild/buf-win32-x64@1.47.0:
@@ -310,6 +298,7 @@ packages:
     cpu: [x64]
     os: [win32]
     requiresBuild: true
+    dev: true
     optional: true
 
   /@bufbuild/buf@1.47.0:
@@ -325,11 +314,13 @@ packages:
       '@bufbuild/buf-linux-x64': 1.47.0
       '@bufbuild/buf-win32-arm64': 1.47.0
       '@bufbuild/buf-win32-x64': 1.47.0
+    dev: true
 
   /@bufbuild/protobuf@2.0.0:
     resolution: {integrity: sha512-sw2JhwJyvyL0zlhG61aDzOVryEfJg2PDZFSV7i7IdC7nAE41WuXCru3QWLGiP87At0BMzKOoKO/FqEGoKygGZQ==}
+    dev: true
 
-  /@bufbuild/protoc-gen-es@2.0.0(@bufbuild/protobuf@2.0.0):
+  /@bufbuild/protoc-gen-es@2.0.0:
     resolution: {integrity: sha512-xXDrDFjSD97jGu9RMA8O4Myj66DdCLOFeYG7Z0mX1aCE9hayymfor+BKgKCQouUfty6CYv8709FPYpEtDurLFQ==}
     engines: {node: '>=14'}
     hasBin: true
@@ -339,10 +330,10 @@ packages:
       '@bufbuild/protobuf':
         optional: true
     dependencies:
-      '@bufbuild/protobuf': 2.0.0
       '@bufbuild/protoplugin': 2.0.0
     transitivePeerDependencies:
       - supports-color
+    dev: true
 
   /@bufbuild/protoplugin@2.0.0:
     resolution: {integrity: sha512-y77IarGNbJfr5YZHQ+biO0O9B8rXicKLLOFRJu9mKr9LYE5/CLIKqonIBfkc/lggCK2YOtinjZJEYb39HymIog==}
@@ -352,6 +343,7 @@ packages:
       typescript: 5.4.5
     transitivePeerDependencies:
       - supports-color
+    dev: true
 
   /@csstools/color-helpers@5.0.2:
     resolution: {integrity: sha512-JqWH1vsgdGcw2RR6VliXXdA0/59LttzlU8UlRT/iUUsEeWfYq8I+K0yhihEUTTHLRm1EXvpsCx3083EU15ecsA==}
@@ -940,6 +932,7 @@ packages:
       typescript: 5.4.5
     transitivePeerDependencies:
       - supports-color
+    dev: true
 
   /@vitest/coverage-v8@3.2.4(vitest@3.2.4):
     resolution: {integrity: sha512-EyF9SXU6kS5Ku/U82E259WSnvg6c8KTjppUncuNdm5QHpe17mwREHnjDzozC8x9MZ0xfBUFSaLkRv4TMA75ALQ==}
@@ -1163,6 +1156,7 @@ packages:
         optional: true
     dependencies:
       ms: 2.1.3
+    dev: true
 
   /decimal.js@10.6.0:
     resolution: {integrity: sha512-YpgQiITW3JXGntzdUmyUR1V812Hn8T1YVXhCu+wO3OpS4eU9l4YdD3qjyiKdV6mvV29zapkMeD390UVEf2lkUg==}
@@ -1519,6 +1513,7 @@ packages:
 
   /ms@2.1.3:
     resolution: {integrity: sha512-6FlzubTLZG3J2a/NVCAleEhjzq5oxgHyaCU9yYXvcLsvoVaHJq/s5xXI6/XXP6tz7R9xAOtHnSO/tXtF3WRTlA==}
+    dev: true
 
   /nanoid@3.3.11:
     resolution: {integrity: sha512-N8SpfPUnUp1bK+PMYW8qSWdl9U+wwNWI4QKxOYDy9JAro3WMX7p2OeVRF9v+347pnakNevPmiHhNmZ2HbFA76w==}
@@ -1849,6 +1844,7 @@ packages:
     resolution: {integrity: sha512-vcI4UpRgg81oIRUFwR0WSIHKt11nJ7SAVlYNIu+QpqeyXP+gpQJy/Z4+F0aGxSE4MqwjyXvW/TzgkLAx2AGHwQ==}
     engines: {node: '>=14.17'}
     hasBin: true
+    dev: true
 
   /undici-types@5.26.5:
     resolution: {integrity: sha512-JlCMO+ehdEIKqlFxk6IfVoAUVmgz7cU7zD/h9XZ0qzeosSHmUJVOzSQvvYSYWXkFXC+IfLKSIffhv0sVZup6pA==}
