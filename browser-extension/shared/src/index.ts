@@ -1,6 +1,7 @@
 // Shared utilities index file
 
 export * from './download-intents'
+export * from './integration-diagnostics'
 export * from './logger'
 export * from './models'
 export * from './native-bridge'

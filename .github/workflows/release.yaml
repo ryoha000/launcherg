@@ -52,6 +52,10 @@ jobs:
           node scripts/stage-release-resources.mjs
       - name: Check all application packages
         run: task check
+      - name: Check automatic sync through the real browser and host
+        run: |
+          pnpm --dir browser-extension exec playwright install chromium
+          task check:browser-extension:auto-sync
       - name: Build Windows installer
         run: task build:release
       - name: Exercise the real native host with isolated data

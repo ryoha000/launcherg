@@ -73,9 +73,17 @@ impl AppSignalEndpoint {
 
     #[cfg(windows)]
     fn namespaced_name() -> Result<Name<'static>> {
-        Ok(Self::PIPE_NAME
-            .to_ns_name::<GenericNamespaced>()?
-            .into_owned())
+        // Isolated data directories must not send test notifications to the user's app.
+        let name = match std::env::var_os("LAUNCHERG_DATA_DIR").map(PathBuf::from) {
+            Some(path) if path.is_absolute() => {
+                use std::hash::{Hash, Hasher};
+                let mut hasher = std::collections::hash_map::DefaultHasher::new();
+                path.to_string_lossy().to_lowercase().hash(&mut hasher);
+                format!("{}_{:016x}", Self::PIPE_NAME, hasher.finish())
+            }
+            _ => Self::PIPE_NAME.to_string(),
+        };
+        Ok(name.to_ns_name::<GenericNamespaced>()?.into_owned())
     }
 
     #[cfg(not(windows))]

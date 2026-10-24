@@ -1,5 +1,6 @@
 import type { EgsInfo } from '@launcherg/shared'
 import type { NativeMessageTs, NativeResponseTs } from '@launcherg/shared/typeshare/native-messaging'
+import type { IntegrationDiagnostics } from '../usecase/integrationDiagnostics'
 
 export interface NativeMessenger {
   sendJson: (message: NativeMessageTs) => Promise<NativeResponseTs | null>
@@ -56,6 +57,7 @@ export interface HandlerContext {
   idGenerator: IdGenerator
   browser: Browser
   syncCoordinator: SyncCoordinator
+  diagnostics?: IntegrationDiagnostics
 }
 
 export {}

@@ -4,6 +4,11 @@ vi.mock('./usecase/periodic', () => ({
   performPeriodicSync: vi.fn(),
 }))
 
+vi.mock('./usecase/integrationDiagnostics', () => ({
+  DIAGNOSTICS_RETRY_ALARM: 'integration_diagnostics_retry',
+  createIntegrationDiagnostics: () => ({ record: vi.fn(async () => {}), flush: vi.fn(async () => {}) }),
+}))
+
 vi.mock('./adapter/native/send', () => ({
   createNativeMessenger: () => ({ send: vi.fn(async () => null) }),
 }))
@@ -22,6 +27,7 @@ describe('バックグラウンドの配線', () => {
     const addInstalled = chrome.runtime.onInstalled.addListener
     const addUpdated = chrome.tabs.onUpdated.addListener
 
+    chrome.runtime.getManifest = vi.fn(() => ({ manifest_version: 3 as const, name: 'test', version: '0.4.0' }))
     // import registers listeners
     await import('./background')
     expect(addAlarmListener).toHaveBeenCalled()

@@ -25,6 +25,26 @@
   "content_scripts": [
     {
       "matches": [
+        "https://play.dlsite.com/*"
+      ],
+      "js": [
+        "content-scripts/dlsite-network-hook.js"
+      ],
+      "run_at": "document_start",
+      "world": "MAIN"
+    },
+    {
+      "matches": [
+        "https://dlsoft.dmm.co.jp/*"
+      ],
+      "js": [
+        "content-scripts/dmm-network-hook.js"
+      ],
+      "run_at": "document_start",
+      "world": "MAIN"
+    },
+    {
+      "matches": [
         "https://dlsoft.dmm.co.jp/*"
       ],
       "js": [

@@ -1,40 +1,32 @@
-import type { ExtensionResponse, GetStatusRequest, StatusData } from '@launcherg/shared'
-import type { NativeMessageTs } from '@launcherg/shared/typeshare/native-messaging'
+import type { ExtensionResponse, GetStatusRequest } from '@launcherg/shared'
 import type { HandlerContext } from '../shared/types'
 
-export async function handleGetStatus(
-  context: HandlerContext,
-  requestId: string,
-  _getStatusRequest: GetStatusRequest,
-): Promise<ExtensionResponse> {
-  const nativeMessage: NativeMessageTs = {
+export async function handleGetStatus(context: HandlerContext, requestId: string, _request: GetStatusRequest): Promise<ExtensionResponse> {
+  const response = await context.nativeMessenger.sendJson({
     request_id: context.idGenerator.generate(),
-    message: { case: 'GetStatus', value: {} },
-  }
-  const nativeResponse: any = await context.nativeMessenger.sendJson?.(nativeMessage)
+    message: { case: 'HealthCheck', value: {} },
+  })
+  if (!response?.success || response.response?.case !== 'HealthCheckResult')
+    throw new Error(response?.error || 'Native Hostの接続確認に失敗しました')
 
-  let statusData: StatusData | undefined
-  if (nativeResponse && nativeResponse.response?.case === 'StatusResult') {
-    const syncStatus = nativeResponse.response.value
-    statusData = {
-      lastSync: syncStatus.last_sync
-        ? new Date(Number(syncStatus.last_sync.seconds) * 1000).toISOString()
-        : '',
-      totalSynced: Number(syncStatus.total_synced),
-      connectedExtensions: Array.from({ length: syncStatus.connected_extensions || 0 }).map((_, i) => `ext-${i + 1}`),
-      isRunning: syncStatus.is_running,
-      connectionStatus: String(syncStatus.connection_status),
-      errorMessage: syncStatus.error_message,
-    }
-  }
-
+  const stored = await context.browser.storage.get(['sync_summary'])
+  const summary = stored.sync_summary
   return {
     requestId,
     success: true,
     error: '',
     response: {
       case: 'statusResult',
-      value: { status: statusData },
+      value: {
+        status: {
+          lastSync: typeof summary?.lastSync === 'string' ? summary.lastSync : '',
+          totalSynced: typeof summary?.totalSynced === 'number' ? summary.totalSynced : 0,
+          connectedExtensions: [context.extensionId],
+          isRunning: true,
+          connectionStatus: 'connected',
+          errorMessage: '',
+        },
+      },
     },
   }
 }

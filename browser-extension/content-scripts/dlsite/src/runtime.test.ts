@@ -26,11 +26,13 @@ describe('dlsite runtime', () => {
 
   it('hook で受けた payload を一度だけ同期する', async () => {
     const syncDlsiteGames = vi.fn(async () => {})
+    const progress = vi.fn()
     const runtime = createDlsiteRuntime({
       initialUrl: 'https://play.dlsite.com/library',
       processGames: games => games,
       syncDlsiteGames,
       showErrorNotification: vi.fn(),
+      onProgress: progress,
     })
 
     runtime.handleHookMessage(createHookEvent({
@@ -53,6 +55,7 @@ describe('dlsite runtime', () => {
 
     await vi.waitFor(() => {
       expect(syncDlsiteGames).toHaveBeenCalledTimes(1)
+      expect(progress).toHaveBeenCalledWith({ stage: 'sync_finished', count: 1 }, 'auto')
     })
 
     await expect(runtime.syncLatest()).resolves.toEqual({

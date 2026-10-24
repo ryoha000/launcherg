@@ -97,13 +97,24 @@ export interface HealthCheckResultTs {
 	version: string;
 }
 
+export interface IntegrationDiagnosticEventTs {
+	timestamp: string;
+	store: string;
+	stage: string;
+	trigger: string;
+	page_kind: string;
+	count?: number;
+	detail: string;
+}
+
 export type NativeMessageCase = 
 	| { case: "SyncDmmGames", value: DmmSyncGamesRequestTs }
 	| { case: "SyncDlsiteGames", value: DlsiteSyncGamesRequestTs }
 	| { case: "DownloadsCompleted", value: DownloadsCompletedRequestTs }
 	| { case: "GetStatus", value: GetStatusRequestTs }
 	| { case: "SetConfig", value: ExtensionConfigTs }
-	| { case: "HealthCheck", value: HealthCheckRequestTs };
+	| { case: "HealthCheck", value: HealthCheckRequestTs }
+	| { case: "RecordDiagnostics", value: RecordDiagnosticsRequestTs };
 
 export interface NativeMessageTs {
 	request_id: string;
@@ -114,13 +125,22 @@ export type NativeResponseCase =
 	| { case: "SyncGamesResult", value: SyncBatchResultTs }
 	| { case: "StatusResult", value: SyncStatusTs }
 	| { case: "ConfigResult", value: ConfigUpdateResultTs }
-	| { case: "HealthCheckResult", value: HealthCheckResultTs };
+	| { case: "HealthCheckResult", value: HealthCheckResultTs }
+	| { case: "RecordDiagnosticsResult", value: RecordDiagnosticsResultTs };
 
 export interface NativeResponseTs {
 	success: boolean;
 	error: string;
 	request_id: string;
 	response?: NativeResponseCase;
+}
+
+export interface RecordDiagnosticsRequestTs {
+	events: IntegrationDiagnosticEventTs[];
+}
+
+export interface RecordDiagnosticsResultTs {
+	recorded: number;
 }
 
 export interface SyncBatchResultTs {

@@ -1,13 +1,10 @@
 import {
   addNotificationStyles,
-  injectPageScript,
+  diagnosticPageKind,
   logger,
+  reportIntegrationDiagnostic,
   showInPageNotification,
 } from '@launcherg/shared'
-import {
-  DMM_LIBRARY_SCRIPT_ID,
-  DMM_LIBRARY_SCRIPT_PATH,
-} from './api'
 import { initLaunchergDownloadOnceForUrl } from './download'
 import { processPacks, syncDmmGames } from './orchestrator'
 import { createDmmRuntime } from './runtime'
@@ -33,11 +30,19 @@ function ensureContentScriptMarker(): void {
   window.addEventListener('DOMContentLoaded', setContentScriptMarker, { once: true })
 }
 
+let receivedPayload = false
+let hookReady = false
+
 const runtime = createDmmRuntime({
   initialUrl: window.location.href,
   processPacks,
   syncDmmGames,
   showErrorNotification: message => showInPageNotification(message, 'error'),
+  onProgress: (progress, trigger) => {
+    if (progress.stage === 'payload_received')
+      receivedPayload = true
+    reportIntegrationDiagnostic('dmm', progress, trigger)
+  },
 })
 
 function setupPageChangeObserver(): void {
@@ -68,7 +73,27 @@ function main(): void {
   ensureContentScriptMarker()
   addNotificationStyles()
   window.addEventListener('message', runtime.handleHookMessage)
-  injectPageScript(chrome.runtime.getURL(DMM_LIBRARY_SCRIPT_PATH), DMM_LIBRARY_SCRIPT_ID)
+  reportIntegrationDiagnostic('dmm', { stage: 'content_started' })
+  window.addEventListener('message', (event: MessageEvent<unknown>) => {
+    if (event.source !== window || typeof event.data !== 'object' || event.data === null)
+      return
+    const data = event.data as { source?: string, type?: string, stage?: string, detail?: string }
+    if (data.source !== 'launcherg' || data.type !== 'launcherg:dmm-hook-status')
+      return
+    if (data.stage === 'hook_ready')
+      hookReady = true
+    if (['hook_ready', 'api_requested', 'api_response', 'api_invalid', 'api_failed'].includes(data.stage || ''))
+      reportIntegrationDiagnostic('dmm', { stage: data.stage!, detail: typeof data.detail === 'string' ? data.detail : '' })
+  })
+  window.postMessage({ source: 'launcherg', type: 'launcherg:dmm-content-ready' }, window.location.origin)
+  setTimeout(() => {
+    if (!hookReady)
+      reportIntegrationDiagnostic('dmm', { stage: 'hook_missing', detail: 'ページの通信監視を初期化できませんでした' })
+  }, 3000)
+  setTimeout(() => {
+    if (!receivedPayload && diagnosticPageKind(window.location.href) === 'library')
+      reportIntegrationDiagnostic('dmm', { stage: 'payload_waiting', detail: '購入一覧のAPIレスポンスをまだ受信していません' })
+  }, 15000)
   setupPageChangeObserver()
   setTimeout(() => {
     void initLaunchergDownloadOnceForUrl(window.location.href, mark, isMarked)
@@ -79,7 +104,7 @@ main()
 
 chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   if (message?.type === 'manual_sync_request' || message?.type === 'periodic_sync_check') {
-    void runtime.syncLatest()
+    void runtime.syncLatest(message.type === 'periodic_sync_check' ? 'periodic' : 'manual')
       .then(result => sendResponse(result))
       .catch((err: unknown) => {
         const errorMessage = err instanceof Error ? err.message : String(err)

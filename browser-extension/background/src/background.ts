@@ -5,6 +5,7 @@ import { createEgsResolver } from './adapter/egs/resolver'
 import { createNativeMessenger } from './adapter/native/send'
 import { createMessageDispatcher } from './inbound/dispatcher'
 import { setupDownloadsHandler, startIntentDownloads } from './usecase/downloads'
+import { createIntegrationDiagnostics, DIAGNOSTICS_RETRY_ALARM } from './usecase/integrationDiagnostics'
 import { performPeriodicSync } from './usecase/periodic'
 
 const log = logger('background')
@@ -42,9 +43,20 @@ const context: HandlerContext = {
 }
 
 const handle = createMessageDispatcher(context)
+const diagnostics = createIntegrationDiagnostics(context)
+context.diagnostics = diagnostics
+void diagnostics.flush()
+void diagnostics.record({ timestamp: new Date().toISOString(), store: 'extension', stage: 'background_started', trigger: 'background', page_kind: 'background', detail: chrome.runtime.getManifest().version })
 const retryDownloads = setupDownloadsHandler(context)
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if (message?.type === 'integration_diagnostic' && message.event && sender.id === chrome.runtime.id) {
+    void diagnostics.record(message.event).then(
+      () => sendResponse({ success: true }),
+      error => sendResponse({ success: false, error: String(error) }),
+    )
+    return true
+  }
   if (message?.type === 'discard_failed_download') {
     void discardFailedDownloadIntent(message.storeId).then(
       () => sendResponse({ success: true }),
@@ -82,7 +94,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     return false
   }
 
-  if (message && typeof message === 'object' && (message as any).type === 'start_dmm_downloads') {
+  if (message && typeof message === 'object' && ['start_dmm_downloads', 'start_dlsite_downloads'].includes(message.type)) {
     const urls = Array.isArray((message as any).payload?.urls)
       ? (message as any).payload.urls.filter((value: unknown): value is string => typeof value === 'string' && value.length > 0)
       : []
@@ -108,6 +120,8 @@ chrome.alarms.create('periodic_sync', {
 })
 
 chrome.alarms.onAlarm.addListener((alarm) => {
+  if (alarm.name === DIAGNOSTICS_RETRY_ALARM)
+    void diagnostics.flush()
   if (alarm.name === 'periodic_sync') {
     void performPeriodicSync(browser)
   }

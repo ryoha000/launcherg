@@ -5,7 +5,7 @@ const DMM_LOGIN_URL = 'https://accounts.dmm.co.jp/service/login/password/'
 const DMM_MYLIBRARY_URL = 'https://dlsoft.dmm.co.jp/mylibrary/'
 const DMM_AGE_CHECK_URL = 'https://www.dmm.co.jp/age_check/'
 const DLSITE_LOGIN_URL = 'https://login.dlsite.com/login'
-const DLSITE_LIBRARY_URL = 'https://play.dlsite.com/home/library'
+const DLSITE_LIBRARY_URL = 'https://play.dlsite.com/'
 const STEP_TIMEOUT_MS = 1_000
 const STEP_INTERVAL_MS = 300
 const NAVIGATION_TIMEOUT_MS = 30_000
@@ -182,22 +182,8 @@ export async function loginToDlsite(page: Page): Promise<void> {
 export async function navigateToDlsiteLibrary(page: Page): Promise<void> {
   await page.goto(DLSITE_LIBRARY_URL, { waitUntil: 'domcontentloaded', timeout: NAVIGATION_TIMEOUT_MS })
   await waitBetweenSteps(page)
-  await page.waitForURL(url => url.hostname === 'play.dlsite.com' && url.pathname.includes('/library'), {
+  await page.waitForURL(url => url.hostname === 'play.dlsite.com' && (url.pathname === '/' || url.pathname.includes('/library')), {
     timeout: NAVIGATION_TIMEOUT_MS,
   })
   await waitBetweenSteps(page)
-}
-
-/**
- * DLsite ライブラリの同期ボタンを押して、購入済み一覧の再取得を開始する。
- */
-export async function triggerDlsiteLibrarySync(page: Page): Promise<void> {
-  await clickFirstAvailable(page, [
-    'button:has-text("ライブラリを同期")',
-    'button:has-text("Synchronize Library")',
-    '[role="button"]:has-text("ライブラリを同期")',
-    '[role="button"]:has-text("Synchronize Library")',
-    'a:has-text("ライブラリを同期")',
-    'a:has-text("Synchronize Library")',
-  ])
 }

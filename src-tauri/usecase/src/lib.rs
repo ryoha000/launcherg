@@ -10,6 +10,9 @@ pub mod file;
 pub mod game_identifier;
 pub mod host_log;
 pub mod image_queue;
+pub mod integration_diagnostics;
+#[cfg(test)]
+mod integration_diagnostics_test;
 pub mod native_host_sync;
 #[cfg(test)]
 mod native_host_sync_test;

@@ -1,6 +1,8 @@
 #[cfg(test)]
 mod tests {
-    use super::super::{send_signal, InterprocessAppSignalRouter};
+    #[cfg(not(windows))]
+    use super::super::InterprocessAppSignalRouter;
+    use super::super::{dispatch_to, send_signal};
     use crate::app_signal_router::test_support::{test_lock, TestEndpoint};
     use anyhow::{Error, Result};
     use chrono::Utc;
@@ -105,9 +107,9 @@ mod tests {
         #[cfg(not(windows))]
         let _env = TempDirEnvGuard::new()?;
 
-        let router = InterprocessAppSignalRouter::new();
-        let err = router
-            .dispatch(sample_signal())
+        // A running user app must never become the endpoint of this failure test.
+        let endpoint = TestEndpoint::new()?;
+        let err = dispatch_to(endpoint.clone_name(), sample_signal())
             .await
             .expect_err("expected connection failure");
         assert!(err

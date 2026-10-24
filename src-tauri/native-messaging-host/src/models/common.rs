@@ -17,6 +17,7 @@ pub enum NativeMessageCase {
     GetStatus(GetStatusRequestTs),
     SetConfig(super::status::ExtensionConfigTs),
     HealthCheck(HealthCheckRequestTs),
+    RecordDiagnostics(super::diagnostics::RecordDiagnosticsRequestTs),
 }
 
 #[typeshare]
@@ -44,6 +45,7 @@ pub enum NativeResponseCase {
     StatusResult(super::status::SyncStatusTs),
     ConfigResult(super::status::ConfigUpdateResultTs),
     HealthCheckResult(HealthCheckResultTs),
+    RecordDiagnosticsResult(super::diagnostics::RecordDiagnosticsResultTs),
 }
 
 #[typeshare]

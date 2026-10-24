@@ -16,6 +16,10 @@ const __dirname = dirname(__filename)
 describe('dlsite api parser', () => {
   it('dLsite works API URL を判定できる', () => {
     expect(isDlsiteWorksApiUrl('https://play.dlsite.com/api/v3/content/works')).toBe(true)
+    expect(isDlsiteWorksApiUrl('https://play.dlsite.com/api/v4/content/works?offset=0')).toBe(true)
+    expect(isDlsiteWorksApiUrl('/api/v4/content/works')).toBe(true)
+    expect(isDlsiteWorksApiUrl('https://example.test/api/v4/content/works')).toBe(false)
+    expect(isDlsiteWorksApiUrl('https://play.dlsite.com/api/v4/content/works/other')).toBe(false)
     expect(isDlsiteWorksApiUrl('https://play.dlsite.com/library')).toBe(false)
   })
 
@@ -107,5 +111,16 @@ describe('dlsite api parser', () => {
 
   it('必要項目が欠けた作品は無視する', () => {
     expect(convertDlsiteWorkItem({ workno: 'RJ1' })).toBeNull()
+  })
+
+  it('v4のPurchaseキャッシュの画像を使い、画像欠落でも作品を登録する', () => {
+    const work = { workno: 'RJ10000001', site_id: 'maniax', file_type: 'EXE', name: { ja_JP: 'Cached game' } }
+    expect(convertDlsiteWorkItem({ ...work, images: { main: 'https://example.test/main.jpg' } })).toEqual({
+      storeId: work.workno,
+      category: work.site_id,
+      title: 'Cached game',
+      imageUrl: 'https://example.test/main.jpg',
+    })
+    expect(convertDlsiteWorkItem(work)?.imageUrl).toBe('')
   })
 })

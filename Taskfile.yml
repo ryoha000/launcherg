@@ -3,6 +3,14 @@
 version: '3'
 
 tasks:
+  diagnose:browser:
+    description: ブラウザ連携の登録・自動同期ログ・DB件数を読み取り専用で確認
+    cmds:
+      - python scripts/diagnose-browser-integration.py {{.CLI_ARGS}}
+  check:browser-extension:auto-sync:
+    description: ローカル模擬サイトのページ表示だけで実Host・隔離DBまで自動同期を検証
+    cmds:
+      - node scripts/automatic-sync-smoke.mjs
   init:
     cmds:
       - pwsh.exe -NoProfile -Command "go install github.com/go-task/task/v3/cmd/task@latest"

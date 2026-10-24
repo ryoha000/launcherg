@@ -228,6 +228,41 @@ async fn handle_message(ctx: &AppCtx) -> HostResult<bool> {
         }
     };
 
+    // Diagnostics must not notify the app or run normal sync side effects.
+    if let NativeMessageCase::RecordDiagnostics(request) = &message.message {
+        let events = request
+            .events
+            .iter()
+            .map(
+                |event| usecase::integration_diagnostics::IntegrationDiagnosticEvent {
+                    timestamp: event.timestamp.clone(),
+                    store: event.store.clone(),
+                    stage: event.stage.clone(),
+                    trigger: event.trigger.clone(),
+                    page_kind: event.page_kind.clone(),
+                    count: event.count,
+                    detail: event.detail.clone(),
+                },
+            )
+            .collect::<Vec<_>>();
+        let response = match usecase::integration_diagnostics::record_diagnostics(
+            std::path::Path::new(&ctx.resolver.root_dir()),
+            &events,
+        ) {
+            Ok(()) => ok(
+                &message.request_id,
+                NativeResponseCase::RecordDiagnosticsResult(
+                    models::diagnostics::RecordDiagnosticsResultTs {
+                        recorded: events.len() as u32,
+                    },
+                ),
+            ),
+            Err(error) => err(&message.request_id, anyhow_chain_to_string(&error)),
+        };
+        send_response_json(&response).await?;
+        return Ok(true);
+    }
+
     if let Err(err) = notify_app_signal(&ctx, &message.message).await {
         log_app_signal_dispatch_failure(&ctx, "notify_app_signal", err).await;
     }
@@ -278,6 +313,7 @@ async fn handle_message(ctx: &AppCtx) -> HostResult<bool> {
         NativeMessageCase::HealthCheck(_) => {
             handle_health_check(&HealthCheckRequestTs {}, &message.request_id)
         }
+        NativeMessageCase::RecordDiagnostics(_) => unreachable!("handled before sync dispatch"),
     };
 
     send_response_json(&response).await?;

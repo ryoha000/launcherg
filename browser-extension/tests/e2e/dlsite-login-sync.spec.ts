@@ -73,7 +73,6 @@ test.describe('DLsite content-script 注入・NativeMessage 送信確認', () =>
 
     await navigateToDlsiteLibrary(authenticatedDlsitePage)
     await waitForDlsiteInjection(authenticatedDlsitePage)
-    // await triggerDlsiteLibrarySync(authenticatedDlsitePage)
     const message = await waitForDlsiteSyncMessage(dlsiteServiceWorker, EXPECTED_STORE_ID)
 
     expect(extractSyncedStoreIds(message)).toContain(EXPECTED_STORE_ID)

@@ -10,7 +10,7 @@ describe('メッセージディスパッチャ', () => {
 
   beforeEach(() => {
     context = buildTestContext({
-      nativeMessenger: { sendJson: vi.fn(async () => ({ success: true, error: '', request_id: 'rid-1', response: { case: 'StatusResult', value: { total_synced: 0, connected_extensions: 1, is_running: true, connection_status: 'connected', error_message: '' } } } satisfies NativeResponseTs)) },
+      nativeMessenger: { sendJson: vi.fn(async () => ({ success: true, error: '', request_id: 'rid-1', response: { case: 'HealthCheckResult', value: { message: 'ok', version: '0.4.0' } } } satisfies NativeResponseTs)) },
       egsResolver: {
         resolveForDmm: vi.fn(async () => null),
         resolveForDlsite: vi.fn(async () => null),

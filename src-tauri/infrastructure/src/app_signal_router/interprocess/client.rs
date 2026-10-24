@@ -10,12 +10,18 @@ pub struct InterprocessAppSignalRouter;
 impl AppSignalRouter for InterprocessAppSignalRouter {
     async fn dispatch(&self, signal: AppSignal) -> anyhow::Result<()> {
         let name = AppSignalEndpoint::connect_name()?;
-        let mut stream = Stream::connect(name)
-            .await
-            .with_context(|| "failed to connect to app signal endpoint")?;
-
-        send_signal(&mut stream, signal).await
+        dispatch_to(name, signal).await
     }
+}
+
+async fn dispatch_to(
+    name: interprocess::local_socket::Name<'_>,
+    signal: AppSignal,
+) -> anyhow::Result<()> {
+    let mut stream = Stream::connect(name)
+        .await
+        .with_context(|| "failed to connect to app signal endpoint")?;
+    send_signal(&mut stream, signal).await
 }
 
 async fn send_signal(stream: &mut Stream, signal: AppSignal) -> anyhow::Result<()> {

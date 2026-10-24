@@ -6,6 +6,9 @@ export type SyncGameRequest
     | { type: 'dlsite', games: ExtDlsiteGame[] }
 
 export function syncGame(context: HandlerContext, request: SyncGameRequest): Promise<void> {
+  const record = (stage: string, count?: number, detail = '') => {
+    void context.diagnostics?.record({ timestamp: new Date().toISOString(), store: request.type, stage, trigger: 'background', page_kind: 'background', count, detail }).catch(() => {})
+  }
   const toTypeshareEgsInfo = (egs: ExtEgsInfo | null) => {
     if (!egs)
       return undefined
@@ -26,6 +29,7 @@ export function syncGame(context: HandlerContext, request: SyncGameRequest): Pro
   })
 
   const sendNative = async (payload: { request_id: string, message: any }) => {
+    record('native_requested', request.games.length)
     const res = await context.nativeMessenger.sendJson(payload)
     if (!res?.success)
       throw new Error(res?.error || 'Launchergから同期結果を受信できませんでした')
@@ -33,6 +37,16 @@ export function syncGame(context: HandlerContext, request: SyncGameRequest): Pro
       throw new Error('Launchergから予期しない同期結果を受信しました')
     if (res.response.value.error_count > 0)
       throw new Error(res.response.value.errors.join('\n') || `${res.response.value.error_count}件の同期に失敗しました`)
+    record('native_succeeded', res.response.value.success_count)
+    // This is presentation metadata. Storage/notification failures must not turn a committed sync into a failure.
+    try {
+      const stored = await context.browser.storage.get(['sync_summary'])
+      await context.browser.storage.set({ sync_summary: {
+        lastSync: new Date().toISOString(),
+        totalSynced: (Number(stored.sync_summary?.totalSynced) || 0) + res.response.value.new_count,
+      } })
+    }
+    catch (error) { record('status_save_failed', undefined, String(error)) }
     return res
   }
 
@@ -45,15 +59,17 @@ export function syncGame(context: HandlerContext, request: SyncGameRequest): Pro
       iconUrl,
       title: 'Launcherg',
       message: `新規に ${count} 件の作品を追加しました`,
-    })
+    }).catch(error => record('notification_failed', undefined, String(error)))
   }
 
   const processDmmBatch = async (games: ExtDmmGame[]) => {
     if (games.length === 0)
       return
+    record('metadata_requested', games.length)
     const resolved = await context.egsResolver.resolveForDmmBulk(
       games.map(g => ({ storeId: g.id, category: g.category, subcategory: g.subcategory })),
     )
+    record('metadata_received', resolved.filter(Boolean).length)
     const nativeGames = games.map((g, i) => ({
       id: g.id,
       category: g.category,
@@ -84,9 +100,11 @@ export function syncGame(context: HandlerContext, request: SyncGameRequest): Pro
   const processDlsiteBatch = async (games: ExtDlsiteGame[]) => {
     if (games.length === 0)
       return
+    record('metadata_requested', games.length)
     const resolved = await context.egsResolver.resolveForDlsiteBulk(
       games.map(g => ({ storeId: g.id, category: g.category })),
     )
+    record('metadata_received', resolved.filter(Boolean).length)
     const nativeGames = games.map((g, i) => ({
       id: g.id,
       category: g.category,
@@ -106,6 +124,7 @@ export function syncGame(context: HandlerContext, request: SyncGameRequest): Pro
     await notifyIfNew(count)
   }
 
+  record('sync_queued', request.games.length)
   return context.syncCoordinator.runExclusive(async () => {
     if (request.type === 'dmm') {
       await processDmmBatch(request.games)
@@ -113,5 +132,8 @@ export function syncGame(context: HandlerContext, request: SyncGameRequest): Pro
     }
 
     await processDlsiteBatch(request.games)
+  }).catch((error: unknown) => {
+    record('background_sync_failed', undefined, error instanceof Error ? error.message : String(error))
+    throw error
   })
 }
